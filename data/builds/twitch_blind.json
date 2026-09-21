@@ -11,11 +11,11 @@
  ],
  "notes": [
   "Ambush (Q) is treated as cast before the fight timer starts: its 1 s delay and camouflage are already resolved, and the first action of the fight (Venom Cask) breaks it immediately, so the 6 s bonus attack speed window is modeled running from t=0 to t=6 rather than Q being cast in-fight; Q is therefore never cast again during the fight.",
-  "Venom Cask (W) is cast on cooldown starting at t=0. It deals no direct damage: landing applies one Deadly Venom stack, and its 3 s zone applies one more stack per second, for the 4 stacks per cast the wiki states; its own cast time (0.25 s) applies the usual attack lockout.",
+  "Venom Cask (W) is cast on cooldown starting at t=0, with its 0.25 s cast time keeping Twitch busy (no other cast, no attack start) until it ends, exactly as the dossier's castTime states. It deals no direct damage: landing applies one Deadly Venom stack, and its 3 s zone applies one more stack per second, for the 4 stacks per cast the wiki states.",
   "Deadly Venom's true-damage tick is modeled as ticking once per second starting one second after the first stack is applied on the dummy, continuing for as long as attacks (or Venom Cask) keep refreshing it -- which, at any attack speed reachable in this fight, is the whole fight -- rather than tracking each of the 6 stacks on its own independent 6 s timer.",
-  "Contaminate (E) is cast on cooldown; it is not gated on the target already carrying Deadly Venom, since Twitch's own attacks keep the stationary dummy stacked for effectively the entire fight. Its damage uses the target's current Deadly Venom stack count at the moment of the cast.",
+  "Contaminate (E) is cast on cooldown, with its own 0.25 s cast time keeping Twitch busy the same way; it is not gated on the target already carrying Deadly Venom, since Twitch's own attacks keep the stationary dummy stacked for effectively the entire fight. Its damage uses the target's current Deadly Venom stack count at the moment of the cast.",
   "Unsettled question: whether Contaminate consumes the stacks it scores damage from. This kit assumes it does not -- Deadly Venom continues ticking on its own timers afterward -- since nothing in the sources describes an explicit removal.",
-  "Spray and Pray (R) is cast the instant it is available (t=0) and recast on cooldown: it deals no damage on cast, only grants bonus AD (and bonus range, irrelevant to a stationary single target) for 6 s while its bolts behave exactly like a normal basic attack against one target (always 100% damage, on-hit and crit apply normally), so no separate driver logic is needed for the bolt itself.",
+  "Spray and Pray (R) is cast the instant it is available (t=0) and recast on cooldown: it deals no damage on cast, only grants bonus AD (and bonus range, irrelevant to a stationary single target) for 6 s while its bolts behave exactly like a normal basic attack against one target (always 100% damage, on-hit and crit apply normally), so no separate driver logic is needed for the bolt itself. It has no cast time (the dossier states none).",
   "The wiki's crit-damage template for Spray and Pray resolves to an unnamed champion-specific constant; this kit assumes it is the engine's standard crit-damage multiplier.",
   "Mana is not modeled: none of Q/W/E/R's costs are expected to bind across a 15 s fight at level 16."
  ],
@@ -106,7 +106,8 @@
   },
   "W": {
    "maxStacksPerCast": 4,
-   "zoneTickIntervalS": 1
+   "zoneTickIntervalS": 1,
+   "castTimeS": 0.25
   },
   "E": {
    "baseDamage": {
@@ -128,7 +129,8 @@
     ],
     "bonusAdRatio": 0.35
    },
-   "perStackApRatio": 0.35
+   "perStackApRatio": 0.35,
+   "castTimeS": 0.25
   },
   "R": {
    "bonusAdByRank": [
@@ -144,6 +146,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/twitch.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/twitch_blind.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/twitch.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/twitch_blind.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

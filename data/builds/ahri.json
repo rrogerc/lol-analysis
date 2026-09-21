@@ -10,11 +10,12 @@
   "W"
  ],
  "notes": [
-  "Opening: Spirit Rush is cast at t=0 and recast twice more at the 1 s static interval between casts (its cooldown is 100-140 s so it never becomes available a second time inside a fight this short).",
+  "Casts go one at a time: Orb of Deception and Charm each have a 0.25 s cast time (gen.Q.castTimeS, gen.E.castTimeS) during which no other cast starts and no attack lands; Fox-Fire and Spirit Rush have no cast time (the dossier lists 'none') and cost nothing up front, but still wait for a cast already in progress.",
+  "Opening: Spirit Rush is cast at t=0 (instant) and recast twice more at the 1 s static interval between casts (its cooldown is 100-140 s so it never becomes available a second time inside a fight this short); Orb of Deception and Charm are cast right after, one after another, each taking its 0.25 s cast time.",
   "Orb of Deception's outbound (magic) and return (true) passes are both resolved at the moment the cast completes: no separate travel time is modeled for a stationary target that sits at the return point.",
-  "Fox-Fire's three flames are assumed to land together, at the 0.25 s priority-acquisition delay (AhriW.InitialDelay), since the dummy is the only enemy champion present and is therefore always the top-priority target for all three flames; its cooldown starts at that landing time, per the wiki's 'starts post-effect'.",
-  "Charm's damage, stated to snapshot 'at the time of its application', is taken at cast completion (0.25 s after cast start) and dealt then, since no separate travel delay is modeled elsewhere either.",
-  "Q, W and E are each recast as soon as they come off cooldown for the whole fight; auto-attacks fill the remaining time between casts.",
+  "Fox-Fire's three flames are assumed to land together, at the 0.25 s priority-acquisition delay (AhriW.InitialDelay), since the dummy is the only enemy champion present and is therefore always the top-priority target for all three flames; its cooldown starts at that landing time, per the wiki's 'starts post-effect'. The cast itself is instant and does not hold up other casts, but it still cannot start inside one that is in progress.",
+  "Charm's damage, stated to snapshot 'at the time of its application', is taken at cast completion (0.25 s after cast start, i.e. when its cast time ends) and dealt then, since no separate travel delay is modeled elsewhere either.",
+  "Q, W and E are each recast as soon as they come off cooldown (and are not blocked by a cast in progress) for the whole fight; auto-attacks fill the remaining time between casts.",
   "Essence Theft (P) only heals Ahri and never changes damage dealt to a stationary dummy, so it is not modeled.",
   "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
  ],
@@ -75,7 +76,8 @@
      135
     ],
     "apRatio": 0.5
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "primary": {
@@ -110,7 +112,8 @@
      240
     ],
     "apRatio": 0.85
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -130,6 +133,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ahri.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ahri.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ahri.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ahri.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

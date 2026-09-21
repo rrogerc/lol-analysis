@@ -10,18 +10,24 @@
   "Q"
  ],
  "notes": [
-  "The engine casts Call of the Forge God at t=0: its first pass lands after the 0.5 s cast, and the recast is thrown as soon as it is available (1.25 s after the initial cast, including the cast time), dealing the second pass.",
+  "Casts go one at a time: a single busy_until tracks whichever ability is currently in its cast time (or, for Bellows Breath, its lockout march), and no other cast or attack starts before it clears.",
+  "The engine casts Call of the Forge God at t=0: its 0.5 s cast keeps Ornn busy, and its first pass lands with the cast ending; the recast is thrown as soon as it is available (1.25 s after the initial cast, including the cast time) once Ornn is free to act, and its own 0.5 s post-dash lockout (stated directly, the dash's travel itself is not modeled) then keeps him busy again.",
   "Searing Charge's and Call of the Forge God's recast's own stuns apply Brittle to the same target they hit, so per the wiki noting both 'apply both airborne and stun simultaneously... for this reason', each cast of Searing Charge and each Call of the Forge God recast immediately consumes its own freshly-applied Brittle for Master Craftsman's bonus magic damage; Bellows Breath's and the elemental's first pass's own Brittle applications are not consumed by anything that immobilizes or silences, so they add no bonus damage.",
-  "Searing Charge is cast on cooldown. No terrain exists in the fight, so its dash never collides with anything and the terrain-collision shockwave damage instance never lands; only the charge-pass hit is dealt each cast.",
+  "Searing Charge is cast on cooldown, with its 0.35 s cast time keeping Ornn busy before its damage lands. No terrain exists in the fight, so its dash never collides with anything and the terrain-collision shockwave damage instance never lands; only the charge-pass hit is dealt each cast.",
   "Searing Charge's damage scales with Ornn's bonus armor and bonus magic resistance, but the engine's sheet only exposes total armor/MR, not a base/bonus split for Ornn; total armor and MR are used instead, which is a limitation of the numbers available (it slightly overstates the ratio contribution from base stats) rather than a chosen game-mechanic reading.",
-  "Bellows Breath is cast on cooldown: its 0.75 s march holds attacks and deals 5 ticks of magic damage 0.15 s apart, each tick equal to the greater of the flat minimum and the percent-max-health amount.",
-  "Volcanic Rupture is cast on cooldown for its physical damage; its slow and terrain pillar are not modeled (no immobilize component, and no other unit to interact with the pillar).",
-  "Volcanic Rupture's cast time is read as the wiki-stated 0.25 s rather than the bin's 0.3 s, per the dossier's own resolution of that conflict; the engine's flat 0.25 s cast lockout applies regardless.",
+  "Bellows Breath is cast on cooldown: it has no cast time of its own, but the 0.75 s march that follows holds Ornn busy exactly as a channel would (no other cast, no attack) while its 5 ticks land 0.15 s apart, each tick equal to the greater of the flat minimum and the percent-max-health amount.",
+  "Volcanic Rupture is cast on cooldown for its physical damage, its 0.25 s cast time keeping Ornn busy before the next cast or attack; its slow and terrain pillar are not modeled (no immobilize component, and no other unit to interact with the pillar).",
+  "Volcanic Rupture's cast time is read as the wiki-stated 0.25 s rather than the bin's 0.3 s, per the dossier's own resolution of that conflict; this is the number the opening-cast-time check is run against.",
   "Master Craftsman's 10%(+4%/upgrade) bonus armor/MR/health amplification only reduces damage taken and is irrelevant to a pure damage-dealt fight; it is not modeled.",
   "Basic attacks against a Brittle target only knock it back (no bonus damage), so basic-attack damage is plain on-hit AD with no kit-driven bonus.",
   "Mana costs are not modeled: the dossier gives no level-16 mana pool figure for Ornn, so, as with the Jax reference, mana is assumed not to bind within a 15 s fight."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "the numbers sheet's bin gives Volcanic Rupture's cast time as 0.3 while the wiki template states 0.25; the dossier resolves this in favor of the wiki's stated value, which is what is used here and checked against."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Volcanic Rupture",
@@ -95,7 +101,8 @@
      120
     ],
     "adRatio": 1.1
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "tickFlat": [
@@ -125,7 +132,8 @@
     260
    ],
    "armorRatio": 0.4,
-   "mrRatio": 0.4
+   "mrRatio": 0.4,
+   "castTimeS": 0.35
   },
   "R": {
    "damage": {
@@ -137,7 +145,8 @@
     "apRatio": 0.2
    },
    "castTimeS": 0.5,
-   "recastDelayS": 1.25
+   "recastDelayS": 1.25,
+   "recastLockoutS": 0.5
   }
  },
  "attack": {
@@ -145,6 +154,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ornn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ornn.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ornn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ornn.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

@@ -15,8 +15,9 @@
   "There is no brush in the dummy fight, so Unseen Predator's leap-attack (bonus range, leap, its own Ferocity generation) never triggers; this is the standard assumption for a stationary 1v1 fight against a dummy.",
   "Bonetooth Necklace trophies are assumed at 0, since a 1v1 dummy fight offers no champion takedowns to earn them, so it contributes no bonus AD and is left out of the kit entirely.",
   "Ferocity is a shared 0-4 counter: casting a basic ability (Q/W/E/R) or landing Savagery's stab generates one stack (capped at 4); a cast made at 4 stacks consumes them all, uses the Ferocity-empowered damage instead, and immediately grants a free extra cast of the same ability, which then generates its own stack normally. The passive's 10s in-combat grace period keeps stacks from expiring once Rengar is dealing or landing damage every few seconds, which happens continuously in this fight, so the 1s per-stack expiry timer and its documented non-refresh bug are not modeled.",
-  "Savagery (Q) deals no damage on cast: it arms the next basic attack with a bonus physical stab (assumed to be able to critically strike at both damage tiers, per the wiki's statement for the base tier) and grants 40% bonus attack speed for the next two attacks; a Ferocity-empowered cast also grants a separate 5s attack-speed buff. Its cooldown is post-effect, modeled as starting when the 3s attack-speed window ends. The pending-stab queue holds at most two entries (matching 'next two attacks'); a third stab arriving before earlier ones land would be dropped, which does not happen at normal attack cadence.",
-  "Battle Roar (W) and Bola Strike (E) are cast on cooldown and deal their damage immediately on cast; Bola Strike's 0.25s cast time is modeled only as the standard 0.25s attack lockout, its short travel time is not modeled separately. A Ferocity-empowered cast of either is immediately followed by its granted free extra cast.",
+  "Savagery (Q) deals no damage on cast: it arms the next basic attack with a bonus physical stab (assumed to be able to critically strike at both damage tiers, per the wiki's statement for the base tier) and grants 40% bonus attack speed for the next two attacks; a Ferocity-empowered cast also grants a separate 5s attack-speed buff. Its cooldown is post-effect, modeled as starting when the 3s attack-speed window ends. Savagery itself has no cast time and does not block other casts. The pending-stab queue holds at most two entries (matching 'next two attacks'); a third stab arriving before earlier ones land would be dropped, which does not happen at normal attack cadence.",
+  "Battle Roar (W) has no cast time and is cast on cooldown, dealing its damage immediately; a Ferocity-empowered cast is immediately followed by its free extra cast in the same instant, since neither has a cast time to keep them apart.",
+  "Bola Strike (E) has a 0.25s cast time (gen.E.castTimeS), modeled as keeping Rengar busy (no other cast, no attack) for that time after the cast starts, per the dossier; it is cast on cooldown. A Ferocity-empowered cast's free extra cast is a separate cast instance and pays its own 0.25s cast time, so it is scheduled as its own event once the first cast's time has elapsed, rather than resolving in the same instant.",
   "Mana/cost is not modeled: Rengar's resource is Ferocity, tracked as kit state; none of his abilities have a mana cost."
  ],
  "abilities": {
@@ -189,7 +190,8 @@
      305
     ],
     "bonusAdRatio": 0.8
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "bonusDamage": {
@@ -202,7 +204,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rengar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rengar.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rengar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rengar.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

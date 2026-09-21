@@ -1,9 +1,11 @@
 //! Smolder. Opens with MMOOOMMMM! (R) at t=0 (assumed sweetspot hit), then
 //! spams Super Scorcher Breath (Q) and Achooo! (W) on cooldown, weaving
 //! Flap, Flap, Flap (E) into its own cooldown windows (E's 1.25s channel
-//! pauses Q/W and attacks, per the dossier). Dragon Practice stacks build
-//! from 0 as abilities land, feeding P's onhit bonus damage on Q/W/E and
-//! (rarely, inside a short fight) Q's stack-gated tiers.
+//! pauses Q/W and attacks, per the dossier). Q and W each keep Smolder busy
+//! for their stated cast time (0.25s / 0.35s), so they never land in the
+//! same instant as each other. Dragon Practice stacks build from 0 as
+//! abilities land, feeding P's onhit bonus damage on Q/W/E and (rarely,
+//! inside a short fight) Q's stack-gated tiers.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,7 +27,9 @@ pub struct GenDriver {
     attack_range: f64,
 
     q_cd: f64,
+    q_cast_time: f64,
     w_cd: f64,
+    w_cast_time: f64,
     e_cd: f64,
     r_cast_time: f64,
 
@@ -76,6 +80,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     stacks: i64,
     w_ready: f64,
     w_decay_mult: f64,
@@ -89,6 +95,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn fire_w(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.w_ready = t + e.basic_cd(self.w_cd);
@@ -105,7 +124,7 @@ impl GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.w_cast_time);
     }
 }
 
@@ -141,6 +160,7 @@ impl Driver for GenDriver {
         let starting_stacks = kit.num("gen.P.startingStacks")? as i64;
 
         let state = State {
+            busy_until: 0.0,
             stacks: starting_stacks,
             w_ready: 0.0,
             w_decay_mult: 1.0,
@@ -157,7 +177,9 @@ impl Driver for GenDriver {
             ranks,
             attack_range: sheet.base_attack_range,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_time: kit.num("gen.Q.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_time: kit.num("gen.W.castTimeS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             r_cast_time: kit.num("gen.R.castTimeS")?,
             q_phys,
@@ -228,7 +250,7 @@ impl Driver for GenDriver {
         if t < self.s.r_lock_until || t < self.s.e_channel_until {
             return INF;
         }
-        pymax(e.st.q_ready, t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -270,7 +292,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_time);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -280,7 +302,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         self.s.r_lock_until = t + self.r_cast_time;
         self.s.r_hit_at = t + self.r_cast_time;
-        e.lockout();
+        self.busy_for(e, self.r_cast_time);
         e.prime_spellblade();
     }
 
@@ -296,7 +318,7 @@ impl Driver for GenDriver {
         let r_locked = t < self.s.r_lock_until;
 
         if self.ranks.w > 0 && self.s.e_channel_until == INF && !r_locked {
-            out[n] = (pymax(self.s.w_ready, t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
 
@@ -305,7 +327,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.e_channel_until, Kind::Ev(EV_E_END));
                 n += 1;
             } else if !r_locked {
-                out[n] = (pymax(self.s.e_ready, t), Kind::Ev(EV_E_START));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_START));
                 n += 1;
             }
         }

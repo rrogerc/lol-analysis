@@ -5,7 +5,9 @@
 //! normal attacks for its duration, with a slash count set by bonus attack
 //! speed at cast; Endless Banquet's ever-growing passive bonus true damage
 //! rides every qualifying on-hit application (full on attacks and Q, reduced
-//! during E's slashes).
+//! during E's slashes). R's active is never cast (it needs a Void Coral that
+//! a stationary dummy never produces); only its passive on-hit true damage
+//! is dealt.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -47,6 +49,8 @@ pub struct GenDriver {
     e_onhit_ratio: f64,
     e_cd: f64,
     r_onhit_val: f64,
+    /// R's active cast time (never cast by this driver; kept for reference).
+    r_cast_s: f64,
     src_r_onhit: SourceId,
     s: State,
     s0: State,
@@ -129,6 +133,7 @@ impl Driver for GenDriver {
             e_onhit_ratio: kit.num("gen.E.onHitRatio")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             r_onhit_val: kit.hit("gen.R.onhit", ranks.r, sheet)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_r_onhit: intern("R onhit"),
             s: state,
             s0: state,

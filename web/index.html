@@ -152,6 +152,9 @@
   .bboard-champion { border: 0; border-radius: 0; padding: 4px 0; background: none; font-weight: 600; }
   .bboard-champion:hover { text-decoration: underline; }
   .bboard-tag { color: var(--muted); margin-left: 6px; font-size: 10px; }
+  /* a heading the board sorts by: a button, so the keyboard reaches it, that reads as the heading */
+  .bboard-sort { border: 0; border-radius: 0; padding: 0; background: none; color: inherit; }
+  .bboard-sort:hover, #bboard-tbl th[aria-sort] .bboard-sort { color: var(--text-primary); }
   .bboard-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 10px; }
   .bboard-filters label { display: flex; align-items: center; gap: 7px; }
   #bboard-search { width: 200px; min-width: 0; max-width: 100%; }
@@ -671,7 +674,7 @@
       <button data-key="champion" aria-pressed="true" class="active">Champion builds</button>
       <button data-key="leaderboard" aria-pressed="false">Leaderboard</button>
     </div>
-    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest — or, overall, that do best on all three at once. Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
+    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest — or, overall, that do best on all three at once. Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. Select a column heading to sort by it, and again to reverse: a target's column orders the champions by how the build shown does in that one fight (that target's own scenario ranks each champion's best build against it instead), and # stays the scenario's rank whatever the order. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
     <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
     <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
@@ -2147,7 +2150,8 @@ async function openBuilds() {
 // ---- the leaderboard: every champion's best build under one scenario ----
 // A row per champion: the top row of its cell, ranked against the others'
 // (builds_leaderboard.py). Saved cells only, like everything on this tab.
-const bboard = { data: null, error: null, search: "", reviewedOnly: false, scroll: 0 };
+const bboard = { data: null, error: null, search: "", reviewedOnly: false, scroll: 0,
+                 sortKey: "rank", sortDir: 1 };  // the column the rows are ordered by: see boardSort
 
 // The scenarios with a board: the damage tiers' (a single tank compares nothing).
 function leaderboardScenarios(meta) {
@@ -2245,6 +2249,14 @@ function boardTimeCell(v, t) {
   return td;
 }
 
+// What that cell sorts on, fastest first: the time it shows, a build that
+// kills the target before one it survives (as the target's own board ranks
+// them). null, a fight with no time to show, sorts last in either direction.
+function boardTimeSort(v) {
+  const time = v?.ttkExp ?? v?.killTime;
+  return time == null ? null : [v.ttkExp == null ? 1 : 0, time];
+}
+
 // The champion: its name opens its own ranked builds; a kit nobody has
 // reviewed says so.
 function boardChampionCell(r) {
@@ -2272,31 +2284,43 @@ function boardChampionCell(r) {
 
 // A target's board leads with that fight, then the same build against the
 // tier's other targets; the overall board shows every target and the mean.
+// A column with `sort` (the value a row is ordered by, null = nothing to order
+// on) can order the table: ascending at first, `desc` the other way; `first`
+// names what either direction puts on top. A target's column has one `key` on
+// every board, so its order outlasts a change of scenario.
 function boardColumns(sc) {
   const targets = sc.targets || [];
-  const vs = t => ({ th: `vs ${t.target}`, td: r => boardTimeCell(r.vs?.[t.target], t),
+  const time = (t, col) => ({ key: `vs-${t.target}`, sort: r => boardTimeSort(r.vs?.[t.target]),
+    first: ["fastest", "slowest"], td: r => boardTimeCell(r.vs?.[t.target], t), ...col });
+  const vs = t => time(t, { th: `vs ${t.target}`,
     title: `The same build's expected kill time against the ${t.target} (${fmtInt(t.targetHp)} HP, ` +
            `${t.armor} armor, ${t.mr} MR, ${t.duration}s)` });
   const cols = [
-    { th: "#", title: "Among every champion of this scenario; equal results share a rank", td: r => cell(String(r.rank)) },
-    { th: "Champion", td: r => boardChampionCell(r) },
+    { key: "rank", th: "#", title: "Among every champion of this scenario; equal results share a rank. It stays this scenario's rank whichever column orders the table.",
+      sort: r => r.rank, first: ["best", "worst"], td: r => cell(String(r.rank)) },
+    // as a champion select lists them: K'Sante after Kog'Maw
+    { key: "champion", th: "Champion", sort: r => (r.championName || r.champion).toLowerCase().replace(/[^a-z0-9]/g, ""),
+      first: ["A", "Z"], td: r => boardChampionCell(r) },
     { th: "Best build", title: "The top row of the champion's own ranking, numbered in its suggested buy order — hover, focus or tap an icon for the item",
       td: r => buildCell(r) },
   ];
   if (sc.overall) {
     targets.forEach(t => cols.push(vs(t)));
-    cols.push({ th: "Mean", title: BOARD_MEAN_TITLE, td: r => {
+    cols.push({ key: "mean", th: "Mean", title: BOARD_MEAN_TITLE, sort: r => r.mean ?? null, first: ["fastest", "slowest"], td: r => {
       const td = cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—");
       return boardInstant(r) ? boardInstantTag(td) : td;
     } });
   } else {
-    cols.push({ th: "Kill time", title: BOARD_TIME_TITLE, td: r => boardTimeCell(r.vs?.[sc.target], sc) });
+    cols.push(time(sc, { th: "Kill time", title: BOARD_TIME_TITLE }));
     targets.filter(t => t.target !== sc.target).forEach(t => cols.push(vs(t)));
     // a fight over at 0.00s has no length to average the damage over
-    cols.push({ th: "DPS", td: r => cell(r.ttkExp === 0 ? "—" : fmtInt(r.dps)) },
-              { th: "Damage", td: r => cell(fmtInt(r.total)) });
+    cols.push({ key: "dps", th: "DPS", sort: r => r.ttkExp === 0 ? null : r.dps ?? null, desc: true, first: ["lowest", "highest"],
+                td: r => cell(r.ttkExp === 0 ? "—" : fmtInt(r.dps)) },
+              { key: "damage", th: "Damage", sort: r => r.total ?? null, desc: true, first: ["least", "most"],
+                td: r => cell(fmtInt(r.total)) });
   }
-  cols.push({ th: "Gold", td: r => cell(fmtInt(r.gold)) });
+  cols.push({ key: "gold", th: "Gold", sort: r => r.gold ?? null, first: ["cheapest", "most expensive"],
+              td: r => cell(fmtInt(r.gold)) });
   return cols;
 }
 
@@ -2305,6 +2329,50 @@ function boardRows(d) {
   const q = bboard.search.trim().toLowerCase();
   return (d?.rows || []).filter(r => (!bboard.reviewedOnly || r.reviewed) &&
     (!q || (r.championName || "").toLowerCase().includes(q) || r.champion.includes(q.replace(/[^a-z0-9]/g, ""))));
+}
+
+// The column the table is ordered by and the direction (1 ascending): the one
+// chosen where this scenario's board has it — Mean is the overall board's, DPS
+// and Damage a target's — else the rank.
+function boardSort(cols) {
+  const col = cols.find(c => c.sort && c.key === bboard.sortKey);
+  return col ? { col, dir: bboard.sortDir } : { col: cols[0], dir: 1 };
+}
+
+// Rows in that order. The sort is stable over the rank order they come in, so
+// equal values stay in rank order in either direction.
+function boardSorted(rows, { col, dir }) {
+  const compare = (a, b) => Array.isArray(a) ? a.reduce((c, x, i) => c || compare(x, b[i]), 0)
+    : a < b ? -1 : a > b ? 1 : 0;
+  return rows.map(r => [col.sort(r), r])
+    .sort(([a], [b]) => a == null || b == null ? (a == null) - (b == null) : compare(a, b) * dir)
+    .map(([, r]) => r);
+}
+
+// A column's heading: one the table can be ordered by is a button (the
+// keyboard reaches it) that shows the direction while it is.
+function boardHeadCell(c, sorted) {
+  const th = document.createElement("th");
+  if (c.title) th.title = c.title;
+  if (!c.sort) { th.textContent = c.th; return th; }
+  const on = c === sorted.col;
+  if (on) th.setAttribute("aria-sort", sorted.dir === 1 ? "ascending" : "descending");
+  const button = document.createElement("button");
+  button.className = "bboard-sort";
+  button.dataset.k = c.key;
+  button.append(c.th + " ", tftText("span", on ? (sorted.dir === 1 ? "▲" : "▼") : "", "arrow"));
+  // best first; the other way round when it already orders the table
+  button.addEventListener("click", () => sortBoard(c.key, on ? -sorted.dir : c.desc ? -1 : 1));
+  th.append(button);
+  return th;
+}
+
+function sortBoard(key, dir) {
+  bboard.sortKey = key;
+  bboard.sortDir = dir;
+  renderLeaderboard();
+  document.getElementById("bboard-wrap").scrollTop = 0;  // a new order is read from its top
+  updateHash();
 }
 
 // What the cards below the table show: the selected row's damage sources,
@@ -2337,14 +2405,17 @@ function renderLeaderboard() {
       (drafts ? ` · ${fmtInt(drafts)} of ${fmtInt(d.rows.length)} kits machine-written and unreviewed` : "") +
       ` · items patch ${bstate.meta.itemsPatch} · ${bstate.meta.note}`;
   }
-  const rows = boardRows(d), cols = sc ? boardColumns(sc) : [];
+  const cols = sc ? boardColumns(sc) : [], sorted = boardSort(cols);
+  const rows = sorted.col ? boardSorted(boardRows(d), sorted) : [];
   const filtered = !!bboard.search.trim() || bboard.reviewedOnly;
   let status = "";
   if (bboard.error) status = bboard.error + (d ? " Showing the board as last loaded." : "");
   else if (d) {
     status = !rows.length && d.rows.length ? "No champion matches these filters."
       : `${fmtInt(rows.length)}${filtered ? ` of ${fmtInt(d.rows.length)}` : ""} champions` +
-        (filtered ? " · ranks are from the full board" : "");
+        (filtered ? " · ranks are from the full board" : "") +
+        (sorted.col.key === "rank" && sorted.dir === 1 ? ""  // the board as it is ranked
+          : ` · sorted by ${sorted.col.th}, ${sorted.col.first[sorted.dir === 1 ? 0 : 1]} first`);
     if (!d.complete) {
       const why = { running: "the rest are warming in the background", ...WARMER_WHY }[bstate.status?.warmer];
       status += ` · ${fmtInt(d.readyCount)} of ${fmtInt(d.expectedCount)} computed for the current code and data` +
@@ -2357,12 +2428,12 @@ function renderLeaderboard() {
   failed.textContent = failed.hidden ? "" :
     "Not ranked, because the machine-written driver failed in the enumeration: " +
     d.failed.map(f => `${f.championName || f.champion} (${f.error})`).join("; ") + ".";
-  document.querySelector("#bboard-tbl thead tr").replaceChildren(...cols.map(c => {
-    const th = document.createElement("th");
-    th.textContent = c.th;
-    if (c.title) th.title = c.title;
-    return th;
-  }));
+  // the headings are rebuilt with every render (a sort, a board filling in):
+  // the keyboard stays on the sort button it was on
+  const active = document.activeElement;
+  const held = active?.className === "bboard-sort" ? active.dataset.k : null;
+  document.querySelector("#bboard-tbl thead tr").replaceChildren(...cols.map(c => boardHeadCell(c, sorted)));
+  if (held) document.querySelector(`#bboard-tbl thead button[data-k="${held}"]`)?.focus();
   // the champion the rest of the tab is on, else the top of what is shown
   const selected = rows.find(r => r.champion === bstate.champion) || rows[0];
   const wrap = document.getElementById("bboard-wrap"), body = document.querySelector("#bboard-tbl tbody");
@@ -5898,6 +5969,8 @@ function updateHash() {
     parts.push("bview=leaderboard");
     if (bboard.search.trim()) parts.push(`lbq=${encodeURIComponent(bboard.search.trim())}`);
     if (bboard.reviewedOnly) parts.push("lbrev=1");
+    if (bboard.sortKey !== "rank" || bboard.sortDir !== 1)
+      parts.push(`lbs=${encodeURIComponent(bboard.sortKey)}`, ...(bboard.sortDir === 1 ? [] : ["lbd=d"]));
   }
   if (state.view === "tft" && tstate.unit && tstate.mode !== "compositions") {
     parts.push(`unit=${tstate.unit}`, `star=${tstate.star}`, `geo=${tstate.geo}`, `tr=${tstate.traits}`);
@@ -5999,6 +6072,8 @@ async function init() {
       bstate.mode = "leaderboard";
       if (hash.lbq) bboard.search = hash.lbq;
       bboard.reviewedOnly = hash.lbrev === "1";
+      // a column this board lacks leaves it in rank order: boardSort
+      if (hash.lbs) { bboard.sortKey = hash.lbs; bboard.sortDir = hash.lbd === "d" ? -1 : 1; }
     }
     if (hash.tab === "tft") {
       if (["leaderboard", "compositions"].includes(hash.tftview)) tstate.mode = hash.tftview;

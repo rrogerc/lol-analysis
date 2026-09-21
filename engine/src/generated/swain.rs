@@ -3,7 +3,9 @@
 //! dummy, a champion, keeps its Demonic Energy net positive), ticking drain
 //! damage every 0.5s and letting Demonflare be manually recast on cooldown.
 //! Death's Hand, Vision of Empire and Nevermove are each cast on cooldown,
-//! with Vision of Empire and Nevermove's damage landing on a delay.
+//! with Vision of Empire and Nevermove's damage landing on a delay. Every
+//! cast (R, Q, W, E, Demonflare) has its own cast time, during which no
+//! other cast or attack may start.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -27,18 +29,22 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_explode_delay: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_travel_delay: f64,
+    e_cast_s: f64,
     r_cast_s: f64,
     r_tick_dmg: f64,
     r_tick_interval: f64,
     r_demonflare_dmg: f64,
     r_demonflare_delay: f64,
     r_demonflare_cd: f64,
+    r_demonflare_cast_s: f64,
     src_r_demonflare: SourceId,
     s: State,
     s0: State,
@@ -47,6 +53,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     w_explode_at: f64,
     e_ready: f64,
@@ -55,10 +63,26 @@ struct State {
     demonflare_ready: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_explode_at: INF,
             e_ready: 0.0,
@@ -71,18 +95,22 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_explode_delay: kit.num("gen.W.explodeDelayS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_travel_delay: kit.num("gen.E.travelDelayS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             r_tick_dmg: kit.hit("gen.R.tickDamage", ranks.r, sheet)?,
             r_tick_interval: kit.num("gen.R.tickIntervalS")?,
             r_demonflare_dmg: kit.hit("gen.R.demonflareDamage", ranks.r, sheet)?,
             r_demonflare_delay: kit.num("gen.R.demonflareCastDelayS")?,
             r_demonflare_cd: kit.num("gen.R.demonflareCooldownS")?,
+            r_demonflare_cast_s: kit.num("gen.R.demonflareCastTimeS")?,
             src_r_demonflare: intern("R Demonflare"),
             s: state,
             s0: state,
@@ -111,7 +139,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -120,16 +148,16 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         // the opening cast: the stance is treated as permanent for the fight
         let t = e.st.t;
-        e.lockout();
         e.prime_spellblade();
         self.s.r_tick_at = t + self.r_cast_s + self.r_tick_interval;
         self.s.demonflare_ready = t + self.r_cast_s + self.r_demonflare_delay;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -138,7 +166,7 @@ impl Driver for GenDriver {
             if self.s.w_explode_at != INF {
                 out[n] = (self.s.w_explode_at, Kind::Ev(EV_W_EXPLODE));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -146,7 +174,7 @@ impl Driver for GenDriver {
             if self.s.e_hit_at != INF {
                 out[n] = (self.s.e_hit_at, Kind::Ev(EV_E_HIT));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -156,7 +184,7 @@ impl Driver for GenDriver {
                 n += 1;
             }
             if self.s.demonflare_ready != INF {
-                out[n] = (pymax(self.s.demonflare_ready, e.st.t), Kind::Ev(EV_DEMONFLARE));
+                out[n] = (self.castable_at(e, self.s.demonflare_ready), Kind::Ev(EV_DEMONFLARE));
                 n += 1;
             }
         }
@@ -172,7 +200,7 @@ impl Driver for GenDriver {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 self.s.w_explode_at = t + self.w_explode_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_EXPLODE) => {
                 self.s.w_explode_at = INF;
@@ -185,7 +213,7 @@ impl Driver for GenDriver {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_hit_at = t + self.e_travel_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_HIT) => {
                 self.s.e_hit_at = INF;
@@ -203,7 +231,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.r_demonflare_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

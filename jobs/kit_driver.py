@@ -5,7 +5,8 @@ they compile and pass the fight checks.
 
   registry                 rewrite engine/src/generated/mod.rs from the driver
                            files beside it
-  check <slug> [--as N]    the fight checks on an admitted (or named) driver
+  check <slug> | --all     the fight checks on an admitted (or named) driver, or
+                           on every admitted one: run it after the checks change
   write <slug>... [--blind] [--workers 3] [--model sonnet] [--effort medium]
                            have the model write data/builds/<slug>.json and
                            engine/src/generated/<slug>.rs: each candidate is
@@ -15,6 +16,9 @@ they compile and pass the fight checks.
                            copied into the tree. --blind writes a champion that
                            already has a hand-written driver under the name
                            <slug>_blind, never showing the model that driver.
+                           --repair starts from the admitted kit and driver and
+                           the checks they fail (--failing: every such driver)
+                           instead of from nothing; --force rewrites from nothing.
   compare <slug>           a blind driver against the hand-written one over a
                            sample of item builds (damage, kill time, how alike
                            the two rank the builds)
@@ -101,9 +105,14 @@ def write_registry(gen_dir=GENERATED_DIR):
     return names
 
 
+def is_manaless(slug):
+    """The wiki's resource is not Mana: the item pool drops the mana items."""
+    return ks.load_sources(slug)["wiki"]["champion"].get("resource") != "Mana"
+
+
 def cmd_annotate(args):
     """Facts a generated kit takes from the archive rather than from the model:
-    "manaless" (the wiki's resource is not Mana), which the item pool reads."""
+    "manaless", which the item pool reads (`write` sets it too)."""
     changed = 0
     for name in driver_names():
         path = os.path.join(BASE_DIR, "data", "builds", f"{name}.json")
@@ -113,8 +122,7 @@ def cmd_annotate(args):
             kit = json.load(f)
         if not kit.get("generated"):
             continue
-        resource = ks.load_sources(name)["wiki"]["champion"].get("resource")
-        manaless = resource != "Mana"
+        manaless = is_manaless(name)
         if bool(kit.get("manaless")) != manaless:
             kit["manaless"] = manaless
             ks.write_json(path, kit)
@@ -319,6 +327,149 @@ PRESETS = {"squishy": (2800, 110, 60, 8.0), "bruiser": (3800, 180, 120, 12.0),
            "tank": (4800, 220, 160, 15.0)}
 
 
+# The builds a full search finds when casts cost no time: everything that
+# lands in the first instant, item actives included (2026-09-20: ten champions
+# killed the squishy at 0.00 s with builds like these).
+BURST_SETS = {
+    "AP burst": ["sorcerer's shoes", "rabadon's deathcap", "void staff", "shadowflame",
+                 "hextech gunblade", "luden's echo"],
+    "AD burst": ["sorcerer's shoes", "hextech gunblade", "lord dominik's regards",
+                 "youmuu's ghostblade", "profane hydra", "umbral glaive"],
+}
+CAST_GRID_S = 0.01  # the cast-time probe reads the fight's timeline at this step
+
+
+def cast_floor(cast_time):
+    """The shortest cast time a dossier's `castTime` states for an ability's
+    first cast, 0.0 when it has none. The wiki's template can list several: a
+    cast time that shrinks with attack speed counts as its shortest, a recast's
+    does not count, and an ability whose first form has none is instant."""
+    if not isinstance(cast_time, dict):
+        return 0.0
+    v = cast_time.get("value")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+        return 0.0
+    quote = str(cast_time.get("quote") or "")
+    if re.match(r"\s*\{\{(dv|tt)\|\s*(\{\{tt\|\s*)?none\b", quote, re.I):
+        return 0.0
+    stated = [float(m) for m in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", quote)]
+    return min([x for x in stated if 0.05 <= x <= v] + [float(v)])
+
+
+def sheet_cast_times(slug):
+    """{slot: seconds} from Riot's own file (`mCastTime`, which kit_sources
+    carries into the numbers sheet). The wiki states a cast time for more
+    abilities than this does, but for a handful it says nothing at all and
+    this is what there is."""
+    out = {}
+    try:
+        slots = ks.load_sources(slug)["sheet"]["slots"]
+    except (SystemExit, OSError, KeyError):
+        return out
+    for slot in "QWER":
+        for e in slots.get(slot) or []:
+            v = e.get("castTime") if isinstance(e, dict) else None
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0:
+                out[slot] = float(v)
+                break
+    return out
+
+
+def cast_floors(kit, dossier, slug=None):
+    """{slot: seconds} for the abilities that have a cast time: the wiki's, as
+    the dossier records it. Where the wiki says nothing at all (not "none" —
+    nothing), Riot's own file fills in. Either way the kit overrides one by
+    listing `gen.<slot>.castTimeS` under "assumed" (another form is the one
+    cast, the effect starts with the cast): then the kit's number is used."""
+    assumed = {a.get("path") for a in kit.get("assumed") or [] if isinstance(a, dict) and a.get("why")}
+    riot = sheet_cast_times(slug) if slug else {}
+    floors = {}
+    for slot in "QWER":
+        ab = (dossier.get("abilities") or {}).get(slot)
+        floor = cast_floor(ab.get("castTime")) if isinstance(ab, dict) else 0.0
+        if floor == 0 and not isinstance((ab or {}).get("castTime"), dict):
+            floor = riot.get(slot, 0.0)
+        if f"gen.{slot}.castTimeS" in assumed:
+            own = ((kit.get("gen") or {}).get(slot) or {}).get("castTimeS")
+            own = [own] if isinstance(own, (int, float)) and not isinstance(own, bool) else own
+            if isinstance(own, list) and own and all(isinstance(x, (int, float)) for x in own):
+                floor = float(min(own))
+        if floor > 0:
+            floors[slot] = floor
+    return floors
+
+
+def lint_cast_times(kit, dossier, driver_rs, slug):
+    """Every ability the sources give a cast time MUST carry it in the kit and
+    be read from there by the driver. The opening check below only catches
+    casts that overlap each other, so a lone cast that costs nothing slips
+    past it (Diana's Q, 2026-09-20): 133 of 367 such abilities were free."""
+    errors = []
+    unused = kit.get("unused") or {}
+    gen = kit.get("gen") or {}
+    for slot, secs in sorted(cast_floors(kit, dossier, slug).items()):
+        if slot in unused:
+            continue
+        named = [k for k in (gen.get(slot) or {}) if re.search(r"cast.*time", k, re.I)]
+        read = re.search(rf'kit\.\w+\("gen\.{slot}\.[A-Za-z]*[Cc]ast[Tt]ime\w*"', driver_rs)
+        if named and read:
+            continue
+        why = ("the kit does not carry it" if not named else
+               f"the kit has gen.{slot}.{named[0]} but the driver never reads it")
+        errors.append(
+            f"{slot} has a {secs:g} s cast time and {why}, so the driver casts it for free. Put the "
+            f"number at gen.{slot}.castTimeS, read it in `new` with kit.num(\"gen.{slot}.castTimeS\"), "
+            f"and call `self.busy_for(e, ...)` with it after the cast (the guide's 'Cast times'). If "
+            f"the driver never casts {slot} at all, say so in the kit: \"unused\": {{\"{slot}\": "
+            f"\"why\"}}. If it really is instant as your driver casts it, write the cast time you use "
+            f"at gen.{slot}.castTimeS anyway (0 is allowed) and list that path under \"assumed\" with "
+            f"the reason.")
+    return errors[:6]
+
+
+def first_landings(run, floors):
+    """{slot: seconds}: when each ability with a cast time first shows damage,
+    read off fights of growing length (`run(duration)` -> a fight's result)."""
+    landed = {}
+    horizon = sum(floors.values()) + 0.5
+    for k in range(int(round(horizon / CAST_GRID_S)) + 1):
+        t = round(k * CAST_GRID_S, 2)
+        for label, dmg in run(t)["breakdown"].items():
+            if dmg > 0 and label[:1] in floors and label[:1] not in landed \
+                    and re.match(r"[QWER]( |$)", label):
+                landed[label[0]] = t
+        if len(landed) == len(floors):
+            break
+    return landed
+
+
+def cast_time_errors(landed, floors, opening):
+    """Casts go one after another (the guide's 'Cast times', the hand-written
+    kits' rule): a cast takes effect as it starts and keeps the champion busy
+    for its cast time. So of the abilities that have landed by a time T, all
+    but the one cast last were cast AND finished inside T. Damage may land long
+    after its cast, so the order of the casts is unknown: the longest cast
+    counts as the last one, which makes this a condition no correct driver can
+    fail (it misses a cast begun inside another whose damage lands later)."""
+    for t in sorted(set(landed.values())):
+        done = sorted((s for s in landed if landed[s] <= t), key=lambda s: (landed[s], s))
+        need = sum(floors[s] for s in done) - max(floors[s] for s in done)
+        if need > t + 1e-9:
+            times = ", ".join(f"{s} {floors[s]:g} s" for s in done)
+            return [f"cast times are not respected ({opening}): {t:.2f} s into the fight "
+                    f"{', '.join(done)} have all dealt damage, but casts go one after another and the "
+                    f"ones before the last take {need:g} s (cast times per the dossier: {times}). A cast "
+                    "with a cast time keeps the champion busy until it ends: no other cast and no "
+                    "attack starts inside it (the guide's 'Cast times'). Keep ONE `busy_until` in the "
+                    "state, report every cast (q_at and the cast events) at "
+                    "`pymax(pymax(ready, e.st.t), self.s.busy_until)`, and after each cast set "
+                    "`busy_until = t + its cast time` and hold the next attack to it. If an ability "
+                    "really is instant as cast here (another form is the one cast, it can be cast "
+                    "during other casts), write the cast time you use at gen.<slot>.castTimeS and list "
+                    "that path under \"assumed\" with the reason."]
+    return []
+
+
 class Fights:
     def __init__(self, kit, stats_slug):
         import builds
@@ -402,13 +553,64 @@ def fight_checks(kit, stats_slug, dossier):
     dps = base["dps"]
     if not 40 <= dps <= 4000:
         errors.append(f"implausible naked level 16 DPS vs 100 resists: {dps:.0f}")
+    # cast times: the opening read off fights of growing length, with the ult and without
+    floors = cast_floors(kit, dossier, stats_slug)
+    facts["castTimes"] = floors
+    for ult in (True, False) if floors else ():
+        landed = first_landings(lambda t: f.run(16, [], *big, t, use_ult=ult), floors)  # noqa: B023
+        found = cast_time_errors(landed, floors, "opening with the ult" if ult else "the ult not used")
+        if found:
+            errors += found
+            break
+    # and the symptom itself: a full burst build must not kill in zero time
+    for name, items in BURST_SETS.items():
+        r = f.run(16, items, *PRESETS["squishy"][:3], 0.0)
+        if r["ttk"] is not None:
+            landed = ", ".join(f"{k} {v:.0f}" for k, v in r["breakdown"].items() if v > 0)
+            errors.append(f"with {name} items the squishy ({PRESETS['squishy'][0]} HP) is dead at t = 0.00 s, "
+                          f"before the clock has moved: {landed} all land in the first instant. Nothing "
+                          "kills in zero time: casts go one after another, each keeping the champion "
+                          "busy for its cast time (the guide's 'Cast times'), and damage the sources put "
+                          "after a stated delay lands in an event at that time.")
+            break
     return errors, facts
+
+
+def check_roster():
+    """{name: errors} for every admitted driver that fails the fight checks,
+    against the engine that is built (run after the checks themselves change)."""
+    import builds
+    if builds.source_stale():
+        raise SystemExit("engine/src (or builds.py) is newer than the built engine: the fights would "
+                         "run drivers that are not the tree's. Run jobs/build-engine.sh builds first.")
+    failed = {}
+    for name in driver_names():
+        slug = name[:-len("_blind")] if name.endswith("_blind") else name
+        with open(os.path.join(BASE_DIR, "data", "builds", f"{name}.json")) as f:
+            kit = json.load(f)
+        with open(os.path.join(ks.DOSSIERS_DIR, f"{slug}.json")) as f:
+            dossier = json.load(f)
+        with open(os.path.join(GENERATED_DIR, f"{name}.rs")) as f:
+            driver_rs = f.read()
+        errors = lint_cast_times(kit, dossier, driver_rs, slug)
+        errors += fight_checks(kit, slug, dossier)[0]
+        if errors:
+            failed[name] = errors
+    return failed
 
 
 def cmd_check(args):
     if args.so_dir:
         sys.path.insert(0, args.so_dir)
     sys.path.insert(1, BASE_DIR)
+    if args.all:
+        failed = check_roster()
+        for name, errors in failed.items():
+            print(f"{name}: {errors[0][:200]}" + (f" (+{len(errors) - 1} more)" if errors[1:] else ""))
+        print(f"{len(failed)} of {len(driver_names())} drivers fail: {' '.join(failed) or '-'}")
+        sys.exit(1 if failed else 0)
+    if not args.name:
+        raise SystemExit("name a driver, or pass --all")
     name = args.name
     kit_path = args.kit or os.path.join(BASE_DIR, "data", "builds", f"{name}.json")
     with open(kit_path) as f:
@@ -417,6 +619,10 @@ def cmd_check(args):
     with open(os.path.join(ks.DOSSIERS_DIR, f"{stats}.json")) as f:
         dossier = json.load(f)
     errors, facts = fight_checks(kit, stats, dossier)
+    rs_path = args.driver or os.path.join(GENERATED_DIR, f"{name}.rs")
+    if os.path.exists(rs_path):
+        with open(rs_path) as f:
+            errors = lint_cast_times(kit, dossier, f.read(), stats) + errors
     print(json.dumps({"ok": not errors, "errors": errors, "facts": facts}))
     sys.exit(0 if not errors else 1)
 
@@ -547,6 +753,9 @@ class Bench:
         try:
             r = subprocess.run([sys.executable, os.path.abspath(__file__), "check", name,
                                 "--kit", kit_path, "--stats-from", stats_slug,
+                                # the candidate's own driver, not the tree's: the checks that
+                                # read the Rust would otherwise judge the admitted one
+                                "--driver", os.path.join(gen, f"{name}.rs"),
                                 "--so-dir", self.so_dir],
                                capture_output=True, text=True, timeout=300, cwd=BASE_DIR)
         except subprocess.TimeoutExpired:
@@ -568,14 +777,63 @@ class Bench:
         shutil.rmtree(self.root, ignore_errors=True)
 
 
+REPAIR_NOTE = ("This kit and driver were admitted before the script checked what is listed below. "
+               "Change what that takes and keep the rest of the rotation and every number as they "
+               "are; bring the kit's notes in line with what the driver now does.\n\n")
+
+
+def as_written(kit):
+    """An admitted kit as the model wrote it: without what the script added."""
+    never = {"attack": {"never": True}} if (kit.get("attack") or {}).get("never") else {}
+    return dict({k: v for k, v in kit.items() if k not in ("_provenance", "manaless", "attack")},
+                **never)
+
+
+def admitted_files(name):
+    with open(os.path.join(BASE_DIR, "data", "builds", f"{name}.json")) as f:
+        kit = json.load(f)
+    with open(os.path.join(GENERATED_DIR, f"{name}.rs")) as f:
+        return kit, f.read()
+
+
+def retry_prompt(slug, name, kit, driver_rs, problems, history):
+    earlier = ("\n## What the earlier rounds failed on (do not go back to those)\n\n"
+               + "\n".join(history[:-1]) + "\n") if len(history) > 1 else ""
+    return (user_prompt(slug, name) + "\n## Your previous attempt\n\n```json\n"
+            + json.dumps(kit, indent=1) + "\n```\n\n```rust\n" + (driver_rs or "") + "```\n\n"
+            "## What is wrong with it\n\n" + problems + "\n" + earlier
+            + "\nReply with both complete files again.")
+
+
 def write_champion(args, slug, bench, cwd):
     name = f"{slug}_blind" if args.blind else slug
     t0 = time.time()
     ensure_snapshot(slug)
     known = source_numbers(slug)
     system, user = system_prompt(), user_prompt(slug, name)
+    with open(os.path.join(ks.DOSSIERS_DIR, f"{slug}.json")) as f:
+        dossier = json.load(f)
     calls, problems, kit, driver_rs, facts = [], "no reply", None, None, {}
     history = []  # what each earlier round failed on: a retry that only sees the last one can oscillate
+    provenance = []
+    if args.repair:
+        # start from what is admitted: the checks it now fails are the first round's complaint
+        on_disk, driver_rs = admitted_files(name)
+        provenance = list(on_disk.get("_provenance") or [])
+        kit = as_written(on_disk)
+        full = dict(kit, attack=dict(attack_block(slug), **(kit.get("attack") or {})))
+        static = lint_cast_times(kit, dossier, driver_rs, slug)
+        if static:
+            problems, facts = "The fights fail these checks:\n- " + "\n- ".join(static), {}
+        else:
+            problems, facts = bench.evaluate(name, slug, full, driver_rs)
+        if not problems:
+            say(f"{name}: passes the checks as it is, left alone")
+            return {"name": name, "ok": True, "rounds": 0, "unchanged": True,
+                    "seconds": round(time.time() - t0, 1), "costEquivalentUsd": 0}
+        say(f"  {name} as admitted: {problems.splitlines()[-1][:110]}")
+        history.append(f"as admitted: {problems.strip().splitlines()[-1][:300]}")
+        user = retry_prompt(slug, name, kit, driver_rs, REPAIR_NOTE + problems, history)
     for rnd in range(1, args.rounds + 1):
         text, log = call_model(args, system, user, cwd)
         log["round"] = rnd
@@ -594,7 +852,8 @@ def write_champion(args, slug, bench, cwd):
             continue
         try:
             kit, driver_rs = parse_reply(text)
-            static = lint_kit(kit, name, known) + lint_driver(driver_rs)
+            static = (lint_kit(kit, name, known) + lint_driver(driver_rs)
+                      + lint_cast_times(kit, dossier, driver_rs, slug))
             if static:
                 problems = "Fix these before it is compiled:\n- " + "\n- ".join(static)
             else:
@@ -607,12 +866,7 @@ def write_champion(args, slug, bench, cwd):
         if not problems:
             break
         history.append(f"round {rnd}: {problems.strip().splitlines()[-1][:300]}")
-        earlier = ("\n## What the earlier rounds failed on (do not go back to those)\n\n"
-                   + "\n".join(history[:-1]) + "\n") if len(history) > 1 else ""
-        user = (user_prompt(slug, name) + "\n## Your previous attempt\n\n```json\n"
-                + json.dumps(kit, indent=1) + "\n```\n\n```rust\n" + (driver_rs or "") + "```\n\n"
-                "## What is wrong with it\n\n" + problems + "\n" + earlier
-                + "\nReply with both complete files again.")
+        user = retry_prompt(slug, name, kit, driver_rs, problems, history)
     summary = {"name": name, "ok": not problems, "rounds": len(calls),
                "seconds": round(time.time() - t0, 1),
                "tokensIn": sum(c.get("in", 0) for c in calls),
@@ -625,11 +879,19 @@ def write_champion(args, slug, bench, cwd):
     if summary["ok"]:
         # admitted: into the tree (the registry and the engine are rebuilt once, at the end)
         full = dict(kit, attack=dict(attack_block(slug), **(kit.get("attack") or {})))
-        full["_provenance"] = [
-            f"Machine-written by jobs/kit_driver.py ({args.model}, {time.strftime('%Y-%m-%d')}) "
-            f"from data/builds/dossiers/{slug}.json and the archived sources; compiled and passed "
-            "the fight checks; NOT reviewed by a person. The driver is "
-            f"engine/src/generated/{name}.rs."]
+        if args.repair:
+            full["_provenance"] = provenance + [
+                f"Repaired by jobs/kit_driver.py --repair ({args.model}, {time.strftime('%Y-%m-%d')}): "
+                "the admitted kit and driver went back to the model with the fight checks they had "
+                "come to fail; compiled and passed them; NOT reviewed by a person."]
+        else:
+            full["_provenance"] = [
+                f"Machine-written by jobs/kit_driver.py ({args.model}, {time.strftime('%Y-%m-%d')}) "
+                f"from data/builds/dossiers/{slug}.json and the archived sources; compiled and passed "
+                "the fight checks; NOT reviewed by a person. The driver is "
+                f"engine/src/generated/{name}.rs."]
+        if is_manaless(slug):
+            full["manaless"] = True
         ks.write_json(os.path.join(BASE_DIR, "data", "builds", f"{name}.json"), full)
         with open(os.path.join(GENERATED_DIR, f"{name}.rs"), "w") as f:
             f.write(driver_rs)
@@ -671,17 +933,25 @@ def all_slugs():
 
 def cmd_write(args):
     slugs = all_slugs() if args.all else [s.lower() for s in args.slugs]
+    if args.failing:
+        args.repair = True
+        slugs = [n for n in check_roster() if n != "jax" and not n.endswith("_blind")]
+        say(f"{len(slugs)} admitted drivers fail the checks: {' '.join(slugs) or '-'}")
     if not slugs:
-        raise SystemExit("name champions, or pass --all")
+        raise SystemExit("name champions, or pass --all or --failing")
     if not args.blind:
         clash = [s for s in slugs if s in HAND_WRITTEN or s == "jax"]
         if clash:
             raise SystemExit(f"{clash} have hand-written drivers: use --blind to write a second one")
-        if not args.force:
-            done = [s for s in slugs if admitted(s)]
-            slugs = [s for s in slugs if s not in done]
-            if done:
-                say(f"{len(done)} already admitted, skipped (--force rewrites them)")
+    if args.repair:
+        missing = [s for s in slugs if not admitted(f"{s}_blind" if args.blind else s)]
+        if missing:
+            raise SystemExit(f"--repair starts from an admitted driver; none for {missing}")
+    elif not args.blind and not args.force:
+        done = [s for s in slugs if admitted(s)]
+        slugs = [s for s in slugs if s not in done]
+        if done:
+            say(f"{len(done)} already admitted, skipped (--force rewrites them)")
     if not slugs:
         print("nothing to do")
         return
@@ -713,10 +983,13 @@ def cmd_write(args):
         shutil.rmtree(cwd, ignore_errors=True)
     names = write_registry()
     ok = [r["name"] for r in results if r["ok"]]
+    same = [r["name"] for r in results if r.get("unchanged")]
     cost = sum(r.get("costEquivalentUsd", 0) for r in results)
-    print(f"admitted {len(ok)}/{len(results)}: {', '.join(ok) or '-'}; "
+    print(f"admitted {len(ok) - len(same)}/{len(results) - len(same)}: "
+          f"{', '.join(n for n in ok if n not in same) or '-'}; "
           f"rejected: {', '.join(r['name'] for r in results if not r['ok']) or '-'}; "
-          f"${cost:.2f} cost-equivalent")
+          + (f"already passing, left alone: {', '.join(same)}; " if same else "")
+          + f"${cost:.2f} cost-equivalent")
     print(f"registry: {len(names)} generated drivers. Rebuild the engine: jobs/build-engine.sh builds")
     if _stop.is_set():
         print("stopped at the plan's usage limit: run the same command again to resume")
@@ -802,7 +1075,12 @@ def main():
     sp.add_argument("slugs", nargs="*")
     sp.add_argument("--all", action="store_true",
                     help="every champion with a dossier and no hand-written driver")
-    sp.add_argument("--force", action="store_true", help="rewrite admitted drivers")
+    sp.add_argument("--force", action="store_true", help="rewrite admitted drivers from scratch")
+    sp.add_argument("--repair", action="store_true",
+                    help="start from the admitted kit and driver: what they fail goes to the model\n"
+                         "as the first round's complaint; one that passes is left alone")
+    sp.add_argument("--failing", action="store_true",
+                    help="--repair every admitted driver that fails the checks (`check --all`)")
     sp.add_argument("--blind", action="store_true",
                     help="write <slug>_blind beside a hand-written driver, for comparison")
     sp.add_argument("--workers", type=int, default=3)
@@ -817,10 +1095,13 @@ def main():
     sp.add_argument("--n", type=int, default=120, help="item builds sampled")
     sp.set_defaults(func=cmd_compare)
     sp = sub.add_parser("check")
-    sp.add_argument("name")
+    sp.add_argument("name", nargs="?")
+    sp.add_argument("--all", action="store_true",
+                    help="every admitted driver, against the engine that is built")
     sp.add_argument("--kit", help="kit file (default data/builds/<name>.json)")
     sp.add_argument("--stats-from", help="the champion whose base stats and dossier apply")
     sp.add_argument("--so-dir", help="directory holding the lol_engine build to test")
+    sp.add_argument("--driver", help="driver file (default engine/src/generated/<name>.rs)")
     sp.set_defaults(func=cmd_check)
     args = ap.parse_args()
     args.func(args)

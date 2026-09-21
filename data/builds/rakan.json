@@ -11,9 +11,9 @@
  ],
  "notes": [
   "The engine casts The Quickness at t = 0 with its own cast-time lockout and Spellblade priming; its damage is assumed to land from a single collision with the stationary dummy immediately once the 0.5 s cast ends, since R's damage requires physical contact during the dash rather than a targeted cast.",
-  "Gleaming Quill is cast on cooldown; because its cooldown only starts once the projectile vanishes, and travel time depends on distance, the cast is assumed to be thrown at melee range against the dummy, giving a short travel time of attack_range / 1850 units-per-second before the post-effect cooldown timer starts.",
-  "Grand Entrance is cast on cooldown and assumed to land on the dummy at melee range, so no extra travel delay is added beyond the wiki's stated 0.35 s delay between arrival and its damage/knock-up; its cooldown starts on cast.",
-  "Battle Dance is cast on cooldown purely to prime Spellblade-style on-cast effects: it deals no damage itself, and its free recast is not modeled, since the recast's only value (a second Spellblade proc) requires timing an attack between the two casts that this driver does not attempt.",
+  "Gleaming Quill has a 0.25 s cast time: its damage lands as the cast starts, then it keeps Rakan busy (no other cast, no attack) until the cast time ends; because its cooldown only starts once the projectile vanishes, and travel time depends on distance, the cast is assumed thrown at melee range against the dummy, adding a short travel time of attack_range / 1850 units-per-second before the post-effect cooldown timer starts (on top of the cast time).",
+  "Grand Entrance is cast on cooldown and assumed to land on the dummy at melee range, so no extra travel delay is added beyond the wiki's stated 0.35 s delay between arrival and its damage/knock-up; it has no cast time (costs nothing, delays nothing) but still waits for another cast in progress, and its cooldown starts on cast.",
+  "Battle Dance is cast on cooldown purely to prime Spellblade-style on-cast effects: it deals no damage itself, has no cast time, and its free recast is not modeled, since the recast's only value (a second Spellblade proc) requires timing an attack between the two casts that this driver does not attempt.",
   "Fey Feathers' periodic self-shield and Gleaming Quill's / Battle Dance's heals and shields are purely defensive and are ignored, since the fight only scores damage dealt.",
   "Mana is not modeled: nothing here binds inside a 15 s fight at level 16.",
   "Basic attacks are woven in whenever no ability is ready to cast; Rakan's kit does not modify attacks (no on-hit, steroid, or reset), so the engine's default attack handling applies."
@@ -21,7 +21,7 @@
  "assumed": [
   {
    "path": "gen.Q.travelSpeedUnitsPerSec",
-   "why": "assume Gleaming Quill is thrown at melee range against the dummy, so its travel time (which delays when the post-effect cooldown starts) is attack_range / projectile speed"
+   "why": "assume Gleaming Quill is thrown at melee range against the dummy, so its travel time (which delays when the post-effect cooldown starts, on top of the cast time) is attack_range / projectile speed"
   }
  ],
  "abilities": {
@@ -76,7 +76,8 @@
     ],
     "apRatio": 0.7
    },
-   "travelSpeedUnitsPerSec": 1850
+   "travelSpeedUnitsPerSec": 1850,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -108,6 +109,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rakan.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rakan.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rakan.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rakan.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

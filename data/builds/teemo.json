@@ -13,12 +13,13 @@
   "Teemo is assumed to enter the fight already stealthed via Guerrilla Warfare; the opening Blinding Dart cast (a stealth-breaking action, cast before the first attack lands) breaks stealth immediately at t=0 and triggers Element of Surprise's bonus attack speed for its full 5 s window.",
   "Because Teemo never stops acting for the 1.5 s Guerrilla Warfare requires to re-stealth, Element of Surprise fires exactly once, at the very start of the fight, and is never refreshed.",
   "Move Quick (W) is pure movement speed with no damage component and is ignored entirely; it is never cast.",
-  "Blinding Dart is cast on cooldown; its blind has no effect since the dummy never attacks.",
+  "Blinding Dart (Q) has a 0.25 s cast time: it lands with the cast and then keeps Teemo busy (no other cast, no attack) until it ends; it is cast on cooldown, and its blind has no effect since the dummy never attacks.",
   "Toxic Shot's on-hit magic damage and its poison application both trigger on every basic attack landing; the poison does not stack with itself, so a fresh application only refreshes the 4 s duration of the running DoT rather than adding a new one, matching the wiki.",
-  "Noxious Trap is modeled as landing under the stationary target and detonating as soon as it finishes arming (1 s after cast), since the dummy never moves away from the planted mushroom's location.",
+  "Noxious Trap (R) also has a 0.25 s cast time, which keeps Teemo busy the same way as Q; the mushroom itself is modeled as landing under the stationary target and detonating once its separate 1 s arm time (an event, not part of the cast) elapses, since the dummy never moves away from the planted mushroom's location.",
   "Noxious Trap's poison is likewise non-stacking: a new mushroom detonating while the previous poison is still active only refreshes its 4 s duration. To make the limited charge pool last across a fight of unknown length, a new mushroom is only thrown once the current poison is about to expire (or none is active), rather than dumping every charge immediately.",
   "Teemo is assumed to start the fight with a full stock of Noxious Trap charges, since the ammo regenerates far slower (tens of seconds) than the fight lasts.",
-  "Mana costs for Blinding Dart and Noxious Trap are not modeled: at level 16 neither realistically runs dry inside an 8-15 s fight."
+  "Mana costs for Blinding Dart and Noxious Trap are not modeled: at level 16 neither realistically runs dry inside an 8-15 s fight.",
+  "Casts go one at a time: Q and R's 0.25 s cast times each hold busy_until forward, so a Q and an R ready at the same instant resolve one after the other rather than in the same tick."
  ],
  "assumed": [
   {
@@ -100,7 +101,8 @@
      260
     ],
     "apRatio": 0.7
-   }
+   },
+   "castTimeS": 0.25
   },
   "E": {
    "impactDamage": {
@@ -144,7 +146,8 @@
     3,
     4,
     5
-   ]
+   ],
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -152,6 +155,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/teemo.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/teemo.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/teemo.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/teemo.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

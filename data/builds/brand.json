@@ -10,12 +10,14 @@
   "E"
  ],
  "notes": [
-  "Opening: the engine casts Pyroclasm (R) at t=0 as the opening hook; thereafter Sear (Q), Conflagration (E) and Pillar of Flame (W) are each cast the instant their cooldown is up, and R is recast on cooldown too (its 80-100s cooldown means it will realistically land only once in a 15s fight).",
+  "Casts go one at a time: Pyroclasm (R) opens the fight at t=0, and its 0.25s cast time keeps Brand busy (no other cast, no attack) until it ends; Sear (Q), Conflagration (E) and Pillar of Flame (W) each report as castable only once any cast in progress has finished, and each of them in turn keeps Brand busy for its own 0.25s cast time when it starts.",
+  "Pillar of Flame's 0.25s cast time only covers the cast itself; the extra 0.625s before the eruption lands is a separate scheduled delay (per the dossier, not included in the cast time) during which Brand is free to start another cast, matching 'the delay before the eruption does not include the cast time'.",
+  "Thereafter Sear, Conflagration and Pillar of Flame are each cast the instant their cooldown is up (subject to not overlapping another cast in progress), and R is recast on cooldown too (its 80-100s cooldown means it will realistically land only once in a 15s fight).",
   "Ablaze is modeled as a single merged stack counter (0-3) with one shared expiry time that every ability hit extends by 4s, ticking on a fixed 0.25s cadence for 2%/16 of the target's maximum health per active stack per tick; this approximates the wiki's per-stack independently-timed ticks (each stack really ticks on its own schedule even through a refresh), which is not worth tracking exactly for a short, high-uptime fight.",
   "Reaching 3 Ablaze stacks arms the ring explosion 2s later: it deals its own magic-damage instance (level% of the target's max health + 0.02%/AP), then consumes the stacks and reapplies exactly 1 stack, during which (4s) the target cannot restack above 1.",
   "Pillar of Flame's 25% bonus is checked when its damage actually lands (0.25s cast + 0.625s eruption delay after the cast), against whatever Ablaze state exists at that moment, before its own hit applies a new stack.",
   "Conflagration's blast 'spreads to nearby enemies' but the dummy is the only enemy present, so each E cast deals exactly one damage instance (the spread never finds a second target).",
-  "Pyroclasm bounces between the dummy and Brand (the only two valid bounce recipients); Riot's own tooltip states the total single-target damage of the up-to-four bounces is 3x the base+AP value, so each R cast is modeled as 3 separate hits on the dummy, landing at the cast, then 0.3s and 0.6s later (2 and 4 bounce-delay increments of 0.15s), each applying its own Ablaze stack.",
+  "Pyroclasm bounces between the dummy and Brand (the only two valid bounce recipients); Riot's own tooltip states the total single-target damage of the up-to-four bounces is 3x the base+AP value, so each R cast is modeled as 3 separate hits on the dummy, the first landing with the cast, the second and third 0.3s and 0.6s later (2 and 4 bounce-delay increments of 0.15s), each applying its own Ablaze stack; only the first of these three hits is a cast subject to the busy-until sequencing, the later two are the delayed resolution of that same cast.",
   "Sear's ablaze bonus (a stun) and Pyroclasm's ablaze bonus (a slow) have no effect on damage and are ignored.",
   "Mana is not modeled: at level 16 the rotation's costs are comfortably sustained for a 15s fight."
  ],
@@ -99,7 +101,8 @@
      190
     ],
     "apRatio": 0.65
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -126,7 +129,8 @@
      155
     ],
     "apRatio": 0.6
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -137,7 +141,8 @@
     ],
     "apRatio": 0.3
    },
-   "bounceDelayS": 0.15
+   "bounceDelayS": 0.15,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -145,6 +150,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/brand.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/brand.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/brand.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/brand.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

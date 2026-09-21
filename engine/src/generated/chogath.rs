@@ -3,7 +3,9 @@
 //! nukes; Vorpal Spikes is woven in right after an attack lands (for its
 //! attack-timer reset) whenever it is off cooldown, then its 3 charges ride
 //! the next 3 attacks as on-hit magic damage scaling off the target's max
-//! health.
+//! health. Every cast (Feast, Rupture, Feral Scream) keeps Cho'Gath busy for
+//! its own cast time before anything else can start; Rupture's damage lands
+//! after a further stated delay, modeled as its own event.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -11,12 +13,14 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
+/// Rupture's delayed damage (after its cast time and the stated delay).
+const EV_Q_DAMAGE: u8 = 0;
 /// Feral Scream is cast on cooldown.
-const EV_W: u8 = 0;
+const EV_W: u8 = 1;
 /// Feast is recast on cooldown (the opening cast happens in `cast_r`).
-const EV_R: u8 = 1;
+const EV_R: u8 = 2;
 /// Vorpal Spikes' 6 s window lapses with charges still unused.
-const EV_E_EXPIRE: u8 = 2;
+const EV_E_EXPIRE: u8 = 3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -25,8 +29,11 @@ pub struct GenDriver {
     windup_fraction: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
+    q_delay_s: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     /// Vorpal Spikes' target-max-health-% term, as a fraction (0-stack value).
     e_hp_frac: f64,
@@ -35,6 +42,7 @@ pub struct GenDriver {
     e_window_s: f64,
     r_dmg: f64,
     r_cd: f64,
+    r_cast_s: f64,
     src_w: SourceId,
     src_e: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
@@ -45,6 +53,10 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+    /// A Rupture landing is pending at this time (INF: none pending).
+    q_pending_at: f64,
     w_ready: f64,
     /// When Vorpal Spikes may next be cast (INF while its charges are still
     /// pending: the cooldown starts post-effect).
@@ -57,11 +69,28 @@ struct State {
     r_ready: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let _ = level;
         let state = State {
+            busy_until: 0.0,
+            q_pending_at: INF,
             w_ready: 0.0,
             e_ready: 0.0,
             e_charges: 0,
@@ -74,8 +103,11 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("chogath kit needs attack.windupFraction")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
+            q_delay_s: kit.num("gen.Q.delayS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_hp_frac: kit.at_rank("gen.E.targetMaxHpPct", ranks.e)? / 100.0,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
@@ -83,6 +115,7 @@ impl Driver for GenDriver {
             e_window_s: kit.num("gen.E.windowS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_w: intern("W"),
             src_e: intern("E onhit"),
             s: state,
@@ -132,6 +165,8 @@ impl Driver for GenDriver {
             && t >= self.s.e_ready
         {
             // Vorpal Spikes, woven in right after an attack for the reset
+            // (attacks never land inside another cast's busy window, so
+            // this already respects the one-cast-at-a-time rule)
             self.s.e_charges = self.e_attacks_per_cast;
             self.s.e_window_until = t + self.e_window_s;
             e.prime_spellblade();
@@ -145,40 +180,47 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
-        e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
-        e.ability_cast_proc();
-        e.eclipse_hit();
+        // no damage yet: the rupture lands after the cast time plus the
+        // stated additional delay, as its own event
+        let t = e.st.t;
+        e.st.q_ready = t + e.basic_cd(self.q_cd);
+        self.s.q_pending_at = t + self.q_cast_s + self.q_delay_s;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         if self.ranks.r == 0 {
             return;
         }
-        // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the 0.25 s cast
+        // the opening cast (the engine has already primed Spellblade and
+        // held the first attack): the true damage lands with the cast,
+        // which then keeps Cho'Gath busy for its cast time
         let t = e.st.t;
         e.deal(self.r_dmg, DType::True, SRC_R, false, true, 1.0);
         e.ability_cast_proc();
         e.eclipse_hit();
         e.ult_hatefog();
         self.s.r_ready = t + e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
+        if self.s.q_pending_at != INF {
+            out[n] = (self.s.q_pending_at, Kind::Ev(EV_Q_DAMAGE));
+            n += 1;
+        }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R));
             n += 1;
         }
         if self.s.e_charges > 0 {
@@ -191,13 +233,19 @@ impl Driver for GenDriver {
     fn on_event(&mut self, e: &mut Engine, kind: Kind) {
         let t = e.st.t;
         match kind {
+            Kind::Ev(EV_Q_DAMAGE) => {
+                self.s.q_pending_at = INF;
+                e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
+                e.ability_cast_proc();
+                e.eclipse_hit();
+            }
             Kind::Ev(EV_W) => {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 e.deal(self.w_dmg, DType::Magic, self.src_w, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_R) => {
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
@@ -205,8 +253,8 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
                 e.ult_hatefog();
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_E_EXPIRE) => {
                 // the window lapsed with charges unused: the cooldown starts

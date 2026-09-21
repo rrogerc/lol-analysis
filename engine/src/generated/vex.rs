@@ -1,8 +1,11 @@
 //! Vex. A pure ability-caster who weaves basic attacks between casts:
 //! Shadow Surge opens the fight with its initial hit and an immediate,
 //! cast-time-free recast for the mark-consume damage; Mistral Bolt,
-//! Personal Space and Looming Darkness are cast on cooldown throughout.
-//! Doom 'n Gloom never procs against a stationary target and is not modeled.
+//! Personal Space and Looming Darkness are then cast as soon as each is off
+//! cooldown and Vex is free. Casts go one at a time: one busy_until in the
+//! state holds off every other cast and any attack until a cast's own cast
+//! time has passed. Doom 'n Gloom never procs against a stationary target
+//! and is not modeled.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -10,9 +13,9 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// Personal Space is cast on cooldown.
+/// Personal Space is cast when off cooldown and free.
 const EV_W: u8 = 0;
-/// Looming Darkness is cast on cooldown.
+/// Looming Darkness is cast when off cooldown and free.
 const EV_E: u8 = 1;
 /// Shadow Surge's initial hit lands (its cast time after the opening cast).
 const EV_R: u8 = 2;
@@ -23,14 +26,16 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_initial_dmg: f64,
     r_recast_dmg: f64,
     r_cast_s: f64,
-    r_cd: f64,
     src_r_recast: SourceId,
     s: State,
     s0: State,
@@ -39,16 +44,34 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     e_ready: f64,
     /// When Shadow Surge's initial hit lands (INF: none pending).
     r_fire_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
             r_fire_at: INF,
@@ -58,14 +81,16 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_initial_dmg: kit.hit("gen.R.initial", ranks.r, sheet)?,
             r_recast_dmg: kit.hit("gen.R.recast", ranks.r, sheet)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
-            r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             src_r_recast: intern("R recast"),
             s: state,
             s0: state,
@@ -94,7 +119,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -103,27 +128,28 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has primed Spellblade and held the
-        // first attack past the cast; the initial hit lands when the cast
-        // ends
+        // the opening cast (the engine has primed Spellblade and held the
+        // first attack past 0.25 s already): the initial hit lands when the
+        // cast time ends
         if self.ranks.r == 0 {
             return;
         }
         self.s.r_fire_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         if self.s.r_fire_at != INF {
@@ -142,7 +168,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
@@ -150,7 +176,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R) => {
                 self.s.r_fire_at = INF;
@@ -159,7 +185,8 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.ult_hatefog();
-                // immediate, cast-time-free recast consuming the mark
+                // immediate, cast-time-free recast consuming the mark: no
+                // further busy_for, it costs no time
                 e.deal(self.r_recast_dmg, DType::Magic, self.src_r_recast, false, true, 1.0);
                 e.prime_spellblade();
                 e.ability_cast_proc();

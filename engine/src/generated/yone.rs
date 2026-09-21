@@ -5,7 +5,9 @@
 //! lone target, so it is never modeled separately); Spirit Cleave goes out
 //! on cooldown; Fate Sealed opens the fight; Soul Unbound is held for its
 //! full Spirit Form window to mark as much of Yone's own damage as possible
-//! before detonating it as true damage.
+//! before detonating it as true damage. Casts go one at a time: one
+//! busy_until tracks the cast in progress, and Q, W, the ult's opening cast
+//! and Soul Unbound's recast all hold it for their real cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -37,16 +39,19 @@ pub struct GenDriver {
     q_as_cd_percent: f64,
     q_as_cd_max: f64,
     q_dmg: f64,
+    q_cast_s: f64,
 
     w_cd_base: f64,
     w_as_cd_percent: f64,
     w_as_cd_max: f64,
     w_half_base: f64,
     w_half_ratio: f64,
+    w_cast_s: f64,
 
     e_cd_base: f64,
     e_mark_pct: f64,
     e_spirit_duration_s: f64,
+    e_recast_cast_s: f64,
 
     r_phys_dmg: f64,
     r_mag_dmg: f64,
@@ -63,6 +68,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     azakana_swing: bool,
     w_ready: f64,
     e_ready: f64,
@@ -70,6 +77,21 @@ struct State {
     e_recast_at: f64,
     e_marks: f64,
     r_gust_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -90,6 +112,8 @@ impl Driver for GenDriver {
         let e_std = 1.0 + p0 * (m0 - 1.0);
         let crit_compensation = e_yone / e_std;
 
+        let bonus_as = sheet.bonus_as_pct;
+
         let q_cd_base = kit.at_rank("abilities.Q.cooldownS", ranks.q)?;
         let q_as_cd_percent = kit.num("gen.Q.asCdPercent")?;
         let q_as_cd_max = kit.num("gen.Q.asCdMax")?;
@@ -98,15 +122,36 @@ impl Driver for GenDriver {
         let q_ad_component = q_ad_ratio * (sheet.ad + extra_bonus_ad);
         let q_dmg = q_base + q_ad_component * e_yone;
 
+        let q_cast_base_s = kit.num("gen.Q.castTimeBaseS")?;
+        let q_cast_as_step_pct = kit.num("gen.Q.castTimeAsStepPct")?;
+        let q_cast_reduction_per_step_s = kit.num("gen.Q.castTimeReductionPerStepS")?;
+        let q_cast_cap_fraction = kit.num("gen.Q.castTimeCapFraction")?;
+        let q_reduction_s = pymin(
+            (bonus_as / q_cast_as_step_pct) * q_cast_reduction_per_step_s,
+            q_cast_base_s * q_cast_cap_fraction,
+        );
+        let q_cast_s = q_cast_base_s - q_reduction_s;
+
         let w_cd_base = kit.at_rank("abilities.W.cooldownS", ranks.w)?;
         let w_as_cd_percent = kit.num("gen.W.asCdPercent")?;
         let w_as_cd_max = kit.num("gen.W.asCdMax")?;
         let w_half_base = kit.at_rank("gen.W.halfBase", ranks.w)?;
         let w_half_ratio = kit.at_rank("gen.W.halfTargetMaxHpRatio", ranks.w)?;
 
+        let w_cast_base_s = kit.num("gen.W.castTimeBaseS")?;
+        let w_cast_as_step_pct = kit.num("gen.W.castTimeAsStepPct")?;
+        let w_cast_reduction_fraction_per_step = kit.num("gen.W.castTimeReductionFractionPerStep")?;
+        let w_cast_cap_fraction = kit.num("gen.W.castTimeCapFraction")?;
+        let w_reduction_fraction = pymin(
+            (bonus_as / w_cast_as_step_pct) * w_cast_reduction_fraction_per_step,
+            w_cast_cap_fraction,
+        );
+        let w_cast_s = w_cast_base_s * (1.0 - w_reduction_fraction);
+
         let e_cd_base = kit.at_rank("abilities.E.cooldownS", ranks.e)?;
         let e_mark_pct = kit.at_rank("gen.E.markPercent", ranks.e)?;
         let e_spirit_duration_s = kit.num("gen.E.spiritFormDurationS")?;
+        let e_recast_cast_s = kit.num("gen.E.recastCastTimeS")?;
 
         let r_phys_base = kit.at_rank("gen.R.physicalBase", ranks.r)?;
         let r_phys_ratio = kit.num("gen.R.physicalBonusAdRatio")?;
@@ -118,6 +163,7 @@ impl Driver for GenDriver {
         let r_gust_delay_s = kit.num("gen.R.gustDelayS")?;
 
         let state = State {
+            busy_until: 0.0,
             azakana_swing: false,
             w_ready: 0.0,
             e_ready: 0.0,
@@ -139,14 +185,17 @@ impl Driver for GenDriver {
             q_as_cd_percent,
             q_as_cd_max,
             q_dmg,
+            q_cast_s,
             w_cd_base,
             w_as_cd_percent,
             w_as_cd_max,
             w_half_base,
             w_half_ratio,
+            w_cast_s,
             e_cd_base,
             e_mark_pct,
             e_spirit_duration_s,
+            e_recast_cast_s,
             r_phys_dmg,
             r_mag_dmg,
             r_cast_s,
@@ -207,7 +256,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -222,7 +271,7 @@ impl Driver for GenDriver {
         if self.s.e_active {
             self.s.e_marks += self.q_dmg * self.e_mark_pct;
         }
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -230,6 +279,8 @@ impl Driver for GenDriver {
             return;
         }
         self.s.r_gust_at = e.st.t + self.r_cast_s + self.r_gust_delay_s;
+        e.prime_spellblade();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -239,14 +290,14 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_active {
-                out[n] = (self.s.e_recast_at, Kind::Ev(EV_E_RECAST));
+                out[n] = (self.castable_at(e, self.s.e_recast_at), Kind::Ev(EV_E_RECAST));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -281,7 +332,7 @@ impl Driver for GenDriver {
                 if self.s.e_active {
                     self.s.e_marks += (w_amt + w_amt) * self.e_mark_pct;
                 }
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 self.s.e_active = true;
@@ -289,6 +340,7 @@ impl Driver for GenDriver {
                 self.s.e_marks = 0.0;
                 self.s.azakana_swing = false;
                 e.prime_spellblade();
+                e.lockout();
             }
             Kind::Ev(EV_E_RECAST) => {
                 self.s.e_active = false;
@@ -300,7 +352,7 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.s.e_marks = 0.0;
-                e.lockout();
+                self.busy_for(e, self.e_recast_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

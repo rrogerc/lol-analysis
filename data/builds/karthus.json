@@ -10,11 +10,11 @@
   "W"
  ],
  "notes": [
-  "Lay Waste's cooldown is read as the wiki's flat 1s at every rank (the bin lists 0, which looks like a data artifact); it always hits only the dummy so it always lands as the doubled, single-target 'Isolated Enhanced' damage.",
-  "Lay Waste's cast-to-detonation delay is assumed at 0.625s, the midpoint of the wiki's stated 0.5-0.75s range, since the source itself calls the exact figure inconsistent; the 0.25s cast still triggers the usual attack lockout at the moment of cast.",
+  "Lay Waste's cooldown is read as the wiki's flat 1s at every rank (the bin lists 0, which looks like a data artifact); it always hits only the dummy so it always lands as the doubled, single-target 'Isolated Enhanced' damage. Its 0.25s cast time (it 'always quickcasts', which affects targeting, not the cast time) keeps Karthus busy for 0.25s on every cast; the 0.625s cast-to-detonation delay after that is separate and modeled as its own event.",
+  "Wall of Pain has a 0.25s cast time and is cast at the start of the fight for its 25% magic resistance shred (declared under Q's ability block, the one slot the engine reads for a shred) and recast whenever its cooldown comes back up before the fight ends; its slow is ignored since the dummy is stationary and never needs re-hitting.",
+  "Requiem has a 0.25s cast time followed by its stated 3s channel before the nuke lands; both are modeled as one continuous 3.25s busy period from the cast (no other cast or attack can start during it, matching the channel blocking all spells), with the damage (and Spellblade/Eclipse/Malignance procs) landing at the end of that period.",
   "Defile is toggled on for the whole fight and ticks every 0.25s, matching the wiki's stated tick rate and the sheet's TotalDPS*0.25 per-tick formula; toggled abilities do not proc on-cast effects (Spellblade, Muramana), so only Q and R do.",
-  "Wall of Pain is cast at t=0 for its 25% magic resistance shred (declared under Q's ability block, the one slot the engine reads for a shred) and recast whenever its cooldown comes back up before the fight ends; its slow is ignored since the dummy is stationary and never needs re-hitting.",
-  "Requiem is cast at t=0 (bundled with the opening Defile toggle and Wall of Pain cast, treated as simultaneous); its 3s channel blocks Lay Waste until it completes but Defile keeps ticking through it, matching the wiki's note that Defile survives Karthus's zombie state.",
+  "Requiem is cast at t=0, right after Defile toggles on and before Wall of Pain and Lay Waste (both wait behind its busy period since only one cast can be in progress at a time); Defile keeps ticking through the channel per the wiki's note that it survives Karthus's zombie state.",
   "Mana is modeled as a simple pool starting at the fight's sheet mana. Requiem, Wall of Pain and Lay Waste spend it on cast and Defile drains it every tick, in whatever order events occur; Lay Waste stops forever once the pool can't pay its cost, and Defile switches off for good the first time it can't pay a tick.",
   "Death Defied is a defensive-only passive (untargetable zombie state triggered by Karthus's own death) and has no effect on a stationary dummy that never fights back, so it is omitted from the kit.",
   "Karthus attacks normally between casts using the engine's default basic-attack handling; nothing in his kit modifies attacks, on-hit damage or attack speed."
@@ -91,6 +91,7 @@
     35,
     40
    ],
+   "castTimeS": 0.25,
    "detonationDelayS": 0.625
   },
   "W": {
@@ -100,7 +101,8 @@
     70,
     70,
     70
-   ]
+   ],
+   "castTimeS": 0.25
   },
   "E": {
    "dps": {
@@ -136,6 +138,7 @@
     100,
     100
    ],
+   "castTimeS": 0.25,
    "channelS": 3
   }
  },
@@ -144,6 +147,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/karthus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/karthus.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/karthus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/karthus.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

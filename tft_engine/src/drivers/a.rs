@@ -6,7 +6,7 @@
 //! second half is an event (Sett).
 
 use crate::driver::Driver;
-use crate::drivers::helpers::{shield_broke, track_shield};
+use crate::drivers::helpers::{shield_lock, shield_lock_broke, HasShieldLock, ShieldLock};
 use crate::fight::Fight;
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
@@ -46,7 +46,8 @@ impl Driver for Ahri {
 
 /// Spirit Rift: an arrow through the line, weaker per dummy hit, then a
 /// trail that ticks attack-damage plus a share of max health for a few
-/// seconds on everyone standing in it.
+/// seconds on everyone standing in it. Both halves of the trail are one
+/// ability's damage over time, so both crit with Precision.
 #[derive(Clone)]
 pub struct Ashe {
     fall: RowId,
@@ -78,8 +79,12 @@ impl Driver for Ashe {
         for d in tg.iter() {
             if f.d(d).alive {
                 f.dot_ability(f.drv.trail, Some(d), dur, "trail", dur);
+                // The tooltip prices the trail as one number, "{calc} +
+                // {pct} max Health physical damage per second": the health
+                // share is the same ability damage as the flat share (its
+                // on-hit effects were applied with the flat share above).
                 let max_hp = f.d(d).max_hp;
-                f.dot(pct * max_hp * dur, dur, DType::Physical, Some(d), "trail", false);
+                f.dot(pct * max_hp * dur, dur, DType::Physical, Some(d), "trail", true);
             }
         }
     }
@@ -161,8 +166,10 @@ impl Driver for Akali {
 }
 
 /// Moonfall: nine shards over the nearest three (the rest move on when one
-/// dies); every fourth cast the moon is full and crashes on the whole
-/// board instead, split over everyone standing whatever the geometry.
+/// dies); when the moon is full it crashes on the whole board instead,
+/// split over everyone standing whatever the geometry. Attuned "cycles to a
+/// new phase of the moon after each cast" and every combat is taken to
+/// start at New Moon, so the crash is the cast made under the last phase.
 #[derive(Clone)]
 pub struct Alune {
     casts: i64,
@@ -170,6 +177,16 @@ pub struct Alune {
     n_shards: RowId,
     shard: CalcId,
     moon: CalcId,
+}
+
+impl Alune {
+    /// The phases of Attuned's moon: New Moon, Waxing Crescent, Half Moon,
+    /// Waxing Gibbous, Full Moon. They exist only as the trait's five
+    /// tooltip entries (metatft.json, `extras.traitTooltips`,
+    /// `DA_AluneUniqueTrait18_Tooltip_Phase1`..`Phase5`), which no kit row
+    /// carries, so the count is spelled out here like Master Yi's "every
+    /// third attack".
+    const MOON_PHASES: i64 = 5;
 }
 
 impl Driver for Alune {
@@ -183,7 +200,7 @@ impl Driver for Alune {
     fn cast(f: &mut Fight<Self>) {
         f.drv.casts += 1;
         let n = f.drv.casts;
-        if n % 4 == 0 {
+        if n % Self::MOON_PHASES == 0 {
             let tg = f.alive();
             let mult = 1.0 / (tg.len() as f64);
             for d in tg.iter() {
@@ -288,8 +305,11 @@ impl Driver for Aphelios {
 
     fn cast(f: &mut Fight<Self>) {
         let bonus_as = f.attack_speed() / f.sheet.base_as - 1.0;
+        // One more swipe per whole AS_NeededForExtraSwipe of bonus attack
+        // speed. The nudge keeps an exact multiple whole: 0.6 / 0.2 is
+        // 2.9999999999999996 in floating point and used to lose a swipe.
         let swipes = pyint(f.row(f.drv.base_swipes))
-            + pyint(pymax(0.0, bonus_as) / f.row(f.drv.as_per_swipe));
+            + pyint(pymax(0.0, bonus_as) / f.row(f.drv.as_per_swipe) + 1e-9);
         let dur = f.row(f.drv.duration);
         f.drv.onslaught = Some((f.t, f.t + dur, swipes, 0));
         f.after(dur, APHELIOS_BLAST);
@@ -430,36 +450,44 @@ impl Driver for Yorick {
 /// Defensive Ball Curl: a shield and heavy resists for a few seconds — the
 /// taunt is already the model, the dummies have nobody else to hit. If the
 /// shield is spent rather than expiring the ball uncurls, and the burst
-/// scales with the armour and magic resist he has at that moment.
+/// scales with the armour and magic resist he has at that moment. The same
+/// shield holds his mana while it stands, for the kit's `Duration` at most
+/// (the `ShieldLock` rule), so he no longer recurls off the damage he takes
+/// while the ball is still up.
 #[derive(Clone)]
 pub struct Rammus {
-    tracked: Option<usize>,
+    lock: ShieldLock,
     duration: RowId,
     armor_mr: RowId,
     shield: CalcId,
     burst: CalcId,
 }
 
+impl HasShieldLock for Rammus {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
+}
+
 impl Driver for Rammus {
     const NAME: &'static str = "Rammus";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Rammus { tracked: None, duration: k.row("Duration"), armor_mr: k.row("ArmorMR"),
+        Rammus { lock: ShieldLock::default(), duration: k.row("Duration"),
+                 armor_mr: k.row("ArmorMR"),
                  shield: k.calc("ShieldCalc1"), burst: k.calc("PhysicalDamageCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let dur = f.row(f.drv.duration);
         let amount = f.calc(f.drv.shield);
-        f.drv.tracked = track_shield(f, amount, dur, "ball curl");
+        shield_lock(f, amount, dur, "ball curl");
         let r = f.row(f.drv.armor_mr);
         f.buff_resists(r, r, dur);
     }
 
     fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
-        let (broke, keep) = shield_broke(f, f.drv.tracked);
-        f.drv.tracked = keep;
-        if broke {
+        if shield_lock_broke(f) {
             let tg = f.aoe_all();
             for d in tg.iter() {
                 f.hit_ability(f.drv.burst, Some(d), "shield break", 1.0);

@@ -10,12 +10,13 @@
   "E"
  ],
  "notes": [
-  "Corki enters the fight with a full 4-charge Missile Barrage stock (the reasonable in-game state for a champion who has been out of combat) and fires the opening R at t=0, using the engine's default opening cast; the fixed 2 s fire cooldown plus a single 20 s-per-charge (ability-haste-scaled) recharge timer refill R for the rest of the fight, exactly as its stocking mechanic describes.",
-  "Every basic attack against the (champion-counted) dummy reduces R's remaining recharge time by 2 to 6 s scaling with crit chance, per Missile Barrage's on-hit passive; this is applied on every on-hit application an attack produces, so it can double with items that apply on-hit effects twice.",
+  "Casts go one at a time through a single busy_until: Phosphorus Bomb (cast time 0.25 s) and Missile Barrage (cast time 0.175 s, including its opening shot) each hold every other cast and the next attack until their cast time ends; Valkyrie and Gatling Gun have no cast time and so only wait for a cast already in progress.",
+  "Corki enters the fight with a full 4-charge Missile Barrage stock (the reasonable in-game state for a champion who has been out of combat) and fires the opening R at t=0 as the engine's default opening cast; the fixed 2 s fire cooldown plus a single 20 s-per-charge (ability-haste-scaled) recharge timer refill R for the rest of the fight, exactly as its stocking mechanic describes.",
+  "Every basic attack against the (champion-counted) dummy reduces R's remaining recharge time by 2 to 6 s scaling with crit chance, per Missile Barrage's on-hit passive; this is applied on every on-hit application an attack produces, so it can double with items that apply on-hit effects twice. This recharge tick is not itself a cast and so is not subject to busy_until.",
   "Missile Barrage's damage does not proc Eclipse's execute passive, per the wiki's explicit note, so eclipse_hit() is skipped only for R; it still triggers Malignance's post-ult amplification like any ultimate.",
   "Every third missile fired is a Big One dealing double damage; the counter starts at zero when the fight begins.",
   "Hextech Munitions' bonus true damage (20% total AD, crit-affected) rides every basic attack as an on-hit rider, applied once per on-hit application (so it can also double with Rageblade-style items).",
-  "Q, W and E are cast the instant each comes off cooldown; Corki keeps auto-attacking throughout, including through Gatling Gun's channel, since nothing states the channel blocks his attacks.",
+  "Q, W and E are cast the instant each comes off cooldown (subject to busy_until); Corki keeps auto-attacking throughout, including through Gatling Gun's channel, since nothing states the channel blocks his attacks.",
   "Valkyrie's damage is modeled as landing on a single stationary target with one fire patch beneath it (its full 5 ticks over 2.5 s), rather than assuming all three possible patches overlap a single point; this is the more conservative and more common single-target reading of an ability whose extra patches depend on dash distance.",
   "Gatling Gun's cooldown starts on cast (not when its 4 s channel ends), per the wiki's explicit cdstart note.",
   "Gatling Gun's flat per-stack armor/magic resistance shred (3 to 5 per stack, up to 4 stacks) is not modeled: the engine's shred mechanic only supports a percentage reduction, and this is a flat value that cannot be converted to one without knowing the target's base resistances ahead of time; omitting it makes E's own later ticks (and everything else) a slight underestimate.",
@@ -83,7 +84,8 @@
     ],
     "bonusAdRatio": 1.25,
     "apRatio": 1.0
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -128,7 +130,8 @@
    "assumedStartAmmo": 4,
    "rechargeS": 20,
    "cdrOnHitBase": 2,
-   "cdrOnHitCritCoef": 2
+   "cdrOnHitCritCoef": 2,
+   "castTimeS": 0.175
   }
  },
  "attack": {
@@ -136,6 +139,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/corki.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/corki.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/corki.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/corki.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

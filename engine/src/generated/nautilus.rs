@@ -5,7 +5,10 @@
 //! attack per shield window) and resets the attack timer for every attack
 //! landing while the shield holds; Riptide (E) fires three timed waves,
 //! the last two reduced; Depth Charge (R) opens the fight with one
-//! underway eruption followed by its bigger final eruption.
+//! underway eruption followed by its bigger final eruption. Casts go one
+//! at a time via a single busy_until: R's 0.46s cast, Q's 0.25s cast and
+//! E's 0.25s cast each hold off any other cast or attack; W has no cast
+//! time but still cannot start inside another cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -36,6 +39,7 @@ pub struct GenDriver {
 
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
 
     w_cd: f64,
     w_duration: f64,
@@ -48,6 +52,7 @@ pub struct GenDriver {
     e_reduction: f64,
     e_wave2_offset: f64,
     e_wave3_offset: f64,
+    e_cast_s: f64,
 
     r_secondary_dmg: f64,
     r_primary_dmg: f64,
@@ -66,6 +71,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_last_proc: f64,
     w_ready: f64,
     w_shield_until: f64,
@@ -79,10 +86,26 @@ struct State {
     r_final_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_last_proc: -INF,
             w_ready: 0.0,
             w_shield_until: -INF,
@@ -105,6 +128,7 @@ impl Driver for GenDriver {
 
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_duration: kit.num("gen.W.durationS")?,
@@ -117,6 +141,7 @@ impl Driver for GenDriver {
             e_reduction: kit.num("gen.E.reductionRatio")?,
             e_wave2_offset: kit.num("gen.E.wave2OffsetS")?,
             e_wave3_offset: kit.num("gen.E.wave3OffsetS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
 
             r_secondary_dmg: kit.hit("gen.R.secondary", ranks.r, sheet)?,
             r_primary_dmg: kit.hit("gen.R.primary", ranks.r, sheet)?,
@@ -193,7 +218,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -202,7 +227,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -213,16 +238,17 @@ impl Driver for GenDriver {
         self.s.r_underway_at = t + self.r_cast_s + self.r_interval_s;
         self.s.r_final_at = t + self.r_cast_s + self.r_reach_s;
         e.prime_spellblade();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_wave2_at != INF {
@@ -252,6 +278,8 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W_CAST) => {
+                // no cast time: takes effect immediately, costs nothing, but
+                // was still gated by castable_at above
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 self.s.w_shield_until = t + self.w_duration;
                 e.prime_spellblade();
@@ -264,7 +292,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.s.e_wave2_at = t + self.e_wave2_offset;
                 self.s.e_wave3_at = t + self.e_wave3_offset;
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_WAVE2) => {
                 self.s.e_wave2_at = INF;

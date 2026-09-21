@@ -324,7 +324,19 @@
   Page: selecting a row makes that champion the tab's (breakdown, the draft
   banner in the breakdown card, pool and kit notes below follow it); its name
   opens its ranked builds; Find and "Reviewed kits only" filter without
-  re-ranking; the hash carries `bview=leaderboard`, `lbq`, `lbrev`.
+  re-ranking; the hash carries `bview=leaderboard`, `lbq`, `lbrev`, `lbs`
+  (+ `lbd=d` descending).
+  Sorting (2026-09-20): every heading but the build is a sort button
+  (`boardColumns`' `key`/`sort`, `boardSort`, `boardSorted`): best first, a
+  second select reverses, # stays the scenario's rank. Page-only — nothing
+  in builds_leaderboard.py or a cell changed. A target's column sorts on
+  [target left standing, the time shown], so a ≈ time comes after every kill;
+  a blank is last either way; equal values keep rank order. `vs-<target>` is
+  one key on every board (a target's own "Kill time" included), so the order
+  outlasts a change of scenario; a column the board lacks (Mean, DPS, Damage)
+  leaves it as ranked. Mind what it compares: the overall board by "vs tank"
+  orders each champion's best OVERALL build by its tank fight, whereas the
+  vs-tank scenario ranks each champion's best build against the tank.
   What the first board showed (2026-09-20): ten machine-written kits (Ahri,
   Annie, Aurora, Cho'Gath, Heimerdinger, LeBlanc, Lee Sin, Malphite, Mel,
   Nidalee; Blitzcrank too vs squishy) kill the squishy at 0.00 s — their
@@ -340,6 +352,95 @@
   table header when a row scrolls under it (both tables). Tests: `python3 -m
   unittest test_builds_leaderboard`, `node jobs/test-builds-leaderboard-ui.cjs
   [--board saved-leaderboard.json]`.
+- Cast times in the machine-written drivers (2026-09-20): those 0.00 s kills
+  are fixed in the drivers, as that note asked. What was wrong: the engine has
+  no cast time of its own (`e.deal` lands at the clock, `e.lockout()` only
+  pushes the next ATTACK 0.25 s; the `castTimeS` fields in the hand-written
+  kit files are read by nobody), so a rotation is only sequenced if its driver
+  does it. The hand-written kits do (`busy_until` in Vladimir and Kassadin);
+  the guide never asked for it and Jax, the reference, has no basic ability
+  with a cast time, so most generated drivers cast everything that was ready
+  in one instant and the build search optimized for it. The rule now, the
+  hand-written kits' own: CASTS GO ONE AFTER ANOTHER — a cast takes effect as
+  it starts (as the engine's attack lands at the start of its cycle) and then
+  keeps the champion busy for its cast time, the dossier's `castTime`, not a
+  flat 0.25: no other cast, no attack; an ability without a cast time costs
+  nothing but still waits for a cast in progress; a delay the sources put
+  after the cast (Rupture's 0.625 s) is an event. It is in
+  `jobs/kit-driver-guide.md` ("Cast times", with the `castable_at` /
+  `busy_for` pair every driver should carry) and in `generated/jax.rs` (the
+  ult's swing lands with the cast and holds Leap Strike and Counter Strike
+  0.25 s). `kit_driver.py check` enforces it: `cast_floors` takes each
+  ability's cast time from the dossier (the shortest the wiki states for the
+  first cast; a kit overrides one by listing `gen.<slot>.castTimeS` under
+  `assumed`), and where the wiki says nothing AT ALL (not "none" — nothing)
+  Riot's own `mCastTime`, which `kit_sources` carries into the numbers sheet,
+  fills in (`sheet_cast_times`). Two checks use them. `lint_cast_times` is the
+  one that matters: EVERY ability with a cast time must carry it in the kit
+  and have the driver read it from there, or declare the slot `unused`. The
+  other, `first_landings` + `cast_time_errors`, reads the opening off fights
+  of growing length (0.01 s steps, with the ult and without) and requires that
+  of the abilities landed by a time T all but the longest were cast and
+  finished inside T — sound whenever their damage lands, but only a check on
+  casts that OVERLAP, so it cannot see a lone cast that costs nothing (Diana's
+  Q: her W and E really are instant, so her free Q had nothing to overlap
+  with). That blind spot hid 133 of the 367 abilities with a cast time, which
+  is why the static lint exists. Also a symptom guard: neither `BURST_SETS`
+  build may leave the squishy dead at t = 0. `check --all` runs
+  every admitted driver against the built engine (4 s): run it after changing
+  a check. `write --repair <slug>...` / `--failing` sends an admitted kit and
+  driver back to the model with the checks they fail instead of starting from
+  nothing (`--force` still does); it keeps `_provenance` and now sets
+  `manaless` itself. Measured, in two rounds: the overlap check failed 54 of
+  172 (8 of them killing at 0.00 s), all repaired, 52 on the first round
+  (Renata second, Nidalee — two forms — fourth), $16 with 5 workers; then the
+  static lint failed 83 more, all repaired on the first round, $18 with 3
+  workers. 137 drivers in all, about $35. The diffs are
+  small (the gate, the cast times read from the kit, here and there a delay
+  the dossier states), and the repaired champions' old top builds kill the
+  squishy a median 0.25 s later, bruiser and tank unchanged in the median
+  (attack-heavy kits got FASTER: `lockout()` had pushed the next attack
+  0.25 s per cast even when it was due later). Only the repaired champions
+  and Jax re-keyed, warmed by hand (53 champions in 40 minutes, then 83 in
+  55). The board after both: no kept row of any cell kills at 0.00 s; the ten
+  kill the squishy at 0.25-1.25 s and rank 1 (Heimerdinger, below) to 99
+  (Cho'Gath) overall; the hand-encoded four rank 54 (Kassadin), 69 (Kayle),
+  96 (Twitch) and 169 (Vladimir). Over the 127 repaired champions' ORIGINAL
+  top builds the kill times are close to a wash — median +0.00 s on squishy
+  and bruiser, -0.25 s on tank, and MORE got faster than slower (78 vs 31 on
+  the tank) — because `e.lockout()` had spent a flat 0.25 s of attack time on
+  every cast while `busy_for` holds the attack only to the end of the real
+  cast. Biggest moves: Jhin +2.00 s on squishy (his ult is now a channel),
+  Urgot -3.10, Sylas -3.16 on bruiser, Mel -2.45 on tank. Known limits, deliberately left: damage still lands at
+  the START of a cast, here and in the hand-written four, so every kill time
+  is early by about one cast time (a stricter rule, damage at the END of the
+  cast, fails 71 more drivers that already follow the hand-written
+  convention; making it the engine's would re-key everything and move the
+  goldens); missile and dash travel are not modeled; an opening ult with a
+  long cast now holds the rotation (Ezreal's 1 s Trueshot Barrage, Jhin's
+  Curtain Call: legal, worth a review — the guide now says `cast_r` may leave
+  the ult for later); Heimerdinger tops the overall board (0.25 / 0.50 /
+  2.81 s) because `add_charge` fires a beam for every 100% of charge and a
+  20-rocket swarm grants 400% at once: four beams in one instant, a modeling
+  flaw of his own (the dossier leaves the beam's charging unsettled; capping
+  the charge at 100% is the likely fix). Seen once while warming by hand: after a
+  champion's enumeration reached 100%, one pool worker sat in a futex wait
+  and the parent waited on it for ever (no cell written for 8 minutes);
+  `kill -9` of the worker let the warm carry on and the cells were right.
+  Not diagnosed (no ptrace here). A guess: `warm()`'s Python-level SIGTERM
+  handler is inherited by the forked workers, so `Pool.terminate()` runs
+  `sys.exit(143)` inside them wherever they are, and cannot end one that is
+  blocked below Python; the same warm logged "Exception ignored in atexit
+  callback ... SystemExit: 143" from workers four times. Resetting SIGTERM
+  to the default in `_enum_init` would be the fix (a builds.py edit: it
+  re-keys every cell).
+  A trap worth remembering: `Bench.evaluate` runs the checks in a subprocess
+  that used to find the driver by NAME under `engine/src/generated/`, so a
+  check reading the Rust judged the ADMITTED driver, not the candidate — the
+  static lint was then unsatisfiable by editing the driver and 8 champions
+  burned all five rounds on one unchanging message ($12). It passes
+  `--driver` now; anything else that reads a candidate's files must too.
+  Tests: `test_kit_driver.TestCastTimes`, `TestRepair`, `TestReferenceDriver`.
 
 ## The One-tricks tab (onetricks.py)
 
@@ -362,6 +463,121 @@
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 
+- Leaderboard audit (2026-09-20). Roger asked whether the unit-damage board
+  was off; it was, for three independent reasons, and all three are fixed
+  here. Read the three bullets below together — they were one change, and
+  both golden sets were regenerated once at the end of it.
+- Per-unit cast timelines (2026-09-20): a cast is no longer a flat 0.25 s
+  animation and a one-second lock. `data/tft/set18/cast-timing.json` carries
+  every unit's cast animation, channel, effect time, attack delay and
+  recovery, transcribed from TFTraits' published cast timelines — a third
+  party whose own disclaimer is "not 100% accurate: they combine publicly
+  available game data with gameplay observation", adopted as a model rule
+  with the standing of Azir's six-command lock and the 0.5 s melee
+  reposition: NOT verified in game. The rule: the fight's first attack lands
+  its attack delay in; a cast the attack made possible starts at that
+  attack's unlock point (landing + recovery); from there the unit neither
+  attacks nor gains mana from any source for the animation and any channel;
+  the ability lands at `effectAt` inside that window; when the window closes
+  a fresh attack starts, even earlier than the old period would have allowed
+  (the cast cuts the rest of the attack — Rengar's 0.35 s animation is an
+  animation cancel). Delay and recovery scale with attack speed; the cast
+  windows never do. A driver may take the window over and the engine never
+  overrules it afterwards (Pebbles' drain; Azir/Murkwolf/Nidalee's held
+  bars). A lock that lasts "as long as the effect runs" is measured from the
+  LANDING, where this engine starts an effect, so it ends up to the effect
+  time later than the seconds TFTraits prints from the cast (Diana +0.66 s,
+  Mama Beak +0.27 s, Brambleback +0.25 s). A unit the file gives no timeline
+  (Kayle, Caitlyn's and Master Yi's casts, summons, synthetic fixtures, the
+  dummies) keeps the flat `MANA_LOCK_S`/`CAST_TIME_DEFAULT` rules bit for
+  bit. Only the `lockRule`s that are a fixed time from the cast
+  (`castAnimation`, `channel`, `untilEffectEnds`) are applied by the engine;
+  `effectDuration`, `shieldHolds`, `empoweredAttacks` and `none` belong to
+  the unit's driver. Two constants moved with it: crit chance over 100%
+  converts at 0.8, not 1.0 (Riot's patch 13.18 "increased from 50% to 80%
+  conversion", the latest primary statement; TFTips' Set 18 page still says
+  ×0.5 — unverified for Set 18), and Blue Buff's "10% additional AD and AP
+  from all sources" multiplies the BONUS only, not the base (adopted by
+  analogy with Adaptive Helm's "additional Mana from all sources"; the item
+  note says so). The file enters `cell_paths`, so editing it re-keys every
+  cell. Acceptance: for the 27 units whose bar and mana rate match TFTraits'
+  assumptions, the engine's first cast is within 0.01 s of their published
+  figure; the other 35 differ only because TFTraits times every unit from 0
+  mana. Effects: the damage board's median DPS falls ~8%, long animations
+  fall and manaless attackers rise (Alune 7→34, Soraka 35→42, Master Yi
+  22→13, Caitlyn 27→16, Rengar 23→4), and the tank pressure budget,
+  calibrated from two production carry fights, drops from 1277 to 1109 raw
+  DPS, so every tank and fighter fight now takes ~13% less incoming damage.
+  `lol.py tft sim`/`units` print each unit's window. Tests:
+  `test_tft_cast_timing`.
+- Driver mana locks, Pebbles' drain and targeting fixes (2026-09-20): a unit
+  no longer buys its next cast back while its own effect still runs. From
+  TFTraits' per-unit statements (third party, adopted like Azir's, not
+  verified in game), written as absolute times or an Azir-style hold released
+  with `lock_until = f.t` — never `+ MANA_LOCK_S`, which is gone from every
+  driver: Nidalee's AP javelins (3 empowered attacks — she used to refill her
+  bar on her own javelins and never leave them, which is most of why she read
+  858 DPS at #2), Murkwolf's empowered attacks (2), Mama Beak's flock (its
+  AP-scaled duration), Brambleback's Frenzy (8 s), Diana's barrier while it
+  holds (≤ `ShieldDuration`), Shen's three ki strikes, Elise's
+  `ASBuffDuration`, Vi's `SpellDuration`, and the shield tanks Ornn, Rakan,
+  Sejuani, Rammus, Malphite and Sentinel (locked while the shield stands,
+  their own duration row at most, released the moment it is fully absorbed —
+  `helpers.rs` `ShieldLock`/`shield_lock`/`shield_lock_broke`). The lock
+  blocks attack mana, the regen ticks and the 1%-pre/3%-post mana a tank
+  takes off damage alike; `gain_mana_opt(.., false)` procs (Protector's Vow)
+  still bypass it. Tristana and Xayah lose the extra second after their
+  effect. This kills the audit's tank artefact: Rammus 3★ and Malphite 2★ had
+  a 60-second survivor with Adaptive Helm + two Archangel's (22–23 casts,
+  re-shielding off damage-taken mana while the last shield still stood); no
+  tank has one now, in any threat preset. Pebbles is the one unit the audit
+  found UNDERSTATED: Azure Laser is a drain, not a fixed channel — the bar
+  she cast with, overflow included, drains at `PercentManaPerSecond` × max
+  mana with no lock, regen lengthens the laser, the channel ends at the exact
+  instant the bar empties, and a channel whose regen outpaces the drain runs
+  to the end of the fight. She goes 40→31 on the board, and the model
+  reproduces tftflow's "~17.1 mana regen to go infinite". Also: Alune's full
+  moon is every 5th cast, not every 4th (five phases in `extras.traitTooltips`
+  `DA_AluneUniqueTrait18_Tooltip_Phase1..5`, and Attuned "cycles to a new
+  phase after each cast"; New Moon still assumed at combat start); Murkwolf no
+  longer reads `NumEmpoweredAttacksGainedOnKill`, which no tooltip mentions (a
+  dormant row is not a mechanic); Diana's leftover orbs are lost instead of
+  reaching a dummy that was never within two hexes spread out; Morgana's blast
+  uses `nearest(3)` like every other N-separate-enemies spell; Aphelios's
+  swipe count survives 0.6/0.2 = 2.9999…; Ashe's %max-Health trail and
+  Draven's cashed bleed crit with Precision like the ticks they replace.
+  Tests: `test_tft_driver_fixes`.
+- The refresh was stuck for ten days, and one correction was on the wrong row
+  (2026-09-20): forty consecutive refreshes failed on `XP From Level 8-9`.
+  Two defects met. `tft_update._outside` knew the XP table only in the main
+  article's shape; `tft.PatchNotesParser` knew only 18.1's hotfix shape
+  (`<h2>Mid-Patch Updates</h2>` with an `<h3>` per date), so 18.2's
+  `<h2>MID-PATCH UPDATE</h2>` + `<h4>SEPTEMBER 14</h4>` left `updates` empty
+  and the candidate kept the label `18.2` — and a same-label candidate never
+  loads a review file, so NO manifest could have unblocked it. Both shapes are
+  recognised now and the candidate is `18.2b`. The same audit found Riot's
+  "Nidalee Empowered Attack Damage 285/425 ⇒ 300/450" mapped onto
+  `EmpoweredDamage` (the ordinary javelins, 170/255) instead of
+  `ThirdAttackEmpoweredDamage` (320/480): published AP Nidalee threw three
+  300/450 javelins. Both signs were on the page, so `tft_update` now refuses a
+  numeric note mapped to a row more than 5% from the note's old value while a
+  sibling row of the same entity/form is at most half as far, or whose sibling
+  the staged lookup already moved to the note's new value, unless the mapping
+  carries `siblingRowAcknowledgement {rows, reason}`; `_row_semantics` no
+  longer drops every row with "attack" in its name, only `…AttackDamage…`.
+  `tft.source_disagreements` compares the eight base stats a unit fights with
+  against the archived CommunityDragon export (Adaptor forms resolved as
+  `kit_spec` does): `tft check` lists them, and once an audit carries
+  `sourceCrossCheck` an unreviewed one fails the check and blocks an
+  unattended publication — the published 18.2 ran on MetaTFT's 2026-08-16 PBE
+  build with Kha'Zix at 850 health (live 950) and Pebbles at 30 attack damage
+  (live 35), with the export that said so archived beside it. The manifest
+  gained `lookupChanges` (a value the regenerated lookup moved with no note
+  behind it), `definitionDispositions` and `sourceDisagreements`;
+  `policyVersion` is 2. `18.2b.json` decides 6 mid-patch mappings, 32
+  dispositions, 165 coordinates and 9 source disagreements — 59 of those
+  coordinates rest on the lookup alone (42 are 4★, which nothing enumerates)
+  and say so. Tests: `test_tft_update_guards`.
 - Automatic update recovery (2026-09-10): `tft_http.py` bounds each download
   to four attempts/90 seconds, including DNS and body reads. Only exhausted
   transient fetch failures exit 75; review-required exits 2 and permanent
@@ -691,8 +907,10 @@
   The rebaseline follows a full warm; `test_tft_symmetric_regressions` checks
   source isolation, expiry and the hand-calculated 100 × .7 × .5 = 35 armor.
   Current Frenzy policy keeps one active eight-second buff, refreshed on
-  recast. This is conservative; stacking/recast-mana semantics remain
-  unverified, and the generic mana-lock rules are unchanged.
+  recast. This is conservative; stacking semantics remain unverified.
+  (Superseded 2026-09-20: his mana is now locked for the eight seconds it
+  runs, so ordinary mana can no longer refresh a live Frenzy — only a proc
+  that ignores the lock can.)
 - Scuttlecrab burrow (2026-09-06): Roger confirmed it cannot attack while
   burrowed. Healing/durability still start when the cast lands; the driver
   blocks attacks/recasts for the resolved three-second duration. Existing
@@ -1060,15 +1278,18 @@
   A new set = new drivers, new hand files, `DEFAULT_SET`. Python only
   knows the drivers through `lol_tft.DRIVERS` (api name → driver name).
 - Assumptions to remember (all in tft.py constants or noted in the UI):
-  AD ×1.5 and HP ×1.8 per star, a 1 s mana lock after a cast (the wiki's
-  "can't accumulate mana for the second thereafter" — it blocks attack
-  mana and regen alike; a channel a driver declares, Aphelios's 2 s
-  onslaught, Ahri's 1.75 s, Varus's 2 s wind-up, locks through its length
-  plus that second, and Tristana's charge and Xayah's feathers are locks
-  too, since a 0/50 marksman at 10 mana an attack would otherwise never
-  leave them), an ability's damage landing when its animation (0.25 s, the
-  bins' default for every unit) or its declared channel ends (`Driver.lands`,
-  `Fight.after`; so no kill is ever at t=0), curve rows
+  AD ×1.5 and HP ×1.8 per star, the cast window of the unit's own timeline
+  (`cast-timing.json`, 2026-09-20: no attacks and no mana of any kind while
+  the animation and any channel play; a unit the file does not cover keeps
+  the old flat 1 s mana lock, the wiki's "can't accumulate mana for the
+  second thereafter", and a driver's declared channel locks through its
+  length plus that second), effect-long locks where the driver holds them
+  (Tristana's charge, Xayah's feathers, Nidalee's javelins and the rest —
+  a 0/50 marksman at 10 mana an attack would otherwise never leave them),
+  an ability's damage landing at its timeline's effect time, else when its
+  animation (0.25 s, the bins' default for every unit) or its declared
+  channel ends (`Driver.lands`, `Fight.after`; so no kill is ever at t=0),
+  curve rows
   hold the previous star's value, fighters' role attack speed at stage 4
   (Riot's 15.4 curve: stage 2–6 = 5/10/20/30/30%), damage amp additive
   and post-mitigation, negative resists floored at 0, Blossom/Elderwood
@@ -1116,7 +1337,10 @@
   `"traits"` in overrides.json). Open interpretations, deliberately left:
   attack replacements (Xayah's feathers, Nidalee's javelins, Scuttlecrab's
   dance) are ability damage that crits only with Precision; "N nearest
-  enemies" targeting hits one dummy spread out; Solar's bonus is 7% of
+  enemies" targeting hits one dummy spread out (superseded by the repaired
+  `f.nearest(n)`, which picks N separate enemies in both geometries — the
+  2026-09-07 repairs moved most such spells over and Morgana's blast
+  followed on 2026-09-20); Solar's bonus is 7% of
   post-mitigation damage, itself mitigated; damage amp does not touch true
   damage (burns); the 3★ rows of every 4- and 5-cost are the PBE file's
   enormous values (Sett 5000, Taric 10000), which is one more reason those

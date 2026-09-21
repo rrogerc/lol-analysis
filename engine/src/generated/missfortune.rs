@@ -1,9 +1,9 @@
 //! Miss Fortune. Bullet Time opens the fight as an uninterruptible channel
-//! whose waves are timed events; afterward Double Up alternates with basic
-//! attacks on the shared attack timer, Strut is recast on cooldown for its
-//! attack-speed active, Make It Rain ticks on cooldown, and Love Tap's
-//! one-time mark bonus lands on whichever attack (auto or Double Up) hits
-//! the still-unmarked dummy first.
+//! (its own 0.001s cast time spent first) whose waves are timed events;
+//! afterward Double Up alternates with basic attacks on the shared attack
+//! timer, Strut is recast on cooldown for its attack-speed active, Make It
+//! Rain ticks on cooldown, and Love Tap's one-time mark bonus lands on
+//! whichever attack (auto or Double Up) hits the still-unmarked dummy first.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -42,12 +42,13 @@ pub struct GenDriver {
     e_cast_s: f64,
     e_cd: f64,
     /// Bullet Time: per-wave damage (expected crit folded in), wave count,
-    /// and the wiki's wave timing.
+    /// the wiki's wave timing, and the ability's own cast time.
     r_wave_dmg: f64,
     r_waves_n: i64,
     r_first_wave: f64,
     r_last_wave: f64,
     r_wave_interval: f64,
+    r_cast_s: f64,
     s: State,
     s0: State,
 }
@@ -67,11 +68,24 @@ struct State {
     r_wave_next: f64,
     r_cast_t: f64,
     /// No other action (attack, Q, W, E) may start before this: holds the
-    /// whole Bullet Time channel.
+    /// whole Bullet Time cast and channel.
     busy_until: f64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Love Tap can only ever proc once against a single dummy (the mark
     /// never expires without a second enemy to attack).
     fn love_tap_proc(&mut self, e: &mut Engine) {
@@ -136,6 +150,7 @@ impl Driver for GenDriver {
             r_first_wave,
             r_last_wave,
             r_wave_interval,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             s: state,
             s0: state,
         })
@@ -176,7 +191,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(pymax(pymax(e.st.q_ready, e.st.next_attack), self.s.busy_until), e.st.t)
+        self.castable_at(e, pymax(e.st.q_ready, e.st.next_attack))
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -198,11 +213,12 @@ impl Driver for GenDriver {
             return;
         }
         let t = e.st.t;
+        self.busy_for(e, self.r_cast_s);
         self.s.r_active = true;
         self.s.r_wave_idx = 0;
         self.s.r_cast_t = t;
         self.s.r_wave_next = t + self.r_first_wave;
-        self.s.busy_until = t + self.r_last_wave;
+        self.s.busy_until = pymax(self.s.busy_until, t + self.r_last_wave);
         e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
         e.prime_spellblade();
         e.ability_cast_proc();
@@ -212,14 +228,14 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(pymax(self.s.w_ready, self.s.busy_until), e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_active {
                 out[n] = (self.s.e_tick_next, Kind::Ev(EV_E_TICK));
             } else {
-                out[n] = (pymax(pymax(self.s.e_ready, self.s.busy_until), e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }

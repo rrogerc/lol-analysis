@@ -2,8 +2,9 @@
 // No browser or npm packages required. The Builds tab's leaderboard: its
 // scenarios, the columns of a target's and the overall board, the rows the
 // page renders from a payload (a synthetic one, or a saved
-// /api/builds/leaderboard/<scenario>.json with --board), the filters, what a
-// selected row shows below the table, opening a champion, and loading.
+// /api/builds/leaderboard/<scenario>.json with --board), the filters, sorting
+// by a column, what a selected row shows below the table, opening a champion,
+// and loading.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -30,6 +31,7 @@ const create = tag => ({ tag, className: '', dataset: {}, attributes: {}, childr
   replaceChildren(...children) { this.children = []; this.ownText = ''; this.append(...children); },
   setAttribute(key, value) { this.attributes[key] = String(value); },
   addEventListener(type, fn) { this.listeners[type] = fn; },
+  focus() { calls.push(['focus', this]); context.document.activeElement = this; },
   get textContent() { return this.ownText + this.children.map(child => child.textContent || '').join(''); },
   set textContent(value) { this.ownText = String(value); this.children = []; } });
 const elements = new Map();
@@ -43,7 +45,13 @@ const log = name => (...args) => { calls.push([name, ...args]); };
 const timers = [];
 let respond = null;  // what the next api() call answers
 const context = vm.createContext({
-  document: { createElement: create, getElementById: element, querySelector: element,
+  document: { createElement: create, getElementById: element, activeElement: null,
+              // a heading's sort button is looked up among the headings the page built
+              querySelector: sel => {
+                const k = /^#bboard-tbl thead button\[data-k="(.+)"\]$/.exec(sel)?.[1];
+                return !k ? element(sel)
+                  : element('#bboard-tbl thead tr').children.map(th => th.children[0]).find(b => b?.dataset.k === k) || null;
+              },
               querySelectorAll: sel => lists[sel] || [] },
   setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout: log('clearTimeout'),
   bstate: { mode: 'leaderboard', champion: 'kayle', scenario: 'full-squishy', req: 0, timer: null, status: null,
@@ -121,13 +129,15 @@ assert.deepEqual(heads(overall.scenario),
 const body = () => element('#bboard-tbl tbody').children;
 const texts = () => body().map(tr => tr.children.map(td => td.textContent));
 const show = (data, state = {}) => {
-  Object.assign(bboard, { data, error: null, search: '', reviewedOnly: false }, state);
+  Object.assign(bboard, { data, error: null, search: '', reviewedOnly: false, sortKey: 'rank', sortDir: 1 }, state);
   calls.length = 0;
   renderLeaderboard();
 };
 show(squishy);
 assert.equal(element('builds-title').textContent, 'Champion leaderboard, full build vs squishy');
-assert.deepEqual(element('#bboard-tbl thead tr').children.map(th => th.textContent), heads(squishy.scenario));
+const head = () => element('#bboard-tbl thead tr').children;
+const headTexts = () => head().map(th => th.textContent.trim());
+assert.deepEqual(headTexts(), ['# ▲', ...heads(squishy.scenario).slice(1)], 'as ranked: the arrow is on #');
 assert.deepEqual(texts(), [
   ['1', 'Ahriunreviewed', "Boots + Ahri's item", '0.00s instant', '4.49s', '7.69s', '—', '3,000', '16,001'],
   ['2', 'Kassadin', "Boots + Kassadin's item", '0.75s', '2.20s', '5.10s', '4,000', '3,000', '16,002'],
@@ -202,6 +212,136 @@ element('bboard-search').listeners.input({ target: { value: '' } });
 element('bboard-reviewed').listeners.change({ target: { checked: true } });
 assert.equal(body().length, 2);
 element('bboard-reviewed').listeners.change({ target: { checked: false } });
+
+// ---- sorting by a column: a target's time, and everything else with a value ----
+const names = () => body().map(tr => tr.children[1].children[1].textContent);
+const ranks = () => body().map(tr => tr.children[0].textContent);
+const sortButton = label => head().find(th => th.textContent.trim().replace(/ [▲▼]$/, '') === label).children[0];
+const sortBy = label => sortButton(label).listeners.click();
+const ariaSort = () => head().map(th => th.attributes['aria-sort'] || '');
+bstate.champion = 'kayle';
+show(squishy);
+assert.deepEqual(head().map(th => th.children[0]?.tag === 'button'),
+  [true, true, false, true, true, true, true, true, true], 'every heading but the build is a sort button');
+assert.deepEqual(ariaSort(), ['ascending', '', '', '', '', '', '', '', '']);
+assert.match(head()[5].title, /^The same build's expected kill time against the tank/, 'a heading keeps its explanation');
+// vs tank, fastest first: the build that leaves the tank standing is last
+element('bboard-wrap').scrollTop = 250;
+calls.length = 0;
+context.document.activeElement = sortButton('vs tank');  // as a click or the keyboard leaves it
+sortBy('vs tank');
+assert.deepEqual(names(), ['Kayle', 'Kassadin', 'Ahri', 'Lee Sin']);
+assert.deepEqual(ranks(), ['4', '2', '1', '2'], "# stays the scenario's rank");
+assert.deepEqual(headTexts(), ['#', 'Champion', 'Best build', 'Kill time', 'vs bruiser', 'vs tank ▲', 'DPS', 'Damage', 'Gold']);
+assert.deepEqual(ariaSort(), ['', '', '', '', '', 'ascending', '', '', '']);
+assert.equal(element('bboard-status').textContent, '4 champions · sorted by vs tank, fastest first');
+assert.equal(element('bboard-wrap').scrollTop, 0, 'a new order is read from its top');
+assert.deepEqual(took('focus').map(c => c[1]), [sortButton('vs tank')], 'the rebuilt heading keeps the keyboard');
+assert.equal(took('updateHash').length, 1);
+assert.deepEqual([bboard.sortKey, bboard.sortDir], ['vs-tank', 1]);
+assert.deepEqual(body().map(tr => tr.className), ['sel', '', '', ''], "the selection follows the tab's champion, not a position");
+assert.equal(took('renderBreakdown')[0][3], 'Kayle');
+// so does a render the keyboard did not cause (a board filling in); focus elsewhere is left alone
+calls.length = 0;
+renderLeaderboard();
+assert.deepEqual(took('focus').map(c => c[1]), [sortButton('vs tank')]);
+context.document.activeElement = element('bboard-search');
+renderLeaderboard();
+assert.equal(took('focus').length, 1);
+context.document.activeElement = null;
+// again: the other way round
+sortBy('vs tank');
+assert.deepEqual(names(), ['Lee Sin', 'Ahri', 'Kassadin', 'Kayle']);
+assert.equal(headTexts()[5], 'vs tank ▼');
+assert.equal(ariaSort()[5], 'descending');
+assert.equal(element('bboard-status').textContent, '4 champions · sorted by vs tank, slowest first');
+// a target left standing sorts after every kill whatever its extrapolated time says
+const odd = plain(squishy);
+odd.rows[2].vs.tank.killTime = 1;
+show(odd, { sortKey: 'vs-tank' });
+assert.deepEqual(names(), ['Kayle', 'Kassadin', 'Ahri', 'Lee Sin']);
+// equal values stay in rank order, in both directions
+show(squishy, { sortKey: 'vs-squishy' });
+assert.deepEqual(names(), ['Ahri', 'Kassadin', 'Lee Sin', 'Kayle']);
+assert.equal(headTexts()[3], 'Kill time ▲', "a target's own column is the same sort on its board");
+sortBy('Kill time');
+assert.deepEqual(names(), ['Kayle', 'Kassadin', 'Lee Sin', 'Ahri']);
+// numbers lead with the most; a row with nothing to sort on is last either way
+show(squishy);
+sortBy('DPS');
+assert.deepEqual(names(), ['Kassadin', 'Lee Sin', 'Kayle', 'Ahri']);
+assert.equal(element('bboard-status').textContent, '4 champions · sorted by DPS, highest first');
+sortBy('DPS');
+assert.deepEqual(names(), ['Kayle', 'Kassadin', 'Lee Sin', 'Ahri'], 'a 0.00s fight has no DPS: last in both directions');
+const blank = plain(squishy);
+delete blank.rows[0].vs.bruiser;
+show(blank, { sortKey: 'vs-bruiser', sortDir: -1 });
+assert.deepEqual(names(), ['Lee Sin', 'Kayle', 'Kassadin', 'Ahri']);
+show(squishy);
+sortBy('Damage');
+assert.deepEqual([bboard.sortKey, bboard.sortDir], ['damage', -1]);
+sortBy('Gold');
+assert.deepEqual(names(), ['Ahri', 'Kassadin', 'Lee Sin', 'Kayle']);
+assert.equal(element('bboard-status').textContent, '4 champions · sorted by Gold, cheapest first');
+sortBy('Champion');
+assert.deepEqual(names(), ['Ahri', 'Kassadin', 'Kayle', 'Lee Sin']);
+const byName = boardColumns(squishy.scenario)[1].sort;
+assert.ok(byName({ championName: "Kog'Maw" }) < byName({ championName: "K'Sante" }), 'as a champion select lists them');
+sortBy('#');
+assert.deepEqual(ranks(), ['1', '2', '2', '4']);
+assert.equal(element('bboard-status').textContent, '4 champions', 'the board as it is ranked says nothing more');
+sortBy('#');
+assert.deepEqual(names(), ['Kayle', 'Kassadin', 'Lee Sin', 'Ahri']);
+assert.equal(element('bboard-status').textContent, '4 champions · sorted by #, worst first');
+// the filters keep the order, and say both
+show(squishy, { search: 'ka', sortKey: 'vs-tank' });
+assert.deepEqual(names(), ['Kayle', 'Kassadin']);
+assert.equal(element('bboard-status').textContent,
+  '2 of 4 champions · ranks are from the full board · sorted by vs tank, fastest first');
+// a target's column keeps the order on the overall board; its own is the mean
+bstate.scenario = 'full-overall';
+show(overall, { sortKey: 'vs-tank' });
+assert.deepEqual(names(), ['Kayle', 'Ahri']);
+sortBy('Mean');
+assert.deepEqual(names(), ['Ahri', 'Kayle']);
+assert.equal(element('bboard-status').textContent, '2 champions · sorted by Mean, fastest first');
+sortBy('Mean');
+assert.deepEqual(names(), ['Kayle', 'Ahri']);
+// a column this board lacks leaves it as ranked, and # is what a click then reverses
+show(overall, { sortKey: 'dps', sortDir: -1 });
+assert.deepEqual(names(), ['Ahri', 'Kayle']);
+assert.equal(headTexts()[0], '# ▲');
+assert.equal(element('bboard-status').textContent, '2 champions');
+sortBy('#');
+assert.deepEqual(names(), ['Kayle', 'Ahri']);
+assert.deepEqual([bboard.sortKey, bboard.sortDir], ['rank', -1]);
+bstate.scenario = 'full-squishy';
+
+// the hash carries the order, and init reads it back
+context.state = { view: 'builds', tier: 'soloq_masters_plus' };
+let written = '';
+context.history = { replaceState: (state, title, hash) => { written = hash; } };
+const writeHash = vm.runInContext(
+  `(() => { ${section('function updateHash(', 'function showView(')}; return updateHash; })()`, context);
+const readHash = text => {
+  const hash = Object.fromEntries(text.slice(1).split('&').filter(Boolean).map(kv => kv.split('=').map(decodeURIComponent)));
+  Object.assign(bboard, { search: '', reviewedOnly: false, sortKey: 'rank', sortDir: 1 });
+  vm.runInContext(`(hash => { ${section('    if (hash.tab === "builds" && hash.bview === "leaderboard") {', '    if (hash.tab === "tft") {')} })`, context)(hash);
+  return hash;
+};
+Object.assign(bboard, { search: '', reviewedOnly: false, sortKey: 'rank', sortDir: 1 });
+writeHash();
+assert.ok(!/lbs|lbd/.test(written), `the board as ranked adds nothing: ${written}`);
+for (const [sortKey, sortDir, lbs, lbd] of [['vs-tank', 1, 'vs-tank', undefined], ['dps', -1, 'dps', 'd'], ['rank', -1, 'rank', 'd']]) {
+  Object.assign(bboard, { sortKey, sortDir });
+  writeHash();
+  const hash = readHash(written);
+  assert.deepEqual([hash.bview, hash.lbs, hash.lbd], ['leaderboard', lbs, lbd], written);
+  assert.deepEqual([bboard.sortKey, bboard.sortDir], [sortKey, sortDir], written);
+}
+readHash('#tab=builds&bview=leaderboard&lbs=nonsense');
+show(squishy, { sortKey: bboard.sortKey });
+assert.deepEqual(ranks(), ['1', '2', '2', '4'], 'an unknown column in a link is the board as ranked');
 
 // ---- a board still filling in, and drivers that failed ----
 bstate.status = { warmer: 'running' };
@@ -327,7 +467,22 @@ assert.deepEqual(lists['#builds-mode-seg button'].map(b => b.attributes['aria-pr
     });
     const ranks = d.rows.map(r => r.rank);
     assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b));
-    real = ` and the saved ${d.scenario.key} board (${d.rows.length} champions)`;
+    // every column orders the whole board, both ways: nobody lost, values in order, blanks last
+    const bySlug = new Map(d.rows.map(r => [r.champion, r]));
+    const scalar = v => Array.isArray(v) ? v[0] * 1e6 + v[1] : v;
+    const sortable = boardColumns(d.scenario).filter(c => c.sort);
+    for (const c of sortable) for (const sortDir of [1, -1]) {
+      show(d, { sortKey: c.key, sortDir });
+      const shown = body().map(tr => tr.dataset.champion);
+      assert.deepEqual([...shown].sort(), [...bySlug.keys()].sort(), `${c.th}: every champion once`);
+      const values = shown.map(slug => c.sort(bySlug.get(slug)));
+      const blank = values.findIndex(v => v == null);
+      assert.ok(values.slice(blank < 0 ? values.length : blank).every(v => v == null), `${c.th}: blanks last`);
+      values.filter(v => v != null).map(scalar).forEach((v, i, all) => {
+        if (i) assert.ok(sortDir === 1 ? all[i - 1] <= v : all[i - 1] >= v, `${c.th} ${sortDir}: ${all[i - 1]} then ${v}`);
+      });
+    }
+    real = ` and the saved ${d.scenario.key} board (${d.rows.length} champions, sorted by ${sortable.length} columns both ways)`;
   }
-  console.log(`Builds leaderboard UI checks passed: scenarios, columns, rows, filters, selection, opening a champion, loading${real}.`);
+  console.log(`Builds leaderboard UI checks passed: scenarios, columns, rows, filters, sorting, selection, opening a champion, loading${real}.`);
 })().catch(error => { console.error(error); process.exit(1); });

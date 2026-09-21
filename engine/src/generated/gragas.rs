@@ -3,6 +3,8 @@
 //! damage; Drunken Rage is cast on cooldown and its channel-empowered attack
 //! is consumed by the next basic attack; Body Slam is cast on cooldown and
 //! always gets its 40% current-cooldown refund since it always connects.
+//! Every cast (R's 0.25 s cast, Q's 0.25 s cast, and W's and E's instant
+//! casts) shares one `busy_until` so casts never overlap.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +30,7 @@ pub struct GenDriver {
 
     q_dmg_max: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_ferment_s: f64,
     q_travel_s: f64,
 
@@ -53,6 +56,9 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+
     /// The thrown cask is out and cannot be re-thrown until detonated.
     q_pending: bool,
     /// When it will be detonated (INF: none pending).
@@ -71,6 +77,21 @@ struct State {
     r_impact_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(
         kit: &Kit,
@@ -80,6 +101,7 @@ impl Driver for GenDriver {
         _prestacked: bool,
     ) -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_pending: false,
             q_detonate_at: INF,
             w_ready: 0.0,
@@ -98,6 +120,7 @@ impl Driver for GenDriver {
 
             q_dmg_max: kit.hit("gen.Q.damageMax", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_ferment_s: kit.num("gen.Q.fermentS")?,
             q_travel_s: kit.num("gen.Q.travelS")?,
 
@@ -153,7 +176,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 || self.s.q_pending {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -163,30 +186,34 @@ impl Driver for GenDriver {
         let land_at = t + self.q_travel_s;
         self.s.q_detonate_at = land_at + self.q_ferment_s;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.r_impact_at = t + self.r_cast_s + self.r_travel_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.s.q_detonate_at != INF {
-            out[n] = (self.s.q_detonate_at, Kind::Ev(EV_Q_DETONATE));
+            out[n] = (
+                self.castable_at(e, self.s.q_detonate_at),
+                Kind::Ev(EV_Q_DETONATE),
+            );
             n += 1;
         }
         if self.ranks.w > 0 {
             if self.s.w_channel_end_at != INF {
                 out[n] = (self.s.w_channel_end_at, Kind::Ev(EV_W_CHANNEL_END));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_impact_at != INF {
@@ -200,7 +227,8 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_Q_DETONATE) => {
-                // manual detonation does not count as an on-cast activation
+                // manual detonation does not count as an on-cast activation,
+                // and has no cast time of its own
                 self.s.q_pending = false;
                 self.s.q_detonate_at = INF;
                 e.deal(self.q_dmg_max, DType::Magic, SRC_Q, false, true, 1.0);

@@ -4,6 +4,9 @@
 //! Soul Nails (consumed by the next damaging hit), Soul Ignition is cast for
 //! its attack-speed buff, Ashen Pursuit blinks then dashes on cooldown, and
 //! Purgatory opens the fight for its totem nail (and a conditional execute).
+//! Casts go one at a time: a single `busy_until` tracks the cast in progress
+//! so Purgatory's, Ritual Nails' and Ashen Pursuit's cast times are respected
+//! in sequence before the next cast or attack can start.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -40,6 +43,7 @@ pub struct GenDriver {
     q_ammo: i64,
     q_max_stacks: i64,
     q_nail_duration_s: f64,
+    q_cast_s: f64,
 
     w_as_pct: f64,
     w_duration_s: f64,
@@ -49,11 +53,13 @@ pub struct GenDriver {
     e_dash_dmg: f64,
     e_cd_base: f64,
     e_dash_delay_s: f64,
+    e_cast_s: f64,
 
     r_dmg: f64,
     r_execute_threshold: f64,
     r_travel_s: f64,
     r_land_delay_s: f64,
+    r_cast_s: f64,
 
     src_p: SourceId,
     src_q_consume: SourceId,
@@ -68,6 +74,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     q_recasts_left: i64,
     q_recast_at: f64,
     nail_stacks: i64,
@@ -80,6 +88,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Silver Stake's bonus on-hit magic damage right now: the flat base+AP
     /// term, scaled continuously from 1x at 0% target missing health up to
     /// 2x at 70%+ missing health.
@@ -116,6 +137,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_recasts_left: 0,
             q_recast_at: INF,
             nail_stacks: 0,
@@ -143,6 +165,7 @@ impl Driver for GenDriver {
             q_ammo: kit.num("gen.Q.ammo")? as i64,
             q_max_stacks: kit.num("gen.Q.maxStacks")? as i64,
             q_nail_duration_s: kit.num("gen.Q.nailDurationS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_as_pct: kit.at_level("gen.W.asPctByLevel", level)? * 100.0,
             w_duration_s: kit.num("gen.W.durationS")?,
@@ -152,12 +175,14 @@ impl Driver for GenDriver {
             e_dash_dmg: kit.hit("gen.E.dashDamage", ranks.e, sheet)?,
             e_cd_base: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_dash_delay_s: kit.num("gen.E.dashDelayS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
 
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_execute_threshold: kit.at_rank("gen.R.executeThresholdByRank", ranks.r)?
                 + kit.num("gen.R.executePerStack")? * kit.num("gen.R.assumedSealedStacks")?,
             r_travel_s: kit.num("gen.R.travelS")?,
             r_land_delay_s: kit.num("gen.R.landDelayS")?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
 
             src_p: intern("P onhit"),
             src_q_consume: intern("Q stack consume"),
@@ -200,7 +225,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -210,10 +235,10 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.q_recasts_left = self.q_ammo - 1;
         self.s.q_recast_at = t + self.q_recast_interval_s;
         e.st.q_ready = INF;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -222,6 +247,7 @@ impl Driver for GenDriver {
         }
         let t = e.st.t;
         self.s.r_nail_at = t + self.r_travel_s + self.r_land_delay_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -231,19 +257,19 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.q > 0 && self.s.q_recast_at != INF {
-            out[n] = (self.s.q_recast_at, Kind::Ev(EV_Q_RECAST));
+            out[n] = (self.castable_at(e, self.s.q_recast_at), Kind::Ev(EV_Q_RECAST));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_dash_at != INF {
                 out[n] = (self.s.e_dash_at, Kind::Ev(EV_E_DASH));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         n
@@ -276,15 +302,16 @@ impl Driver for GenDriver {
                     self.s.q_recast_at = INF;
                     e.st.q_ready = t + e.basic_cd(self.q_cd_base);
                 }
+                self.busy_for(e, self.q_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 e.deal(self.e_blink_dmg, DType::Magic, self.src_e_blink, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
                 self.s.e_dash_at = t + self.e_dash_delay_s;
                 self.s.e_ready = INF;
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_DASH) => {
                 self.s.e_dash_at = INF;

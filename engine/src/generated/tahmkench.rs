@@ -3,7 +3,10 @@
 //! on cooldown for its delayed AoE nuke (refunded every cast since the
 //! dummy counts as an enemy champion); once the target holds 3 stacks,
 //! Devour swallows it and Regurgitate is recast the instant it is legal for
-//! its target-max-health magic damage.
+//! its target-max-health magic damage. Casts go one at a time: Tongue Lash
+//! and Devour each keep Tahm Kench busy for their 0.25 s cast time, and
+//! Abyssal Dive's channel/delay/lockout and Devour's swallow/lockout hold
+//! attacks and other casts for as long as the dossier states.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -29,6 +32,7 @@ pub struct GenDriver {
 
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
 
     w_dmg: f64,
     w_cd: f64,
@@ -41,6 +45,7 @@ pub struct GenDriver {
     /// Regurgitate's percent of the target's maximum health (base + AP term).
     r_hp_pct: f64,
     r_cd: f64,
+    r_cast_s: f64,
     r_recast_delay_s: f64,
     r_post_lockout_s: f64,
     r_stacks_needed: i64,
@@ -56,6 +61,8 @@ pub struct GenDriver {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
     p_stacks: i64,
+    /// A cast with a cast time (Q, Devour) started: nothing else until this.
+    busy_until: f64,
     w_ready: f64,
     /// When Abyssal Dive's delayed damage lands (INF: none pending).
     w_damage_at: f64,
@@ -66,6 +73,27 @@ struct State {
     r_regurg_at: f64,
     /// Until when attacks/Q are held for the swallow + post-cast lockout.
     r_busy_until: f64,
+}
+
+impl GenDriver {
+    /// Every source of "busy" combined: a cast time in progress, Abyssal
+    /// Dive's channel/lockout, and Devour's swallow/lockout.
+    fn all_busy_until(&self) -> f64 {
+        pymax(self.s.busy_until, pymax(self.s.w_busy_until, self.s.r_busy_until))
+    }
+
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast or busy window.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.all_busy_until())
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -88,6 +116,7 @@ impl Driver for GenDriver {
 
         let state = State {
             p_stacks: 0,
+            busy_until: 0.0,
             w_ready: 0.0,
             w_damage_at: INF,
             w_busy_until: 0.0,
@@ -107,6 +136,7 @@ impl Driver for GenDriver {
 
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
@@ -118,6 +148,7 @@ impl Driver for GenDriver {
             r_base_dmg: kit.at_rank("gen.R.baseDamage", ranks.r)?,
             r_hp_pct,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_recast_delay_s: kit.num("gen.R.recastDelayS")?,
             r_post_lockout_s: kit.num("gen.R.postRegurgitateLockoutS")?,
             r_stacks_needed: kit.num("gen.R.stacksNeeded")? as i64,
@@ -164,8 +195,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         let b = self.bonus_as(t);
         let mut na = t + e.attack_period(b);
-        na = pymax(na, self.s.w_busy_until);
-        na = pymax(na, self.s.r_busy_until);
+        na = pymax(na, self.all_busy_until());
         e.st.next_attack = na;
     }
 
@@ -173,9 +203,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        let t = e.st.t;
-        let busy = pymax(self.s.w_busy_until, self.s.r_busy_until);
-        pymax(pymax(e.st.q_ready, t), busy)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -187,7 +215,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -196,7 +224,7 @@ impl Driver for GenDriver {
             if self.s.w_damage_at != INF {
                 out[n] = (self.s.w_damage_at, Kind::Ev(EV_W_DAMAGE));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -205,7 +233,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_regurg_at, Kind::Ev(EV_R_REGURG));
                 n += 1;
             } else if self.s.p_stacks >= self.r_stacks_needed {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_DEVOUR));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_DEVOUR));
                 n += 1;
             }
         }
@@ -233,10 +261,12 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_R_DEVOUR) => {
                 self.s.p_stacks = 0;
+                e.prime_spellblade();
+                // Devour's own 0.25 s cast time, then the swallow and the
+                // post-Regurgitate lockout hold everything further.
+                self.busy_for(e, self.r_cast_s);
                 self.s.r_regurg_at = t + self.r_recast_delay_s;
                 self.s.r_busy_until = t + self.r_recast_delay_s + self.r_post_lockout_s;
-                e.lockout();
-                e.prime_spellblade();
             }
             Kind::Ev(EV_R_REGURG) => {
                 self.s.r_regurg_at = INF;

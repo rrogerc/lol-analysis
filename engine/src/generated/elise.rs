@@ -2,7 +2,10 @@
 //! Volatile Spiderling (W), then permanently switches to Spider Form: Q
 //! becomes Venomous Bite (missing-HP based), W becomes Skittering Frenzy
 //! (an attack-speed buff and attack reset), and every basic attack applies
-//! Spider Queen's bonus on-hit magic damage.
+//! Spider Queen's bonus on-hit magic damage. Casts go one at a time: a
+//! single busy_until tracks the cast in progress (Q and Human W have real
+//! cast times; Spider W is instant but still routed through the same
+//! busy-until bookkeeping so it waits its turn). E is never cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -20,6 +23,7 @@ pub struct GenDriver {
     windup_fraction: f64,
 
     q_cd: f64,
+    q_cast_s: f64,
     q_human_base: f64,
     // Percent (of target current HP) per cast, e.g. 4 + 3%-per-100-AP*AP.
     q_human_ratio_pct: f64,
@@ -28,7 +32,9 @@ pub struct GenDriver {
 
     w_human_dmg: f64,
     w_human_cd: f64,
+    w_human_cast_s: f64,
     w_spider_cd: f64,
+    w_spider_cast_s: f64,
     w_spider_active_as_pct: f64,
     w_spider_buff_dur: f64,
 
@@ -50,6 +56,23 @@ struct State {
     w_ready: f64,
     /// Skittering Frenzy's active bonus attack speed lasts until this time.
     frenzy_until: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -65,6 +88,7 @@ impl Driver for GenDriver {
             form_spider: false,
             w_ready: 0.0,
             frenzy_until: -1.0,
+            busy_until: 0.0,
         };
 
         Ok(GenDriver {
@@ -73,6 +97,7 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("elise kit needs attack.windupFraction")?,
 
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_human_base: kit.at_rank("gen.Q.human.base", ranks.q)?,
             q_human_ratio_pct: human_ratio_base + human_ratio_ap * ap,
             q_spider_base: kit.at_rank("gen.Q.spider.base", ranks.q)?,
@@ -80,7 +105,9 @@ impl Driver for GenDriver {
 
             w_human_dmg: kit.hit("gen.W.human.damage", ranks.w, sheet)?,
             w_human_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_human_cast_s: kit.num("gen.W.castTimeS")?,
             w_spider_cd: kit.num("gen.W.spider.cooldownS")?,
+            w_spider_cast_s: kit.num("gen.W.spiderCastTimeS")?,
             w_spider_active_as_pct: kit.at_rank("gen.W.spider.activeAsPct", ranks.w)?,
             w_spider_buff_dur: kit.num("gen.W.spider.buffDurationS")?,
 
@@ -130,7 +157,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -153,12 +180,12 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         if self.ranks.w > 0 {
-            out[0] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[0] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             1
         } else {
             0
@@ -170,13 +197,14 @@ impl Driver for GenDriver {
         match kind {
             Kind::Ev(EV_W) => {
                 if !self.s.form_spider {
-                    // Human Form: Volatile Spiderling, then switch forms
-                    // (unless Spider Form is not learned yet).
+                    // Human Form: Volatile Spiderling (has a cast time),
+                    // then switch forms (unless Spider Form is not learned
+                    // yet) at no extra cast time or cooldown cost of its own.
                     e.deal(self.w_human_dmg, DType::Magic, SRC_W, false, true, 1.0);
                     e.ability_cast_proc();
                     e.eclipse_hit();
                     e.prime_spellblade();
-                    e.lockout();
+                    self.busy_for(e, self.w_human_cast_s);
                     if self.ranks.r > 0 {
                         self.s.form_spider = true;
                         // Skittering Frenzy is a fresh, separate cooldown.
@@ -192,6 +220,9 @@ impl Driver for GenDriver {
                     e.prime_spellblade();
                     let b = self.bonus_as(t);
                     e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
+                    // Cast time is 0 (wiki: "cast time = none"), but it still
+                    // runs through the same busy-until bookkeeping.
+                    self.busy_for(e, self.w_spider_cast_s);
                 }
             }
             other => panic!("unhandled event {other:?}"),

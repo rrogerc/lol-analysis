@@ -1,9 +1,12 @@
 //! Mordekaiser. Realm of Death opens the fight for its true damage and the
 //! target's armor/MR reduction; Obliterate and Death's Grasp are cast on
-//! cooldown (Obliterate always isolated, the dummy being the only enemy);
-//! basic attacks weave in throughout, carrying Darkness Rise's on-hit magic
-//! damage and building its stacks toward the damaging aura. Indestructible
-//! is never cast: it has no damage to contribute.
+//! cooldown after it (Obliterate always isolated, the dummy being the only
+//! enemy); basic attacks weave in throughout, carrying Darkness Rise's
+//! on-hit magic damage and building its stacks toward the damaging aura.
+//! Every one of R, Q and E has a real cast time: a single `busy_until`
+//! keeps Mordekaiser from starting another cast or an attack until the
+//! current one ends. Indestructible is never cast: it has no damage to
+//! contribute.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -31,9 +34,11 @@ pub struct GenDriver {
     p_aura_hp_frac: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_delay: f64,
+    e_cast_s: f64,
     r_cast_s: f64,
     r_true_frac: f64,
     r_shred_dur: f64,
@@ -45,6 +50,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     p_stack_deadline: f64,
     p_aura_active: bool,
@@ -55,6 +62,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Generates / refreshes a Darkness Rise stack from a basic attack,
     /// Obliterate or Death's Grasp landing on the target; arms the aura at
     /// 3 stacks.
@@ -77,6 +97,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_stack_deadline: 0.0,
             p_aura_active: false,
@@ -99,9 +120,11 @@ impl Driver for GenDriver {
             p_aura_hp_frac: kit.at_level("gen.P.aura.targetHpFracByLevel", level)?,
             q_dmg: q_pre * q_iso,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_delay: kit.num("gen.E.delayS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             r_true_frac: kit.num("gen.R.trueDamage.targetMaxHpFrac")?,
             r_shred_dur: kit.num("abilities.Q.shred.durationS")?,
@@ -141,7 +164,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -151,7 +174,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.p_on_hit(e);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -161,6 +184,7 @@ impl Driver for GenDriver {
         // the engine has already primed Spellblade and applied the opening
         // lockout; the claw/true-damage lands when the cast completes
         self.s.r_damage_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -173,7 +197,7 @@ impl Driver for GenDriver {
             if self.s.e_pending_at != INF {
                 out[n] = (self.s.e_pending_at, Kind::Ev(EV_E_DAMAGE));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -198,7 +222,7 @@ impl Driver for GenDriver {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_pending_at = t + self.e_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_DAMAGE) => {
                 self.s.e_pending_at = INF;

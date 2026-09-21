@@ -9,16 +9,28 @@
   "E",
   "W"
  ],
+ "unused": {
+  "W": "Twilight Shroud deals no damage and its only fight-relevant effects (energy restore, +100 max energy, movement speed) do not matter against a stationary dummy: energy is not tracked (a full Q/E/R opening and continued Q spam never runs dry within 15s at level 16), and movement/stealth are irrelevant, so the driver never casts it."
+ },
  "notes": [
-  "Five Point Strike (Q) is cast the instant it comes off its flat 1.5s cooldown; its damage is dealt on cast rather than modeling the ~0.19s delay into the cast, since that offset is well inside Q's own cast lockout and does not change total damage output.",
-  "Assassin's Mark (P)'s Swinging Kama empowered attack is never triggered: it requires Akali to physically leave the ring created around a damaged champion and come back, but Q's 1.5s cooldown is far shorter than the ring's 4s duration, so casting Q on cooldown (the highest-damage use of that cooldown) keeps refreshing the ring indefinitely and Akali never exits it. P's on-hit bonus is therefore excluded from the rotation.",
-  "Shuriken Flip (E) is cast on cooldown, and its recast is used immediately to consume the mark at the first opportunity, matching the proposed rotation. The numbers sheet gives only one cast time (0.25s, the initial cast) with no separate recast value, so the recast is treated as instant with no attack lockout, landing back-to-back with the initial cast.",
-  "The forced basic attack the game orders after Shuriken Flip's recast dash lands is modeled as an attack reset: the next attack becomes available immediately once the recast's damage lands.",
-  "Perfect Execution (R) opens the fight (the engine's t=0 cast) for its initial dash damage, then is recast as soon as the 2.5s static cooldown between casts allows (rather than delayed toward the end of the 10s window) so the recast reliably lands across every tested fight length; its recast damage scales with the target's missing health at the moment it lands, from 1x at 0% missing up to 3x at 70%+ missing, per the wiki's 0-to-200% bonus formula.",
-  "Twilight Shroud (W) deals no damage and its only fight-relevant effects (energy restore, +100 max energy, movement speed) do not matter here: mana/energy is not tracked (the sheet gives no base energy pool or regen rate), and movement/stealth do not affect a stationary dummy fight, so W is never cast.",
-  "Every ability cast (both casts of E and R) triggers on-cast item effects (Spellblade priming, Muramana, Eclipse) separately, per the wiki's note that both casts of E and R count as distinct ability activations."
+  "Casts go one at a time: a cast takes effect (its damage, if any) the instant it starts, then keeps Akali busy for its cast time, during which no other cast and no attack begins; one busy_until tracks this.",
+  "Perfect Execution (R) opens the fight: its initial dash deals damage as the cast starts, then its 0.25s cast time keeps Akali busy. The 2.5s static recast timer (unaffected by ability haste) is counted from that opening cast, per the dossier's 'within 10 seconds of the first activation'. The recast itself has no cast time (an instant dash that still cannot start inside another cast in progress), so it only applies the 0.25s attack lockout of a dash; its damage scales up to 3x the minimum on the target's missing health, capped at 70% missing.",
+  "Five Point Strike (Q) is cast the instant both its flat 1.5s cooldown and any cast in progress allow; its cast time scales from 0.25s at level 1 down to 0.175s at level 16 per the dossier's breakpoints (levels 1/6/11/16), and it keeps Akali busy for that long, delaying any other cast or attack.",
+  "Shuriken Flip (E) is cast on its cooldown; the initial cast (0.25s cast time) deals the smaller damage share and keeps Akali busy, then the recast is queued to fire the instant that busy window ends, consuming the mark for the larger damage share over its own 0.1s cast time (the sheet only gives one castTime field for E, so the recast's is taken from the wiki text). The game's forced basic attack after the recast dash lands is modeled as an attack reset to the moment that cast ends.",
+  "Assassin's Mark (P)'s Swinging Kama empowered attack is never triggered: it requires Akali to physically leave the ring created around a damaged champion and come back, but Q's short cooldown keeps refreshing the ring long before she could exit it, so casting Q on cooldown (the highest-damage use of that time) keeps the ring up indefinitely. P's on-hit bonus is therefore excluded from the rotation.",
+  "Twilight Shroud (W) is never cast: it deals no damage, and its energy/movement/stealth effects are irrelevant to a stationary dummy fight with mana/energy untracked (see the top-level 'unused' entry). Its 0.25s cast time is therefore moot, but is still recorded under gen.W.castTimeS from the wiki for reference.",
+  "Every damaging cast (both casts of E and R, and Q) triggers on-cast item effects (Spellblade priming, Muramana, Eclipse) separately, per the wiki's note that both casts of E and R count as distinct ability activations."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "the dossier gives only Q's cast-time endpoints (0.25 to 0.175) and the level breakpoints it steps at (1, 6, 11, 16); the per-level values are interpolated evenly between those breakpoints"
+  },
+  {
+   "path": "gen.E.recastCastTimeS",
+   "why": "the numbers sheet's AkaliE only lists the initial cast's 0.25s cast time; the recast's 0.1s cast time is stated only in the wiki text"
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Five Point Strike",
@@ -96,10 +108,31 @@
     ],
     "adRatio": 0.65,
     "apRatio": 0.6
-   }
+   },
+   "castTimeS": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.225,
+    0.225,
+    0.225,
+    0.225,
+    0.225,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.175,
+    0.175,
+    0.175
+   ]
   },
   "W": {
-   "note": "Twilight Shroud: unused by the driver (no damage), see notes."
+   "note": "Twilight Shroud: never cast, see the top-level 'unused' entry and notes. Cast time recorded for reference only.",
+   "castTimeS": 0.25
   },
   "E": {
    "e1": {
@@ -123,7 +156,9 @@
     ],
     "adRatio": 0.7,
     "apRatio": 0.77
-   }
+   },
+   "castTimeS": 0.25,
+   "recastCastTimeS": 0.1
   },
   "R": {
    "r1": {
@@ -154,7 +189,9 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/akali.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/akali.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/akali.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/akali.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

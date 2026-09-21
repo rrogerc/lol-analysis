@@ -4,7 +4,9 @@
 //! assumed to detonate immediately under the stationary target, running its
 //! own refreshable poison DoT; Element of Surprise (P) grants a one-time,
 //! non-refreshing bonus attack speed window opened by the first
-//! stealth-breaking action (the opening Q cast).
+//! stealth-breaking action (the opening Q cast). Q and R both have 0.25 s
+//! cast times, so each holds `busy_until` forward before anything else can
+//! start.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -31,6 +33,7 @@ pub struct GenDriver {
     p_dur: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     e_impact: f64,
     e_tick: f64,
     e_poison_dur: f64,
@@ -40,6 +43,7 @@ pub struct GenDriver {
     r_poison_dur: f64,
     r_tick_interval: f64,
     r_cast_cd: f64,
+    r_cast_s: f64,
     src_e_tick: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
@@ -48,6 +52,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_triggered: bool,
     p_until: f64,
     e_ticking: bool,
@@ -63,6 +69,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Element of Surprise triggers once, on the first stealth-breaking
     /// action; later actions do nothing since stealth never reforms.
     fn trigger_eos(&mut self, t: f64) {
@@ -80,7 +99,6 @@ impl GenDriver {
         self.s.r_cast_ready = t + e.ult_cd(self.r_cast_cd);
         self.s.r_pending_arm_at = t + self.r_arm;
         e.prime_spellblade();
-        e.lockout();
     }
 }
 
@@ -94,6 +112,7 @@ impl Driver for GenDriver {
         let r_start_charges = kit.at_rank("gen.R.maxAmmo", ranks.r)? as i64;
 
         let state = State {
+            busy_until: 0.0,
             p_triggered: false,
             p_until: 0.0,
             e_ticking: false,
@@ -115,6 +134,7 @@ impl Driver for GenDriver {
             p_dur: kit.num("gen.P.buffDurationS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_impact: kit.hit("gen.E.impactDamage", ranks.e, sheet)?,
             e_tick: kit.hit("gen.E.tickDamage", ranks.e, sheet)?,
             e_poison_dur: kit.num("gen.E.poisonDurationS")?,
@@ -124,6 +144,7 @@ impl Driver for GenDriver {
             r_poison_dur,
             r_tick_interval,
             r_cast_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_e_tick: intern("E poison"),
             s: state,
             s0: state,
@@ -172,7 +193,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -182,13 +203,14 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         self.trigger_eos(e.st.t);
         if self.ranks.r > 0 && self.s.r_charges > 0 {
             self.fire_r_cast(e);
+            self.busy_for(e, self.r_cast_s);
         }
     }
 
@@ -202,12 +224,12 @@ impl Driver for GenDriver {
             out[n] = (self.s.r_pending_arm_at, Kind::Ev(EV_R_ARM));
             n += 1;
         } else if self.ranks.r > 0 && self.s.r_charges > 0 {
-            let cast_at = if self.s.r_ticking {
+            let ready = if self.s.r_ticking {
                 pymax(self.s.r_cast_ready, self.s.r_poison_until - self.r_arm)
             } else {
-                pymax(self.s.r_cast_ready, e.st.t)
+                self.s.r_cast_ready
             };
-            out[n] = (cast_at, Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         if self.s.r_ticking {
@@ -231,6 +253,7 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_R_CAST) => {
                 self.fire_r_cast(e);
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_ARM) => {
                 self.s.r_pending_arm_at = INF;

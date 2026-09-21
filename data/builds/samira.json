@@ -12,10 +12,11 @@
  "notes": [
   "Samira is assumed to stay within her 200-unit blade range for the whole fight, so every basic attack is a blade attack, Flair always slashes (not the ranged shot) and every Flair, Blade Whirl and Wild Rush cast also triggers Daredevil Impulse's bonus magic damage; the dossier leaves this an open question and this is the most common in-game reading for a champion fighting a stationary target.",
   "Flair's damage (shot or slash, or the Wild-Rush explosive variant) is identical per the wiki, so the driver deals the same amount regardless of which visual variant would occur; it uses Flair's own halved crit-damage formula (1 + critChance * 0.5 * (critDamage-1)) baked into a precomputed expected value, since the engine's crit_mod flag only applies the full crit multiplier.",
-  "Blade Whirl is cast on cooldown for maximum damage even though it blocks basic attacks and Flair for its 0.75s spin; its first slash lands on cast and its second 0.75s later, both carrying the Daredevil Impulse bonus.",
-  "Wild Rush is cast on cooldown for its magic damage, its bonus AD ratio, and its 5s bonus attack speed window; it does not lock out attacks, Flair or Inferno Trigger.",
-  "Inferno Trigger requires 6 Style stacks: this driver builds Style on every basic attack, Flair, Blade Whirl slash and Wild Rush cast (and, once firing, on its own shots), and casts Inferno Trigger as soon as 6 stacks and its 5s cooldown both allow, checked right after each such hit rather than on a continuous timer -- with attacks landing every well under a second this fires promptly. Style stacks are treated as consumed at the moment Inferno Trigger is cast rather than at the end of its 2.25s effect, which only matters while the ultimate is already active and unable to be recast anyway.",
-  "Inferno Trigger fires its 10 shots at a flat 0.2s interval (the wiki's stated average), rather than the exact alternating 0.231s/0.198s pattern, since the target never moves; Inferno Trigger also blocks basic attacks and Flair for its 2.25s duration, and its shots do not trigger the Daredevil Impulse blade bonus since they are gun, not blade, damage.",
+  "Casts go one at a time: Flair's 0.25 s cast time and Blade Whirl's 0.1 s cast time each keep Samira busy (no other cast, no attack) until they end, per the simulation framework's uniform cast-time rule; this is applied to Blade Whirl even though the wiki notes its own cast time has no effect on usability there, for consistency with how every other cast time is modeled here.",
+  "Blade Whirl is cast on cooldown for maximum damage: after its 0.1 s cast, its 0.75 s spin separately blocks basic attacks and Flair (a longer, distinct block from the cast time itself); its first slash lands on cast and its second 0.75 s later, both carrying the Daredevil Impulse bonus.",
+  "Wild Rush is cast on cooldown for its magic damage, its bonus AD ratio, and its 5s bonus attack speed window; it has no cast time and, per the dossier, can be cast during Flair's cast time or Blade Whirl's spin, so it never waits on another cast.",
+  "Inferno Trigger requires 6 Style stacks: this driver builds Style on every basic attack, Flair, Blade Whirl slash and Wild Rush cast (and, once firing, on its own shots), and casts Inferno Trigger as soon as 6 stacks and its 5s cooldown both allow and no other cast is in progress, checked right after each such hit rather than on a continuous timer -- with attacks landing every well under a second this fires promptly. Style stacks are treated as consumed at the moment Inferno Trigger is cast rather than at the end of its 2.25s effect, which only matters while the ultimate is already active and unable to be recast anyway.",
+  "Inferno Trigger fires its 10 shots at a flat 0.2s interval (the wiki's stated average), rather than the exact alternating 0.231s/0.198s pattern, since the target never moves; Inferno Trigger has no cast time itself but blocks basic attacks and Flair for its 2.25s duration, and its shots do not trigger the Daredevil Impulse blade bonus since they are gun, not blade, damage.",
   "The empowered 6-bolt basic attack against an immobilized target never fires, since the fight framework defines crowd control as not occurring.",
   "Mana is not modeled: Flair/Blade Whirl/Wild Rush's costs are small relative to Samira's mana pool and regeneration and do not bind within a 15 s fight.",
   "The opening at t=0 casts nothing: Samira starts with 0 Style stacks and Inferno Trigger cannot be cast until 6 are built."
@@ -24,6 +25,10 @@
   {
    "path": "gen.R.shotIntervalS",
    "why": "the wiki states only a 0.2s average interval for Inferno Trigger's alternating 0.231/0.198s shot timing; a uniform 0.2s interval is used since the target never moves."
+  },
+  {
+   "path": "gen.W.castTimeS",
+   "why": "the wiki states Blade Whirl's 0.1s cast time has no effect on the ability's usability, but the driver treats it as a normal blocking cast time (no other cast, no attack until it ends) for consistency with how every other cast time is modeled in this simulation."
   }
  ],
  "abilities": {
@@ -122,7 +127,8 @@
     ],
     "adRatio": 1.1
    },
-   "critDamageMod": 0.5
+   "critDamageMod": 0.5,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -135,7 +141,8 @@
     ],
     "bonusAdRatio": 0.5
    },
-   "spinDurationS": 0.75
+   "spinDurationS": 0.75,
+   "castTimeS": 0.1
   },
   "E": {
    "damage": {
@@ -176,6 +183,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/samira.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/samira.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/samira.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/samira.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

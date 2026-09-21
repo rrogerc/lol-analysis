@@ -1,11 +1,12 @@
 //! Pantheon. Comet Spear is tapped on cooldown (quickcast for its cooldown
 //! refund), carrying every Mortal Will empowerment since it is recast far
-//! more often than Shield Vault or Aegis Assault; Shield Vault and Aegis
-//! Assault are cast on cooldown for their own damage, Aegis Assault always
-//! held for its full channel; Grand Starfall opens the fight, its two
-//! channels locking out every other action until the spear and shockwave
-//! land, after which it grants a permanent armor shred (its passive pen)
-//! and refills Mortal Will.
+//! more often than Shield Vault or Aegis Assault; its 0.2 s cast time keeps
+//! Pantheon busy so no other cast or attack starts inside it. Shield Vault
+//! and Aegis Assault are cast on cooldown for their own damage, Aegis
+//! Assault always held for its full channel; Grand Starfall opens the
+//! fight, its two channels locking out every other action until the spear
+//! and shockwave land, after which it grants a permanent armor shred (its
+//! passive pen) and refills Mortal Will.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -37,6 +38,7 @@ pub struct GenDriver {
     /// 1 - Comet Spear's tap cooldown refund fraction.
     q_refund_mult: f64,
     q_cd: f64,
+    q_cast_s: f64,
     /// Shield Vault's damage as a fraction of the target's maximum health.
     w_pct: f64,
     w_cd: f64,
@@ -60,6 +62,8 @@ pub struct GenDriver {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
     p_stacks: i64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     e_ready: f64,
     /// When Aegis Assault's current channel ends (INF: none pending).
@@ -78,6 +82,19 @@ impl GenDriver {
             self.s.p_stacks += 1;
         }
     }
+
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -92,6 +109,7 @@ impl Driver for GenDriver {
         let q_execute_threshold = kit.num("gen.Q.critHealthThreshold")?;
         let q_refund_mult = 1.0 - kit.num("gen.Q.tapCooldownRefund")?;
         let q_cd = kit.at_rank("abilities.Q.cooldownS", ranks.q)?;
+        let q_cast_s = kit.num("gen.Q.castTimeS")?;
 
         let w_base_pct = kit.at_rank("gen.W.maxHealthPct", ranks.w)?;
         let w_pct = w_base_pct
@@ -120,6 +138,7 @@ impl Driver for GenDriver {
 
         let state = State {
             p_stacks: p_max,
+            busy_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
             e_channel_end: INF,
@@ -137,6 +156,7 @@ impl Driver for GenDriver {
             q_execute_threshold,
             q_refund_mult,
             q_cd,
+            q_cast_s,
             w_pct,
             w_cd,
             e_channel_dmg,
@@ -182,11 +202,12 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        // always the tap (quickcast) release: thrust damage, 60% CDR refund
+        // always the tap (quickcast) release: thrust damage, 60% CDR refund;
+        // lands with the cast, then keeps Pantheon busy for its 0.2 s cast time
         let t = e.st.t;
         let empowered = self.s.p_stacks >= self.p_max;
         if empowered {
@@ -208,7 +229,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         e.st.q_ready = t + e.basic_cd(self.q_cd) * self.q_refund_mult;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -224,24 +245,24 @@ impl Driver for GenDriver {
         e.st.q_ready = pymax(e.st.q_ready, landing);
         self.s.w_ready = pymax(self.s.w_ready, landing);
         self.s.e_ready = pymax(self.s.e_ready, landing);
+        self.s.busy_until = pymax(self.s.busy_until, landing);
         // the passive armor penetration is permanent from the opening cast
         e.st.shred_until = t + self.r_shred_dur;
         self.gen_stack();
         e.prime_spellblade();
-        e.lockout();
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_channel_end != INF {
                 out[n] = (self.s.e_channel_end, Kind::Ev(EV_E_END));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -274,6 +295,7 @@ impl Driver for GenDriver {
                 e.st.next_attack = pymax(e.st.next_attack, self.s.e_channel_end);
                 e.st.q_ready = pymax(e.st.q_ready, self.s.e_channel_end);
                 self.s.w_ready = pymax(self.s.w_ready, self.s.e_channel_end);
+                self.s.busy_until = pymax(self.s.busy_until, self.s.e_channel_end);
                 e.prime_spellblade();
                 self.gen_stack();
             }

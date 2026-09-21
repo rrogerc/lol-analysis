@@ -10,11 +10,12 @@
   "W"
  ],
  "notes": [
+  "Casts go one at a time: a single busy_until tracks the champion's current cast. Depth Charge (R) opens the fight at t=0 with its 0.46s cast time (its damage is all later events, not on-cast), then Dredge Line (Q, 0.25s cast) and Riptide (E, 0.25s cast) each keep Nautilus busy for their own cast time before the next cast or attack can start; Titan's Wrath (W) has no cast time so it costs nothing but still cannot start inside another ability's cast.",
   "Opens with R (Depth Charge) at t=0 since its 80-120s cooldown means it can be cast only once inside the fight.",
   "Depth Charge is modeled as one underway eruption (secondary damage) followed by the final eruption (primary/increased damage), assuming a melee-range ~125-unit engagement so the charge reaches the target in about 0.35s per its stated acceleration formula (275 + 466.67/s); this is an assumption because the true distance depends on where R is cast from.",
-  "Q (Dredge Line) is cast on cooldown; its damage lands on cast and the drag/dash and root are not modeled beyond the standard 0.25s cast lockout, the same simplification used for other dash/skillshot abilities.",
-  "W (Titan's Wrath) is cast on cooldown, immediately raising its 6s shield; per the wiki, reapplying Pain of Wrath while one is already ticking adds a stack but deals no extra damage, so only the first attack landing during each shield window deals Pain of Wrath's damage (half instantly, half 1.25s later) — but every attack landing during the shield window still resets Nautilus' attack timer, so attacks chain much faster while it is up.",
-  "E (Riptide) is cast on cooldown; all three of its waves (at 0, 0.297s and 0.561s after the cast completes) are assumed to hit the stationary dummy, with the second and third waves reduced to 50% damage as stated.",
+  "Q (Dredge Line) is cast on cooldown; its damage lands as the cast starts and then its 0.25s cast time keeps Nautilus busy, the same simplification used for the drag/dash which is not modeled beyond that lockout.",
+  "W (Titan's Wrath) is cast on cooldown (no cast time), immediately raising its 6s shield; per the wiki, reapplying Pain of Wrath while one is already ticking adds a stack but deals no extra damage, so only the first attack landing during each shield window deals Pain of Wrath's damage (half instantly, half 1.25s later) — but every attack landing during the shield window still resets Nautilus' attack timer, so attacks chain much faster while it is up.",
+  "E (Riptide) is cast on cooldown; all three of its waves (at 0, 0.297s and 0.561s after the cast) are assumed to hit the stationary dummy, with the second and third waves reduced to 50% damage as stated; the cast itself keeps Nautilus busy for its 0.25s cast time.",
   "Staggering Blow (P) adds its bonus physical damage to a basic attack landing on the dummy at most once every 6 seconds, since the dummy is the only target.",
   "Mana is not modeled: nothing here realistically binds inside a 15s fight at level 16."
  ],
@@ -102,7 +103,8 @@
      245
     ],
     "apRatio": 0.9
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "durationS": 6,
@@ -132,7 +134,8 @@
    },
    "reductionRatio": 0.5,
    "wave2OffsetS": 0.297,
-   "wave3OffsetS": 0.561
+   "wave3OffsetS": 0.561,
+   "castTimeS": 0.25
   },
   "R": {
    "secondary": {
@@ -162,6 +165,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nautilus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nautilus.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nautilus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nautilus.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

@@ -3,6 +3,8 @@
 //! Bomb (Q) and Gatling Gun (E) and Valkyrie (W) are cast the instant they
 //! are ready, and Missile Barrage (R) fires on a 2 s cooldown from a stocked
 //! ammo pool that recharges over time and is accelerated by on-hit attacks.
+//! Casts go one at a time: Q and R (both of which have a real cast time)
+//! hold every other cast and the next attack through `busy_until`.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +30,7 @@ pub struct GenDriver {
     p_onhit_ratio: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_ticks: i64,
@@ -42,6 +45,7 @@ pub struct GenDriver {
     r_max_ammo: i64,
     r_recharge_s: f64,
     r_cdr_reduction: f64,
+    r_cast_s: f64,
     src_p_onhit: SourceId,
     src_r_big: SourceId,
     s: State,
@@ -51,6 +55,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     w_active: bool,
     w_ticks_left: i64,
@@ -67,9 +73,23 @@ struct State {
 }
 
 impl GenDriver {
-    /// Fires one stocked missile: damage, Big One accounting, and the
-    /// bookkeeping for the next shot and the ammo pool. Does not touch
-    /// Spellblade/lockout: the caller decides whether those are needed.
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
+    /// Fires one stocked missile: damage, Big One accounting, the
+    /// bookkeeping for the next shot and the ammo pool, and the cast time
+    /// that keeps Corki busy until it ends. Spellblade priming is left to
+    /// the caller (the engine already primes it for the opening cast).
     fn fire_missile(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.r_ammo -= 1;
@@ -87,6 +107,7 @@ impl GenDriver {
         if self.s.r_ammo < self.r_max_ammo && self.s.r_recharge_at == INF {
             self.s.r_recharge_at = t + e.ult_cd(self.r_recharge_s);
         }
+        self.busy_for(e, self.r_cast_s);
     }
 }
 
@@ -95,6 +116,7 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let start_ammo = kit.num("gen.R.assumedStartAmmo")? as i64;
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_active: false,
             w_ticks_left: 0,
@@ -121,6 +143,7 @@ impl Driver for GenDriver {
             p_onhit_ratio: kit.num("gen.P.onhitAdRatio")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_ticks: kit.num("gen.W.ticks")? as i64,
@@ -135,6 +158,7 @@ impl Driver for GenDriver {
             r_max_ammo: kit.num("gen.R.maxAmmo")? as i64,
             r_recharge_s: kit.num("gen.R.rechargeS")?,
             r_cdr_reduction: cdr_base * (1.0 + cdr_coef * crit_frac),
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_p_onhit: intern("P onhit"),
             src_r_big: intern("R big one"),
             s: state,
@@ -169,7 +193,8 @@ impl Driver for GenDriver {
         let ad = e.p.ad;
         e.deal(self.p_onhit_ratio * ad, DType::True, self.src_p_onhit, true, false, 1.0);
         // Missile Barrage: on-hit against a champion accelerates the
-        // currently-filling ammo charge, scaling with crit chance.
+        // currently-filling ammo charge, scaling with crit chance. This is
+        // not a cast, so it does not touch busy_until.
         if self.ranks.r > 0 && self.s.r_recharge_at != INF {
             self.s.r_recharge_at -= self.r_cdr_reduction;
         }
@@ -179,7 +204,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -188,12 +213,13 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the cast lockout
+        // held the first attack past the opening lockout; the cast time
+        // itself still keeps Corki busy until it ends
         if self.ranks.r == 0 || self.s.r_ammo == 0 {
             return;
         }
@@ -206,7 +232,7 @@ impl Driver for GenDriver {
             if self.s.w_active {
                 out[n] = (self.s.w_next_tick, Kind::Ev(EV_W_TICK));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -214,7 +240,7 @@ impl Driver for GenDriver {
             if self.s.e_active {
                 out[n] = (self.s.e_next_tick, Kind::Ev(EV_E_TICK));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -224,7 +250,7 @@ impl Driver for GenDriver {
                 n += 1;
             }
             if self.s.r_ammo > 0 {
-                out[n] = (pymax(self.s.r_next_fire, e.st.t), Kind::Ev(EV_R_FIRE));
+                out[n] = (self.castable_at(e, self.s.r_next_fire), Kind::Ev(EV_R_FIRE));
                 n += 1;
             }
         }
@@ -235,6 +261,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W_CAST) => {
+                // no cast time: only a cast already in progress holds it back
                 e.prime_spellblade();
                 e.ability_cast_proc();
                 e.eclipse_hit();
@@ -254,6 +281,7 @@ impl Driver for GenDriver {
                 }
             }
             Kind::Ev(EV_E_CAST) => {
+                // no cast time: only a cast already in progress holds it back
                 e.prime_spellblade();
                 e.ability_cast_proc();
                 e.eclipse_hit();
@@ -275,7 +303,6 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_R_FIRE) => {
                 e.prime_spellblade();
-                e.lockout();
                 self.fire_missile(e);
             }
             Kind::Ev(EV_R_RECHARGE) => {

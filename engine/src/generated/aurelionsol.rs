@@ -2,11 +2,11 @@
 //! an uninterrupted channel for the whole fight (beam ticks every 0.125s,
 //! its burst fires every full second, split into a flat+AP magic instance
 //! and a true-damage instance scaled by an assumed fixed Stardust count),
-//! Singularity ticks on cooldown, and Falling Star opens the fight once as
-//! its empowered form, The Skies Descend, whose star impact is the only
-//! damage dealt (a target hit by the impact never also takes the
-//! shockwave). Astral Flight is never cast: on a stationary dummy it has no
-//! combat value.
+//! Singularity is cast on cooldown, its 0.2s cast time keeping Aurelion Sol
+//! busy, and Falling Star opens the fight once as its empowered form, The
+//! Skies Descend, whose star impact is the only damage dealt (a target hit
+//! by the impact never also takes the shockwave). Astral Flight is never
+//! cast: on a stationary dummy it has no combat value.
 
 use crate::fight::{Driver, Engine, Events, Kind};
 use crate::fx::*;
@@ -36,6 +36,7 @@ pub struct GenDriver {
     e_delay_s: f64,
     e_tick_count: i64,
     e_cd: f64,
+    e_cast_time_s: f64,
     // The Skies Descend
     r_impact_dmg: f64,
     r_delay_s: f64,
@@ -48,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast starts before it.
+    busy_until: f64,
     q_started: bool,
     q_next_beam: f64,
     q_next_burst: f64,
@@ -58,10 +61,25 @@ struct State {
     e_ticks_done: i64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast until it ends.
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_started: false,
             q_next_beam: INF,
             q_next_burst: INF,
@@ -86,6 +104,7 @@ impl Driver for GenDriver {
             e_delay_s: kit.num("gen.E.delayS")?,
             e_tick_count: kit.num("gen.E.tickCount")? as i64,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_time_s: kit.num("gen.E.castTimeS")?,
             r_impact_dmg: kit.hit("gen.R.impact", ranks.r, sheet)?,
             r_delay_s: kit.num("gen.R.delayS")?,
             src_q_burst: intern("Q burst"),
@@ -111,13 +130,14 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 || self.s.q_started {
             return INF;
         }
-        e.st.t
+        self.castable_at(e, e.st.t)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         // the whole-fight channel: start the beam ticks and the once-a-
         // second burst, never to be recast (the channel is treated as
-        // uninterrupted and never-ending)
+        // uninterrupted and never-ending); no cast time, so nothing else
+        // needs to wait for it
         let t = e.st.t;
         self.s.q_started = true;
         self.s.q_next_beam = t + self.q_beam_interval_s;
@@ -128,7 +148,8 @@ impl Driver for GenDriver {
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: The Skies Descend's star strikes after its delay
+        // the opening cast: The Skies Descend's star strikes after its
+        // delay; no cast time, so nothing else needs to wait for it
         if self.ranks.r == 0 {
             return;
         }
@@ -153,7 +174,7 @@ impl Driver for GenDriver {
             if self.s.e_active {
                 out[n] = (self.s.e_next_tick, Kind::Ev(EV_E_TICK));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -181,15 +202,16 @@ impl Driver for GenDriver {
                 e.ult_hatefog();
             }
             Kind::Ev(EV_E_CAST) => {
-                // 0.2s cast time, then the 0.5s (from cast start) delay
-                // before the black hole appears and starts ticking
+                // 0.2s cast time keeps Aurelion Sol busy; the black hole
+                // appears 0.5s from the start of the cast (a delay that
+                // already contains the cast time) and starts ticking then
                 self.s.e_active = true;
                 self.s.e_ticks_done = 0;
                 self.s.e_next_tick = t + self.e_delay_s;
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_time_s);
             }
             Kind::Ev(EV_E_TICK) => {
                 e.deal(self.e_tick_dmg, DType::Magic, SRC_E, false, true, 1.0);

@@ -2,9 +2,11 @@
 //! ability (or landing Savagery's stab); a cast made at 4 stacks consumes
 //! them, uses the Ferocity-empowered damage, and grants a free extra cast.
 //! Savagery arms the next attack with a bonus stab and attack speed instead
-//! of dealing damage on cast; Battle Roar and Bola Strike deal damage on
-//! cast and go out on cooldown; Thrill of the Hunt opens the fight, arming
-//! the first attack with a 100% AD bonus hit.
+//! of dealing damage on cast and has no cast time; Battle Roar has no cast
+//! time and deals damage on cast; Bola Strike has a 0.25s cast time and
+//! keeps Rengar busy for it; Thrill of the Hunt opens the fight, arming the
+//! first attack with a 100% AD bonus hit. Casts go one at a time via
+//! `busy_until`.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -12,9 +14,11 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// Battle Roar and Bola Strike go out on cooldown as events.
+/// Battle Roar, and Bola Strike's cast then its Ferocity-empowered extra
+/// cast, go out as events.
 const EV_W: u8 = 0;
 const EV_E: u8 = 1;
+const EV_E_EXTRA: u8 = 2;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -34,6 +38,7 @@ pub struct GenDriver {
     e_dmg: f64,
     e_emp_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_ad_ratio: f64,
     src_q: SourceId,
     src_w: SourceId,
@@ -46,6 +51,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     ferocity: i64,
     /// Pending Savagery stabs, in order; 0.0 means the slot is empty.
     q_stab_a: f64,
@@ -58,11 +65,27 @@ struct State {
     q_emp_as_until: f64,
     w_ready: f64,
     e_ready: f64,
+    /// The Ferocity-empowered free extra cast of Bola Strike, pending at
+    /// this time (INF: none pending).
+    e_extra_at: f64,
     /// Thrill of the Hunt's bonus damage, pending on the next attack.
     r_pending: bool,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// A basic ability cast generates a Ferocity stack, or consumes all 4 if
     /// already maxed (returning true: this cast is Ferocity-empowered).
     fn ferocity_on_cast(&mut self) -> bool {
@@ -98,6 +121,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             ferocity: 0,
             q_stab_a: 0.0,
             q_stab_b: 0.0,
@@ -106,6 +130,7 @@ impl Driver for GenDriver {
             q_emp_as_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
+            e_extra_at: INF,
             r_pending: false,
         };
         Ok(GenDriver {
@@ -128,6 +153,7 @@ impl Driver for GenDriver {
             e_emp_dmg: kit.at_level("gen.E.empDamage.baseByLevel", level)?
                 + kit.num("gen.E.empDamage.bonusAdRatio")? * sheet.ad_bonus,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_ad_ratio: kit.num("gen.R.bonusDamage.adRatio")?,
             src_q: SRC_Q,
             src_w: SRC_W,
@@ -191,10 +217,12 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
+        // Savagery has no cast time: it does not call busy_for, but it was
+        // still gated by castable_at via q_at above
         let t = e.st.t;
         let emp = self.ferocity_on_cast();
         let dmg = if emp { self.q_emp_dmg } else { self.q_dmg };
@@ -203,7 +231,8 @@ impl Driver for GenDriver {
         if emp {
             self.s.q_emp_as_until = t + self.q_emp_as_dur;
             // the extra free cast: Ferocity is now 0, so it is never itself
-            // empowered
+            // empowered; Savagery has no cast time so this resolves at the
+            // same instant
             let emp2 = self.ferocity_on_cast();
             let dmg2 = if emp2 { self.q_emp_dmg } else { self.q_dmg };
             self.arm_stab(dmg2);
@@ -227,11 +256,15 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            if self.s.e_extra_at != INF {
+                out[n] = (self.castable_at(e, self.s.e_extra_at), Kind::Ev(EV_E_EXTRA));
+            } else {
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
+            }
             n += 1;
         }
         n
@@ -241,6 +274,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W) => {
+                // Battle Roar has no cast time
                 let emp = self.ferocity_on_cast();
                 let dmg = if emp { self.w_emp_dmg } else { self.w_dmg };
                 e.deal(dmg, DType::Magic, self.src_w, false, true, 1.0);
@@ -258,23 +292,28 @@ impl Driver for GenDriver {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
             }
             Kind::Ev(EV_E) => {
+                // Bola Strike's cast time keeps Rengar busy; if it consumes
+                // max Ferocity, its free extra cast is a separate cast
+                // instance and waits for this one's cast time to end
                 let emp = self.ferocity_on_cast();
                 let dmg = if emp { self.e_emp_dmg } else { self.e_dmg };
                 e.deal(dmg, DType::Physical, self.src_e, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
-                if emp {
-                    let emp2 = self.ferocity_on_cast();
-                    let dmg2 = if emp2 { self.e_emp_dmg } else { self.e_dmg };
-                    e.deal(dmg2, DType::Physical, self.src_e, false, true, 1.0);
-                    e.ability_cast_proc();
-                    e.eclipse_hit();
-                    e.prime_spellblade();
-                    e.lockout();
-                }
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
+                self.busy_for(e, self.e_cast_s);
+                self.s.e_extra_at = if emp { self.s.busy_until } else { INF };
+            }
+            Kind::Ev(EV_E_EXTRA) => {
+                let emp2 = self.ferocity_on_cast();
+                let dmg2 = if emp2 { self.e_emp_dmg } else { self.e_dmg };
+                e.deal(dmg2, DType::Physical, self.src_e, false, true, 1.0);
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                e.prime_spellblade();
+                self.s.e_extra_at = INF;
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

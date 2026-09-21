@@ -1,10 +1,12 @@
 //! Lucian. An auto-attacker whose passive rides his attacks: Lightslinger is
 //! armed by any ability cast and consumed by the next basic attack, firing a
-//! second shot 0.25s later. Piercing Light and Ardent Blaze are flat casts
-//! on cooldown, Relentless Pursuit is cast purely for its attack reset and
-//! Lightslinger-arm (and gets a cooldown refund off Lightslinger hits), and
-//! The Culling opens the fight as a single channeled burst whose bullet
-//! count is fixed from the build's crit stats.
+//! second shot 0.25s later. Piercing Light and Ardent Blaze are 0.25s casts
+//! on cooldown that keep Lucian busy for their cast time (one cast at a
+//! time), Relentless Pursuit is cast purely for its attack reset and
+//! Lightslinger-arm (exempt from the cast lockout per the dossier, and
+//! getting a cooldown refund off Lightslinger hits), and The Culling opens
+//! the fight as a single channeled burst whose bullet count is fixed from
+//! the build's crit stats.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -12,8 +14,8 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// The Lightslinger second shot lands; W and E come off cooldown; the
-/// channel of The Culling ends and deals its damage.
+/// The Lightslinger second shot lands; W is cast; E is cast; the channel of
+/// The Culling ends and deals its damage.
 const EV_LL_SHOT: u8 = 0;
 const EV_W: u8 = 1;
 const EV_E: u8 = 2;
@@ -31,8 +33,10 @@ pub struct GenDriver {
     ll_delay: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_cd: f64,
     /// Relentless Pursuit's cooldown refund per Lightslinger hit on the
     /// (always-champion) dummy.
@@ -49,6 +53,10 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress (Q or W only) ends here: no other Q/W cast and
+    /// no attack before it. Relentless Pursuit and The Culling ignore it,
+    /// per the dossier's buffering rules.
+    busy_until: f64,
     w_ready: f64,
     e_ready: f64,
     /// Lightslinger armed by an ability cast, and until when it can still
@@ -65,6 +73,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a Q/W cast readied at `ready` can start: not before now,
+    /// and not inside another Q/W cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A Q/W cast just started: no other Q/W cast and no attack until it
+    /// ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn arm_lightslinger(&mut self, t: f64) {
         self.s.ll_armed = true;
         self.s.ll_until = t + self.ll_window;
@@ -75,6 +96,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
             ll_armed: false,
@@ -102,8 +124,10 @@ impl Driver for GenDriver {
             ll_delay: kit.num("gen.P.secondShotDelayS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_cdr_champ: kit.num("gen.E.cdrChampionS")?,
             r_dmg_total: r_total_shots * r_per_bullet,
@@ -146,7 +170,9 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(pymax(e.st.q_ready, e.st.t), self.s.channel_end)
+        // disabled during The Culling's channel, and one cast at a time
+        // with Ardent Blaze
+        self.castable_at(e, pymax(e.st.q_ready, self.s.channel_end))
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -156,7 +182,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.arm_lightslinger(e.st.t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -178,11 +204,15 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            let ready = pymax(pymax(self.s.w_ready, e.st.t), self.s.channel_end);
-            out[n] = (ready, Kind::Ev(EV_W));
+            // disabled during The Culling's channel, and one cast at a time
+            // with Piercing Light
+            let ready = pymax(self.s.w_ready, self.s.channel_end);
+            out[n] = (self.castable_at(e, ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
+            // no cast time, and buffered even during Q/W's cast time or R's
+            // channel per the dossier: not gated by busy_until or channel_end
             out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
             n += 1;
         }
@@ -211,7 +241,7 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.arm_lightslinger(t);
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);

@@ -55,12 +55,21 @@ def item(name):
 
 
 def spec_for(unit_name, star=2, items=(), fx=(), geometry="clump", traits=(), duration=None,
-             dummy=None, pressure=None, driver=None):
+             dummy=None, pressure=None, driver=None, timed=False):
     """A cell spec for one fight of `unit_name`; `fx` adds synthetic items
-    carrying raw effects (the keys tft.item_spec resolves)."""
+    carrying raw effects (the keys tft.item_spec resolves).
+
+    Like the target debuffs and the melee walk, the per-unit cast timelines
+    (data/tft/set18/cast-timing.json) are left out of these hand-computed
+    fixtures: they pin the flat rules — an attack lands when it is due, the
+    bin's 0.25 s cast, a one-second lock — which the engine keeps for every
+    unit without a timeline, and their numbers must not move whenever the
+    third-party table is transcribed again. `timed=True` is the production
+    spec; test_tft_cast_timing covers the timelines themselves."""
     u = SNAP.unit(unit_name)
     spec = tft.cell_spec(SNAP, u, star, geometry, list(traits), dummy or DUMMY, duration, pressure,
-                         ITEM_FX, TRAIT_FX, items=[item(x) for x in items], driver=driver)
+                         ITEM_FX, TRAIT_FX, items=[item(x) for x in items], driver=driver,
+                         cast_timing=None if timed else {})
     for extra in fx:
         spec["items"].append({"api": "test", "name": "test", "unique": False, "stats": [],
                               "adds": [], **extra})
@@ -207,11 +216,11 @@ class TestSheet(unittest.TestCase):
         self.assertAlmostEqual(s3["hp"], 900 * 1.8 * 1.8)
 
     def test_crit_excess_and_double_precision(self):
-        # 25% base + 90 = 115%: capped, the excess is crit damage, and a
-        # second Precision adds 10%
+        # 25% base + 90 = 115%: capped, 80% of the excess is crit damage
+        # (Riot's patch 13.18 rate), and a second Precision adds 10%
         s, _ = run("Ashe", fx=[{"stats": [["crit", 0.9]], "precision": 2}])
         self.assertAlmostEqual(s["crit"], 1.0)
-        self.assertAlmostEqual(s["critMult"], 1.4 + 0.15 + 0.1)
+        self.assertAlmostEqual(s["critMult"], 1.4 + 0.8 * 0.15 + 0.1)
         self.assertTrue(s["precision"])
 
     def test_attack_speed_additive_on_base_and_capped(self):
@@ -317,16 +326,45 @@ class TestDamage(unittest.TestCase):
 
 class TestManaCycle(unittest.TestCase):
     """Ashe with nothing: 7 mana per attack at 0.8 attacks/s, 2 regen/s,
-    20 of 80 to start. Attacks at 0, 1.25, …; regen lands on the quarter
-    second ticks. After the attack at 6.25 s she has 20 + 42 + 12.5 =
-    74.5; the ticks through 7.5 s add 2.5 and the attack there 7, so the
-    first cast is at 7.5 s with 84 on the bar. It leaves 4 mana and a
+    20 of 80 to start; regen lands on the quarter second ticks.
+
+    The public path carries her cast timeline (cast-timing.json: attack
+    delay 0.21 s, recovery 0.29 s, cast animation 1.58 s). Attacks land at
+    0.21, 1.46, …; after the one at 6.46 s she has 20 + 42 + 12.5 = 74.5,
+    the ticks through 7.5 s add 2.5 and the attack at 7.71 s 7: a full bar,
+    so the cast starts at that attack's unlock point, 8.0 s, with 84.5 on
+    the bar (the tick at 7.75 s still paid). It leaves 4.5. Until 9.58 s she
+    neither attacks nor gains mana: the tick at 9.75 s pays for the 0.17 s
+    after the window, and a fresh attack lands at 9.79 s. Eight attacks and
+    39 ticks later the second bar fills on the tick at 19.5 s.
+
+    Under the flat rules (any unit without a timeline, and this module's
+    fixtures) attacks land at 0, 1.25, …: after the attack at 6.25 s she
+    has 74.5, the ticks through 7.5 s add 2.5 and the attack there 7, so
+    the first cast is at 7.5 s with 84 on the bar. It leaves 4 mana and a
     one-second lock that blocks exactly a second of regen (the tick at
     8.5 s pays nothing: its whole quarter second is inside the lock); the
     second bar fills on the tick at 18.5 s."""
 
     def test_cast_times(self):
         _, res = sim("Ashe", dummy=immortal(DUMMY))
+        self.assertEqual(res["casts"], 2)
+        self.assertAlmostEqual(res["castTimes"][0], 8.0)
+        self.assertAlmostEqual(res["castTimes"][1], 19.5)
+        self.assertEqual(res["attacks"], 15)
+
+    def test_cast_window_and_overflow(self):
+        _, res = run("Ashe", dummy=immortal(DUMMY), duration=9.8, timed=True)
+        self.assertEqual(res["casts"], 1)
+        self.assertAlmostEqual(events(res, "cast")[0][2], 84.5)       # the bar at the cast
+        self.assertAlmostEqual(res["probe"]["castingUntil"], 9.58)
+        self.assertAlmostEqual(res["probe"]["lockUntil"], 9.58)       # no mana inside the window
+        self.assertAlmostEqual(events(res, "attack")[-1][0], 9.79)    # the fresh attack
+        # the overflow, the tick's 0.17 s of regen after the window, that attack
+        self.assertAlmostEqual(res["probe"]["mana"], 4.5 + 2 * 0.17 + 7)
+
+    def test_flat_cast_times(self):
+        _, res = run("Ashe", dummy=immortal(DUMMY))
         self.assertEqual(res["casts"], 2)
         self.assertAlmostEqual(res["castTimes"][0], 7.5)
         self.assertAlmostEqual(res["castTimes"][1], 18.5)

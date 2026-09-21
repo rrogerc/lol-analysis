@@ -10,13 +10,13 @@
   "Q"
  ],
  "notes": [
-  "At t=0 Taric casts Dazzle (E, no cast time, 1s wind-up before its damage lands) and self-casts Bastion (W, 0.25s cast); both are then recast every time they come off cooldown for the whole fight, each tracked as its own event.",
+  "At t=0 Taric casts Dazzle (E, no cast time, 1s wind-up before its damage lands) and self-casts Bastion (W, 0.25s cast time, so Taric is busy and no other cast or attack starts until it ends); both are then recast every time they come off cooldown for the whole fight, each tracked as its own event.",
   "Bravado's empowered-attack queue is modeled explicitly: an ability cast (Q/W/E) grants two stored empowered attacks if fewer than two were stored, refreshing the 5s window only when it does so (a cast while two are already stored does nothing further, matching 'Bravado may only grant up to two empowered attacks'); the first landed empowered attack of a refreshed pair also refreshes the 5s window.",
-  "Starlight's Touch (Q) is cast automatically whenever Taric has at least one stocked charge, on the standard League reading that an ammo-style spell cannot be cast at zero stock (the dossier flags this as an open, high-impact question). Charges are granted only by landing Bravado-empowered attacks; the passive 15s-per-charge natural recharge is not modeled since attack-granted charges dominate within a 15s fight and Q's own heal is irrelevant to the damage fight.",
+  "Starlight's Touch (Q) is cast automatically whenever Taric has at least one stocked charge, on the standard League reading that an ammo-style spell cannot be cast at zero stock (the dossier flags this as an open, high-impact question). Charges are granted only by landing Bravado-empowered attacks; the passive 15s-per-charge natural recharge is not modeled since attack-granted charges dominate within a 15s fight and Q's own heal is irrelevant to the damage fight. Q has a 0.25s cast time (gen.Q.castTimeS): each cast keeps Taric busy for that long before any other cast or attack starts.",
   "The engine's stat sheet exposes only total armor, with no base/bonus split for armor (unlike AD, which has ad_base/ad_bonus). Bravado's on-attack magic damage (+15% bonus armor) and Dazzle's damage (+50% bonus armor) therefore both use Taric's total armor stat as the bonus-armor input; this is a documented overestimate (see `assumed`).",
-  "Bastion (W) is self-cast: it grants Taric bonus armor equal to its rank's percentage of his armor once the self-tether forms, treated as permanent for the rest of the fight since nothing severs a self-tether with no allies present; its shield is irrelevant with no incoming damage and is not modeled.",
+  "Bastion (W) is self-cast: it grants Taric bonus armor equal to its rank's percentage of his armor once the self-tether forms, treated as permanent for the rest of the fight since nothing severs a self-tether with no allies present; its shield is irrelevant with no incoming damage and is not modeled. W has a 0.25s cast time (gen.W.castTimeS): each self-cast keeps Taric busy for that long before any other cast or attack starts.",
   "Bravado's cooldown reduction on Q/W/E's remaining cooldown is modeled by keeping (1 - Haste/(Haste+100)) of each ability's remaining cooldown at every Bravado proc (including on the ability just cast), following the wiki's stated ability-haste conversion formula (the numbers sheet marks the underlying calculation piece unresolved).",
-  "Cosmic Radiance (R) is never cast: it deals no damage and grants nothing useful to a damage fight, only costing a 0.25s cast lockout, matching the dossier's proposed rotation.",
+  "Cosmic Radiance (R) is never cast: it deals no damage and grants nothing useful to a damage fight beyond a 0.25s cast-time lockout for no benefit, matching the dossier's proposed rotation (see top-level `unused`).",
   "Bravado's '100% total attack speed' is modeled as +100 percentage points of bonus attack speed while an empowered attack is stored and the window has not expired, the closest reading available to the engine's percent bonus-AS hook.",
   "Mana costs are not modeled: nothing here binds inside an 8-15s fight at level 16."
  ],
@@ -95,7 +95,8 @@
     4,
     5
    ],
-   "requiresChargeToCast": true
+   "requiresChargeToCast": true,
+   "castTimeS": 0.25
   },
   "W": {
    "armorPct": [
@@ -104,7 +105,8 @@
     0.08,
     0.09,
     0.1
-   ]
+   ],
+   "castTimeS": 0.25
   },
   "E": {
    "damage": {
@@ -131,11 +133,15 @@
    "why": "the dossier leaves open whether Starlight's Touch can be cast at zero stocked charges; the standard League reading for ammo-style spells (cannot cast at zero stock) is used"
   }
  ],
+ "unused": {
+  "R": "Cosmic Radiance only grants invulnerability with no damage component, and casting it would spend a 0.25s cast-time lockout for zero return in a pure damage fight, so the rotation never casts it (matching the dossier's proposed rotation)."
+ },
  "attack": {
   "windupFraction": 0.18,
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/taric.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/taric.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/taric.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/taric.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

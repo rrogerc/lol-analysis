@@ -1,9 +1,11 @@
-//! Shaco. Opens with Deceive for its guaranteed-crit empowered attack and
-//! Hallucinate for its explosion/mini-box payload (assumed to resolve right
-//! after the cast, see kit notes), then weaves Two-Shiv Poison on cooldown
-//! and re-throws Jack in the Box on cooldown while basic-attacking;
-//! Backstab rides every attack and the from-behind bonuses on Q and E are
-//! assumed active for the whole fight.
+//! Shaco. Opens with Hallucinate for its explosion/mini-box payload (assumed
+//! to resolve right after its 0.25 s cast, see kit notes), Deceive follows
+//! immediately after for its guaranteed-crit empowered attack, then Two-Shiv
+//! Poison and Jack in the Box are woven in on cooldown (each with its own
+//! 0.25 s cast time) while Shaco basic-attacks; Backstab rides every attack
+//! and the from-behind bonuses on Q and E are assumed active for the whole
+//! fight. Every cast keeps Shaco busy for its cast time, so casts never
+//! stack in the same instant.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -38,12 +40,14 @@ pub struct GenDriver {
     w_active_s: f64,
     w_tick_interval_s: f64,
     w_num_ticks: i64,
+    w_cast_s: f64,
 
     e_dmg: f64,
     e_backstab_dmg: f64,
     e_cd: f64,
     e_execute_threshold: f64,
     e_execute_mult: f64,
+    e_cast_s: f64,
 
     r_explosion_dmg: f64,
     r_box_dmg: f64,
@@ -62,6 +66,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     q_armed: bool,
     w_ready: f64,
     w_tick_next: f64,
@@ -70,6 +76,21 @@ struct State {
     r_explosion_at: f64,
     r_tick_next: f64,
     r_ticks_left: i64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -96,6 +117,7 @@ impl Driver for GenDriver {
         let r_tick_interval_s = kit.num("gen.R.tickIntervalS")?;
 
         let state = State {
+            busy_until: 0.0,
             q_armed: false,
             w_ready: 0.0,
             w_tick_next: INF,
@@ -122,12 +144,14 @@ impl Driver for GenDriver {
             w_active_s,
             w_tick_interval_s,
             w_num_ticks: (w_active_s / w_tick_interval_s) as i64,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
 
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_backstab_dmg: e_backstab_base_level + e_backstab_ap_ratio * sheet.ap,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_execute_threshold: kit.num("gen.E.executeThreshold")?,
             e_execute_mult: kit.num("gen.E.executeMult")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
 
             r_explosion_dmg: kit.hit("gen.R.explosion", ranks.r, sheet)?,
             r_box_dmg: kit.hit("gen.R.boxDamage", ranks.r, sheet)?,
@@ -183,7 +207,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -192,6 +216,9 @@ impl Driver for GenDriver {
         // Cooldown is post-effect: it starts once the stealth duration ends.
         e.st.q_ready = t + self.q_stealth_s + e.basic_cd(self.q_cd);
         e.prime_spellblade();
+        // Deceive has no cast time of its own, but it still cannot start
+        // inside another cast (handled by q_at's castable_at); it costs
+        // nothing further here.
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -200,14 +227,16 @@ impl Driver for GenDriver {
         }
         // The opening cast: the engine has primed Spellblade and held the
         // first attack past the cast; the explosion is assumed to resolve
-        // when the cast completes (see kit notes).
+        // when the cast completes (see kit notes). The cast time keeps
+        // Shaco busy so Deceive (and everything else) waits for it.
         self.s.r_explosion_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
             if self.s.w_ticks_left > 0 {
                 out[n] = (self.s.w_tick_next, Kind::Ev(EV_W_TICK));
@@ -215,7 +244,7 @@ impl Driver for GenDriver {
             }
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_explosion_at != INF {
@@ -237,7 +266,7 @@ impl Driver for GenDriver {
                 self.s.w_ticks_left = self.w_num_ticks;
                 self.s.w_tick_next = t + self.w_arm_s + self.w_tick_interval_s;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_TICK) => {
                 e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
@@ -266,7 +295,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_EXPLOSION) => {
                 self.s.r_explosion_at = INF;

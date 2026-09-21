@@ -11,13 +11,14 @@
  ],
  "notes": [
   "Opens with MMOOOMMMM! (R) at t=0; the dummy is assumed to stand in the wave's 125-unit center sweetspot (the natural placement for a single stationary target directly ahead), so R's physical damage uses the 1.5x sweetspot multiplier. R's self heal is ignored since it never changes damage dealt to the dummy.",
+  "Casts go one at a time: Super Scorcher Breath (Q, 0.25s) and Achooo! (W, 0.35s) each keep Smolder busy for their stated cast time before any other cast or attack starts, so Q and W can never land in the same instant as each other or as R's own cast/E's channel.",
   "Dragon Practice (P) stacks start at 0 and accumulate only from hits actually landed during the fight: Q, W, E and R each grant a stack the first time they hit the dummy, capped as the dossier states (one stack per Q cast since Q can only hit once per cast anyway, one stack ever from W since it only grants a stack on its first hit against a given champion, and one stack per E cast regardless of bolt count). Q's kill-related bonus-stack text is not modeled since the dummy is never treated as dying.",
   "Because stacks start at 0 and only a handful of casts fit in an 8-15s fight, Q's stack-gated tiers (25/125/225 stacks) are effectively unreachable; the tier 1/2/3 logic is implemented for correctness but will almost never fire in a short dummy fight.",
   "The crit-scaling term in Dragon Practice's Q/E bonus damage and in Q's own physical damage is applied exactly as Riot's extracted formula strings show it: an additive bonus of ratio x critChance x (critDamage-1), not a multiplicative crit strike. This is the resolved reading of an ambiguous formula.",
   "If Q ever reaches tier 2 (125 stacks), all of its arc bolts are assumed to land on the single dummy (a multi-hit reading), each dealing 50% of the fireball's damage (physical and Dragon Practice bonus alike) per the wiki's stated multiplier.",
   "W's repeat-explosion decay (75% of the previous explosion's damage) is treated as persisting for the whole fight against the one dummy target, since there is nowhere else for it to reset.",
-  "E is a 1.25s channel: it is cast on cooldown whenever off cooldown and Smolder is not locked into R's 0.75s cast; casting Q or W is paused for its duration (per the dossier, another cast would end it early) and Smolder's attacks are held until it ends. All of its bolts (5 + stacks/100, rounded down) are resolved as a single batch when the channel ends; its cooldown starts at the cast, per the wiki's cdstart note.",
-  "Q and W are cast on cooldown whenever not blocked by E's channel or R's cast lock; basic attacks fill every other window.",
+  "E is a 1.25s channel with no cast time (the dossier states none): it is cast on cooldown whenever off cooldown and Smolder is not locked into R's 0.75s cast or a Q/W cast time; casting Q or W is paused for its duration (per the dossier, another cast would end it early) and Smolder's attacks are held until it ends. All of its bolts (5 + stacks/100, rounded down) are resolved as a single batch when the channel ends; its cooldown starts at the cast, per the wiki's cdstart note.",
+  "Q and W are cast on cooldown whenever not blocked by E's channel, R's cast lock, or each other's own cast time; basic attacks fill every other window.",
   "Q's tier-3 true-damage burn (unreachable in-fight, see above) is modeled, if ever triggered, as an instant application of its full 3-second total rather than three separate ticks, and the 6.5% execute threshold is not modeled, since this code path cannot actually be reached inside the simulated fight length.",
   "Mana is not modeled: no base mana or regen values were available, and Smolder's costs are small relative to an 8-15s fight."
  ],
@@ -81,6 +82,7 @@
     ],
     "bonusAdRatio": 1.3
    },
+   "castTimeS": 0.25,
    "critRatio": 0.75,
    "tier1Stacks": 25,
    "tier2Stacks": 125,
@@ -113,6 +115,7 @@
     "bonusAdRatio": 0.5,
     "apRatio": 0.8
    },
+   "castTimeS": 0.35,
    "decayFactor": 0.75
   },
   "E": {
@@ -159,6 +162,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/smolder.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/smolder.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/smolder.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/smolder.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

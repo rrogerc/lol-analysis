@@ -13,9 +13,10 @@
   "The fight's dummy counts as an enemy champion, so Headshot uses the champion-rate bonus (0.6/0.8/1.0 AD by level) rather than the 110% flat non-champion rate.",
   "No brush is assumed at the dummy's location, so Headshot needs the full 5 attacks to charge rather than the brush-halved 4.",
   "Piltover Peacemaker's 60%-damage falloff on later targets never triggers because the fight has only one target; every Q cast deals the full first-hit damage.",
-  "Piltover Peacemaker resets Caitlyn's attack timer on hit: modeled by setting the next attack to one windup after the cast completes, per the documented attack-timer reset.",
+  "Casts go one at a time: each ability keeps Caitlyn busy for its own cast time (Q 0.625 s, E 0.15 s, W 0.25 s, R 0.375 s) during which no other cast starts and no attack lands; a single busy_until tracks this and every cast/event reports the later of its own ready time, now, and busy_until.",
+  "Piltover Peacemaker resets Caitlyn's attack timer on hit: the next attack becomes available one windup after the cast starts, or when the cast time ends, whichever is later.",
+  "Ace in the Hole channels for 1 second before the bullet lands (its 0.375 s cast time is the first part of that same channel); attacks and Q/E/W casts are held until the full 1 s channel ends, not just the cast time. It opens the fight at t=0 (the engine's own opening cast) and would recast on cooldown if a fight/haste combination ever brought it under the fight length.",
   "Yordle Snap Trap is cast once, right after Ace in the Hole's channel ends (or at t=0 if Ace in the Hole is not yet ranked): it is placed directly on the dummy's own stationary location, so it arms 1 second later and springs immediately since the dummy never steps away, granting its bonus Headshot damage as a single instance. A sprung trap makes its target immune to further traps for 3 seconds and the dummy never re-triggers one on its own, so only this single application is modeled rather than repeated casts on cooldown; this is a low-impact, best-effort reading of an ability whose ground-trap design does not map cleanly onto a stationary dummy.",
-  "Ace in the Hole channels for 1 second before the bullet lands; attacks and Q/E casts are held until the channel ends. It opens the fight at t=0 (the engine's own opening cast) and would recast on cooldown if a fight/haste combination ever brought it under the fight length.",
   "Ace in the Hole's and Headshot's crit-chance/crit-damage scaling terms are pre-computed from the build's static crit chance and crit damage as their own formulas state, so those damage instances are dealt with crit_mod=false to avoid double-applying the engine's own crit roll.",
   "Only the ordinary attack-damage portion of a Headshot attack can crit, handled automatically by the engine's own basic-attack damage; the Headshot bonus itself is a separate, non-crit instance added after.",
   "Mana costs (Q 55-75, E 75, W 20, R 100) are not modeled: they are well within a level 16 Caitlyn's mana pool over an 8-15 s fight."
@@ -101,7 +102,8 @@
      1.85,
      2.05
     ]
-   }
+   },
+   "castTimeS": 0.625
   },
   "W": {
    "damage": {
@@ -114,7 +116,8 @@
     ],
     "bonusAdRatio": 0.3
    },
-   "armTimeS": 1
+   "armTimeS": 1,
+   "castTimeS": 0.25
   },
   "E": {
    "damage": {
@@ -126,7 +129,8 @@
      280
     ],
     "apRatio": 0.8
-   }
+   },
+   "castTimeS": 0.15
   },
   "R": {
    "damage": {
@@ -138,7 +142,8 @@
     "bonusAdRatio": 1.0
    },
    "critChanceCoef": 0.3,
-   "channelDurationS": 1.0
+   "channelDurationS": 1.0,
+   "castTimeS": 0.375
   }
  },
  "attack": {
@@ -146,6 +151,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/caitlyn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/caitlyn.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/caitlyn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/caitlyn.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

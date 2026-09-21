@@ -3,7 +3,9 @@
 //! instead of his own auto-attack while a soldier is active; Conquering
 //! Sands and Shifting Sands both require that soldier and go out on
 //! cooldown; Emperor's Divide opens the fight as a single long-cooldown
-//! nuke whose damage lands after its cast time.
+//! nuke whose damage lands after its cast time. Casts go one at a time: a
+//! shared `busy_until` (set by Q, W and R, each of which has a real cast
+//! time) keeps every other cast and attack waiting until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,8 +28,10 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_time: f64,
     w_stab_dmg: f64,
     w_cast_cd: f64,
+    w_cast_time: f64,
     w_recharge: f64,
     w_max_charges: i64,
     w_soldier_dur: f64,
@@ -43,6 +47,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     charges: i64,
     /// When the next stocked charge regenerates (INF while already full).
     charge_regen_at: f64,
@@ -55,11 +61,27 @@ struct State {
     r_swing_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let w_max_charges = kit.num("gen.W.maxCharges")? as i64;
         let state = State {
+            busy_until: 0.0,
             charges: w_max_charges,
             charge_regen_at: INF,
             w_ready: 0.0,
@@ -74,8 +96,10 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_time: kit.num("gen.Q.castTimeS")?,
             w_stab_dmg: w_base + w_level_bonus,
             w_cast_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_time: kit.num("gen.W.castTimeS")?,
             w_recharge: kit.at_rank("gen.W.rechargeS", ranks.w)?,
             w_max_charges,
             w_soldier_dur: kit.num("gen.W.soldierDurationS")?,
@@ -128,7 +152,7 @@ impl Driver for GenDriver {
             return INF;
         }
         if e.st.t < self.s.soldier_until {
-            pymax(e.st.q_ready, e.st.t)
+            self.castable_at(e, e.st.q_ready)
         } else {
             INF
         }
@@ -140,19 +164,21 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_time);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: damage lands after the 0.5s cast time
+        // the opening cast: its 0.5s cast time keeps Azir busy, and the
+        // damage lands via a scheduled event once it ends
         self.s.r_swing_at = e.st.t + self.r_cast_time;
+        self.busy_for(e, self.r_cast_time);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 && self.s.charges > 0 {
-            let t_w = pymax(pymax(self.s.w_ready, e.st.t), self.s.soldier_until);
-            out[n] = (t_w, Kind::Ev(EV_W_CAST));
+            let ready = pymax(self.s.w_ready, self.s.soldier_until);
+            out[n] = (self.castable_at(e, ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.w > 0 && self.s.charges < self.w_max_charges {
@@ -160,7 +186,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_swing_at != INF {
@@ -182,7 +208,7 @@ impl Driver for GenDriver {
                 self.s.soldier_until = t + self.w_soldier_dur;
                 self.s.w_ready = t + e.basic_cd(self.w_cast_cd);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_time);
             }
             Kind::Ev(EV_CHARGE_REGEN) => {
                 self.s.charges = imin(self.s.charges + 1, self.w_max_charges);
@@ -199,6 +225,10 @@ impl Driver for GenDriver {
                     e.ability_cast_proc();
                     e.eclipse_hit();
                     e.prime_spellblade();
+                    // E has no cast time, but it still cannot start inside
+                    // another cast (castable_at above already ensures that);
+                    // it does interrupt an attack in progress, like a dash
+                    e.lockout();
                     // the dummy counts as an enemy champion: dashing into it
                     // refunds an Arise! charge
                     if self.s.charges < self.w_max_charges {

@@ -1,8 +1,9 @@
 //! Talon. Shadow Assault opens the fight and recasts on cooldown for its
 //! two damage passes; Noxian Diplomacy is cast close-range on cooldown for
-//! its guaranteed critical strike; Rake is cast on cooldown for its two
-//! passes; Blade's End stacks Wound on every ability hit and, once a basic
-//! attack lands at max stacks, starts the passive's ticking bleed.
+//! its guaranteed critical strike; Rake is cast on cooldown (its 0.25 s
+//! cast time keeps Talon busy) for its two passes; Blade's End stacks Wound
+//! on every ability hit and, once a basic attack lands at max stacks,
+//! starts the passive's ticking bleed.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -33,6 +34,7 @@ pub struct GenDriver {
     w_initial_dmg: f64,
     w_return_dmg: f64,
     w_return_delay: f64,
+    w_cast_s: f64,
     w_cd: f64,
     r_dmg: f64,
     r_min_lifetime: f64,
@@ -49,6 +51,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     wound_stacks: i64,
     wound_expire: f64,
     /// Ticks of the passive bleed still to land (0: no bleed running).
@@ -63,6 +67,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// An ability hit against the target: adds (or refreshes) a Wound
     /// stack, unless the target is currently bleeding.
     fn apply_wound(&mut self, t: f64) {
@@ -91,6 +108,7 @@ impl Driver for GenDriver {
         let bleed_tick_dmg = bleed_total / (bleed_ticks as f64);
 
         let state = State {
+            busy_until: 0.0,
             wound_stacks: 0,
             wound_expire: 0.0,
             bleed_ticks_left: 0,
@@ -114,6 +132,7 @@ impl Driver for GenDriver {
             w_initial_dmg: kit.hit("gen.W.initial", ranks.w, sheet)?,
             w_return_dmg: kit.hit("gen.W.return", ranks.w, sheet)?,
             w_return_delay: kit.num("gen.W.returnDelayS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_min_lifetime: kit.num("gen.R.minLifetimeS")?,
@@ -166,7 +185,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -210,7 +229,7 @@ impl Driver for GenDriver {
             if self.s.w_return_at != INF {
                 out[n] = (self.s.w_return_at, Kind::Ev(EV_W_RETURN));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -244,6 +263,8 @@ impl Driver for GenDriver {
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
             }
             Kind::Ev(EV_W_CAST) => {
+                // the outgoing pass lands with the cast, which then keeps
+                // Talon busy (no other cast, no attack) for its cast time
                 e.deal(self.w_initial_dmg, DType::Physical, self.src_w_initial, false, true, 1.0);
                 self.apply_wound(t);
                 e.ability_cast_proc();
@@ -251,7 +272,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.s.w_return_at = t + self.w_return_delay;
                 self.s.w_ready = INF;
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_RETURN) => {
                 self.s.w_return_at = INF;

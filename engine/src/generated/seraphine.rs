@@ -2,6 +2,11 @@
 //! whichever basic ability cast lands at 2 stacks (starting there), Harmony
 //! grants a Note per ability cast that a subsequent attack fires as bonus
 //! magic damage, and High Note / Beat Drop / Encore go out on cooldown.
+//! Casts go one at a time: one busy_until in the state blocks any other cast
+//! and any attack for a cast's own cast time (Encore's attacks are held a
+//! further half second beyond that, for its second, cast-free lockout phase).
+//! Surround Sound (W) is never cast: it deals no damage, so its cast time is
+//! carried in the kit (gen.W.castTimeS) but never read by this driver.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -43,7 +48,7 @@ pub struct GenDriver {
     r_dmg: f64,
     r_cd: f64,
     r_cast_s: f64,
-    r_total_lock_s: f64,
+    r_attack_lock_s: f64,
     src_p_note: SourceId,
     src_q_echo: SourceId,
     src_e_echo: SourceId,
@@ -55,6 +60,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     echo_stacks: i64,
     echo_pending_ability: i64,
     /// When a pending Echo cast resolves (INF: none pending).
@@ -68,19 +75,32 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn grant_note(&mut self, e: &Engine) {
         self.s.note_count = imin(self.s.note_count + 1, self.note_cap);
         self.s.note_until = e.st.t + self.note_duration;
     }
 
     /// Registers a basic ability cast against Echo: if it was already at cap
-    /// it consumes the stacks and schedules a free extra cast, otherwise it
-    /// just adds a stack.
-    fn maybe_echo(&mut self, t: f64, cast_time: f64, ability: i64) {
+    /// it consumes the stacks and schedules a free extra cast once this one
+    /// fully completes, otherwise it just adds a stack.
+    fn maybe_echo(&mut self, t: f64, completes_in: f64, ability: i64) {
         if self.s.echo_stacks >= self.echo_cap {
             self.s.echo_stacks = 0;
             self.s.echo_pending_ability = ability;
-            self.s.echo_pending_at = t + cast_time + self.echo_delay;
+            self.s.echo_pending_at = t + completes_in + self.echo_delay;
         } else {
             self.s.echo_stacks += 1;
         }
@@ -103,12 +123,12 @@ impl GenDriver {
         self.grant_note(e);
     }
 
-    fn cast_q(&mut self, e: &mut Engine) {
+    fn cast_q_impl(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.deal_q(e, false);
-        e.lockout();
         self.maybe_echo(t, self.cast_s_q, AB_Q);
+        self.busy_for(e, self.cast_s_q);
     }
 
     fn deal_e(&mut self, e: &mut Engine, is_echo: bool) {
@@ -124,8 +144,8 @@ impl GenDriver {
         let t = e.st.t;
         self.s.e_ready = t + e.basic_cd(self.e_cd);
         self.deal_e(e, false);
-        e.lockout();
         self.maybe_echo(t, self.cast_s_e, AB_E);
+        self.busy_for(e, self.cast_s_e);
     }
 
     fn deal_r_damage(&mut self, e: &mut Engine, is_echo: bool) {
@@ -136,16 +156,20 @@ impl GenDriver {
         e.ult_hatefog();
     }
 
-    /// Encore recast after the opening one (the opening cast is handled by
-    /// `cast_r`, which the engine already primes Spellblade for).
-    fn cast_r_recast(&mut self, e: &mut Engine) {
+    /// One full Encore cast: the busy_until is only the first cast time (the
+    /// second phase locks attacks alone), the damage lands as a delayed
+    /// event, and the mimicked-ability completion used for Echo purposes is
+    /// the full attack-lock window (both phases).
+    fn begin_r_cast(&mut self, e: &mut Engine, is_echo_source: bool) {
         let t = e.st.t;
-        self.s.r_ready = t + e.ult_cd(self.r_cd);
         e.prime_spellblade();
         self.grant_note(e);
         self.s.r_dmg_at = t + self.r_cast_s;
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_total_lock_s);
-        self.maybe_echo(t, self.r_total_lock_s, AB_R);
+        self.busy_for(e, self.r_cast_s);
+        e.st.next_attack = pymax(e.st.next_attack, t + self.r_attack_lock_s);
+        if !is_echo_source {
+            self.maybe_echo(t, self.r_attack_lock_s, AB_R);
+        }
     }
 }
 
@@ -154,6 +178,7 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let echo_cap = kit.num("gen.P.echoMaxStacks")? as i64;
         let state = State {
+            busy_until: 0.0,
             echo_stacks: echo_cap,
             echo_pending_ability: 0,
             echo_pending_at: INF,
@@ -163,7 +188,6 @@ impl Driver for GenDriver {
             r_ready: 0.0,
             r_dmg_at: INF,
         };
-        let r_cast_s = kit.num("gen.R.castTimeS")?;
         Ok(GenDriver {
             ranks,
             attack_range: sheet.base_attack_range,
@@ -182,8 +206,8 @@ impl Driver for GenDriver {
             cast_s_e: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
-            r_cast_s,
-            r_total_lock_s: 2.0 * r_cast_s,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
+            r_attack_lock_s: kit.num("gen.R.attackLockS")?,
             src_p_note: intern("P onhit"),
             src_q_echo: intern("Q echo"),
             src_e_echo: intern("E echo"),
@@ -227,53 +251,52 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        GenDriver::cast_q(self, e);
+        self.cast_q_impl(e);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the 0.25s window; Encore's own damage
-        // lands later, at the end of its (longer) cast time
+        // held the first attack past the 0.25s window
         let t = e.st.t;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
-        self.grant_note(e);
-        self.s.r_dmg_at = t + self.r_cast_s;
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_total_lock_s);
-        self.maybe_echo(t, self.r_total_lock_s, AB_R);
+        self.begin_r_cast(e, false);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_READY));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_READY));
             n += 1;
         }
         if self.s.r_dmg_at != INF {
+            // a delayed hit, not a cast: reports its own fixed time
             out[n] = (self.s.r_dmg_at, Kind::Ev(EV_R_DMG));
             n += 1;
         }
         if self.s.echo_pending_at != INF {
-            out[n] = (self.s.echo_pending_at, Kind::Ev(EV_ECHO));
+            out[n] = (self.castable_at(e, self.s.echo_pending_at), Kind::Ev(EV_ECHO));
             n += 1;
         }
         n
     }
 
     fn on_event(&mut self, e: &mut Engine, kind: Kind) {
+        let t = e.st.t;
         match kind {
             Kind::Ev(EV_E) => {
                 self.cast_e(e);
             }
             Kind::Ev(EV_R_READY) => {
-                self.cast_r_recast(e);
+                self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.begin_r_cast(e, false);
             }
             Kind::Ev(EV_R_DMG) => {
                 self.s.r_dmg_at = INF;
@@ -283,18 +306,14 @@ impl Driver for GenDriver {
                 let ab = self.s.echo_pending_ability;
                 self.s.echo_pending_ability = 0;
                 self.s.echo_pending_at = INF;
-                let t = e.st.t;
                 if ab == AB_Q {
                     self.deal_q(e, true);
-                    e.lockout();
+                    self.busy_for(e, self.cast_s_q);
                 } else if ab == AB_E {
                     self.deal_e(e, true);
-                    e.lockout();
+                    self.busy_for(e, self.cast_s_e);
                 } else if ab == AB_R {
-                    e.prime_spellblade();
-                    self.grant_note(e);
-                    self.deal_r_damage(e, true);
-                    e.st.next_attack = pymax(e.st.next_attack, t + self.r_total_lock_s);
+                    self.begin_r_cast(e, true);
                 }
             }
             other => panic!("unhandled event {other:?}"),

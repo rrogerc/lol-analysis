@@ -1,8 +1,10 @@
 //! Yasuo. Attacks between casts and fires Steel Tempest on cooldown, tracking
 //! Gathering Storm so every third landed Q becomes the knock-up whirlwind;
-//! that knock-up is immediately followed by Last Breath (using Yasuo's own
+//! Q's damage lands with the cast, then its cast time keeps Yasuo busy. That
+//! knock-up is immediately followed by Last Breath (using Yasuo's own
 //! whirlwind as the airborne source) when it is off cooldown, and Sweeping
-//! Blade goes out whenever its per-target cooldown allows.
+//! Blade goes out whenever its per-target cooldown allows. Wind Wall is
+//! never cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,6 +28,7 @@ pub struct GenDriver {
     /// identical for the thrust and the empowered whirlwind against one target.
     q_dmg: f64,
     q_cd_base: f64,
+    q_cast_s: f64,
     as_cap_pct: f64,
     as_cap_frac: f64,
     gs_max: i64,
@@ -41,6 +44,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     gs_stacks: i64,
     gs_until: f64,
     e_ready: f64,
@@ -50,6 +55,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Cast Last Breath right after a Q knock-up: its damage and attack
     /// lockout land when the knock-up channel ends.
     fn cast_r_now(&mut self, e: &mut Engine, t: f64) {
@@ -79,6 +97,7 @@ impl Driver for GenDriver {
         let q_dmg = q_base + q_ad_ratio_val * mult_expected;
 
         let q_cd_base = kit.at_rank("abilities.Q.cooldownS", ranks.q)?;
+        let q_cast_s = kit.num("gen.Q.castTimeS")?;
         let as_cap_pct = kit.num("gen.Q.asCdCapBonusAsPct")?;
         let as_cap_frac = kit.num("gen.Q.asCdCapReductionFrac")?;
         let gs_max = kit.num("gen.Q.gatheringStormStacksMax")? as i64;
@@ -97,6 +116,7 @@ impl Driver for GenDriver {
         let r_knockup_s = kit.num("gen.R.knockupDurationS")?;
 
         let state = State {
+            busy_until: 0.0,
             gs_stacks: 0,
             gs_until: 0.0,
             e_ready: 0.0,
@@ -111,6 +131,7 @@ impl Driver for GenDriver {
             bonus_ad_from_crit,
             q_dmg,
             q_cd_base,
+            q_cast_s,
             as_cap_pct,
             as_cap_frac,
             gs_max,
@@ -166,7 +187,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -179,7 +200,6 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
 
         if empowered {
             // the whirlwind consumes the stacks, knocks the target up, and
@@ -198,6 +218,10 @@ impl Driver for GenDriver {
         let reduction = pymin(bonus_as_total / self.as_cap_pct * self.as_cap_frac, self.as_cap_frac);
         let q_cd_eff = self.q_cd_base * (1.0 - reduction);
         e.st.q_ready = t + e.basic_cd(q_cd_eff);
+
+        // the thrust/whirlwind lands with the cast, then its cast time keeps
+        // Yasuo busy: no other cast, no attack until it ends
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, _e: &mut Engine) {
@@ -212,7 +236,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -229,7 +253,8 @@ impl Driver for GenDriver {
                 e.ult_hatefog();
             }
             Kind::Ev(EV_E_CAST) => {
-                // per-target cooldown starts on the dash; no cast time
+                // per-target cooldown starts on the dash; no cast time, but
+                // it still cannot start inside Steel Tempest's cast
                 self.s.e_ready = t + self.e_per_target_cd;
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();

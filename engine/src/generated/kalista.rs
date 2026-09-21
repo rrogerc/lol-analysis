@@ -4,7 +4,8 @@
 //! Call are never cast: Sentinel's bonus damage and Fate's Call's entire
 //! kit both require an Oathsworn ally that does not exist in this fight.
 //! Martial Poise's attack-speed cap is enforced as a constant negative
-//! offset on the kit's own attack-speed contribution.
+//! offset on the kit's own attack-speed contribution. Casts go one at a
+//! time: Pierce and Rend each keep Kalista busy for their 0.25 s cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -21,11 +22,13 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     /// Base + AD + AP damage for each stack beyond the first, precomputed
     /// against this build's static AD/AP.
     e_add_per_stack: f64,
     e_cd: f64,
+    e_cast_s: f64,
     stack_duration_s: f64,
     max_stacks: i64,
     /// The kit's own bonus-attack-speed contribution: 0, or a negative
@@ -40,12 +43,27 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     e_ready: f64,
     e_stacks: i64,
     e_last_stack_t: f64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// A Rend stack lands (an attack on-hit, or Pierce): refresh the window,
     /// resetting the count first if it had already fully expired.
     fn add_stack(&mut self, t: f64) {
@@ -84,6 +102,7 @@ impl Driver for GenDriver {
         let e_add_per_stack = e_add_base + e_add_adr * sheet.ad_bonus + e_add_apr * sheet.ap;
 
         let state = State {
+            busy_until: 0.0,
             e_ready: 0.0,
             e_stacks: 0,
             e_last_stack_t: 0.0,
@@ -94,9 +113,11 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_add_per_stack,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             stack_duration_s: kit.num("gen.E.stackDurationS")?,
             max_stacks: kit.num("gen.E.maxStacks")? as i64,
             as_adjust_pct,
@@ -135,7 +156,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -146,13 +167,13 @@ impl Driver for GenDriver {
         e.prime_spellblade();
         // Pierce also applies a Rend stack.
         self.add_stack(e.st.t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 && self.current_stacks(e.st.t) >= 1 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -171,7 +192,7 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.s.e_stacks = 0;
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

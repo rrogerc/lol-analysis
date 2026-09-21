@@ -11,7 +11,8 @@
  ],
  "notes": [
   "Living Vengeance (P) only grants its buff on a unit kill; the stationary dummy never dies during the fight, so the passive never triggers and is excluded from the rotation entirely.",
-  "Piercing Arrow (Q) is always charged to its 1.25s effect cap for maximum damage and detonation bonus: its post-effect cooldown is reduced by exactly the charge duration, so full-charging never delays Q's own cadence, it only holds Varus' attacks for the 1.25s of the channel (modeled as an instant hit for damage timing, with the next attack held back by 1.25s).",
+  "Piercing Arrow (Q) is always charged to its 1.25s effect cap for maximum damage and detonation bonus: its post-effect cooldown is reduced by exactly the charge duration, so full-charging never delays Q's own cadence, it only holds Varus' attacks for the 1.25s of the channel (modeled as an instant hit for damage timing, with the next attack held back by 1.25s). Q's cast time is 'none' per the dossier, so it still respects any cast in progress (busy_until) but does not itself block other casts beyond the attack-holding above.",
+  "Hail of Arrows (E) and Chain of Corruption (R) both have a 0.2419s cast time per the dossier; each cast now keeps Varus busy (no other cast, no attack start) for that duration, landing its damage at the moment of cast as usual, with delayed effects (E's 0.5s landing, R's 1.75s stack window) modeled as separate events.",
   "Blighted Quiver's active (the missing-health nuke) is consumed by the very next Piercing Arrow cast whenever its own 40s cooldown is up, and always gets the 1.5x full-charge bonus since Q is always fully charged.",
   "Blight stacks, whether applied by on-hit attacks or by Chain of Corruption, are detonated by the next Q, E, or R hit for magic damage based on the target's maximum health, and (since the dummy counts as an enemy champion) reduce the remaining cooldowns of Q, Blighted Quiver's active, and Hail of Arrows by 13% of each ability's full cooldown per stack consumed (19.5% per stack if consumed via a fully-charged Q); the reduction is applied to all three basic abilities including the one that just triggered the consumption, since the wiki text does not exclude it.",
   "Chain of Corruption's three separate Blight-stack applications over its ~1.75s root window are modeled as a single application of the full 3 stacks at 1.75s after cast, since the stationary dummy can never leave the root/tether area and would receive all three regardless.",
@@ -122,7 +123,8 @@
     ],
     "bonusAdRatio": 0.9
    },
-   "landDelayS": 0.5
+   "landDelayS": 0.5,
+   "castTimeS": 0.2419
   },
   "R": {
    "damage": {
@@ -133,7 +135,8 @@
     ],
     "apRatio": 1.0
    },
-   "stackDelayS": 1.75
+   "stackDelayS": 1.75,
+   "castTimeS": 0.2419
   }
  },
  "attack": {
@@ -141,6 +144,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/varus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/varus.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/varus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/varus.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

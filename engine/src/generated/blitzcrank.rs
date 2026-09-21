@@ -3,7 +3,8 @@
 //! arms the next attack via an attack-reset for bonus physical damage;
 //! Static Field stacks a zap per attack while off cooldown (one consumed
 //! per second) and its active detonation is cast on cooldown for a magic
-//! burst.
+//! burst. Rocket Grab and Static Field's active each have a 0.25s cast time
+//! that keeps Blitzcrank busy; casts go one after another.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,6 +26,7 @@ pub struct GenDriver {
     windup_fraction: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_as_pct: f64,
     w_duration: f64,
     w_cd: f64,
@@ -34,6 +36,7 @@ pub struct GenDriver {
     r_tick_dmg: f64,
     r_tick_interval: f64,
     r_cd: f64,
+    r_cast_s: f64,
     src_e: SourceId,
     src_r_tick: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
@@ -44,6 +47,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Overdrive: when the attack-speed buff expires, and when it may recast.
     w_until: f64,
     w_ready: f64,
@@ -57,10 +62,26 @@ struct State {
     r_next_tick: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_until: -1.0,
             w_ready: 0.0,
             e_armed: false,
@@ -75,6 +96,7 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("blitzcrank kit needs attack.windupFraction")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_as_pct: kit.at_rank("gen.W.attackSpeedPct", ranks.w)?,
             w_duration: kit.num("gen.W.durationS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
@@ -84,6 +106,7 @@ impl Driver for GenDriver {
             r_tick_dmg: kit.hit("gen.R.passiveDamage", ranks.r, sheet)?,
             r_tick_interval: kit.num("gen.R.tickIntervalS")?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_e: intern("E"),
             src_r_tick: intern("R tick"),
             s: state,
@@ -155,7 +178,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -165,23 +188,25 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
-        // the guaranteed follow-up attack, once the target has arrived
+        // the guaranteed follow-up attack, once the target has arrived: the
+        // cast time, then the dossier's separate post-hit lockout, then a
+        // normal windup
         let b = self.bonus_as(t);
         e.st.next_attack = pymax(
             e.st.next_attack,
-            t + ABILITY_LOCKOUT_S + e.attack_windup(b, self.windup_fraction),
+            t + self.q_cast_s + ABILITY_LOCKOUT_S + e.attack_windup(b, self.windup_fraction),
         );
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         if self.s.r_next_tick != INF {
@@ -205,8 +230,8 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
                 e.ult_hatefog();
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_TICK) => {
                 self.s.r_stacks -= 1;

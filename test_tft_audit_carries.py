@@ -207,9 +207,14 @@ class TestCarryManaAndChannels(unittest.TestCase):
         res = result(spec)
         laser = events(res, "damage", "laser")
         self.assertEqual(res["castTimes"], [0])
-        self.assertAlmostEqual(sum(hit[2] for hit in laser), 240 / 0.35)
-        self.assertAlmostEqual(laser[-1][0], 1 / 0.35)
-        self.assertAlmostEqual(laser[-1][2], 240 * (1 / 0.35 - 2.75))
+        # The channel drains the bar she cast with, the opening attack's 7
+        # overflow included (2026-09-20: it used to be zeroed at the cast).
+        bar = events(res, "cast")[0][2]
+        self.assertEqual(bar, 1007)
+        length = bar / (0.35 * 1000)
+        self.assertAlmostEqual(sum(hit[2] for hit in laser), 240 * length)
+        self.assertAlmostEqual(laser[-1][0], length)
+        self.assertAlmostEqual(laser[-1][2], 240 * (length - 2.75))
 
     def test_pebbles_pays_only_elapsed_time_on_the_first_partial_tick(self):
         spec = fixture("Pebbles", duration=0.76)
@@ -229,6 +234,9 @@ class TestCarryManaAndChannels(unittest.TestCase):
         spec = fixture("Pebbles", duration=3.1)
         flat(spec, "MagicDamageCalc1", 240)
         rows(spec, PercentManaPerSecond=0.4, MRReduction=0)
+        # No attack mana: the bar is exactly 1000 and, now that the overflow
+        # drains too, still runs dry on the tick at 2.5 s.
+        spec["unit"]["kind"] = "Specialist"
         res = result(spec)
         laser = events(res, "damage", "laser")
         self.assertEqual(sum(hit[2] for hit in laser), 600)

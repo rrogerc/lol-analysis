@@ -2,7 +2,10 @@
 //! Curse of the Sad Mummy opens the fight; Bandage Toss goes out on cooldown
 //! and recharges through a 2-charge system; Tantrum is cast on cooldown.
 //! Cursed Touch adds 10% bonus true damage to Amumu's own magic hits against
-//! an already-marked target, then (re)marks the target for 3s.
+//! an already-marked target, then (re)marks the target for 3s. Casts go one
+//! at a time: Q, E and R each have a 0.25s cast time and a single
+//! `busy_until` in the state keeps them, and the attacks between them, from
+//! overlapping.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,12 +31,14 @@ pub struct GenDriver {
     q_start_charges: i64,
     q_recharge_s: f64,
     q_static_cd: f64,
+    q_cast_s: f64,
     w_tick_base: f64,
     w_hp_frac: f64,
     w_interval: f64,
     w_offset: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_cast_s: f64,
     src_p: SourceId,
@@ -45,6 +50,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// The time until which the target is marked with Curse.
     cursed_until: f64,
     w_tick_next: f64,
@@ -58,6 +65,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn q_avail(&self, t: f64) -> i64 {
         let mut c = self.s.q_charges;
         if self.s.q_regen_at <= t {
@@ -84,6 +104,7 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let q_start = kit.num("gen.Q.startCharges")? as i64;
         let state = State {
+            busy_until: 0.0,
             cursed_until: -INF,
             w_tick_next: kit.num("gen.W.tickOffsetS")?,
             e_ready: 0.0,
@@ -103,6 +124,7 @@ impl Driver for GenDriver {
             q_start_charges: q_start,
             q_recharge_s: kit.at_rank("gen.Q.rechargeS", ranks.q)?,
             q_static_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_tick_base: kit.at_rank("gen.W.tickBase", ranks.w)?,
             w_hp_frac: kit.at_rank("gen.W.tickHpFracByRank", ranks.w)?
                 + kit.num("gen.W.hpFracPerApOver100")? * (sheet.ap / 100.0),
@@ -110,6 +132,7 @@ impl Driver for GenDriver {
             w_offset: kit.num("gen.W.tickOffsetS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             src_p: intern("P"),
@@ -155,11 +178,8 @@ impl Driver for GenDriver {
             return INF;
         }
         let t = e.st.t;
-        if self.q_avail(t) > 0 {
-            pymax(self.s.q_static_ready, t)
-        } else {
-            pymax(self.s.q_regen_at, t)
-        }
+        let ready = if self.q_avail(t) > 0 { self.s.q_static_ready } else { self.s.q_regen_at };
+        self.castable_at(e, ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -178,27 +198,32 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         if self.ranks.r == 0 {
             return;
         }
+        // the opening cast (the engine has primed Spellblade): its cast time
+        // keeps Amumu busy, and the damage lands when it ends
         self.s.r_swing_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
+            // a tick, not a cast: it reports its own time and never waits
             out[n] = (self.s.w_tick_next, Kind::Ev(EV_W_TICK));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_swing_at != INF {
+            // the delayed damage from an already-started cast: its own time
             out[n] = (self.s.r_swing_at, Kind::Ev(EV_R_SWING));
             n += 1;
         }
@@ -219,7 +244,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_SWING) => {
                 self.s.r_swing_at = INF;

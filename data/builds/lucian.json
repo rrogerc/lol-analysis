@@ -10,17 +10,22 @@
   "E"
  ],
  "notes": [
-  "Lucian opens with The Culling (R) immediately since its ~90-110s cooldown means only one cast ever fits in a fight of this length; the 3s channel disables Piercing Light and Ardent Blaze and stops basic attacks (Relentless Pursuit stays usable).",
+  "Lucian opens with The Culling (R) immediately since its ~90-110s cooldown means only one cast ever fits in a fight of this length; R has no cast time (the dossier and sheet both list it as none/negligible), but its 3s channel disables Piercing Light and Ardent Blaze and stops basic attacks (Relentless Pursuit stays usable during it, per the dossier).",
   "Casting Q, W, E or R arms Lightslinger: the next basic attack that lands within 3.5s fires a second shot 0.25s later for bonus physical damage scaled by level and total AD; that second shot can critically strike on its own.",
-  "Piercing Light and Ardent Blaze are each cast the instant they come off cooldown (once the R channel ends), dealing their flat damage on cast and taking the engine's standard 0.25s cast lockout.",
-  "Relentless Pursuit is cast on cooldown purely for its attack-timer reset and to arm Lightslinger; every Lightslinger second shot lands on the dummy (which counts as an enemy champion), refunding 2s off Relentless Pursuit's remaining cooldown each time.",
+  "Piercing Light (0.25s cast) and Ardent Blaze (0.25s cast) are each cast the instant they come off cooldown (and once R's channel ends, since both are disabled during it): a cast takes effect immediately and then keeps Lucian busy for its cast time, during which no other cast starts and no attack lands, tracked with a single busy_until.",
+  "Relentless Pursuit has no cast time and, per the dossier, can be cast during Piercing Light's or Ardent Blaze's cast time and during The Culling's channel, so it is exempt from busy_until and is cast on cooldown purely for its attack-timer reset and to arm Lightslinger; every Lightslinger second shot lands on the dummy (which counts as an enemy champion), refunding 2s off Relentless Pursuit's remaining cooldown each time.",
   "The Culling's total bullet count is computed once from the build's crit chance and crit damage using the sheet's own formula (22 * (1 + critChance * (critDamage - 1))), floored to a whole number of bullets, and dealt as a single damage instance when the 3s channel ends; individual bullets do not separately roll a crit since the crit chance is already folded into the bullet count.",
-  "Piercing Light's cast time is recorded from the numbers-sheet's flat 0.35s figure rather than the wiki's per-rank 0.4-0.25s array; the engine only needs to know an ability has a cast time (a fixed 0.25s attack lockout), so this choice does not change the result.",
+  "Piercing Light's cast time is disputed between the numbers sheet's flat 0.35s and the wiki's per-rank 0.4-0.25s array; the max-rank wiki value of 0.25s is used (see assumed), matching Ardent Blaze's own 0.25s cast time.",
   "Vigilance (bonus magic damage on Lucian's next two shots after being healed or shielded by an ally, or after an enemy is immobilized) never triggers in an allyless, CC-ignored dummy fight, so it is omitted.",
   "Lightslinger's bonus damage against minions (100% AD) is irrelevant since the fight has no minions.",
   "Mana is not modeled: at level 16 the combined Q/W/E/R costs are well within a champion's mana pool for a fight of this length."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "the numbers-sheet bin gives a flat 0.35s while the wiki gives a per-rank array from 0.4s down to 0.25s; using the wiki's max-rank value of 0.25s, matching Ardent Blaze's cast time, as the most common in-game reading at rank 5."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Piercing Light",
@@ -96,7 +101,8 @@
      220
     ],
     "bonusAdRatio": 1.0
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -108,7 +114,8 @@
      215
     ],
     "apRatio": 0.9
-   }
+   },
+   "castTimeS": 0.25
   },
   "E": {
    "cdrChampionS": 2
@@ -133,6 +140,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lucian.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lucian.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lucian.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lucian.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

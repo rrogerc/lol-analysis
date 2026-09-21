@@ -241,7 +241,10 @@ impl Driver for KogMaw {
 
 /// Flock Family: the cast summons the beaks for a few seconds (a duration
 /// that scales with ability power in the data); while they stand, every
-/// attack of hers lands the whole flock's damage on the same target. With
+/// attack of hers lands the whole flock's damage on the same target, and
+/// her mana is locked (TFTraits: "The mana lock lasts the 5.00 s the effect
+/// runs. Attacks continue. The effect's duration scales with Ability Power"
+/// — third party, adopted like Azir's lock, not verified in game). With
 /// the Riftbeast Alpha Mark (Orange Buff) each physical hit — hers and every
 /// beak's — strips flat armor.
 #[derive(Clone)]
@@ -265,6 +268,8 @@ impl Driver for MamaBeak {
     fn cast(f: &mut Fight<Self>) {
         let until = f.t + f.calc(f.drv.duration);
         f.drv.beaks_until = until;
+        // No mana while the flock is out, however long ability power keeps it.
+        f.lock_until = pymax(f.lock_until, until);
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -342,9 +347,12 @@ impl Driver for Azir {
 /// Javelin Toss / Prowler's Pounce. Ability-power form: attack speed for the
 /// next few attacks, which become javelins — every third one is thrown at
 /// the farthest dummy for the bigger calc ("the 3rd attack" is Riot's own
-/// wording, with no row). Attack-damage form: a swipe that ignores a share
-/// of the target's armor, and every third cast a heal capped to missing
-/// health plus a bonus scaled by the target's missing health.
+/// wording, with no row). Mana stays locked until the last javelin is thrown
+/// (TFTraits: "it lasts 3 empowered attacks" — third party, adopted like
+/// Azir's lock, not verified in game); without that she refilled her bar on
+/// her own javelins and never left them. Attack-damage form: a swipe that
+/// ignores a share of the target's armor, and every third cast a heal capped
+/// to missing health plus a bonus scaled by the target's missing health.
 #[derive(Clone)]
 pub struct Nidalee {
     casts: i64,
@@ -397,6 +405,11 @@ impl Driver for Nidalee {
         f.drv.javelins = pyint(f.row(f.drv.n_javelins));
         f.as_extra = f.row(f.drv.bonus_as) - 1.0;
         f.as_extra_until = 1e9;
+        if f.drv.javelins > 0 {
+            // Hold both attack mana and regeneration until the javelins are
+            // thrown. The cast's own lock already covers the animation.
+            f.lock_until = 1e9;
+        }
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -415,6 +428,9 @@ impl Driver for Nidalee {
         }
         if n == 1 {
             f.as_extra_until = f.t;
+            // Attack mana is processed before this hook, so the last javelin
+            // grants none. Regen resumes only for time after this release.
+            f.lock_until = f.t;
         }
     }
 }

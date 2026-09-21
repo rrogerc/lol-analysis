@@ -1,8 +1,10 @@
 //! Nilah. Apotheosis opens the fight (channel then burst), then Formless
 //! Blade goes out on cooldown for its own damage and its empowerment window
-//! (attack speed plus a 100% AD on-hit cone), Slipstream is spent on a
-//! 2-charge system whenever a charge is banked, and basic attacks fill the
-//! rest of the time. Jubilant Veil is never cast: it is purely defensive.
+//! (attack speed plus a 100% AD on-hit cone) — its 0.28 s cast time keeps
+//! Nilah busy, so no other cast or attack starts until it ends. Slipstream
+//! has no cast time and is spent on a 2-charge system whenever a charge is
+//! banked and no other cast's busy window is in effect. Basic attacks fill
+//! the rest of the time. Jubilant Veil is never cast: it is purely defensive.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -27,6 +29,7 @@ pub struct GenDriver {
     q_as_bonus_pct: f64,
     q_buff_dur: f64,
     q_onhit_ratio: f64,
+    q_cast_s: f64,
     e_recharge: f64,
     e_dmg: f64,
     e_max_charges: i64,
@@ -44,6 +47,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Formless Blade's empowerment: attacks are empowered until this time.
     q_empowered_until: f64,
     /// Slipstream's charge bank, and when the next recharge completes
@@ -55,6 +60,21 @@ struct State {
     r_tick_idx: i64,
     r_next_tick_at: f64,
     r_burst_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -75,6 +95,7 @@ impl Driver for GenDriver {
         let r_channel_until = if ranks.r > 0 { r_channel_dur } else { 0.0 };
 
         let state = State {
+            busy_until: r_channel_until,
             q_empowered_until: 0.0,
             e_charges: e_start_charges,
             e_next_charge_at: INF,
@@ -92,6 +113,7 @@ impl Driver for GenDriver {
             q_as_bonus_pct: kit.at_level("gen.Q.empoweredAsPctByLevel", level)?,
             q_buff_dur: kit.num("gen.Q.buffDurationS")?,
             q_onhit_ratio: kit.num("gen.Q.onhitAdRatio")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_recharge: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_max_charges,
@@ -145,7 +167,7 @@ impl Driver for GenDriver {
         if e.st.t < self.r_channel_until {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -156,21 +178,20 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.s.q_empowered_until = t + self.q_buff_dur;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         if self.ranks.r == 0 {
             return;
         }
-        let t = e.st.t;
         self.s.r_tick_idx = 0;
         self.s.r_next_tick_at = self.r_tick_interval;
         self.s.r_burst_at = self.r_channel_until;
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_channel_until);
         e.prime_spellblade();
         e.ability_cast_proc();
         e.eclipse_hit();
+        self.busy_for(e, self.r_channel_until);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -185,8 +206,7 @@ impl Driver for GenDriver {
         }
         if self.ranks.e > 0 {
             if self.s.e_charges > 0 {
-                let at = pymax(e.st.t, self.r_channel_until);
-                out[n] = (at, Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, 0.0), Kind::Ev(EV_E_CAST));
                 n += 1;
             }
             if self.s.e_next_charge_at != INF {

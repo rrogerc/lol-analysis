@@ -1,10 +1,13 @@
-//! Heimerdinger. UPGRADE!!! is toggled at t=0 and spent on the next
-//! Hextech Micro-Rockets cast for Hextech Rocket Swarm; H-28G Evolution
-//! Turrets are deployed on Q's own cooldown until 3 are up and then tick
-//! rapid-fire damage forever (they never die to a stationary dummy) while
-//! their shared beam charges purely from W and E landing hits and fires
-//! once per active turret whenever it crosses 100%; W and E otherwise go
-//! out on cooldown, and basic attacks fill the gaps.
+//! Heimerdinger. UPGRADE!!! is toggled at t=0 (instant, no cast time) and
+//! spent on the next Hextech Micro-Rockets cast for Hextech Rocket Swarm;
+//! H-28G Evolution Turrets are deployed on Q's own cooldown until 3 are up
+//! and then tick rapid-fire damage forever (they never die to a stationary
+//! dummy) while their shared beam charges purely from W and E landing hits
+//! and fires once per active turret whenever it crosses 100%; W and E
+//! otherwise go out on cooldown, and basic attacks fill the gaps. Q, W and
+//! E each have a 0.25 s cast time and only one cast runs at a time (one
+//! shared `busy_until`); the turret's own rapid-fire tick is the pet acting
+//! on its own and is not gated by Heimerdinger's casts.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,6 +29,9 @@ pub struct GenDriver {
     q_cd: f64,
     w_cd: f64,
     e_cd: f64,
+    q_cast_s: f64,
+    w_cast_s: f64,
+    e_cast_s: f64,
     q_rapid: f64,
     q_beam: f64,
     w_normal_total: f64,
@@ -48,6 +54,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     turret_count: i64,
     beam_charge: f64,
     /// When the next turret rapid-fire tick lands (INF: no turret yet).
@@ -59,6 +67,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Adds beam charge and fires the turret's beam, once per active
     /// turret, for every full 100% crossed.
     fn add_charge(&mut self, e: &mut Engine, pct: f64) {
@@ -90,6 +111,7 @@ impl Driver for GenDriver {
         let r_swarm_total_rockets = 1.0 + r_swarm_tier1_count + r_swarm_tier2_count;
 
         let state = State {
+            busy_until: 0.0,
             turret_count: 0,
             beam_charge: 0.0,
             next_tick_at: INF,
@@ -103,6 +125,9 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             q_rapid: kit.hit("gen.Q.rapidfireDamage", ranks.q, sheet)?,
             q_beam: kit.hit("gen.Q.beamDamage", ranks.q, sheet)?,
             w_normal_total,
@@ -161,7 +186,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 || self.s.turret_count >= self.turret_max {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -172,7 +197,7 @@ impl Driver for GenDriver {
         }
         self.s.turret_count = imin(self.s.turret_count + 1, self.turret_max);
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -189,11 +214,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -220,7 +245,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
@@ -229,7 +254,7 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.add_charge(e, self.charge_on_e);
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

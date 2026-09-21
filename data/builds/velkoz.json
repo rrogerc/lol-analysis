@@ -10,12 +10,13 @@
   "W"
  ],
  "notes": [
-  "Opening: Tectonic Disruption, Plasma Fission and Void Rift are all cast the instant they are off cooldown, starting at t=0; attacks are woven in whenever free.",
+  "Opening: Tectonic Disruption, Plasma Fission and Void Rift are all cast the instant they are off cooldown and not busy from another cast, starting at t=0; attacks are woven in whenever free.",
+  "Casts go one at a time: Plasma Fission and Tectonic Disruption each have a 0.25s cast time (gen.Q.castTimeS, gen.E.castTimeS) that lands its damage immediately and then keeps Vel'Koz busy (no other cast, no attack start) until it ends, matching the dossier's castTime and the 'effect at cast time end' wiki note. Void Rift has no cast time and costs nothing but still waits for a cast in progress.",
   "Plasma Fission's automatic split-recast is not modeled: the wiki states a bolt cannot hit an enemy already struck by another bolt from the same cast, so against a single stationary dummy each Q cast deals exactly one damage instance (the primary bolt).",
   "Void Rift is modeled with its real 2-charge system: Vel'Koz is assumed to start the fight with both charges banked; each charge is spent on the 1.5s static cooldown while available, and a spent charge regenerates after the by-rank recharge time. Its initial (opening) damage lands 0.25s after cast and its secondary (collapse) damage lands 0.75s after that.",
-  "Tectonic Disruption is assumed cast at point-blank range (minimum cast distance) so it lands after the minimum 0.25s travel delay, maximizing burst speed against a stationary target.",
+  "Tectonic Disruption is assumed cast at point-blank range (minimum cast distance) so it lands after the minimum 0.25s travel delay, maximizing burst speed against a stationary target; this travel delay is separate from, and additional to, its 0.25s cast time.",
   "Organic Deconstruction: any ability hit or basic attack applies a stack, refreshing the shared 7s duration on all held stacks; the third stack consumes all three for a bonus true-damage burst and marks the target Researched for 7s (refreshed the same way). Life Form Disintegration Ray's damage type (magic vs true) is checked at each 0.2s tick against the live Researched state, the most common reading of a live debuff check rather than a value locked in at channel start.",
-  "Life Form Disintegration Ray is held until the target is already Researched (or, failing that, until 7s of fight time have passed as a guaranteed fallback) so as much of its channel as possible deals true damage; once cast it is channeled for its full 2.6s duration rather than recast early, since more channel time only adds damage against a target that never fights back. While it channels, Vel'Koz's other casts and attacks are locked out, matching its channel restrictions.",
+  "Life Form Disintegration Ray is held until the target is already Researched (or, failing that, until 7s of fight time have passed as a guaranteed fallback) so as much of its channel as possible deals true damage; once cast it is channeled for its full 2.6s duration rather than recast early, since more channel time only adds damage against a target that never fights back. R has no cast time of its own (its 0.2s pre-delay and 2.6s channel are modeled as their own events that lock out attacks and other casts); while it channels, Vel'Koz's other casts and attacks are locked out, matching its channel restrictions.",
   "Life Form Disintegration Ray deals 13 damage ticks (its 2.6s channel duration divided by its 0.2s tick interval) and applies 4 Deconstruction stacks (the channel divided by its 0.7s stack-application interval), both exact arithmetic from the dossier's stated channel duration and intervals.",
   "Mana is not modeled: at level 16 with a handful of Q/W/E casts and a single R, nothing here plausibly runs Vel'Koz out of mana inside a 15s fight."
  ],
@@ -109,7 +110,8 @@
      240
     ],
     "apRatio": 0.9
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "initialDamage": {
@@ -155,7 +157,8 @@
     ],
     "apRatio": 0.3
    },
-   "landDelayS": 0.25
+   "landDelayS": 0.25,
+   "castTimeS": 0.25
   },
   "R": {
    "tickDamage": {
@@ -179,6 +182,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/velkoz.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/velkoz.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/velkoz.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/velkoz.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

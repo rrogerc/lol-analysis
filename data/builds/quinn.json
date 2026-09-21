@@ -10,12 +10,12 @@
   "E"
  ],
  "notes": [
-  "Opens with Behind Enemy Lines (R) at t=0: its 2 s channel blocks attacks and Q/E casts (both are read as ending/holding the channel, so nothing else is cast during it); the dossier's separate 0.25 s cast time is treated as included within that 2 s channel, not additive, since the channel is the visible wind-up to uniting with Valor.",
+  "Opens with Behind Enemy Lines (R) at t=0: its 0.25 s cast time is modeled first (busy_for, no other cast or attack), then its 2 s channel further holds attacks and Q/E casts; the channel's own hold time is far longer than the cast time so nothing else can slip in during either.",
   "Once the channel completes Quinn is united with Valor; her very next basic attack both lands its own damage and 'declares', automatically triggering Skystrike (R's damage) at the same instant, per the reading that a triggering attack still deals its own separate damage instance alongside Skystrike's.",
-  "Skystrike ends Behind Enemy Lines and starts its 3 s cooldown (post-effect); the driver recasts Behind Enemy Lines the moment that cooldown expires, so R cycles for the whole fight (~2 s channel + one attack + 3 s cooldown per cycle) rather than being cast once.",
+  "Skystrike ends Behind Enemy Lines and starts its 3 s cooldown (post-effect); the driver recasts Behind Enemy Lines the moment that cooldown expires, so R cycles for the whole fight (~0.25 s cast + 2 s channel + one attack + 3 s cooldown per cycle) rather than being cast once.",
   "Skystrike also marks the target with Harrier for 4.5 s (its own, longer mark duration), consumed by the next attack that lands on it for the P on-hit bonus, exactly like Q/E's 4 s marks.",
   "Spellblade/on-cast procs (prime_spellblade) are only triggered once per R cycle, at the channel's start; Skystrike's auto-trigger is not treated as a second ability cast for that purpose.",
-  "Outside R's channel windows, Blinding Assault (Q) and Vault (E) are cast on cooldown and Quinn attacks continuously; Q, E and Skystrike all apply a Harrier mark, and whichever attack lands on a still-marked target consumes it for Harrier's on-hit bonus physical damage (byLevel base + 40% bonus AD) plus Heightened Senses' 2 s attack-speed buff.",
+  "Outside R's channel windows, Blinding Assault (Q) is cast on cooldown with its 0.25 s cast time keeping Quinn busy (no attack, no other cast, including Vault) until it ends, and Vault (E) is cast on cooldown as soon as Q's cast time is clear; both apply a Harrier mark, and whichever attack lands on a still-marked target consumes it for Harrier's on-hit bonus physical damage (byLevel base + 40% bonus AD) plus Heightened Senses' 2 s attack-speed buff.",
   "Heightened Senses' movement-speed component and its separate vision-only active cast are never used since neither deals damage and there is no movement in a stationary dummy fight.",
   "Vault's short attack-reset after its dash is not modeled: the driver architecture only allows writing next_attack from inside schedule_attack or as a channel-hold, neither of which fits an ability-triggered speed-up mid-attack-cycle, so this slightly undercounts Vault's true value; Vault's own cast damage and mark application are still fully modeled.",
   "Harrier's 1-second reapplication lockout is modeled for marks that are consumed or time out unconsumed.",
@@ -107,7 +107,8 @@
      1
     ],
     "apRatio": 0.5
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "asBonus": [
@@ -141,7 +142,8 @@
     "bonusAdRatio": 0.35
    },
    "channelS": 2,
-   "markDurationS": 4.5
+   "markDurationS": 4.5,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -149,6 +151,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/quinn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/quinn.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/quinn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/quinn.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

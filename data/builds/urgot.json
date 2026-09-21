@@ -10,10 +10,11 @@
   "W"
  ],
  "notes": [
+  "Casts go one at a time: a cast takes effect as it starts and then keeps Urgot busy for its cast time (no other cast, no attack) — Corrosive Charge (Q) 0.25 s, Disdain (E) 0.45 s, Fear Beyond Death (R) 0.5 s, all from the dossier's castTime. Purge's activation has no cast time (it still cannot start inside another ability's cast, but costs nothing itself and does not delay anything).",
   "Opens with Fear Beyond Death (R) at t=0 for its upfront physical damage; the recast (Mercy) is not modeled since it is an unconditional execute rather than a computable damage instance and a full-health dummy is unlikely to reliably cross the 25%-remaining threshold within the fight window.",
-  "Corrosive Charge (Q) is cast on cooldown; its damage lands after a combined 0.4 s delay (0.1 s missile-launch delay plus the 0.3 s post-landing explosion delay from the numbers sheet), not on cast.",
-  "Disdain (E) is cast on cooldown and its dash damage is dealt right after the cast completes (the dash/fling itself is not modeled beyond the usual cast lockout); its shield is defensive-only and not modeled in this damage fight.",
-  "Purge (W) is toggled on the instant it is off cooldown and kept running: each activation fires shots every 1/3 s (3.0 fixed attacks/second) for its rank's duration, which yields 13 shots pre-max-rank (floor(4 x 3) + 1) and an effectively unbroken stream at max rank (its 25000 s sentinel duration and 0 s cooldown/cost). Urgot's normal attack timer is paused for the whole activation, matching Purge overriding his autoattacks; the post-effect cooldown starts when the activation ends.",
+  "Corrosive Charge (Q) is cast on cooldown (waiting for any cast in progress); its damage lands after a combined 0.4 s delay (0.1 s missile-launch delay plus the 0.3 s post-landing explosion delay from the numbers sheet) — that delay is timed independently of the cast-time busy window since the missile is already in flight.",
+  "Disdain (E) is cast on cooldown (also waiting for any cast in progress); its dash damage is resolved at the cast since travel is not modeled, and its cast time then keeps Urgot busy; its shield is defensive-only and not modeled in this damage fight.",
+  "Purge (W) is toggled on the instant it is off cooldown and not inside another ability's cast, and kept running: each activation fires shots every 1/3 s (3.0 fixed attacks/second) for its rank's duration, which yields 13 shots pre-max-rank (floor(4 x 3) + 1) and an effectively unbroken stream at max rank (its 25000 s sentinel duration and 0 s cooldown/cost). Urgot's normal attack timer is paused for the whole activation, matching Purge overriding his autoattacks; the post-effect cooldown starts when the activation ends.",
   "Purge bypasses the engine's normal basic-attack loop, so generic item on-hit effects are not applied to its shots; its own listed per-shot damage and Echoing Flames are still modeled. Spellblade/Muramana's on-cast proc and Eclipse are triggered once per Purge activation (treating the activation itself as the ability cast), not once per shot, since those procs are on-cast rather than on-hit effects here.",
   "Echoing Flames (P): since a stationary single target never leaves the arc of more than one of Urgot's six legs, it is modeled as a single recurring charge on the per-level per-leg cooldown, triggered by the next basic attack (including Purge shots) that lands while it is up. During Purge, its damage is reduced to the ability's 50% on-hit effectiveness, matching the wiki's stated reduction for on-hit/on-attack effects while Purge is firing; at full attacks it is unreduced.",
   "Mana is not modeled: Urgot's level-16 mana pool comfortably covers R once, a handful of Q/E casts and W's low/zero cost within a 15 s fight."
@@ -132,7 +133,8 @@
     ],
     "adRatio": 0.7
    },
-   "explodeDelayS": 0.4
+   "explodeDelayS": 0.4,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -165,7 +167,8 @@
      210
     ],
     "bonusAdRatio": 1.0
-   }
+   },
+   "castTimeS": 0.45
   },
   "R": {
    "damage": {
@@ -175,7 +178,8 @@
      350
     ],
     "bonusAdRatio": 0.5
-   }
+   },
+   "castTimeS": 0.5
   }
  },
  "attack": {
@@ -183,6 +187,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/urgot.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/urgot.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/urgot.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/urgot.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

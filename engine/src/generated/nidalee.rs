@@ -1,10 +1,19 @@
-//! Nidalee. Opens with Primal Surge on herself for its attack-speed buff,
-//! then Javelin Toss (assumed at max travel distance) to nuke and apply
-//! Hunted, then swaps into Cougar Form (free, via Hunted's cooldown reset)
-//! and stays there: Takedown arms her next attack (post-effect cooldown,
-//! attack-timer reset), Pounce and Swipe go out on their flat cooldown.
-//! Aspect of the Cougar (R) itself is a non-damaging stance swap: its
-//! damage is attributed to the Q/W/E it empowers, see "unused" in the kit.
+//! Nidalee. The opening casts Primal Surge (Human E) on herself for its
+//! attack-speed buff, then Javelin Toss (assumed at max travel distance,
+//! Human Q) nukes and applies Hunted; since Hunted resets Aspect of the
+//! Cougar's cooldown, she swaps into Cougar Form for free and stays there.
+//! Takedown arms the next basic attack (post-effect cooldown, attack-timer
+//! reset); once it resolves, Pounce and Swipe are unlocked and thereafter
+//! recast on their own cooldowns. Aspect of the Cougar (R) itself deals no
+//! damage (it only sets the rank Cougar Form's abilities scale at), so
+//! Takedown/Pounce/Swipe's damage is credited under their own native slots:
+//! "Q takedown", "W pounce", "E swipe". Every cast serializes through one
+//! busy_until: it reports castable_at = max(ready, now, busy_until), and a
+//! cast with a real cast time extends busy_until and holds the next attack
+//! to it. Javelin Toss deliberately waits for Primal Surge (its q_at reports
+//! INF until Surge has been cast), and Pounce/Swipe are not unlocked until
+//! (Takedown's resolution time + their own cast time), so no two of them
+//! ever land in the same instant.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -12,12 +21,12 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// The opening Primal Surge cast (self attack-speed buff).
+/// Primal Surge, cast once at the opening (Human Form only).
 const EV_SURGE: u8 = 0;
-/// Cougar Form's Pounce, cast on cooldown.
-const EV_W: u8 = 1;
-/// Cougar Form's Swipe, cast on cooldown.
-const EV_E: u8 = 2;
+/// Pounce, cast on cooldown once unlocked (Cougar Form).
+const EV_POUNCE: u8 = 1;
+/// Swipe, cast on cooldown once unlocked (Cougar Form).
+const EV_SWIPE: u8 = 2;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -28,29 +37,34 @@ pub struct GenDriver {
     hunted_dur: f64,
     /// Javelin Toss's damage, already scaled by the assumed max-distance bonus.
     q_human_dmg: f64,
-    /// Javelin Toss's (Human Q) own cooldown.
-    q_cd: f64,
+    /// Javelin Toss's own cooldown and cast time.
+    q_human_cd: f64,
+    q_human_cast_s: f64,
     /// Takedown's own scaling bonus, before the missing-health and Hunted multipliers.
     q_cougar_dmg: f64,
     /// Takedown's missing-health damage-amp coefficient at Aspect of the Cougar's rank.
     q_cougar_amp: f64,
     /// Takedown's Hunted damage bonus, as a fraction.
     q_cougar_hunted_bonus: f64,
-    /// Takedown's own (post-effect) cooldown.
+    /// Takedown's own (post-effect) cooldown and cast time.
     q_cougar_cd: f64,
-    /// Pounce's impact damage.
+    q_cougar_cast_s: f64,
+    /// Pounce's impact damage, cooldown and cast time.
     w_dmg: f64,
-    /// Pounce's own (on-cast) cooldown.
     w_cd: f64,
-    /// Swipe's damage.
+    w_cast_s: f64,
+    /// Swipe's damage and cooldown.
     e_cougar_dmg: f64,
-    /// Swipe's own cooldown.
     e_cougar_cd: f64,
-    /// Primal Surge's bonus attack speed, in percent.
+    /// Shared cast time for Primal Surge and Swipe (both 0.25 s per their own entries).
+    e_cast_s: f64,
+    /// Primal Surge's bonus attack speed (percent) and buff duration.
     e_surge_as_pct: f64,
-    /// Primal Surge's attack-speed buff duration.
     e_surge_dur: f64,
+    /// Cougar Form's abilities are credited under their own native slot.
     src_q_takedown: SourceId,
+    src_w_pounce: SourceId,
+    src_e_swipe: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
     s0: State,
@@ -59,35 +73,54 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
-    /// True while still in Human Form (before the opening Javelin + swap).
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+    /// True while still in Human Form (before the opening Javelin swaps her).
     human: bool,
+    /// Primal Surge has been cast (gates Javelin Toss until it has).
+    surge_cast: bool,
     /// Takedown is armed, waiting for the next basic attack to consume it.
     q_armed: bool,
     /// Set when Takedown just paid out: the next schedule_attack resets the timer.
     q_reset_pending: bool,
     /// When the Hunted mark from the opening Javelin Toss expires.
     hunted_until: f64,
-    /// Whether the opening Primal Surge has been cast.
-    surge_cast: bool,
     /// When Primal Surge's attack-speed buff expires.
     e_as_until: f64,
-    /// Cougar Form's Pounce and Swipe ready times.
+    /// Pounce and Swipe's ready times; INF until Takedown's first resolution unlocks them.
     w_ready: f64,
     e_ready: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started (0 for one with none): no other
+    /// cast and no attack until it ends (an attack already due later keeps
+    /// its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             human: true,
+            surge_cast: false,
             q_armed: false,
             q_reset_pending: false,
             hunted_until: -INF,
-            surge_cast: false,
             e_as_until: -INF,
-            w_ready: 0.0,
-            e_ready: 0.0,
+            w_ready: INF,
+            e_ready: INF,
         };
         let range_mult = kit.num("gen.Q.human.rangeMultiplierAssumed")?;
         let q_human_base = kit.hit("gen.Q.human.damage", ranks.q, sheet)?;
@@ -97,18 +130,24 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("nidalee kit needs attack.windupFraction")?,
             hunted_dur: kit.num("gen.P.huntedDurationS")?,
             q_human_dmg: q_human_base * range_mult,
-            q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_human_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_human_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cougar_dmg: kit.hit("gen.Q.cougar.damage", ranks.r, sheet)?,
             q_cougar_amp: kit.at_rank("gen.Q.cougar.missingHpAmpCoef", ranks.r)?,
             q_cougar_hunted_bonus: kit.num("gen.Q.cougar.huntedBonusPct")? / 100.0,
             q_cougar_cd: kit.num("gen.Q.cougar.cooldownS")?,
+            q_cougar_cast_s: kit.num("gen.Q.cougar.castTimeS")?,
             w_dmg: kit.hit("gen.W.cougar.damage", ranks.r, sheet)?,
             w_cd: kit.num("gen.W.cougar.cooldownS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_cougar_dmg: kit.hit("gen.E.cougar.damage", ranks.r, sheet)?,
             e_cougar_cd: kit.num("gen.E.cougar.cooldownS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             e_surge_as_pct: kit.at_rank("gen.E.human.bonusAsPct", ranks.e)? * 100.0,
             e_surge_dur: kit.num("gen.E.human.durationS")?,
             src_q_takedown: intern("Q takedown"),
+            src_w_pounce: intern("W pounce"),
+            src_e_swipe: intern("E swipe"),
             s: state,
             s0: state,
         })
@@ -154,6 +193,15 @@ impl Driver for GenDriver {
             e.deal(dmg, DType::Magic, self.src_q_takedown, false, true, 1.0);
             e.st.q_ready = t + e.basic_cd(self.q_cougar_cd);
             self.s.q_reset_pending = true;
+            // Pounce and Swipe are not unlocked until this empowered attack
+            // has resolved, each at (now + its own cast time), so neither
+            // lands in the same instant as this attack or each other.
+            if self.ranks.w > 0 && self.s.w_ready == INF {
+                self.s.w_ready = t + self.w_cast_s;
+            }
+            if self.ranks.e > 0 && self.s.e_ready == INF {
+                self.s.e_ready = t + self.e_cast_s;
+            }
         }
     }
 
@@ -173,10 +221,17 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        if !self.s.human && self.s.q_armed {
+        if self.s.human {
+            if self.ranks.e > 0 && !self.s.surge_cast {
+                // Primal Surge opens the fight; Javelin Toss waits for it.
+                return INF;
+            }
+            return self.castable_at(e, e.st.q_ready);
+        }
+        if self.s.q_armed {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -187,36 +242,36 @@ impl Driver for GenDriver {
             e.ability_cast_proc();
             e.eclipse_hit();
             e.prime_spellblade();
-            e.lockout();
             self.s.hunted_until = t + self.hunted_dur;
-            e.st.q_ready = t + e.basic_cd(self.q_cd);
+            e.st.q_ready = t + e.basic_cd(self.q_human_cd);
             if self.ranks.r > 0 {
                 // The Hunted mark just applied resets Aspect of the Cougar's
                 // cooldown: swap into Cougar Form for free, Takedown ready now.
                 self.s.human = false;
                 e.st.q_ready = t;
             }
+            self.busy_for(e, self.q_human_cast_s);
         } else {
-            // Takedown: arm the next basic attack (no cast time, no lockout).
+            // Takedown: arm the next basic attack. No cast time of its own.
             self.s.q_armed = true;
             e.prime_spellblade();
-            e.ability_cast_proc();
+            self.busy_for(e, self.q_cougar_cast_s);
         }
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
-        if self.ranks.e > 0 && !self.s.surge_cast {
-            out[n] = (0.0, Kind::Ev(EV_SURGE));
+        if self.ranks.e > 0 && self.s.human && !self.s.surge_cast {
+            out[n] = (self.castable_at(e, 0.0), Kind::Ev(EV_SURGE));
             n += 1;
         }
         if !self.s.human {
-            if self.ranks.w > 0 {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            if self.ranks.w > 0 && self.s.w_ready != INF {
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_POUNCE));
                 n += 1;
             }
-            if self.ranks.e > 0 {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            if self.ranks.e > 0 && self.s.e_ready != INF {
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_SWIPE));
                 n += 1;
             }
         }
@@ -227,26 +282,28 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_SURGE) => {
+                // Primal Surge on herself: no damage, just the AS buff, cast
+                // before anything else (Javelin Toss waits behind it).
                 self.s.surge_cast = true;
                 self.s.e_as_until = t + self.e_surge_dur;
                 e.prime_spellblade();
-                e.ability_cast_proc();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
-            Kind::Ev(EV_W) => {
+            Kind::Ev(EV_POUNCE) => {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
-                e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
+                e.deal(self.w_dmg, DType::Magic, self.src_w_pounce, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
+                self.busy_for(e, self.w_cast_s);
             }
-            Kind::Ev(EV_E) => {
+            Kind::Ev(EV_SWIPE) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cougar_cd);
-                e.deal(self.e_cougar_dmg, DType::Magic, SRC_E, false, true, 1.0);
+                e.deal(self.e_cougar_dmg, DType::Magic, self.src_e_swipe, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

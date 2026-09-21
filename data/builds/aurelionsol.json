@@ -13,10 +13,10 @@
   "Aurelion Sol never attacks: his damage is entirely abilities and a channel that fills the fight, so attack.never is set and items that key on attacks or attack speed get no value.",
   "Cosmic Creator's Stardust count is held at a fixed assumed value (gen.P.assumedStacks) for the whole fight rather than tracked live, since it feeds three formulas at once and its growth within a single 8-15s fight is small next to a realistic level-16 total.",
   "Breath of Light's target-max-health burst bonus is dealt as true damage, per the bin's field and function names (QMaxHealthTrueDamagePerStack, BurstBonusTrueDamageToChamps), separately from the burst's flat+AP magic damage, even though the ability-wide tooltip calls the whole ability 'magic damage'.",
-  "Breath of Light is cast once at the start and its channel is treated as never-ending and never-interrupted for the whole fight: the beam ticks every 0.125s and its burst fires every full second, reading the ranked 3.25s channel cap and its automatic recast as a seamless, zero-downtime continuation (the more common in-game reading) so it never actually matters.",
-  "Singularity (E) is cast as soon as it is off cooldown and is assumed not to interrupt Breath of Light's channel, since the wiki's interrupt-on-cast rule is only stated for casts made during Astral Flight's dash; its cooldown starts when its 5s duration ends (post-effect).",
-  "Falling Star is cast once at t=0; with the assumed Stardust count already past 75, it is cast as its empowered form, The Skies Descend, and only its star-impact damage is dealt, since the wiki states a target hit by the impact is immune to the shockwave, so the dummy (always hit by the impact) never takes shockwave damage.",
-  "Astral Flight (W) is never cast: on a stationary dummy its only combat effect is a temporary buff to Breath of Light's flat damage while dashing, which needs a dash duration/distance the engine does not model, and its cooldown-reset-and-extend effect on Breath of Light is worthless since the channel is already continuous.",
+  "Breath of Light has no cast time and is cast once at the start; its channel is treated as never-ending and never-interrupted for the whole fight: the beam ticks every 0.125s and its burst fires every full second, reading the ranked 3.25s channel cap and its automatic recast as a seamless, zero-downtime continuation (the more common in-game reading) so it never actually matters.",
+  "Singularity (E) has a 0.2s cast time, which is tracked (gen.E.castTimeS) and keeps Aurelion Sol busy (no other cast starts inside it): it is cast as soon as it is off cooldown and after any cast in progress, and is assumed not to interrupt Breath of Light's channel, since the wiki's interrupt-on-cast rule is only stated for casts made during Astral Flight's dash; its own cooldown starts when its 5s duration ends (post-effect), after the black hole appears 0.5s from the start of the cast (a delay that already contains the 0.2s cast time).",
+  "Falling Star has no cast time and is cast once at t=0; with the assumed Stardust count already past 75, it is cast as its empowered form, The Skies Descend, and only its star-impact damage is dealt, since the wiki states a target hit by the impact is immune to the shockwave, so the dummy (always hit by the impact) never takes shockwave damage.",
+  "Astral Flight (W) is never cast: on a stationary dummy its only combat effect is a temporary buff to Breath of Light's flat damage while dashing, which needs a dash duration/distance the engine does not model, and its cooldown-reset-and-extend effect on Breath of Light is worthless since the channel is already continuous; its 0.375s cast time is therefore never charged.",
   "Singularity's and Falling Star's execute thresholds are not modeled: the engine has no execute primitive and this dummy fight only checks total damage dealt.",
   "Mana costs are not modeled; nothing here would actually stall casts within a 15s fight at level 16."
  ],
@@ -26,10 +26,8 @@
    "why": "permanent Stardust stacks a level-16 champion plausibly has accumulated by this point in a game; held fixed through the fight since in-fight growth (roughly 5-15 stacks over 15s) is negligible against this baseline, and Q's true-damage term, E's execution threshold and R's Skies Descend unlock all key off of it"
   }
  ],
- "attack": {
-  "windupFraction": 0.15333,
-  "ranged": true,
-  "never": true
+ "unused": {
+  "W": "Astral Flight's only combat effect against a stationary dummy is a temporary buff to Breath of Light's flat damage while dashing, and its Breath-of-Light cooldown reset/extension is worthless since the channel is already treated as continuous; its dash distance/duration also is not something the engine models. It is never cast, so its 0.375s cast time is never charged."
  },
  "abilities": {
   "Q": {
@@ -114,7 +112,8 @@
    "tickIntervalS": 0.25,
    "delayS": 0.5,
    "durationS": 5,
-   "tickCount": 20
+   "tickCount": 20,
+   "castTimeS": 0.2
   },
   "R": {
    "impact": {
@@ -128,7 +127,13 @@
    "delayS": 2
   }
  },
+ "attack": {
+  "windupFraction": 0.15333,
+  "ranged": true,
+  "never": true
+ },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aurelionsol.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aurelionsol.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aurelionsol.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aurelionsol.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

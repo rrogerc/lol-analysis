@@ -1,9 +1,11 @@
 //! Jinx. Opens already toggled to Fishbones for the extra 10% AD on-hit rider
-//! (a mana-metered rider), casts Super Mega Death Rocket at t=0 assumed from
-//! max travel distance, and casts Zap! / Flame Chompers! on cooldown. When
-//! Fishbones' mana cost can no longer be paid from the build's mana pool,
-//! Jinx toggles back to the free Pow-Pow stance and keeps attacking, building
-//! Rev'd up attack-speed stacks for the rest of the fight.
+//! (a mana-metered rider), casts Super Mega Death Rocket at t=0 (0.6s cast
+//! time, then travel time before it lands assumed from max travel distance),
+//! and casts Zap! (0.6s-0.4s cast time scaling with bonus AS) / Flame
+//! Chompers! (no cast time) on cooldown. When Fishbones' mana cost can no
+//! longer be paid from the build's mana pool, Jinx toggles back to the free
+//! Pow-Pow stance and keeps attacking, building Rev'd up attack-speed stacks
+//! for the rest of the fight.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -51,6 +53,7 @@ pub struct GenDriver {
     r_missing_ratio: f64,
     r_cd: f64,
     r_mana_cost: f64,
+    r_cast_s: f64,
     r_travel_s: f64,
 
     mana_max: f64,
@@ -62,6 +65,8 @@ pub struct GenDriver {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
     mana: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     use_fishbones: bool,
     revved_stacks: i64,
     revved_deadline: f64,
@@ -75,6 +80,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn revved_pct(&self, t: f64) -> f64 {
         if self.s.revved_stacks <= 0 || t >= self.s.revved_deadline {
             return 0.0;
@@ -97,6 +115,7 @@ impl Driver for GenDriver {
         let mana_max = sheet.mana;
         let state = State {
             mana: mana_max,
+            busy_until: 0.0,
             use_fishbones: ranks.q > 0,
             revved_stacks: 0,
             revved_deadline: -INF,
@@ -140,6 +159,7 @@ impl Driver for GenDriver {
             r_missing_ratio: kit.at_rank("gen.R.missingHpRatio", ranks.r)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_mana_cost: kit.at_rank("gen.R.manaCost", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_travel_s: kit.num("gen.R.travelTimeS")?,
 
             mana_max,
@@ -216,9 +236,9 @@ impl Driver for GenDriver {
             return;
         }
         self.s.mana -= self.r_mana_cost;
-        e.lockout();
-        self.s.r_land_at = t + self.r_travel_s;
+        self.s.r_land_at = t + self.r_cast_s + self.r_travel_s;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -228,7 +248,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.w_land_at, Kind::Ev(EV_W_LAND));
                 n += 1;
             } else if self.s.w_ready != INF {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
                 n += 1;
             }
         }
@@ -237,7 +257,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.e_land_at, Kind::Ev(EV_E_LAND));
                 n += 1;
             } else if self.s.e_ready != INF {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
                 n += 1;
             }
         }
@@ -246,7 +266,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_land_at, Kind::Ev(EV_R_LAND));
                 n += 1;
             } else if self.s.r_ready != INF {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
                 n += 1;
             }
         }
@@ -262,10 +282,10 @@ impl Driver for GenDriver {
                     return;
                 }
                 self.s.mana -= self.w_mana_cost;
-                e.lockout();
                 let ct = self.w_cast_time(t);
                 self.s.w_land_at = t + ct;
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
+                self.busy_for(e, ct);
             }
             Kind::Ev(EV_W_LAND) => {
                 self.s.w_land_at = INF;
@@ -296,9 +316,9 @@ impl Driver for GenDriver {
                     return;
                 }
                 self.s.mana -= self.r_mana_cost;
-                e.lockout();
-                self.s.r_land_at = t + self.r_travel_s;
+                self.s.r_land_at = t + self.r_cast_s + self.r_travel_s;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_LAND) => {
                 self.s.r_land_at = INF;

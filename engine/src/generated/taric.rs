@@ -6,7 +6,9 @@
 //! re-trigger Bravado; Bastion (W) is self-cast on cooldown for its armor
 //! and its own Bravado proc; Dazzle (E) is cast on cooldown for its damage,
 //! its cast and its delayed hit tracked as two separate events so each has
-//! its own, always-advancing readiness. Cosmic Radiance (R) is never cast.
+//! its own, always-advancing readiness. Q and W both carry a 0.25s cast
+//! time (busy_for), so casts and attacks queue one after another; Cosmic
+//! Radiance (R) is never cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -32,8 +34,10 @@ pub struct GenDriver {
     p_as_bonus: f64,
     q_cd: f64,
     q_max_charges: i64,
+    q_cast_s: f64,
     w_cd: f64,
     w_armor_bonus: f64,
+    w_cast_s: f64,
     e_cd: f64,
     e_dmg_base: f64,
     e_armor_coef: f64,
@@ -52,6 +56,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Bravado's stored empowered attacks (0-2) and when they expire.
     brav_charges: i64,
     brav_until: f64,
@@ -67,6 +73,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// The bonus armor Bravado's on-attack damage and Dazzle's damage read.
     fn bonus_armor(&self) -> f64 {
         if self.s.w_active {
@@ -102,6 +121,7 @@ impl Driver for GenDriver {
         let bonus_armor_after_w = bonus_armor_before_w + w_armor_bonus;
         let haste = sheet.haste;
         let state = State {
+            busy_until: 0.0,
             brav_charges: 0,
             brav_until: 0.0,
             attack_empowered: false,
@@ -121,8 +141,10 @@ impl Driver for GenDriver {
             p_as_bonus: kit.num("gen.P.attackSpeedBonusPct")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_max_charges: kit.at_rank("gen.Q.maxCharges", ranks.q)? as i64,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_armor_bonus,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_dmg_base: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_armor_coef: kit.num("gen.E.armorCoef")?,
@@ -193,7 +215,7 @@ impl Driver for GenDriver {
         if self.s.q_charges < 1 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -202,7 +224,7 @@ impl Driver for GenDriver {
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.bravado_proc(e, t);
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -211,11 +233,11 @@ impl Driver for GenDriver {
             out[n] = (self.s.e_hit_at, Kind::Ev(EV_E_HIT));
             n += 1;
         } else if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         n
@@ -244,7 +266,7 @@ impl Driver for GenDriver {
                 self.s.w_active = true;
                 self.bravado_proc(e, t);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

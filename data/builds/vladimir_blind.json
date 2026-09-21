@@ -11,12 +11,19 @@
  ],
  "notes": [
   "Opens with Hemoplague (R) at t=0: it applies the 10% damage-taken debuff for its 4 s duration (read by the engine's generic damage-amp mechanism, so it also buffs any Q/W/E cast inside that window) and its self-amplified burst (base x1.1, i.e. the wiki's 150*1.1..350*1.1 / +77% AP figure) lands as a scheduled event at t=4s; R is only cast once since its 120 s cooldown exceeds every fight length tested.",
-  "Transfusion (Q) is cast every time it is off cooldown. Crimson Rush is modelled as a simple 0/1/2 counter: it starts at 0 (the more common reading — stacks only accrue after a cast, not on an independent timer) and gains one point right after each cast, resolving over that cast's cooldown; because Q is always recast immediately on cooldown, the 2.5 s surge window is always used the instant it opens, so a cast is empowered (+85% damage) whenever the counter already reads 2, which lands roughly every second cast.",
-  "Sanguine Pool (W) and Tides of Blood (E) are both treated as full action locks (no attacks, no other ability) for simplicity, and are never deliberately overlapped with each other or with Transfusion, even though the wiki notes some of these can coexist (e.g. Sanguine Pool doesn't interrupt a charging Tides of Blood); this sequential-only rotation is a simplification.",
+  "Transfusion (Q) has a 0.25 s cast time (gen.Q.castTimeS): the damage lands as the cast starts (the wiki says the heal, cast alongside it, triggers as soon as the cast time completes, i.e. at the same instant as the start of that fixed 0.25 s window), then Vladimir is busy for the remaining 0.25 s before any other cast or attack, and it is cast every time it is off cooldown and free (no other cast in progress).",
+  "Crimson Rush is modelled as a simple 0/1/2 counter: it starts at 0 (the more common reading — stacks only accrue after a cast, not on an independent timer) and gains one point right after each cast, resolving over that cast's cooldown; because Q is always recast immediately on cooldown, the 2.5 s surge window is always used the instant it opens, so a cast is empowered (+85% damage) whenever the counter already reads 2, which lands roughly every second cast.",
+  "Sanguine Pool (W) and Tides of Blood (E) are both treated as full action locks (no attacks, no other ability, and neither can start inside Transfusion's cast time) run sequentially on their own cooldowns, even though the wiki notes some of these can coexist (e.g. Sanguine Pool doesn't interrupt a charging Tides of Blood); this sequential-only rotation is a simplification, and both have no cast time of their own (cast time none in the wiki), so only Transfusion's cast time is tracked.",
   "Sanguine Pool is cast on cooldown: its 4 ticks (0, 0.5, 1.0, 1.5 s after cast, each a quarter of the total tooltip damage) are dealt, and the 2 s action lock is enforced directly on the next attack and on Q/E availability; the 5th, 0-damage tick at the 2 s mark is not modelled since it deals no damage.",
   "Tides of Blood is charged for exactly 1 s (the time to reach maximum damage) and then released, rather than held to the full 1.5 s cap, since damage does not increase further after the 1 s ramp; its cooldown starts on cast, matching the wiki.",
   "Crimson Pact's mutual bonus-health/AP conversion is applied non-recursively with the wiki's flat ratios (3.333% of bonus health as AP, 160% of AP as bonus health, computed once each from the pre-conversion item/level stats) rather than the bin's coupled recursion-avoiding approximation; the resulting bonus AP and bonus health are added into every other ability's AP/bonus-health scaling.",
   "Health costs (Sanguine Pool's 15% current health, Tides of Blood's ramping up-to-8% max health) and mana are not modelled: the engine does not track Vladimir's own current health and these costs do not change dealt damage in a stationary-target fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "the dossier's 0.25s cast time for Transfusion; the damage is read as landing at the start of the cast time, matching the wiki's statement that the (simultaneously-triggered) heal lands as soon as the cast time completes"
+  }
  ],
  "abilities": {
   "Q": {
@@ -85,7 +92,8 @@
     "apRatio": 1.11
    },
    "surgeStacksNeeded": 2,
-   "frenzyDurationS": 2.5
+   "frenzyDurationS": 2.5,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -148,6 +156,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/vladimir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/vladimir_blind.rs."
- ]
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/vladimir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/vladimir_blind.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+ ],
+ "manaless": true
 }

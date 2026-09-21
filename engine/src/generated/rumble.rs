@@ -2,8 +2,11 @@
 //! made at >=50 Heat (Danger Zone) is empowered 50%, and reaching 150 Heat
 //! forces a 4s Overheat that disables Q/W/E/R while granting bonus attack
 //! speed and on-hit magic damage. W is never cast (no modeled damage). R is
-//! opened at t=0 and ticks its burning field; Q ticks its cone; E is fired
-//! off cooldown/charges while not Overheated, refreshing a flat MR shred.
+//! opened at t=0 and ticks its burning field; Q has no cast time and ticks
+//! its cone; E has a 0.25s cast time (its damage lands at the cast, then it
+//! keeps Rumble busy for 0.25s) and is fired off cooldown/charges while not
+//! Overheated and not already busy with another cast, refreshing a flat MR
+//! shred.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -39,6 +42,7 @@ pub struct GenDriver {
     e_starting_charges: i64,
     e_recharge_s: f64,
     e_shred_dur: f64,
+    e_cast_time_s: f64,
 
     // R
     r_tick_dmg: f64,
@@ -66,6 +70,7 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
     heat: f64,
     heat_t: f64,
     /// Time Overheat ends; -1.0 means "not overheating".
@@ -81,6 +86,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn current_heat(&self, t: f64) -> f64 {
         let elapsed = t - self.s.heat_t;
         if elapsed <= self.heat_grace {
@@ -107,6 +125,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             heat: 0.0,
             heat_t: 0.0,
             overheat_end: -1.0,
@@ -138,6 +157,7 @@ impl Driver for GenDriver {
             e_starting_charges: kit.num("gen.E.startingCharges")? as i64,
             e_recharge_s: kit.num("gen.E.rechargeS")?,
             e_shred_dur: kit.num("gen.E.shredDurationS")?,
+            e_cast_time_s: kit.num("gen.E.castTimeS")?,
 
             r_tick_dmg: kit.hit("gen.R.tickDamage", ranks.r, sheet)?,
             r_ticks: kit.num("gen.R.ticks")? as i64,
@@ -205,7 +225,7 @@ impl Driver for GenDriver {
         if e.st.t < self.s.overheat_end {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -249,7 +269,7 @@ impl Driver for GenDriver {
         if self.ranks.e > 0 {
             let overheating = e.st.t < self.s.overheat_end;
             if self.s.e_charges > 0 && !overheating {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
                 n += 1;
             }
         }
@@ -314,7 +334,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_time_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

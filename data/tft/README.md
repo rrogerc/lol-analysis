@@ -870,6 +870,55 @@ rule, not a claim of new primary runtime verification: the
 does not expose this part of the ability. Other timing and audit limitations
 still apply.
 
+## Cast timelines and effect-long mana locks (2026-09-20)
+
+The same source now supplies a cast timeline for every unit, extending the
+rule above from one champion to the set. `data/tft/set18/cast-timing.json`
+records each unit's cast animation, the point inside it where the ability
+takes effect, any channel after it, and the unit's attack delay and recovery,
+with the page it came from and the date it was retrieved. TFTraits states its
+own limits — "these tools are not 100% accurate: they combine publicly
+available game data with gameplay observation" — so this is an adopted model
+rule with the standing of Azir's lock and the 0.5-second melee reposition,
+not a verified live timing. The character bins expose only a 0.25-second
+default, identical for 63 of 79 units, which is what the model used before.
+
+While a unit's animation and channel play it neither attacks nor gains mana
+from any source. A cast that an attack made possible begins at that attack's
+unlock point, not at the landing that filled the bar. When the window closes
+a fresh attack begins, which can be sooner than the old attack period would
+have allowed: a short animation is an animation cancel. Attack delay and
+recovery scale with attack speed; the cast windows do not. Only the lock
+rules that are a fixed time from the cast are applied by the engine; the
+rules that follow an effect — a count of empowered attacks, an effect's
+duration, a shield while it holds — belong to the unit's driver, and those
+are measured from the landing, where this engine starts an effect. That makes
+them end up to the effect's own time later than the seconds TFTraits prints
+from the cast: Diana by 0.66 s, Mama Beak by 0.27 s, Brambleback by 0.25 s.
+A unit the file does not cover keeps the previous flat rules unchanged.
+
+Drivers hold mana for as long as their effect runs: Nidalee's javelins,
+Murkwolf's and Shen's empowered attacks, Xayah's feathers, Azir's commands,
+Mama Beak's flock, Brambleback's Frenzy, Tristana's charge, Elise's and Vi's
+effect durations, and the shield tanks Ornn, Rakan, Sejuani, Rammus,
+Malphite, Sentinel and Diana while their shield stands. The last locked
+attack grants no mana and regeneration resumes from that instant with no
+extra second. For a tank the lock also blocks the mana gained from damage
+taken; procs that ignore locks, such as Protector's Vow's threshold mana,
+still pay. Pebbles has no lock at all: Azure Laser drains the bar she cast
+with, overflow included, while regeneration keeps flowing into it, and the
+laser ends at the exact instant the bar empties.
+
+Two constants moved with this change. Critical strike chance above 100%
+converts to critical strike damage at 0.8, the rate Riot's patch 13.18 states
+("increased from 50% to 80% conversion"); no later primary statement was
+found, and TFTips' Set 18 page still describes the older ×0.5, so the value
+is unverified for this set. Blue Buff's "10% additional Attack Damage and
+Ability Power from all sources" multiplies the bonus a unit gains rather than
+the base it starts with, by analogy with Adaptive Helm's "additional Mana
+from all sources"; this reading is adopted, not verified, and the item's note
+in `item-effects.json` says so.
+
 In the two-star, low-trait damage test, Protector's Vow advances Azir's
 first cast from 4.00 s to 1.33 s: its 20 starting mana plus two attacks
 fills his 35-mana bar. This brings his soldiers and attack-speed buff

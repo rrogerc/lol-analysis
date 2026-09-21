@@ -4,8 +4,11 @@
 //! that mark for a second instance; Distortion never interacts with marks;
 //! Mimic recasts whichever of Q/W/E was most recently cast (defaulting to
 //! Sigil of Malice before any basic ability is cast) with R's own numbers.
-//! Basic attacks are plain (no on-hit, no AS steroid, no reset) so no hook
-//! besides the ones below is overridden.
+//! Casts go one after another: a single `busy_until` gates every cast
+//! (Q, E and every Mimic variant except Mimic: Distortion have a 0.25s cast
+//! time; Distortion and Mimic: Distortion have none but still lock out the
+//! next attack for 0.25s like a dash). Basic attacks are plain (no on-hit,
+//! no AS steroid, no reset) so no hook besides the ones below is overridden.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -31,12 +34,15 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_mark_dur: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_init_dmg: f64,
     e_delay_dmg: f64,
     e_cd: f64,
     e_tether_dur: f64,
+    e_cast_s: f64,
     r_orb_dmg: f64,
     r_mark_dmg: f64,
     r_mark_dur: f64,
@@ -55,6 +61,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// The most recently cast of Q/W/E, which Mimic will copy: 1=Q, 2=W, 3=E.
     /// Starts at 1 (Q) so an opening Mimic defaults to Mimic: Sigil of Malice.
     last_basic: i64,
@@ -75,6 +83,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Consumes the mark on the target, if one is currently active.
     fn try_consume_mark(&mut self, e: &mut Engine, t: f64) {
         if self.s.mark_until > t {
@@ -91,30 +112,48 @@ impl GenDriver {
         let t = e.st.t;
         match self.s.last_basic {
             2 => {
-                // Mimic: Distortion never interacts with marks.
+                // Mimic: Distortion never interacts with marks, and has no
+                // cast time (like Distortion) but locks out the next attack.
                 e.deal(self.r_distort_dmg, DType::Magic, SRC_R, false, true, 1.0);
+                if prime {
+                    e.prime_spellblade();
+                }
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                self.s.r_ready = t + e.ult_cd(self.r_cd);
+                e.lockout();
+                return;
             }
             3 => {
-                // Mimic: Ethereal Chains.
+                // Mimic: Ethereal Chains: reuses E's 0.25s cast time.
                 self.try_consume_mark(e, t);
                 e.deal(self.r_chain_init_dmg, DType::Magic, SRC_R, false, true, 1.0);
                 self.s.r_frac_at = t + self.e_tether_dur;
+                if prime {
+                    e.prime_spellblade();
+                }
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.busy_for(e, self.e_cast_s);
             }
             _ => {
-                // Mimic: Sigil of Malice (default, or last cast was Q).
+                // Mimic: Sigil of Malice (default, or last cast was Q):
+                // reuses Q's 0.25s cast time.
                 self.try_consume_mark(e, t);
                 e.deal(self.r_orb_dmg, DType::Magic, SRC_R, false, true, 1.0);
                 self.s.mark_until = t + self.r_mark_dur;
                 self.s.mark_dmg = self.r_mark_dmg;
                 self.s.mark_kind = 2;
+                if prime {
+                    e.prime_spellblade();
+                }
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.busy_for(e, self.q_cast_s);
             }
         }
-        if prime {
-            e.prime_spellblade();
-        }
-        e.ability_cast_proc();
-        e.eclipse_hit();
-        self.s.r_ready = t + e.ult_cd(self.r_cd);
     }
 }
 
@@ -122,6 +161,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             last_basic: 1,
             mark_until: -1.0,
             mark_dmg: 0.0,
@@ -138,12 +178,15 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_mark_dur: kit.num("gen.Q.markDurationS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_init_dmg: kit.hit("gen.E.initialDamage", ranks.e, sheet)?,
             e_delay_dmg: kit.hit("gen.E.delayedDamage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_tether_dur: kit.num("gen.E.tetherDurationS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_orb_dmg: kit.hit("gen.R.orbDamage", ranks.r, sheet)?,
             r_mark_dmg: kit.hit("gen.R.markDamage", ranks.r, sheet)?,
             r_mark_dur: kit.num("gen.R.markDurationS")?,
@@ -186,7 +229,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -201,7 +244,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -214,11 +257,11 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_frac_at != INF {
@@ -226,7 +269,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.r > 0 && self.s.r_ready != INF {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R));
             n += 1;
         }
         if self.s.r_frac_at != INF {
@@ -240,12 +283,15 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W) => {
+                // no cast time, so no `busy_for`, but a dash still locks the
+                // next attack out
                 e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
                 self.s.last_basic = 2;
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
+                e.lockout();
             }
             Kind::Ev(EV_E_CAST) => {
                 self.try_consume_mark(e, t);
@@ -256,9 +302,10 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_FRAC) => {
+                // a delayed effect, not a cast: it does not gate on busy_until
                 self.s.e_frac_at = INF;
                 self.try_consume_mark(e, t);
                 e.deal(self.e_delay_dmg, DType::Magic, self.src_e_frac, false, true, 1.0);

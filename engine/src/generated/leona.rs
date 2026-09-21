@@ -2,7 +2,9 @@
 //! attack for bonus magic damage riding the hit, and the consumed attack
 //! grants an extra reset; Eclipse and Zenith Blade go out on cooldown for
 //! their own magic damage instances; Solar Flare opens the fight and is
-//! recast on cooldown for its delayed impact damage.
+//! recast on cooldown for its delayed impact damage. Zenith Blade and Solar
+//! Flare each have a real 0.25s cast time that keeps Leona busy: no other
+//! cast, no attack until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -31,8 +33,10 @@ pub struct GenDriver {
     w_guard_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_cd: f64,
+    r_cast_s: f64,
     r_impact_delay: f64,
     s: State,
     s0: State,
@@ -41,6 +45,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Shield of Daybreak is armed on a basic attack.
     q_armed: bool,
     /// Set true for the one attack that consumes the armed Q, read by
@@ -55,10 +61,26 @@ struct State {
     r_impact_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_armed: false,
             q_consumed_this_attack: false,
             w_ready: 0.0,
@@ -78,8 +100,10 @@ impl Driver for GenDriver {
             w_guard_s: kit.num("gen.W.guardDurationS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_impact_delay: kit.num("gen.R.impactDelayS")?,
             s: state,
             s0: state,
@@ -140,7 +164,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 || self.s.q_armed {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -150,14 +174,15 @@ impl Driver for GenDriver {
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: engine has already primed Spellblade and locked
-        // out the first attack for us
+        // the opening cast: engine has already primed Spellblade and
+        // delayed the first attack for us; the cast itself keeps Leona busy
         if self.ranks.r == 0 {
             return;
         }
         let t = e.st.t;
         self.s.r_impact_at = t + self.r_impact_delay;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -166,19 +191,19 @@ impl Driver for GenDriver {
             if self.s.w_detonate_at != INF {
                 out[n] = (self.s.w_detonate_at, Kind::Ev(EV_W_DETONATE));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
             if self.s.r_impact_at != INF {
                 out[n] = (self.s.r_impact_at, Kind::Ev(EV_R_IMPACT));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             }
             n += 1;
         }
@@ -207,13 +232,13 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.s.r_impact_at = t + self.r_impact_delay;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_IMPACT) => {
                 self.s.r_impact_at = INF;

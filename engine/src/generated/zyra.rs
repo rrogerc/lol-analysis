@@ -26,6 +26,7 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_delay: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_cast_s: f64,
@@ -46,6 +47,23 @@ struct State {
     q_pending: f64,
     /// Stranglethorns: when its pending damage lands (INF: none pending).
     r_pending: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -56,6 +74,7 @@ impl Driver for GenDriver {
             e_pending: INF,
             q_pending: INF,
             r_pending: INF,
+            busy_until: 0.0,
         };
         Ok(GenDriver {
             ranks,
@@ -64,6 +83,7 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_delay: kit.num("gen.Q.effectDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_cast_s: kit.num("gen.E.castTimeS")?,
@@ -114,7 +134,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -122,7 +142,7 @@ impl Driver for GenDriver {
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.s.q_pending = t + self.q_delay;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -130,6 +150,7 @@ impl Driver for GenDriver {
         // held the first attack past the cast; the thicket's damage lands
         // when the cast time ends
         self.s.r_pending = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -146,7 +167,7 @@ impl Driver for GenDriver {
             if self.s.e_pending != INF {
                 out[n] = (self.s.e_pending, Kind::Ev(EV_E_DMG));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -175,7 +196,7 @@ impl Driver for GenDriver {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_pending = t + self.e_cast_s;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_DMG) => {
                 self.s.e_pending = INF;

@@ -3,9 +3,10 @@
 //! cast on cooldown to empower up to 3 attacks with bonus physical damage and
 //! attack speed, resetting the attack timer on cast; its cooldown starts only
 //! once that window ends. Unburrow (W) and Furious Bite (E) go out on
-//! cooldown. Void Rush (R) waits for the dummy to be Marked as Prey (from the
-//! opening attack) before it can be cast, then fires as soon as its long
-//! cooldown allows, holding attacks through its cast and vanish.
+//! cooldown; Furious Bite has a 0.25s cast time that keeps Rek'Sai busy. Void
+//! Rush (R) waits for the dummy to be Marked as Prey (from the opening
+//! attack) before it can be cast, then fires as soon as its long cooldown
+//! allows, its cast time and pounce delay holding attacks through it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -40,6 +41,7 @@ pub struct GenDriver {
     w_cd: f64,
     e_dmg: f64,
     e_dmg_empowered: f64,
+    e_cast_s: f64,
     e_cd: f64,
     r_dmg: f64,
     r_hp_ratio: f64,
@@ -66,6 +68,23 @@ struct State {
     r_ready: f64,
     /// When the pending Void Rush pounce lands (INF: none pending).
     r_damage_at: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -83,6 +102,7 @@ impl Driver for GenDriver {
             e_ready: 0.0,
             r_ready: 0.0,
             r_damage_at: INF,
+            busy_until: 0.0,
         };
         Ok(GenDriver {
             ranks,
@@ -100,6 +120,7 @@ impl Driver for GenDriver {
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             e_dmg,
             e_dmg_empowered: e_dmg * empowered_ratio,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_hp_ratio: kit.at_rank("gen.R.targetMaxHpRatio", ranks.r)?,
@@ -160,10 +181,12 @@ impl Driver for GenDriver {
         if self.s.q_active {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
+        // no cast time: it costs nothing, but still cannot start inside
+        // another cast (handled by q_at via castable_at)
         let t = e.st.t;
         self.s.q_active = true;
         self.s.q_charges = self.q_max_attacks;
@@ -180,11 +203,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -192,7 +215,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_damage_at, Kind::Ev(EV_R_DAMAGE));
                 n += 1;
             } else if self.s.marked {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
                 n += 1;
             }
         }
@@ -209,6 +232,7 @@ impl Driver for GenDriver {
             Kind::Ev(EV_W) => {
                 // Unburrow does not count as an ability activation: no
                 // Spellblade / Muramana / Eclipse on-cast procs, per the wiki.
+                // No cast time, so no busy_for; it holds attacks via lockout.
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
                 self.s.fury = pymin(self.s.fury + self.fury_per_ability, 100.0);
@@ -227,13 +251,14 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.s.fury = pymin(self.s.fury + self.fury_per_ability, 100.0);
                 self.s.marked = true;
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
-                self.s.r_damage_at = t + self.r_cast_s + self.r_delay_s;
+                self.s.r_damage_at = t + self.r_delay_s;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.r_cast_s);
+                // vanished during the pounce delay too: hold attacks further
                 e.st.next_attack = pymax(e.st.next_attack, self.s.r_damage_at);
             }
             Kind::Ev(EV_R_DAMAGE) => {

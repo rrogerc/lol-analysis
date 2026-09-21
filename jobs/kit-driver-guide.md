@@ -62,16 +62,76 @@ Give each `i` a `const EV_...: u8`.
 **An event must not come due for ever.** `events` is asked again after every
 event. If it reports a time at or before now and `on_event` does not change
 the state that made it due, the fight never ends (the engine aborts it). Do
-what the reference driver does: report `pymax(ready, e.st.t)` for a cast,
-and in `on_event` always move that ready time forward (or set a flag) before
-returning.
+what the reference driver does: report `self.castable_at(e, ready)` for a
+cast (below), and in `on_event` always move that ready time forward (or set a
+flag) before returning.
 
 The opening: the engine calls `cast_r` at t = 0 (it has already primed
-Spellblade and delayed the first attack by the 0.25 s cast). An ult that
-deals damage after its cast time schedules its own event, as the reference
-driver does. An ult that is recast during the fight reports a later event
-for it and uses `e.ult_cd(base)` for its cooldown. NEVER put a `damage` key
-directly under `abilities.R` in the kit: the engine would cast it itself.
+Spellblade and delayed the first attack by 0.25 s). An ult whose damage comes
+after a delay the sources state schedules its own event. `cast_r` may also do
+nothing and leave the ult to a later event: casts cost time (below), so an ult
+with a long cast time or a channel that holds everything else is usually
+better cast once the basic abilities have gone out. An ult that is recast
+during the fight reports a later event for it and uses `e.ult_cd(base)` for
+its cooldown. NEVER put a `damage` key directly under
+`abilities.R` in the kit: the engine would cast it itself.
+
+### Cast times: one cast at a time
+
+A champion does one thing at a time. The classic bug of a driver is an opening
+in which R, Q, W and E all resolve in the same instant: the dummy is dead at
+0.00 s and the build search then optimizes for exactly that. The script
+rejects it. The rule, the one the hand-written kits follow:
+
+- **A cast takes effect as it starts, then costs its cast time.** Its damage
+  lands at the cast — as the engine's basic attack lands at the start of its
+  cycle — and until `t + cast time` NO other ability is cast and NO attack
+  starts. The cast time is the dossier's `castTime` (0.25 s for most, 0.5 s
+  and more for some); the wiki's "effect at cast time end" is that same cast
+  time, not a further delay.
+- **An ability with no cast time** (`castTime` null or "none": most dashes,
+  attack modifiers, toggles) costs nothing and delays nothing, but it still
+  cannot start inside another ability's cast: it reports `castable_at` too.
+- **Time the sources put after the cast is real**: a stated delay before the
+  damage (an eruption, a detonation, a tether that breaks after 1.5 s, a recast
+  that opens later), a channel (busy for its length, its ticks landing inside
+  it). Model those with events. A missile's flight and a dash's travel are
+  not modeled: the dummy stands next to the champion.
+
+Keep every cast time in the kit (`gen.<slot>.castTimeS`) and ONE `busy_until`
+in the state (0.0 at the start), with these two helpers, as the reference
+driver does:
+
+```rust
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+```
+
+`q_at` returns `self.castable_at(e, e.st.q_ready)`, every cast event reports
+`self.castable_at(e, self.s.w_ready)`, and every cast that has a cast time —
+`cast_q`, `cast_r`, the cast events — ends with `self.busy_for(e, its cast
+time)`. Two casts ready at the same instant then sort themselves out: the
+engine runs one (Q first, then the lowest event index), `busy_until` moves,
+and the other reports the later time when `events` is asked again. Ticks,
+delayed hits and expiries are not casts: they report their own time.
+
+The script reads each ability's cast time from the dossier and checks the
+opening against it. Where the ability really is instant as your driver casts
+it (another form is the one cast, the sources say it can be cast during other
+abilities), write the number you use at `gen.<slot>.castTimeS`, list that
+path under `assumed` with the reason, and the check uses your number.
 
 ### The engine, as a driver sees it (`e: &mut Engine`)
 
@@ -95,8 +155,10 @@ directly under `abilities.R` in the kit: the engine would cast it itself.
 - After an ability that deals damage on cast: `e.ability_cast_proc();` (Muramana)
   and `e.eclipse_hit();` once per cast, and `e.prime_spellblade();` for every
   ability cast, damaging or not (Sheen items).
-- `e.lockout()` a cast with a cast time delays the next attack by 0.25 s. An
-  instant ability (no cast time, or an attack modifier) does not call it.
+- `e.lockout()` delays the next attack by 0.25 s: for an ability that has no
+  cast time but still interrupts attacking (a dash). A cast with a cast time
+  calls `busy_for` instead (above); a true instant (an attack modifier, a
+  toggle) calls neither.
 - `e.basic_cd(base_cd)` a basic ability's cooldown after ability haste;
   `e.ult_cd(base_cd)` the ult's. A cooldown that starts when the effect ends
   ("post-effect") is set at that moment, not at the cast.
@@ -167,6 +229,11 @@ Values by dotted path; every error names the path, so use `?`:
 7. Damage never decreases when the fight gets longer, and the breakdown has
    a source for every damaging ability you cast. The checks run fights at
    several lengths, levels and item builds and compare.
+8. Casts go one after another ("Cast times" above). The checks read the
+   opening off fights of growing length: by the time several abilities with a
+   cast time have dealt damage, the cast times of all but the last of them
+   must fit in the time gone; and a full burst build must not leave the
+   squishy dummy (2,800 health) dead at 0.00 s.
 
 ## The kit
 

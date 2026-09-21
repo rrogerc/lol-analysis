@@ -1,11 +1,14 @@
 //! Evelynn. Damage comes almost entirely from abilities: Hate Spike opens
-//! with its dart and then fires its 3 free recasts, each also carrying one
-//! of the mark's 3 bonus-damage charges; Allure is cast purely to mature its
-//! mark into a magic resist shred (it deals no direct damage against a
-//! champion-type target, see `unused.W`); Whiplash opens empowered (Evelynn
-//! is assumed to start the fight under Demon Shade) and thereafter on
-//! cooldown as the plain version; Last Caress fires the moment it is off
-//! cooldown.
+//! with its dart (a 0.3 s cast) and then fires its 3 free recasts (no cast
+//! time of their own, only the 0.5 s barrage interval), each also carrying
+//! one of the mark's 3 bonus-damage charges; Allure (0.25 s cast) is cast
+//! purely to mature its mark into a magic resist shred (it deals no direct
+//! damage against a champion-type target, see `unused.W`); Whiplash (0.25 s
+//! cast) opens empowered (Evelynn is assumed to start the fight under Demon
+//! Shade) and thereafter on cooldown as the plain version; Last Caress
+//! (0.35 s cast) fires the moment it is off cooldown, opening the fight.
+//! Casts go one at a time: a single `busy_until` blocks any other cast or
+//! attack from starting inside one already in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -33,9 +36,11 @@ pub struct GenDriver {
     q_cd: f64,
     q_recast_count: i64,
     q_recast_interval: f64,
+    q_cast_s: f64,
     w_cd: f64,
     w_mature_s: f64,
     w_shred_dur: f64,
+    w_cast_s: f64,
     e_base_flat: f64,
     e_emp_flat: f64,
     /// Whiplash's health-ratio term, already resolved to a fraction using
@@ -43,6 +48,7 @@ pub struct GenDriver {
     e_base_pct: f64,
     e_emp_pct: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_crit_mult: f64,
     r_crit_threshold: f64,
@@ -58,6 +64,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     recast_remaining: i64,
     recast_next_at: f64,
     w_ready: f64,
@@ -72,11 +80,24 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Starts Last Caress's cast: its damage lands after the cast time.
     fn begin_r_cast(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.r_damage_at = t + self.r_cast_s;
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 }
 
@@ -92,6 +113,7 @@ impl Driver for GenDriver {
         let e_emp_pct = (e_emp_pct_flat + e_emp_ap_coef * ap) / 100.0;
 
         let state = State {
+            busy_until: 0.0,
             recast_remaining: 0,
             recast_next_at: INF,
             w_ready: 0.0,
@@ -110,14 +132,17 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_recast_count: kit.num("gen.Q.recastCount")? as i64,
             q_recast_interval: kit.num("gen.Q.recastIntervalS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_mature_s: kit.num("gen.W.matureS")?,
             w_shred_dur: kit.num("abilities.Q.shred.durationS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_base_flat: kit.hit("gen.E.baseDamage", ranks.e, sheet)?,
             e_emp_flat: kit.hit("gen.E.empoweredDamage", ranks.e, sheet)?,
             e_base_pct,
             e_emp_pct,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_crit_mult: kit.num("gen.R.critMultiplier")?,
             r_crit_threshold: kit.num("gen.R.critThreshold")?,
@@ -153,7 +178,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -163,9 +188,9 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
-        // the 3 free recasts, spaced 0.5 s apart; each also carries one of
-        // the mark's 3 bonus-damage charges
+        self.busy_for(e, self.q_cast_s);
+        // the 3 free recasts, spaced 0.5 s apart (no cast time of their
+        // own); each also carries one of the mark's 3 bonus-damage charges
         self.s.recast_remaining = self.q_recast_count;
         self.s.recast_next_at = t + self.q_recast_interval;
     }
@@ -178,13 +203,12 @@ impl Driver for GenDriver {
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
-        let t = e.st.t;
         if self.s.recast_next_at != INF {
-            out[n] = (self.s.recast_next_at, Kind::Ev(EV_Q_RECAST));
+            out[n] = (self.castable_at(e, self.s.recast_next_at), Kind::Ev(EV_Q_RECAST));
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.s.w_mature_at != INF {
@@ -192,14 +216,14 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_damage_at != INF {
             out[n] = (self.s.r_damage_at, Kind::Ev(EV_R_DMG));
             n += 1;
         } else if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -228,7 +252,7 @@ impl Driver for GenDriver {
                 // to start the 2.5 s maturity timer for the shred
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
                 self.s.w_mature_at = t + self.w_mature_s;
             }
             Kind::Ev(EV_W_MATURE) => {
@@ -249,7 +273,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.begin_r_cast(e);

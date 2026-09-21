@@ -4,7 +4,10 @@
 //! read Olaf's live AD (including Ragnarok's dynamic bonus), Tough It Out (W)
 //! is woven in on cooldown for its attack-speed buff and attack reset, and
 //! Berserker Rage's attack speed rises with Olaf's own missing health, which
-//! only moves via Reckless Swing's self-inflicted health cost.
+//! only moves via Reckless Swing's self-inflicted health cost. Casts go one
+//! at a time: Undertow and Reckless Swing keep Olaf busy for their cast time
+//! (one `busy_until` in the state), while Tough It Out and Ragnarok are
+//! instant but still cannot start inside another cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -29,6 +32,7 @@ pub struct GenDriver {
     q_base: f64,
     q_bonus_ad_ratio: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_shred_dur: f64,
     w_as_pct: f64,
     w_dur: f64,
@@ -38,6 +42,7 @@ pub struct GenDriver {
     e_cost_pct: f64,
     e_cdr_per_attack: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_flat_ad: f64,
     r_pct_ad_ratio: f64,
     r_dur: f64,
@@ -51,6 +56,9 @@ pub struct GenDriver {
 struct State {
     /// Olaf's own current health (only Reckless Swing's cost moves it).
     cur_hp: f64,
+    /// A cast with a cast time in progress ends here: no other cast, no
+    /// attack before it.
+    busy_until: f64,
     w_ready: f64,
     /// Tough It Out's attack-speed buff runs until this time.
     w_until: f64,
@@ -60,6 +68,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn missing_hp_frac(&self) -> f64 {
         (self.max_hp - self.s.cur_hp) / self.max_hp
     }
@@ -87,6 +108,7 @@ impl Driver for GenDriver {
         let max_hp = sheet.hp;
         let state = State {
             cur_hp: max_hp,
+            busy_until: 0.0,
             w_ready: 0.0,
             w_until: -1.0,
             e_ready: 0.0,
@@ -102,6 +124,7 @@ impl Driver for GenDriver {
             q_base: kit.at_rank("gen.Q.damage.base", ranks.q)?,
             q_bonus_ad_ratio: kit.num("gen.Q.damage.bonusAdRatio")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_shred_dur: kit.num("abilities.Q.shred.durationS")?,
             w_as_pct: kit.at_rank("gen.W.asPctByRank", ranks.w)?,
             w_dur: kit.num("gen.W.durationS")?,
@@ -111,6 +134,7 @@ impl Driver for GenDriver {
             e_cost_pct: kit.num("gen.E.healthCostPercent")?,
             e_cdr_per_attack: kit.num("gen.E.cdrPerAttackS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_flat_ad: kit.at_rank("gen.R.flatAd", ranks.r)?,
             r_pct_ad_ratio: kit.num("gen.R.pctAdRatio")?,
             r_dur: kit.num("gen.R.durationS")?,
@@ -166,7 +190,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -179,7 +203,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -194,11 +218,11 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         n
@@ -208,6 +232,8 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W) => {
+                // no cast time: instant, but still cannot start inside
+                // another cast (handled by `castable_at` above)
                 self.s.w_until = t + self.w_dur;
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 // Tough It Out resets Olaf's basic attack timer.
@@ -228,7 +254,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

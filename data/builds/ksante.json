@@ -10,10 +10,10 @@
   "E"
  ],
  "notes": [
-  "Opening: cast All Out (R) immediately at t=0; it is treated as a one-time opening cast (its cooldown, ~80-120s reduced by haste, is not expected to come back up inside a normal fight length, so no recast is modeled).",
-  "Ntofo Strikes (Q) is cast on cooldown continuously. The wiki states the empowered (2-stack) cast 'applies the same effects... but also pulls/stuns', so it is modeled with the same damage as the normal cast; stack tracking therefore has no effect on damage and is omitted.",
-  "Q's 'resets K'Sante's basic attack timer' mechanic is not modeled; the standard 0.25s cast lockout already governs cast-to-attack tempo, and the reset's effect on top of that is minor.",
-  "Path Maker (W) is charged to its full ~0.9s window every cast (per the dossier's recommendation) to maximize its All-Out bonus true-damage percentage, then recasts automatically; its cooldown starts when the recast lands. K'Sante cannot attack while charging.",
+  "Opening: cast All Out (R) immediately at t=0; it is treated as a one-time opening cast (its cooldown, ~80-120s reduced by haste, is not expected to come back up inside a normal fight length, so no recast is modeled). R's 0.4s cast time keeps K'Sante busy (no other cast, no attack) until it ends; its actual displacement damage lands via a scheduled event after that.",
+  "Ntofo Strikes (Q) is cast on cooldown continuously, one at a time with the rest of the rotation: its 0.35s cast time (gen.Q.castTimeS) keeps K'Sante busy and delays the next attack/cast until it ends, so it can never land in the same instant as R or W. The wiki states the empowered (2-stack) cast 'applies the same effects... but also pulls/stuns', so it is modeled with the same damage as the normal cast; stack tracking therefore has no effect on damage and is omitted.",
+  "Q's 'resets K'Sante's basic attack timer' mechanic is not modeled; the cast time already governs cast-to-attack tempo, and the reset's effect on top of that is minor.",
+  "Path Maker (W) is charged to its full ~0.9s window every cast (per the dossier's recommendation) to maximize its All-Out bonus true-damage percentage, then recasts automatically; its cooldown starts when the recast lands. K'Sante cannot attack while charging, and the charge itself (castTime: none) still waits for any cast already in progress (R's or Q's cast time) before it can start.",
   "Because R is cast first and All Out lasts 15s (covering essentially the whole fight), W almost always lands its All-Out true-damage variant; the pre-All-Out physical-damage variant is still implemented for completeness (e.g. fights run past 15s).",
   "R's damage assumes the no-terrain, single-strike case (only the base 'Physical Damage' hit): a stationary-dummy fight has no terrain, resolving the dossier's open question.",
   "R's -85% base armor/MR self-debuff, 50% bonus-armor-pen lethality against the target, and 20% omnivamp have no corresponding engine hook (defensive-stat mutation and enemy-facing penetration aren't exposed to the driver) and are not modeled; only R's attack-speed buff and its enabling of All Out's ability-damage bonus are applied.",
@@ -153,6 +153,7 @@
    ],
    "bonusArmorRatio": 0.4,
    "bonusMrRatio": 0.4,
+   "castTimeS": 0.35,
    "cooldownResistSlope": 0.0125,
    "cooldownResistCap": 120,
    "cooldownMin": 2,
@@ -205,6 +206,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ksante.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ksante.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ksante.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ksante.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

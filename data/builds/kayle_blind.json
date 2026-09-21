@@ -10,17 +10,26 @@
   "W"
  ],
  "notes": [
-  "Divine Judgment is self-cast at t=0 for its unconditional burst; its invulnerability has no use against a dummy that never attacks, and its damage lands 2.5s after the start of the cast (KayleR.InvulnDuration), which is also when its long cooldown starts (irrelevant here since it is never off cooldown again inside a 15s fight).",
-  "Radiant Blast is cast on cooldown; its damage lands on the fixed 0.25s cast delay from the start of the cast (KayleQ.CastDelay), independent of the wiki's disputed windup-scaling-vs-flat cast time question - the engine's uniform 0.25s post-cast attack lockout already models the follow-up delay, so that debate does not change any timing here. Armor/MR shred (Sundered) is applied the instant the sword's damage lands.",
-  "Starfire Spellblade's active is activated the instant it comes off cooldown, always right before the next attack (its reset means the next swing lands only one windup later); its cooldown starts when that empowered attack lands (post-effect), per the wiki. The wiki's stated 6s empowerment window (bin says 5s) is used, but is moot here since the empowered attack always lands well inside either window.",
+  "Divine Judgment is self-cast at t=0 for its unconditional burst; its invulnerability has no use against a dummy that never attacks. Its 0.5s cast time (gen.R.castTimeS) keeps Kayle busy (no other cast, no attack) from t=0 to t=0.5; its damage lands separately, 2.5s after the start of the cast (KayleR.InvulnDuration), which is also when its long cooldown starts (irrelevant here since it never comes off cooldown again inside a 15s fight).",
+  "Radiant Blast is cast on cooldown. Its cast time (gen.Q.castTimeS) keeps Kayle busy and delays the next cast/attack; its damage lands separately, on the fixed 0.25s cast delay from the start of the cast (KayleQ.CastDelay), independent of the cast time itself. Armor/MR shred (Sundered) is applied the instant the sword's damage lands.",
+  "Radiant Blast's cast time is disputed by the wiki (documented as scaling with attack windup, quoted at 0.30968s at base attack speed, versus the bin's flat 0.25s field, with the wiki itself unsure which is correct post-V10.4). This kit uses a flat 0.30968s (the wiki's quoted base-AS value) rather than dynamically recomputing it from current attack speed each cast; see 'assumed'.",
+  "Celestial Blessing (W) is never cast: it only heals and speeds up allied champions, who do not exist and would not matter in this dummy fight, so it deals no damage worth modeling; see 'unused'.",
+  "Starfire Spellblade's active is activated the instant it comes off cooldown, always right before the next attack (its reset means the next swing lands only one windup later); its cooldown starts when that empowered attack lands (post-effect), per the wiki. The wiki's stated 6s empowerment window (bin says 5s) is used, but is moot here since the empowered attack always lands well inside either window. It has no cast time (wiki: 'cast time = none'), so it costs nothing and only resets the attack timer.",
   "Starfire Spellblade's passive on-hit damage and, while armed, its active's missing-health on-hit damage both land on every basic attack (both are separate proc instances sharing one cast/attack instance, as the wiki states). While Exalted (level 16: permanently; otherwise at 5 Zeal stacks) and level 11+, the same attack also launches P's Aflame fire wave - all three are treated as independently triggered by 'a basic attack while the condition holds' and so all fire together on that swing.",
   "Against a single dummy, Aflame's explosion on the Starfire Spellblade active (level 11+) is assumed to only ever reach additional enemies beyond the main target, so it adds no further damage instance here (the main target already received the active's on-hit damage from the base attack).",
   "Zeal is modeled as: +1 stack (capped at 5) with a fresh 5s expiry on every attack, lost together if 5s pass without an attack; continuous auto-attacking in this fight never lets it lapse in practice, so the wiki's extra 0.5s attack-animation grace period is not separately modeled. At level 16 (Transcendent) Kayle is instead permanently at max stacks (30% bonus AS, always Exalted), per the passive.",
   "Attack range/type follows the passive's level gates: melee base range below level 6, 525 ranged from level 6 (Arisen), 625 from level 16 (Transcendent).",
-  "Celestial Blessing (W) is never cast: it only heals and speeds up allied champions, who do not exist and would not matter in this dummy fight.",
-  "Mana is not modeled: nothing here plausibly binds inside a 15s fight at level 16, so Q's cost and its undocumented 50% mana refund are both ignored."
+  "Mana is not modeled: nothing here plausibly binds inside a 15s fight at level 16, so Q's and R's costs and Q's undocumented 50% mana refund are all ignored."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "the wiki flags Radiant Blast's cast time as disputed (windup-scaling vs. the bin's flat 0.25s); using its quoted base-attack-speed value (0.30968s) as a fixed number rather than dynamically recomputing it from current attack speed each cast"
+  }
+ ],
+ "unused": {
+  "W": "Celestial Blessing only heals and grants move speed to Kayle and an allied champion; it deals no damage and there are no allies in this fight, so it is never cast"
+ },
  "abilities": {
   "Q": {
    "name": "Radiant Blast",
@@ -114,9 +123,12 @@
     "apRatio": 0.5,
     "bonusAdRatio": 0.6
    },
-   "castDelayS": 0.25
+   "castDelayS": 0.25,
+   "castTimeS": 0.30968
   },
-  "W": {},
+  "W": {
+   "castTimeS": 0.25
+  },
   "E": {
    "passiveDamage": {
     "base": [
@@ -149,7 +161,8 @@
     "apRatio": 0.7,
     "bonusAdRatio": 1.0
    },
-   "invulnDurationS": 2.5
+   "invulnDurationS": 2.5,
+   "castTimeS": 0.5
   }
  },
  "attack": {
@@ -157,6 +170,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayle.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayle_blind.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayle.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayle_blind.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

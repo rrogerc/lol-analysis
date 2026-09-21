@@ -7,7 +7,9 @@
 //! DoT and its armor shred. Fury of the Sands (R) is cast at t=0 and ticks
 //! a max-health-percent aura on the dummy every 0.5s for its duration.
 //! Wither (W) is never cast: it only affects a target that moves or
-//! attacks back.
+//! attacks back (its 0.25s cast time is kept in the kit at gen.W.castTimeS
+//! but is unused since W is never cast; the kit's "unused" block explains
+//! why).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -72,6 +74,9 @@ impl Driver for GenDriver {
         let r_tick_interval = kit.num("gen.R.tickIntervalS")?;
         let r_duration = kit.num("gen.R.durationS")?;
         let e_tick_interval = kit.num("gen.E.tickIntervalS")?;
+        // gen.W.castTimeS is kept for reference (Wither's real cast time)
+        // but W is never cast by this driver; see the kit's "unused" block.
+        let _w_cast_time_s = kit.num("gen.W.castTimeS")?;
 
         let state = State {
             q_armed: false,

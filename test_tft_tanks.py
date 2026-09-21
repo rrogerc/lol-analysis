@@ -117,7 +117,8 @@ class TestTankThreats(unittest.TestCase):
                 target = one_hitter(0.0)
                 target["slots"] = [dict(target["slots"][0], hp=3000.0, armor=0.0, mr=0.0)]
                 target["board"] = None
-                spec = spec_for(ref["name"], star=2, items=ref["items"],
+                # the calibration is a production fight: cast timelines included
+                spec = spec_for(ref["name"], star=2, items=ref["items"], timed=True,
                                 duration=20.0, geometry="spread", dummy=target, pressure=False)
                 spec["immortal"] = True
                 _, res = ENGINE.simulate(spec, False)

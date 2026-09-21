@@ -10,17 +10,18 @@
   "E"
  ],
  "notes": [
-  "Opening: Emperor's Divide (R) is cast immediately at t=0 since its cooldown is far too long to fit twice in the fight; its damage lands after its 0.5s cast time, matching the dossier's note that the charge starts partway into the cast.",
-  "Arise! (W) is cast the instant a charge is available and no soldier is currently active, which in practice means recasting the moment the previous soldier's 10s duration expires, using the second stocked charge to cover the gap; Azir is assumed to start the fight with both charges stocked (a level-16 Azir has had ample time to refill), listed under assumed.",
+  "Opening: Emperor's Divide (R) is cast immediately at t=0 since its cooldown is far too long to fit twice in the fight; it has a 0.5s cast time (gen.R.castTimeS) that keeps Azir busy, and its damage lands via a scheduled event after that cast time, matching the dossier's note that the charge starts partway into the cast.",
+  "Arise! (W) is cast the instant a charge is available and no soldier is currently active, which in practice means recasting the moment the previous soldier's 10s duration expires, using the second stocked charge to cover the gap; Azir is assumed to start the fight with both charges stocked (a level-16 Azir has had ample time to refill), listed under assumed. Each cast has the wiki/sheet's 0.25s cast time (gen.W.castTimeS), during which no other cast or attack starts.",
   "While a Sand Soldier is active, every basic attack command is routed entirely through the soldier's spear-thrust (on-hit magic damage) instead of Azir's own physical auto-attack, per the wiki's 'replacing his basic attacks' wording; when no soldier is up, Azir attacks normally for physical damage.",
   "The wiki states item on-hit/on-attack effects on the soldier's primary-target stab are reduced to 50% effectiveness; this reduction is not modeled because the engine applies on-hit item effects generically outside the kit's control, so on-hit items are treated as full value here — noted as a known approximation.",
   "The dossier's unsettled question on whether two simultaneously-stocked soldiers can both attack on one command is resolved toward the simpler reading: only one soldier is ever treated as 'active' for attacking purposes at a time.",
-  "Conquering Sands (Q) requires an active Sand Soldier and is cast on cooldown whenever one is up; its dash-stab damage is dealt on cast, matching the usual 0.25s cast lockout with no further travel delay modeled (as with Jax's Leap Strike).",
-  "Shifting Sands (E) requires an active Sand Soldier and is cast on cooldown; since the stationary dummy counts as an enemy champion per the fight rules, every successful E cast also refunds a charge of Arise!, per the dossier's mechanic note. If no soldier happens to be up exactly when E comes off cooldown, that cast is skipped for damage but the cooldown still starts (a rare edge case given W's near-continuous uptime).",
+  "Conquering Sands (Q) requires an active Sand Soldier and is cast on cooldown whenever one is up; it has the sheet's 0.25s cast time (gen.Q.castTimeS), which keeps Azir busy after its dash-stab damage lands on cast, with no further travel delay modeled (as with Jax's Leap Strike).",
+  "Shifting Sands (E) requires an active Sand Soldier and is cast on cooldown; since the stationary dummy counts as an enemy champion per the fight rules, every successful E cast also refunds a charge of Arise!, per the dossier's mechanic note. If no soldier happens to be up exactly when E comes off cooldown, that cast is skipped for damage but the cooldown still starts (a rare edge case given W's near-continuous uptime). E's cast time is 'none' per the dossier, so it costs no time of its own, but it still cannot start inside another ability's cast time (Q, W or R).",
   "With only a single stationary target, W's beyond-the-first-target damage bonus and Q's 'no additional damage on subsequent soldiers' clause never come into play and are omitted.",
   "W's per-rank Arise! charge recharge time is only given by the wiki as a range (12 to 6 seconds); linear per-rank values are assumed between those endpoints, listed under assumed.",
   "Mana is not modeled: at level 16 this rotation does not run out of mana within a 15s fight.",
-  "The soldier's spear-thrust is treated as non-crit on-hit magic damage, since neither the wiki nor the sheet describes it as able to critically strike."
+  "The soldier's spear-thrust is treated as non-crit on-hit magic damage, since neither the wiki nor the sheet describes it as able to critically strike.",
+  "Casts go one at a time: every cast (R, W, Q) that has a nonzero cast time keeps a shared busy_until so no other cast or attack starts inside it; this is why R at t=0 delays the first W/Q attempt by its 0.5s cast time even though W and Q would otherwise be immediately ready."
  ],
  "assumed": [
   {
@@ -169,6 +170,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/azir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/azir.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/azir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/azir.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

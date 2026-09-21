@@ -11,10 +11,10 @@
  ],
  "notes": [
   "Eternal Hunger's bonus magic on-hit damage fires on every basic attack and is re-triggered by Jaws of the Beast's bite and by Infinite Duress's 1st/3rd/5th ticks (the ability apply on-hit effects); its healing is not modeled since only damage output matters in this fight.",
-  "Jaws of the Beast is cast on cooldown. Its ~0.2475 s bite delay is modeled as the engine's standard 0.25 s cast lockout and its cooldown is started right at the cast (the post-effect delay is negligible). The target-health-ratio term uses the champion formula (not the flat monster-capped variant) since the dummy counts as an enemy champion.",
-  "Blood Hunt is cast whenever off cooldown to guarantee its 8 s mark on the dummy, bypassing the health-threshold gate, since a short fight against a healthy dummy may never bring it below 50% health otherwise; the active itself deals no damage. Whenever Warwick lands basic-attack or ability damage on a target that is marked or below 50% max health, the bonus attack speed (doubled below 25% max health) is granted/refreshed for 1.25 s.",
-  "Primal Howl is cast on cooldown purely for the attack-reset its 1 s-delayed recast grants; its damage reduction and fear/slow have no effect on damage dealt.",
-  "Infinite Duress opens the fight (the engine's t=0 opening cast), channelling for 1.5 s (attacks are held during it) and dealing 6 magic damage ticks worth 2/9, 1/9, 2/9, 1/9, 2/9, 1/9 of its total; only the 1st/3rd/5th ticks apply on-hit effects (triggering Eternal Hunger), while all 6 ticks count as ability damage for the Blood Hunt attack-speed check. Its cooldown starts on cast.",
+  "Jaws of the Beast has no cast time (the dossier's cast time is 'none'; its ~0.2475 s bite delay is a lunge delay, not a cast time) and is cast on cooldown, using the engine's 0.25 s lockout for the interruption; its cooldown is started right at the cast (the post-effect delay is negligible). The target-health-ratio term uses the champion formula (not the flat monster-capped variant) since the dummy counts as an enemy champion.",
+  "Blood Hunt has a 0.5 s cast time (kept at gen.W.castTimeS and enforced with a cast-time busy window, not just the 0.25 s lockout) and is cast whenever off cooldown to guarantee its 8 s mark on the dummy, bypassing the health-threshold gate, since a short fight against a healthy dummy may never bring it below 50% health otherwise; the active itself deals no damage. Whenever Warwick lands basic-attack or ability damage on a target that is marked or below 50% max health, the bonus attack speed (doubled below 25% max health) is granted/refreshed for 1.25 s.",
+  "Primal Howl is cast on cooldown purely for the attack-reset its 1 s-delayed recast grants; its damage reduction and fear/slow have no effect on damage dealt. Neither the initial cast nor the recast has a cast time (the dossier lists 'none'); the recast's 0.25 s howling animation is modeled as the engine's attack lockout, matching the dossier's own description of it as a 'lockout', not a cast time.",
+  "Infinite Duress opens the fight (the engine's t=0 opening cast) with its own 0.1 s cast time (gen.R.castTimeS), which keeps Warwick busy before the channel's first tick; it then channels for 1.5 s (attacks are held during it) and deals 6 magic damage ticks worth 2/9, 1/9, 2/9, 1/9, 2/9, 1/9 of its total; only the 1st/3rd/5th ticks apply on-hit effects (triggering Eternal Hunger), while all 6 ticks count as ability damage for the Blood Hunt attack-speed check. Its cooldown starts on cast; a recast beyond the first is also cast through its 0.1 s cast time.",
   "Mana is not modeled: none of Warwick's costs are large enough relative to his level-16 pool to bind inside a 15 s fight."
  ],
  "assumed": [],
@@ -114,7 +114,8 @@
    "activeDurationS": 8,
    "passiveDurationS": 1.25,
    "firstHpThreshold": 0.5,
-   "secondHpThreshold": 0.25
+   "secondHpThreshold": 0.25,
+   "castTimeS": 0.5
   },
   "E": {
    "recastDelayS": 1
@@ -133,7 +134,8 @@
    "bigTickNumerator": 2,
    "smallTickNumerator": 1,
    "tickDenominator": 9,
-   "channelDurationS": 1.5
+   "channelDurationS": 1.5,
+   "castTimeS": 0.1
   }
  },
  "attack": {
@@ -141,6 +143,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/warwick.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/warwick.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/warwick.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/warwick.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

@@ -1,11 +1,11 @@
 //! Diana. Melee auto-attacker whose passive rides her attacks: Moonsilver
 //! Blade gives always-on bonus attack speed, tripled for 5s after any
 //! ability cast, and every third attack in a row cleaves for bonus magic
-//! damage. Moonfall opens the fight; Crescent Strike is cast on cooldown and
-//! immediately chained into Lunar Rush to consume Moonlight (dropping Lunar
-//! Rush's cooldown to 0.25s and resetting the next attack); Pale Cascade is
-//! cast on cooldown, its three orbs treated as landing instantly on the
-//! adjacent dummy.
+//! damage. Moonfall opens the fight; Crescent Strike is cast on cooldown
+//! (0.25s cast time) and, as soon as its cast time ends, Lunar Rush is cast
+//! (via a chase event) to consume Moonlight, dropping Lunar Rush's cooldown
+//! to 0.25s and resetting the next attack; Pale Cascade is cast on cooldown,
+//! its three orbs treated as landing instantly on the adjacent dummy.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -13,9 +13,11 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// Pale Cascade's orbs (treated as landing on cast); Moonfall's delayed beam.
-const EV_W: u8 = 0;
-const EV_R_EXPLODE: u8 = 1;
+/// Lunar Rush chasing Moonlight; Pale Cascade's orbs (treated as landing on
+/// cast); Moonfall's delayed beam.
+const EV_E: u8 = 0;
+const EV_W: u8 = 1;
+const EV_R_EXPLODE: u8 = 2;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -30,6 +32,7 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_moonlight_dur: f64,
+    q_cast_s: f64,
     w_orb_dmg: f64,
     w_cd: f64,
     e_dmg: f64,
@@ -46,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Basic attacks landed since the last empowered (cleave) attack.
     p_attack_count: i64,
     /// Moonlight is present on the target until this time (-1: none).
@@ -59,9 +64,23 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Lunar Rush: dashes and deals its damage now, consumes Moonlight for
     /// the cooldown reset if present, triggers the tripled-AS window, and
     /// resets the next attack to just a windup away (the post-dash swing).
+    /// Lunar Rush itself has no cast time, so it does not call `busy_for`.
     fn cast_e(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
@@ -85,6 +104,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_attack_count: 0,
             moonlight_until: -1.0,
             tripled_until: -1.0,
@@ -105,6 +125,7 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_moonlight_dur: kit.num("gen.Q.moonlightDurationS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_orb_dmg: kit.hit("gen.W.orbDamage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
@@ -159,7 +180,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -171,10 +192,7 @@ impl Driver for GenDriver {
         e.prime_spellblade();
         self.s.moonlight_until = t + self.q_moonlight_dur;
         self.s.tripled_until = t + self.p_tripled_dur;
-        e.lockout();
-        if self.ranks.e > 0 && e.st.t >= self.s.e_ready {
-            self.cast_e(e);
-        }
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -184,12 +202,19 @@ impl Driver for GenDriver {
         self.s.r_explode_at = t + self.r_cast_s + self.r_delay_s;
         self.s.tripled_until = t + self.p_tripled_dur;
         e.prime_spellblade();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
+        if self.ranks.e > 0 {
+            // Lunar Rush has no cast time of its own, but still cannot start
+            // inside Crescent Strike's cast time
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
+            n += 1;
+        }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.s.r_explode_at != INF {
@@ -202,6 +227,9 @@ impl Driver for GenDriver {
     fn on_event(&mut self, e: &mut Engine, kind: Kind) {
         let t = e.st.t;
         match kind {
+            Kind::Ev(EV_E) => {
+                self.cast_e(e);
+            }
             Kind::Ev(EV_W) => {
                 // the three orbs, treated as detonating instantly on the
                 // adjacent dummy; the cooldown starts right after

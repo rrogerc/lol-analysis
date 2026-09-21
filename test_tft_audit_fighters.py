@@ -97,6 +97,24 @@ class TestFighterImpactIdentity(unittest.TestCase):
                 _, result = ENGINE.simulate(spec, True)
                 self.assertEqual([(e[3], e[2]) for e in events(result, "damage", "orbs")], [(0, 50)])
 
+    def test_diana_orbs_left_over_in_spread_do_not_fly_on_to_the_next_enemy(self):
+        # Every dummy is a nearby one here. Spread out, only the target was
+        # "within 2 hexes" when the cast landed: once it dies the other five
+        # orbs are lost (they used to resolve onto the next dummy in line).
+        # In the clump all three were in reach and the orbs move on as before.
+        for geometry, expected in (
+                ("spread", [(0, 50)]),
+                ("clump", [(0, 50), (2, 100), (1, 100), (2, 100), (1, 100), (2, 100)])):
+            with self.subTest(geometry=geometry):
+                spec = fixture("Diana", geometry=geometry, duration=2.0, opening_cast=True)
+                kit = spec["kits"]["base"]
+                kit["calcs"]["MagicDamageCalc1"] = flat("magic", 100)
+                kit["rows"]["NumOrbs"] = 6
+                spec["dummies"]["slots"][0]["hp"] = 50
+                _, result = ENGINE.simulate(spec, True)
+                self.assertEqual(result["casts"], 1)
+                self.assertEqual([(e[3], e[2]) for e in events(result, "damage", "orbs")], expected)
+
 
 class TestElderFlightWindow(unittest.TestCase):
     def test_protection_is_during_first_cast_and_ends_at_landing(self):

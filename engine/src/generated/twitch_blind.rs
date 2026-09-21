@@ -4,6 +4,8 @@
 //! kept alive by attacks), Contaminate is cast on cooldown for its
 //! per-stack physical/magic damage, and Spray and Pray is kept up for its
 //! bonus AD while its bolts behave like ordinary attacks against one target.
+//! Venom Cask and Contaminate each have a 0.25 s cast time: casting one
+//! keeps Twitch busy (no other cast, no attack start) until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -38,11 +40,13 @@ pub struct GenDriver {
     w_cd: f64,
     w_zone_ticks: i64,
     w_zone_tick_interval: f64,
+    w_cast_s: f64,
 
     e_cd: f64,
     e_base: f64,
     e_per_stack_phys: f64,
     e_per_stack_magic: f64,
+    e_cast_s: f64,
 
     r_cd: f64,
     r_bonus_ad: f64,
@@ -58,6 +62,9 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+
     p_stacks: i64,
     p_until: f64,
     p_next_tick: f64,
@@ -73,6 +80,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Deadly Venom is applied/refreshed by an attack landing, or by
     /// Venom Cask landing or ticking its zone.
     fn apply_venom(&mut self, t: f64) {
@@ -95,6 +115,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_until: 0.0,
             p_next_tick: INF,
@@ -129,11 +150,13 @@ impl Driver for GenDriver {
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_zone_ticks: kit.num("gen.W.maxStacksPerCast")? as i64 - 1,
             w_zone_tick_interval: kit.num("gen.W.zoneTickIntervalS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
 
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_base: kit.hit("gen.E.baseDamage", ranks.e, sheet)?,
             e_per_stack_phys: kit.hit("gen.E.perStackPhysical", ranks.e, sheet)?,
             e_per_stack_magic,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
 
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_bonus_ad: kit.at_rank("gen.R.bonusAdByRank", ranks.r)?,
@@ -204,7 +227,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.s.w_zone_next != INF {
@@ -212,11 +235,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 && self.s.r_next_ready != INF {
-            out[n] = (pymax(self.s.r_next_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_next_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -243,7 +266,7 @@ impl Driver for GenDriver {
                 self.s.w_zone_ticks_left = self.w_zone_ticks;
                 self.s.w_zone_next = t + self.w_zone_tick_interval;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_ZONE) => {
                 self.apply_venom(t);
@@ -266,7 +289,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.do_cast_r(e);

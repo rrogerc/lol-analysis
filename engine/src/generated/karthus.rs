@@ -1,9 +1,9 @@
 //! Karthus. A caster who still attacks between casts: Wall of Pain shreds
 //! magic resistance once at the start (and on cooldown after), Defile toggles
 //! on immediately and ticks every 0.25s for as long as mana allows, Requiem
-//! opens the fight with a 3s channel that blocks Lay Waste, and Lay Waste is
-//! spammed on its ~1s cooldown as a delayed, always-doubled single-target
-//! nuke.
+//! opens the fight with a 0.25s cast folded into a 3s channel that blocks
+//! every other cast, and Lay Waste is spammed on its ~1s cooldown (each cast
+//! costing its own 0.25s) as a delayed, always-doubled single-target nuke.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,15 +25,18 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_cost: f64,
+    q_cast_s: f64,
     q_delay: f64,
     w_cd: f64,
     w_cost: f64,
+    w_cast_s: f64,
     w_shred_dur: f64,
     e_dps: f64,
     e_cost_per_s: f64,
     e_tick_s: f64,
     r_dmg: f64,
     r_cost: f64,
+    r_cast_s: f64,
     r_channel_s: f64,
     s: State,
     s0: State,
@@ -43,15 +46,32 @@ pub struct GenDriver {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
     mana: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     defile_on: bool,
     e_next_tick: f64,
-    /// Requiem: the channel blocks Lay Waste until this time; landed tracks
-    /// whether the pending damage still needs to be dealt.
+    /// Requiem: the cast + channel resolve together; this is when the nuke
+    /// lands (and `busy_until` is held to the same instant).
     r_channel_until: f64,
     r_landed: bool,
     /// Lay Waste's pending detonation (INF: none in flight).
     q_land_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -59,6 +79,7 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let state = State {
             mana: sheet.mana,
+            busy_until: 0.0,
             w_ready: if ranks.w > 0 { 0.0 } else { INF },
             defile_on: ranks.e > 0,
             e_next_tick: kit.num("gen.E.tickIntervalS")?,
@@ -72,15 +93,18 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_cost: kit.at_rank("gen.Q.costMana", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_delay: kit.num("gen.Q.detonationDelayS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_cost: kit.at_rank("gen.W.costMana", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             w_shred_dur: kit.num("abilities.Q.shred.durationS")?,
             e_dps: kit.hit("gen.E.dps", ranks.e, sheet)?,
             e_cost_per_s: kit.at_rank("gen.E.costManaPerSecond", ranks.e)?,
             e_tick_s: kit.num("gen.E.tickIntervalS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cost: kit.at_rank("gen.R.costMana", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_channel_s: kit.num("gen.R.channelS")?,
             s: state,
             s0: state,
@@ -108,13 +132,10 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        if e.st.t < self.s.r_channel_until {
-            return INF;
-        }
         if self.s.mana < self.q_cost {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -123,21 +144,23 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.q_land_at = e.st.t + self.q_delay;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the cast; only the channel timers need
-        // setting here, the damage (and its procs) land when the channel ends
+        // the opening cast (the engine has already primed Spellblade and
+        // held the first attack past the cast): the 0.25s cast time and the
+        // 3s channel that follows it are one continuous busy period, ending
+        // when the nuke lands
         if self.s.mana < self.r_cost {
             return;
         }
         self.s.mana -= self.r_cost;
         let t = e.st.t;
-        self.s.r_channel_until = t + self.r_channel_s;
+        self.s.r_channel_until = t + self.r_cast_s + self.r_channel_s;
         self.s.r_landed = false;
+        self.busy_for(e, self.r_cast_s + self.r_channel_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -155,7 +178,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 && self.s.w_ready != INF {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         n
@@ -193,8 +216,8 @@ impl Driver for GenDriver {
                     self.s.mana -= self.w_cost;
                     e.st.shred_until = t + self.w_shred_dur;
                     e.prime_spellblade();
-                    e.lockout();
                     self.s.w_ready = t + e.basic_cd(self.w_cd);
+                    self.busy_for(e, self.w_cast_s);
                 } else {
                     self.s.w_ready = INF;
                 }

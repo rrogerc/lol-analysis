@@ -10,19 +10,26 @@
   "W"
  ],
  "notes": [
-  "Ragnarok (R) is cast at t=0; its 3s bonus-AD buff is extended by up to 2.5s for every landed basic attack or Reckless Swing cast against the dummy, so with continuous attacking it stays active for essentially the whole fight after the opening.",
+  "Casts go one at a time: Ragnarok (R) and Tough It Out (W) have no cast time and cost nothing, but Undertow (Q, 0.25s) and Reckless Swing (E, taken as a flat 0.175s here) keep Olaf busy for their cast time, during which no other cast and no attack starts.",
+  "Opening: Ragnarok (R) is cast at t=0 (instant); Undertow (Q) is cast immediately after at t=0, busying Olaf until 0.25s; Tough It Out (W) then fires at 0.25s (instant, no further delay); Reckless Swing (E) fires alongside it at 0.25s and busies Olaf until 0.425s. From there Q, W and E are recast on cooldown and Olaf attacks between them.",
+  "Ragnarok (R)'s 3s bonus-AD buff is extended by up to 2.5s for every landed basic attack or Reckless Swing cast against the dummy, so with continuous attacking it stays active for essentially the whole fight after the opening.",
   "Undertow (Q) and Reckless Swing (E) scale off Olaf's total/bonus AD read live at the moment of the cast, so both (and basic attacks) benefit from Ragnarok's dynamically-recalculated bonus AD while it is up, per the wiki's note that the buff amplifies dynamically.",
   "Reckless Swing's true damage and its health cost (40% of that damage, per the wiki/bin) are both computed from the same live damage number; the cost reduces Olaf's tracked current health, floored at 1, and is not itself dealt as damage.",
   "Berserker Rage's bonus attack speed is a live function of Olaf's own missing health, reaching its level-based maximum at 70% missing health. Since the stationary dummy never damages Olaf, missing health only comes from Reckless Swing's self-inflicted cost, so this grows modestly as Reckless Swing is cast; its lifesteal is a heal and is omitted.",
-  "Tough It Out's shield is a heal/shield and is omitted; its attack-speed buff and basic-attack-timer reset are kept, and it is cast on cooldown (recasting only refreshes the buff value, per the wiki, not stacks it).",
+  "Tough It Out's shield is a heal/shield and is omitted; its attack-speed buff and basic-attack-timer reset are kept, it has no cast time, and it is cast on cooldown (recasting only refreshes the buff value, per the wiki, not stacks it).",
   "Reckless Swing's cooldown is cut by 1s per landed basic attack against a champion; since the dummy always counts as a champion and every attack lands, this applies on every attack.",
   "Undertow's axe-retrieval cooldown reduction requires Olaf to walk to a landed axe, which has no meaning in a stationary no-movement dummy fight, so Undertow is simply cast on cooldown at its full value.",
-  "Reckless Swing's cast time technically shrinks with bonus attack speed (0.25s down to a 0.175s floor at 125% bonus AS); the engine only models a flat 0.25s cast lockout for any ability with a cast time, so that scaling is not represented.",
+  "Reckless Swing's cast time technically shrinks with bonus attack speed (0.25s base down to a 0.175s floor at 125%+ bonus AS); we use the 0.175s floor as a fixed simplification rather than modeling the live scaling (see assumed).",
   "Undertow's 20% armor reduction on champions hit is applied via the engine's shred slot for 4 seconds on every Q cast.",
   "Ragnarok's bonus resistances, cc-immunity and brief movement speed are defensive/utility and do not affect the damage fight.",
   "Mana costs (Q/W/R) are not modeled: nothing here plausibly binds inside an 8-15s fight at level 16."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.E.castTimeS",
+   "why": "Reckless Swing's cast time varies with bonus attack speed (0.25s base shrinking to a 0.175s floor at 125%+ bonus AS per the bin); we use the 0.175s floor as a fixed value since Tough It Out and Berserker Rage keep Olaf's bonus attack speed high for most of the fight, rather than modeling the live interpolation."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Undertow",
@@ -104,7 +111,8 @@
      270
     ],
     "bonusAdRatio": 1.0
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "asPctByRank": [
@@ -128,7 +136,8 @@
     "adRatio": 0.5
    },
    "healthCostPercent": 0.4,
-   "cdrPerAttackS": 1
+   "cdrPerAttackS": 1,
+   "castTimeS": 0.175
   },
   "R": {
    "flatAd": [
@@ -146,6 +155,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/olaf.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/olaf.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/olaf.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/olaf.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

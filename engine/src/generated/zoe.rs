@@ -1,7 +1,10 @@
 //! Zoe. An ability-driven attacker: Sleepy Trouble Bubble and Paddle Star!
 //! are cast on cooldown, Spell Thief is cast continuously for its orbiting
 //! bolts, More Sparkles! rides whichever lands first (an attack or a bolt),
-//! and Zoe auto-attacks between casts. Portal Jump is never cast (see notes).
+//! and Zoe auto-attacks between casts. Casts go one at a time: E and Q each
+//! have a 0.25 s cast time and W a 0.01 s cast time, each of which keeps Zoe
+//! busy (no other cast, no attack) until it ends. Portal Jump is never cast
+//! (see notes / unused.R).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -23,16 +26,21 @@ pub struct GenDriver {
     /// its arming window.
     p_dmg: f64,
     p_arm_dur: f64,
-    /// Paddle Star!'s minimum (0% distance bonus) magic damage.
+    /// Paddle Star!'s minimum (0% distance bonus) magic damage and cast time.
     q_dmg: f64,
     q_cd: f64,
-    /// Spell Thief's per-bolt magic damage and the assumed bolt cadence.
+    q_cast_s: f64,
+    /// Spell Thief's per-bolt magic damage, the assumed bolt cadence, and
+    /// the cast's own (near-zero) cast time.
     w_bolt_dmg: f64,
     w_bolt_interval: f64,
-    /// Sleepy Trouble Bubble's damage, cooldown, on-champion-hit refund
-    /// fraction, and its drowsy/sleep/wake-linger timings.
+    w_cast_s: f64,
+    /// Sleepy Trouble Bubble's damage, cooldown, cast time,
+    /// on-champion-hit refund fraction, and its drowsy/sleep/wake-linger
+    /// timings.
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     e_refund: f64,
     e_drowsy: f64,
     e_sleep: f64,
@@ -47,6 +55,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_armed: bool,
     p_until: f64,
     e_ready: f64,
@@ -62,6 +72,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn try_consume_p(&mut self, e: &mut Engine) {
         let t = e.st.t;
         if self.s.p_armed && t <= self.s.p_until {
@@ -88,6 +111,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_armed: false,
             p_until: -INF,
             e_ready: 0.0,
@@ -104,10 +128,13 @@ impl Driver for GenDriver {
             p_arm_dur: kit.num("gen.P.armDurationS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)? + kit.at_level("gen.Q.perLevelDamage", level)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_bolt_dmg: kit.hit("gen.W.boltDamage", ranks.w, sheet)?,
             w_bolt_interval: kit.num("gen.W.boltIntervalS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             e_refund: kit.at_rank("gen.E.refundFrac", ranks.e)?,
             e_drowsy: kit.num("gen.E.drowsyDurationS")?,
             e_sleep: kit.num("gen.E.sleepDurationS")?,
@@ -146,7 +173,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -158,7 +185,7 @@ impl Driver for GenDriver {
         e.prime_spellblade();
         self.arm_p(t);
         self.try_wake(e);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -168,11 +195,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (self.s.bolt_next_at, Kind::Ev(EV_BOLT));
+            out[n] = (self.castable_at(e, self.s.bolt_next_at), Kind::Ev(EV_BOLT));
             n += 1;
         }
         n
@@ -188,7 +215,6 @@ impl Driver for GenDriver {
                 self.s.e_wake_until = t + self.e_sleep + self.e_linger;
             }
             Kind::Ev(EV_E_CAST) => {
-                e.lockout();
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
@@ -197,16 +223,17 @@ impl Driver for GenDriver {
                 self.s.e_sleep_start_at = t + self.e_drowsy;
                 let cd = e.basic_cd(self.e_cd) * (1.0 - self.e_refund);
                 self.s.e_ready = t + cd;
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_BOLT) => {
                 if self.s.bolt_idx == 0 {
                     e.prime_spellblade();
                     self.arm_p(t);
+                    self.busy_for(e, self.w_cast_s);
                 }
                 e.deal(self.w_bolt_dmg, DType::Magic, self.src_w_bolt, false, true, 1.0);
                 self.try_consume_p(e);
                 self.try_wake(e);
-                self.s.bolt_idx = (self.s.bolt_idx + 1) % 2 + self.s.bolt_idx / 2 * 0; // placeholder never used
                 self.s.bolt_idx = (self.s.bolt_idx + 1) % 3;
                 self.s.bolt_next_at = t + self.w_bolt_interval;
             }

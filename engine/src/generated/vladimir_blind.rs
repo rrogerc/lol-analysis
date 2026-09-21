@@ -1,10 +1,12 @@
 //! Vladimir. Opens with Hemoplague (its burst lands after a 4 s delayed
-//! event, and it amps the target for that window). Transfusion is cast on
-//! cooldown, empowered whenever Crimson Rush's 0/1/2 counter has reached 2.
-//! Sanguine Pool and Tides of Blood are each modelled as a full action lock
-//! (no attacks or other casts) run sequentially on their own cooldowns:
-//! Sanguine Pool ticks four times over 2 s, Tides of Blood always charges
-//! for exactly 1 s (its ramp to max damage) before releasing.
+//! event, and it amps the target for that window). Transfusion has a 0.25 s
+//! cast time and is cast on cooldown, empowered whenever Crimson Rush's
+//! 0/1/2 counter has reached 2. Sanguine Pool and Tides of Blood are each
+//! modelled as a full action lock (no attacks or other casts) run
+//! sequentially on their own cooldowns, and neither starts inside
+//! Transfusion's cast: Sanguine Pool ticks four times over 2 s, Tides of
+//! Blood always charges for exactly 1 s (its ramp to max damage) before
+//! releasing.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -27,6 +29,7 @@ pub struct GenDriver {
     q_emp_dmg: f64,
     q_cd: f64,
     q_surge_need: i64,
+    q_cast_s: f64,
 
     w_tick_dmg: f64,
     w_cd: f64,
@@ -64,6 +67,21 @@ struct State {
     r_burst_at: f64,
 
     busy_until: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -108,6 +126,7 @@ impl Driver for GenDriver {
             q_emp_dmg: kit.hit("gen.Q.empoweredDamage", ranks.q, &sheet2)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_surge_need: kit.num("gen.Q.surgeStacksNeeded")? as i64,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_tick_dmg: w_total / (w_tick_count as f64),
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
@@ -152,7 +171,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, pymax(e.st.t, self.s.busy_until))
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -169,7 +188,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -186,8 +205,7 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 && !self.s.w_active {
-            let at = pymax(self.s.w_ready, pymax(e.st.t, self.s.busy_until));
-            out[n] = (at, Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.s.w_active {
@@ -195,8 +213,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 && !self.s.e_charging {
-            let at = pymax(self.s.e_ready, pymax(e.st.t, self.s.busy_until));
-            out[n] = (at, Kind::Ev(EV_E_START));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_START));
             n += 1;
         }
         if self.s.e_charging {

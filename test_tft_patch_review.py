@@ -282,3 +282,38 @@ class TestBoundReview(unittest.TestCase):
         candidate, notes = self.candidate([line], patch='18.2', next_minor=True)
         with self.assertRaises(tft_update.ReviewRequired):
             tft_update.reconcile(candidate, self.previous, notes)
+
+    def test_mid_patch_xp_table_row_is_outside_too(self):
+        # Riot's 18.2 SEPTEMBER 14 update: <h2>MID-PATCH UPDATE</h2> ... <h4>SYSTEMS</h4>
+        # "XP From Level 8-9: 64 ⇒ 68". It blocked forty scheduled refreshes.
+        lines = [fixtures.change(what, '64', '68', update='SEPTEMBER 14', section='SYSTEMS')
+                 for what in ('XP From Level 8-9', 'XP From Level 9-10')]
+        for line in lines:
+            line['major'] = 'MID-PATCH UPDATE'
+        candidate, notes = self.candidate(lines)
+        overrides, audit = tft_update.reconcile(candidate, self.previous, notes)
+        self.assertEqual(overrides, self.overrides)
+        # each line is recorded once as a numeric change and once as the bullet it came from
+        recorded = audit['automatic']['outOfScope']
+        self.assertEqual([r['change']['what'] for r in recorded if 'change' in r], ['XP From Level 8-9', 'XP From Level 9-10'])
+        self.assertTrue(all('XP purchase costs' in r['reason'] for r in recorded))
+
+    def test_a_line_that_only_mentions_xp_or_a_level_is_not_the_xp_table(self):
+        outside = lambda what, section, major='MID-PATCH UPDATE': tft_update._outside(
+            {'what': what, 'section': section, 'major': major}, set())
+        self.assertIsNotNone(outside('XP From Level 8-9', 'SYSTEMS'))
+        self.assertIsNotNone(outside('Level 8 to Level 9', 'XP PER LEVEL', 'SYSTEMS'))
+        for what, section in [
+                ('Soraka XP From Level 8-9', 'SYSTEMS'),            # a champion's line, wherever it is filed
+                ('XP From Level 8-9', 'UNITS'),                     # the right words under a gameplay heading
+                ('Draven Bounty Hunter Level 10 XP Reward', 'UNITS'),
+                ('Level 3 Shop Odds', 'SYSTEMS'),                   # a systems line that is no XP row
+                ('Level 8 to Level 9 Champion Damage', 'SYSTEMS'),
+                ('XP From Level 8-9 Refund on Sell', 'SYSTEMS')]:
+            with self.subTest(what=what, section=section):
+                self.assertIsNone(outside(what, section))
+        # and end to end: a champion line under the mid-patch SYSTEMS heading still needs a review
+        line = fixtures.change('Soraka XP From Level 8-9', '64', '68', update='SEPTEMBER 14', section='SYSTEMS')
+        candidate, notes = self.candidate([line])
+        with self.assertRaises(tft_update.ReviewRequired):
+            tft_update.reconcile(candidate, self.previous, notes)

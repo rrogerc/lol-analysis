@@ -10,10 +10,10 @@
   "W"
  ],
  "notes": [
-  "Opens with Riftwalk (R) at t=0: its 0.25s cast is the engine's opening cast, its blink damage lands on arrival (modeled as landing 0.25s after cast, like Jax's ult swing), and it grants the first Riftwalk stack only once that damage lands.",
-  "Null Sphere (Q) and Force Pulse (E) are cast on cooldown whenever mana allows; their 0.25s cast time is treated only as the usual attack lockout, with damage landing immediately on cast (the projectile/cone travel itself is not separately modeled, matching how Leap Strike's dash is treated in the reference driver).",
-  "Riftwalk is recast whenever it is off cooldown and its growing mana cost (40 x 2^held stacks, up to 640 at 4 stacks) can still be paid; a cast's own bonus damage and mana cost use the stacks held BEFORE that cast (an open question in the dossier), and the new stack is only gained once that cast's damage actually lands.",
-  "Nether Blade's active is re-armed right after every basic attack once its post-effect cooldown has elapsed, so it lands on the very next swing well within its 5s window; landing it deals its own spell-damage bonus INSTEAD of the always-on 25 (+10% AP) on-hit proc damage (the dossier leaves this open; treated here as a replacement, not an addition), and its landing resets Kassadin's attack timer to a bare windup, matching the wiki's 'resets Kassadin's basic attack timer'.",
+  "Casts go one at a time: a single busy_until tracks the champion's current cast. Opens with Riftwalk (R) at t=0: its 0.25s cast time keeps Kassadin busy (no other cast, no attack starts) until it ends; the blink's damage is modeled as landing when that cast time ends, and the first Riftwalk stack is granted only once that damage lands.",
+  "Null Sphere (Q) and Force Pulse (E) are cast on cooldown whenever mana allows; each has its own 0.25s cast time (from the dossier) during which no other cast or attack can start, and each one's damage lands with the cast (matching the projectile/cone being unmodeled travel, like Leap Strike's dash in the reference driver).",
+  "Riftwalk is recast whenever it is off cooldown, mana allows, and no other cast is in progress; its growing mana cost (40 x 2^held stacks, up to 640 at 4 stacks) and bonus damage use the stacks held BEFORE that cast (an open question in the dossier), and the new stack is only gained once that cast's damage lands after its 0.25s cast time.",
+  "Nether Blade's active is re-armed right after every basic attack once its post-effect cooldown has elapsed (it has no cast time and costs no time, matching the dossier's 'cast time: none'), and lands on the very next swing well within its 5s window; landing it deals its own spell-damage bonus INSTEAD of the always-on 25 (+10% AP) on-hit proc damage (the dossier leaves this open; treated here as a replacement, not an addition), and its landing resets Kassadin's attack timer to a bare windup, matching the wiki's 'resets Kassadin's basic attack timer'.",
   "Every ability cast (Q, W's active arming, E, R) shaves 0.75s off Force Pulse's current cooldown, including Force Pulse's own cast (the dossier leaves this open; the more inclusive reading is used).",
   "Void Stone's 10% reduced incoming magic damage and Null Sphere's shield never matter: the dummy never attacks back.",
   "Mana is tracked as a real budget because Riftwalk's cost scaling makes it bind: the pool is assumed to start full (no regeneration is modeled), and casts are skipped once they can no longer be afforded, never returning since the pool never refills."
@@ -86,7 +86,8 @@
     70,
     75,
     80
-   ]
+   ],
+   "castTimeS": 0.25
   },
   "W": {
    "activeDamage": {
@@ -123,7 +124,8 @@
     75,
     80
    ],
-   "cdrPerCastS": 0.75
+   "cdrPerCastS": 0.75,
+   "castTimeS": 0.25
   },
   "R": {
    "baseDamage": {
@@ -156,6 +158,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kassadin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kassadin_blind.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kassadin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kassadin_blind.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

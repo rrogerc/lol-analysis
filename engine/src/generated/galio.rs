@@ -2,7 +2,9 @@
 //! allies), then Winds of War and Justice Punch go out on cooldown, Shield
 //! of Durand is charged to its 1.25s cap and recast for maximum damage, and
 //! Colossal Smash periodically empowers a basic attack while granting bonus
-//! attack speed whenever it is off cooldown.
+//! attack speed whenever it is off cooldown. Casts go one at a time: Winds
+//! of War and Justice Punch each keep Galio busy for their cast time, per
+//! the guide's cast-time rule.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -34,6 +36,7 @@ pub struct GenDriver {
     // Winds of War
     q_gust_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_tick_frac: f64,
     q_ticks: i64,
     q_tick_interval: f64,
@@ -46,6 +49,7 @@ pub struct GenDriver {
     // Justice Punch
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     // Hero's Entrance
     r_dmg: f64,
     r_channel: f64,
@@ -69,6 +73,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Colossal Smash's current cooldown is cut to `t`, down by its flat
     /// reduction, whenever a landed ability caused it; only while it is
     /// actually on cooldown.
@@ -118,6 +135,7 @@ impl Driver for GenDriver {
             src_p: intern("P"),
             q_gust_dmg: kit.hit("gen.Q.gustDamage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_tick_frac,
             q_ticks: kit.num("gen.Q.tornadoTicks")? as i64,
             q_tick_interval: kit.num("gen.Q.tornadoTickIntervalS")?,
@@ -128,6 +146,7 @@ impl Driver for GenDriver {
             w_post_lock: kit.num("gen.W.postRecastLockoutS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)? + r_bonus_mr_ratio * sheet.mr,
             r_channel: kit.num("gen.R.channelS")?,
             s: state,
@@ -180,10 +199,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        if e.st.t < self.s.busy_until {
-            return INF;
-        }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -196,7 +212,7 @@ impl Driver for GenDriver {
         self.p_reduce_cd(t);
         self.s.q_ticks_left = self.q_ticks;
         self.s.q_tick_next = t + self.q_tick_interval;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -227,8 +243,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            let time = if t < self.s.busy_until { INF } else { pymax(self.s.e_ready, t) };
-            out[n] = (time, Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_impact_at != INF {
@@ -279,7 +294,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.p_reduce_cd(t);
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_IMPACT) => {
                 e.deal(self.r_dmg, DType::Magic, SRC_R, false, true, 1.0);

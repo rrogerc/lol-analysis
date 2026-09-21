@@ -11,11 +11,12 @@
  ],
  "notes": [
   "Mana Barrier (P) is a self-shield that only triggers when Blitzcrank drops below 30% health; the dummy never damages him, so it never matters here and is left out of the kit.",
-  "Rocket Grab's guaranteed follow-up basic attack ('Blitzcrank will be ordered to basic attack the target once the target arrives') is modeled as an ordinary attack landing right after the 0.25s cast lockout and a normal windup, so it goes through the real attack pipeline (on-hit, Static Field stacking, a ready Power Fist) rather than being flat bonus damage.",
+  "Casts go one at a time: Rocket Grab and Static Field's active each have a 0.25s cast time (per the dossier) that keeps Blitzcrank busy - no other cast and no attack starts until it ends - tracked with one busy_until in the state; Overdrive and Power Fist have no cast time and cost nothing, but still cannot start inside another ability's cast.",
+  "Rocket Grab's guaranteed follow-up basic attack ('Blitzcrank will be ordered to basic attack the target once the target arrives') is modeled as an ordinary attack: it lands after the 0.25s cast time, then the dossier's separate 0.25s post-hit lockout, then a normal windup, so it goes through the real attack pipeline (on-hit, Static Field stacking, a ready Power Fist) rather than being flat bonus damage.",
   "Power Fist is armed right after an attack lands, using its attack-reset: the next attack follows one windup later and becomes the empowered hit; its cooldown starts only once that empowered attack resolves (cdstart = post-effect), matching the wiki.",
   "Power Fist's stated bonus is used as written on the wiki, 100% AD + 25% AP on top of the normal attack; the bin's PowerFist#TotalDamage = 2xAD + 0.25xAP is read as a 'total including the base attack's own AD' figure, not as a literal 200% AD bonus.",
   "Overdrive is cast as soon as it is off cooldown and recast throughout the fight for its attack-speed buff; its movement speed and the self-slow when it ends are mobility only and ignored.",
-  "Static Field's passive only applies stacks while the ability itself is off cooldown, so the active detonation is cast as soon as it is ready and recast on cooldown for the rest of the fight, which pauses passive stacking for its (haste-reduced) cooldown each time; this is the straightforward on-cooldown reading of the kit rather than an attempt to time the active around the passive.",
+  "Static Field's passive only applies stacks while the ability itself is off cooldown, so the active detonation is cast (0.25s cast time) as soon as it is ready and recast on cooldown for the rest of the fight, which pauses passive stacking for its (haste-reduced) cooldown each time; this is the straightforward on-cooldown reading of the kit rather than an attempt to time the active around the passive.",
   "Static Field's banked stacks are read as accumulating uncapped while a stack drains once per second, since the sources describe 'apply a stack' plus a fixed 1-second drain with no stated cap on how many can be banked; this is the chosen reading of an open question.",
   "Mana costs (100/75/25/100) are not modeled: nothing here meaningfully binds inside an 8-15s fight at level 16."
  ],
@@ -71,7 +72,8 @@
      310
     ],
     "apRatio": 1.2
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "attackSpeedPct": [
@@ -118,7 +120,8 @@
     ],
     "maxManaRatio": 2
    },
-   "tickIntervalS": 1
+   "tickIntervalS": 1,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -126,6 +129,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/blitzcrank.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/blitzcrank.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/blitzcrank.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/blitzcrank.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

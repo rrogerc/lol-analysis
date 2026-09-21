@@ -10,10 +10,11 @@
   "W"
  ],
  "notes": [
-  "Opening: Despair (W) is toggled on at t=0 and left on for the whole fight (its mana-per-second cost is not modeled, matching the dossier's note that nothing here binds inside a 15 s fight); its first tick is assumed to land at t=0 (gen.W.tickOffsetS), then every 0.5 s.",
-  "Curse of the Sad Mummy (R) is cast at t=0 as the opening cast (its own damage lands at the end of its 0.25 s cast time), Bandage Toss (Q) is cast immediately and again whenever a charge is available, and Tantrum (E) is cast on cooldown throughout.",
+  "Casts go one at a time: Bandage Toss (Q), Tantrum (E) and Curse of the Sad Mummy (R) each have a 0.25 s cast time per the dossier, so a cast's damage lands as it starts and then keeps Amumu busy (no other cast, no attack) until that 0.25 s is over; Despair's toggle and its ticks have no cast time and never wait.",
+  "Opening: Curse of the Sad Mummy (R) is cast at t=0 as the opening cast, its damage landing at the end of its 0.25 s cast time; Despair (W) is toggled on at t=0 (its first tick is assumed to land at t=0, then every 0.5 s) and left on for the whole fight, its mana-per-second cost not modeled since nothing here binds inside a 15 s fight.",
+  "Once busy from R's cast clears, Bandage Toss (Q) is cast as soon as it is castable and again whenever a charge is available, and Tantrum (E) is cast on cooldown throughout; each of these casts in turn holds off the next cast and the next attack for its own 0.25 s.",
   "Bandage Toss is assumed to start the fight with both charges stocked (gen.Q.startCharges = 2), the common reading for a champion entering combat rather than from a completely fresh recall; its per-rank recharge time is assumed to interpolate linearly between the wiki's stated endpoints (16 at rank 1, 12 at rank 5) since only the endpoints are given (gen.Q.rechargeS).",
-  "Bandage Toss's forced basic attack when the dash lands is not modeled as a separate attack instance (only the usual 0.25 s cast lockout is applied): Amumu already attacks continuously on his own schedule between casts, so this keeps the attack timeline simple without double-counting a hit.",
+  "Bandage Toss's forced basic attack when the dash lands is not modeled as a separate attack instance (only the usual 0.25 s cast-time busy period is applied): Amumu already attacks continuously on his own schedule between casts, so this keeps the attack timeline simple without double-counting a hit.",
   "Cursed Touch's 10% bonus true damage on incoming pre-mitigation magic damage is applied consistently the way the wiki documents it for Curse of the Sad Mummy: each of Amumu's own magic hits (Q, a Despair tick, E, R) is amplified only if the target was already marked with Curse from an earlier hit, and only afterward does that hit itself (re)apply the 3 s mark; a basic attack deals no magic damage in this kit so it only (re)applies the mark, never triggers the bonus itself.",
   "Tantrum's passive physical-damage reduction and its cooldown reduction from being hit by an on-hit attack are ignored: the stationary dummy never attacks, so neither ever applies.",
   "Mana costs are not modeled: nothing here would actually stall casting inside a 15 s fight at level 16."
@@ -96,7 +97,8 @@
     14,
     13,
     12
-   ]
+   ],
+   "castTimeS": 0.25
   },
   "W": {
    "tickBase": [
@@ -127,7 +129,8 @@
      185
     ],
     "apRatio": 0.5
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -146,6 +149,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/amumu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/amumu.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/amumu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/amumu.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

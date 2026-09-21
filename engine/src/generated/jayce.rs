@@ -4,6 +4,9 @@
 //! on-attack empowered effect (Cannon's armor/MR shred, Hammer's bonus
 //! magic damage), Acceleration Gate keeps a supercharge window up for
 //! Shock Blast, and Hyper Charge empowers and resets the next 3 attacks.
+//! Thundering Blow has a real 0.25 s cast time (gen.E.castTimeS): it keeps
+//! Jayce busy until it ends, exactly when its damage lands; every other
+//! cast here has no cast time but still waits out that busy window.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -46,9 +49,9 @@ pub struct GenDriver {
     w_field_tick_interval: f64,
     w_field_cd: f64,
 
+    e_cast_s: f64,
     e_blow_hp_ratio: f64,
     e_blow_ad_dmg: f64,
-    e_blow_cast_s: f64,
     e_blow_post_lockout: f64,
     e_blow_cd: f64,
     e_gate_duration: f64,
@@ -69,6 +72,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     in_cannon: bool,
     transform_ready: f64,
     cannon_q_ready: f64,
@@ -93,10 +98,26 @@ struct State {
     hammer_bonus_pending: bool,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             in_cannon: false,
             transform_ready: 0.0,
             cannon_q_ready: 0.0,
@@ -140,9 +161,9 @@ impl Driver for GenDriver {
             w_field_tick_interval: kit.num("gen.W.lightningField.tickIntervalS")?,
             w_field_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
 
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             e_blow_hp_ratio: kit.at_rank("gen.E.hammer.targetMaxHpRatio", ranks.e)?,
             e_blow_ad_dmg: e_blow_ad_ratio * sheet.ad_bonus,
-            e_blow_cast_s: kit.num("gen.E.hammer.castTimeS")?,
             e_blow_post_lockout: kit.num("gen.E.hammer.postLockoutS")?,
             e_blow_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_gate_duration: kit.num("gen.E.cannon.gateDurationS")?,
@@ -220,7 +241,7 @@ impl Driver for GenDriver {
         } else {
             self.s.hammer_q_ready
         };
-        pymax(pymax(ready, self.s.q_lockout_until), e.st.t)
+        self.castable_at(e, pymax(ready, self.s.q_lockout_until))
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -257,11 +278,11 @@ impl Driver for GenDriver {
         let mut n = 0;
         let t = e.st.t;
         if self.ranks.r > 0 {
-            let mut rt = pymax(self.s.transform_ready, t);
+            let mut rt = self.s.transform_ready;
             if self.s.in_cannon && self.s.w_active_until != INF {
                 rt = pymax(rt, self.s.w_active_until);
             }
-            out[n] = (rt, Kind::Ev(EV_TRANSFORM));
+            out[n] = (self.castable_at(e, rt), Kind::Ev(EV_TRANSFORM));
             n += 1;
         }
         if self.ranks.w > 0 {
@@ -270,11 +291,11 @@ impl Driver for GenDriver {
                     out[n] = (self.s.w_active_until, Kind::Ev(EV_W_EXPIRE));
                     n += 1;
                 } else {
-                    out[n] = (pymax(self.s.cannon_w_ready, t), Kind::Ev(EV_W_CAST));
+                    out[n] = (self.castable_at(e, self.s.cannon_w_ready), Kind::Ev(EV_W_CAST));
                     n += 1;
                 }
             } else if !self.s.field_active {
-                out[n] = (pymax(self.s.hammer_w_ready, t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.hammer_w_ready), Kind::Ev(EV_W_CAST));
                 n += 1;
             }
             if self.s.field_active {
@@ -284,13 +305,13 @@ impl Driver for GenDriver {
         }
         if self.ranks.e > 0 {
             if self.s.in_cannon {
-                out[n] = (pymax(self.s.cannon_e_ready, t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.cannon_e_ready), Kind::Ev(EV_E_CAST));
                 n += 1;
             } else if self.s.e_hit_at != INF {
                 out[n] = (self.s.e_hit_at, Kind::Ev(EV_E_HIT));
                 n += 1;
             } else {
-                out[n] = (pymax(self.s.hammer_e_ready, t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.hammer_e_ready), Kind::Ev(EV_E_CAST));
                 n += 1;
             }
         }
@@ -356,9 +377,9 @@ impl Driver for GenDriver {
                     e.prime_spellblade();
                 } else {
                     self.s.hammer_e_ready = t + e.basic_cd(self.e_blow_cd);
-                    self.s.e_hit_at = t + self.e_blow_cast_s;
+                    self.s.e_hit_at = t + self.e_cast_s;
                     e.prime_spellblade();
-                    e.lockout();
+                    self.busy_for(e, self.e_cast_s);
                 }
             }
             Kind::Ev(EV_E_HIT) => {

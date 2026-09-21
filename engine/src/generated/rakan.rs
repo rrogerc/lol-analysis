@@ -1,9 +1,11 @@
 //! Rakan. His damage is almost entirely abilities: Gleaming Quill on
-//! cooldown (its cooldown starts only once the projectile vanishes, assumed
-//! thrown at melee range), Grand Entrance dashing in and hitting after its
-//! arrival delay, The Quickness opening the fight for its one guaranteed
-//! collision hit, and Battle Dance cast on cooldown purely to prime
-//! Spellblade-style effects (it deals no damage itself).
+//! cooldown (a 0.25 s cast, then its cooldown starts only once the
+//! projectile vanishes, assumed thrown at melee range), Grand Entrance
+//! dashing in and hitting after its arrival delay, The Quickness opening the
+//! fight for its one guaranteed collision hit, and Battle Dance cast on
+//! cooldown purely to prime Spellblade-style effects (it deals no damage
+//! itself). Casts go one at a time: only Gleaming Quill and The Quickness
+//! have a cast time, and every other cast waits for one in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,6 +28,7 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_travel_s: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_delay_s: f64,
@@ -40,6 +43,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     /// When Grand Entrance's delayed damage lands (INF: none pending).
     w_hit_at: f64,
@@ -48,12 +53,28 @@ struct State {
     r_hit_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let attack_range = sheet.base_attack_range;
         let q_speed = kit.num("gen.Q.travelSpeedUnitsPerSec")?;
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_hit_at: INF,
             e_ready: 0.0,
@@ -65,6 +86,7 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_travel_s: attack_range / q_speed,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_delay_s: kit.num("gen.W.hitDelayS")?,
@@ -99,18 +121,20 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        // Gleaming Quill: assumed thrown at melee range, so the projectile
-        // "vanishes" (hits) almost immediately; the cooldown starts then.
+        // Gleaming Quill: a 0.25 s cast whose damage lands as the cast
+        // starts. Assumed thrown at melee range, so the projectile
+        // "vanishes" (hits) almost immediately after; the post-effect
+        // cooldown timer starts then, on top of the cast time itself.
         e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.st.q_ready = e.st.t + self.q_travel_s + e.basic_cd(self.q_cd);
-        e.lockout();
+        e.st.q_ready = e.st.t + self.q_cast_s + self.q_travel_s + e.basic_cd(self.q_cd);
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -124,6 +148,7 @@ impl Driver for GenDriver {
         self.s.r_hit_at = t + self.r_cast_s;
         // Grand Entrance-independent: The Quickness's cooldown starts on cast.
         let _ = e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -132,12 +157,12 @@ impl Driver for GenDriver {
             if self.s.w_hit_at != INF {
                 out[n] = (self.s.w_hit_at, Kind::Ev(EV_W_HIT));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_hit_at != INF {
@@ -166,7 +191,7 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_E_CAST) => {
                 // Battle Dance: deals no damage, cast purely for an on-cast
-                // proc (e.g. Spellblade); cooldown starts on cast.
+                // proc (e.g. Spellblade); no cast time; cooldown starts on cast.
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.prime_spellblade();
             }

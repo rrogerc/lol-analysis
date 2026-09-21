@@ -11,15 +11,21 @@
  ],
  "notes": [
   "Elise opens in Human Form: Neurotoxin (Q) is cast first while the dummy is at full health (Neurotoxin scales off current health, so it is strongest immediately), then Volatile Spiderling (W) once, then she permanently switches to Spider Form and never returns to Human Form for the rest of the fight, per the dossier's proposed rotation.",
+  "Casts go one at a time: a single busy_until tracks the cast in progress. Neurotoxin/Venomous Bite (Q) has a 0.25 s cast time in both forms per the dossier, and Volatile Spiderling (Human W) has a 0.125 s cast time (gen.W.castTimeS); each keeps Elise from starting another cast or attack until it ends. Skittering Frenzy (Spider W) has no cast time per the wiki ('cast time = none', gen.W.spiderCastTimeS = 0) and resets Elise's attack timer directly, but it is still routed through the same busy-until bookkeeping so it cannot start inside another cast in progress.",
   "In Spider Form, Venomous Bite (Q) and Skittering Frenzy (W) are recast on cooldown; Skittering Frenzy grants Elise bonus attack speed for 3 s and resets her attack timer, and its own cooldown (6 s, EliseSpiderW) is shorter than Human Form's Volatile Spiderling cooldown (12 s, EliseHumanW) used for the opener.",
+  "Switching from Human Form to Spider Form (R) happens immediately after the opening Volatile Spiderling's cast finishes, at no extra cast time or cooldown cost of its own (the wiki: transformations are not on-cast effects and R's own cast time is 'none'); Skittering Frenzy is then available right away.",
   "Spider Queen's bonus on-hit magic damage (Spider Form only) is dealt as separate proc damage on every basic attack while in Spider Form; its self-heal is ignored since healing does not matter in this fight.",
   "Neurotoxin scales off the target's current health and Venomous Bite off the target's missing health, both plus 3% per 100 AP; since the caster's AP is fixed for a given item build, the ratio (base% + 0.03*AP) is computed once at setup as a percent and applied to the target's live current/missing health at each cast by dividing by 100.",
   "Elise's Spiderling swarm (their own basic attacks, spawn timing beyond the passive on-hit bonus) is not modeled: the sheet/wiki give no base attack speed, range or attack cadence for Spiderlings (deferred to a separate Pets page), so only Elise's own Q/W/on-hit damage is simulated, per the dossier's offered option to treat pet damage as out of scope.",
-  "Cocoon and Rappel (E) are never cast: Cocoon deals no damage, and Rappel is a defensive/mobility tool whose 5 s Spider Queen damage-amp formula is unresolved in the sheet; the stationary, non-attacking dummy gains nothing from either.",
-  "Volatile Spiderling's explosion is treated as landing on cast, after the standard 0.25 s cast lockout, since its exact travel/detonation delay against an adjacent stationary target is not given precisely by the sources.",
+  "E (Cocoon / Rappel) is never cast: Cocoon deals no damage per the wiki, and Rappel's recast bonus to Spider Queen's effects relies on an unresolved calculation in the sheet ({9e9e2e5c}); the stationary, non-attacking dummy gains no measurable damage from either, so it is declared unused rather than driven with a guessed formula.",
+  "Volatile Spiderling's explosion is treated as landing on cast (after its 0.125 s cast time), since its exact travel/detonation delay against an adjacent stationary target is not given precisely by the sources.",
   "If Spider Form (R) is not yet learned (pre-level 6), Elise stays in Human Form the whole fight and simply recasts Volatile Spiderling on its own 12 s cooldown instead of transforming.",
   "Mana costs are not modeled: at level 16 none of Elise's costs would realistically stall this rotation within a 15 s fight."
  ],
+ "assumed": [],
+ "unused": {
+  "E": "Cocoon deals no damage per the wiki, and Rappel's Spider Queen damage-amp recast relies on an unresolved formula in the sheet ({9e9e2e5c}) with no defensive value against a stationary, non-attacking dummy; E is never cast."
+ },
  "abilities": {
   "Q": {
    "name": "Neurotoxin / Venomous Bite",
@@ -74,6 +80,7 @@
    }
   },
   "Q": {
+   "castTimeS": 0.25,
    "human": {
     "base": [
      40,
@@ -98,6 +105,8 @@
    }
   },
   "W": {
+   "castTimeS": 0.125,
+   "spiderCastTimeS": 0,
    "human": {
     "damage": {
      "base": [
@@ -128,6 +137,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/elise.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/elise.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/elise.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/elise.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

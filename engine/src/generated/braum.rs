@@ -18,6 +18,7 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     r_dmg: f64,
     r_cast_s: f64,
     p_stun_dmg: f64,
@@ -34,6 +35,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Concussive Blows: current stacks (0..cap), when they expire, and
     /// when the post-stun immunity window (with its on-hit bonus) ends.
     p_stacks: i64,
@@ -44,6 +47,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Concussive Blows: called for every attack landing and every Q hit.
     /// During the immunity window an attack instead deals the bonus on-hit
     /// magic damage and applies no stack; otherwise a stack is applied
@@ -74,6 +90,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_stack_until: -INF,
             p_immune_until: -INF,
@@ -84,6 +101,7 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             p_stun_dmg: kit.at_level("gen.P.stunDamageByLevel", level)?,
@@ -119,7 +137,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -130,7 +148,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -142,7 +160,7 @@ impl Driver for GenDriver {
         // way to the actual 0.5s cast, when the fissure's damage lands
         let t = e.st.t;
         self.s.r_swing_at = t + self.r_cast_s;
-        e.st.next_attack = pymax(e.st.next_attack, self.s.r_swing_at);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, _e: &Engine, out: &mut Events) -> usize {

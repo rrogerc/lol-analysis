@@ -113,7 +113,10 @@ impl Driver for Krug {
 
 /// Furious Fists: every attack heals a share of her max health; the cast
 /// heals a lump, then attack speed (a multiplier row) and durability for a
-/// few seconds; the same window prevents incoming crowd control.
+/// few seconds; the same window prevents incoming crowd control and holds
+/// her mana (TFTraits: "The mana lock lasts the 3.00 s the effect runs.
+/// Attacks continue." — third party, adopted like Azir's lock, not verified
+/// in game; the three seconds are the kit's own SpellDuration).
 #[derive(Clone)]
 pub struct Vi {
     duration: RowId,
@@ -147,6 +150,7 @@ impl Driver for Vi {
         let durability = f.row(f.drv.spell_dur);
         f.buff_durability(durability, dur);
         f.cc_immune_until = pymax(f.cc_immune_until, f.t + dur);
+        f.lock_until = pymax(f.lock_until, f.t + dur);
     }
 }
 
@@ -252,33 +256,39 @@ impl Driver for Lillia {
 
 /// Petrified Bark: a shield, and when it is spent (not when it expires) a
 /// wave of dark energy scaling with the armour and magic resist he has then.
-/// "Petrified" carries no numbers in the data, so it is left out.
+/// The same shield holds his mana while it stands, for ShieldDuration at
+/// most (the `ShieldLock` rule), so the wave and the next cast both wait on
+/// it. "Petrified" carries no numbers in the data, so it is left out.
 #[derive(Clone)]
 pub struct Malphite {
-    tracked: Option<usize>,
+    lock: ShieldLock,
     duration: RowId,
     shield: CalcId,
     wave: CalcId,
+}
+
+impl HasShieldLock for Malphite {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
 }
 
 impl Driver for Malphite {
     const NAME: &'static str = "Malphite";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Malphite { tracked: None, duration: k.row("ShieldDuration"),
+        Malphite { lock: ShieldLock::default(), duration: k.row("ShieldDuration"),
                    shield: k.calc("ShieldCalc1"), wave: k.calc("MagicDamageCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.duration);
-        f.drv.tracked = track_shield(f, amount, dur, "petrified bark");
+        shield_lock(f, amount, dur, "petrified bark");
     }
 
     fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
-        let (broke, keep) = shield_broke(f, f.drv.tracked);
-        f.drv.tracked = keep;
-        if broke {
+        if shield_lock_broke(f) {
             let tg = f.aoe_all();
             for d in tg.iter() {
                 f.hit_ability(f.drv.wave, Some(d), "shield break", 1.0);
@@ -288,11 +298,14 @@ impl Driver for Malphite {
 }
 
 /// Azure Shockwave: a shield, then a fissure that knocks up, damages and
-/// Mana Reaves everyone in its path. The Alpha Mark's per-cast allied mana
-/// regeneration needs a recipient-aware event; the stale self-regeneration
-/// row is not an opening effect in the pinned live tooltip.
+/// Mana Reaves everyone in its path. The shield holds his own mana while it
+/// stands, for ShieldDuration at most (the `ShieldLock` rule). The Alpha
+/// Mark's per-cast allied mana regeneration needs a recipient-aware event;
+/// the stale self-regeneration row is not an opening effect in the pinned
+/// live tooltip.
 #[derive(Clone)]
 pub struct Sentinel {
+    lock: ShieldLock,
     duration: RowId,
     knockup: RowId,
     reave: RowId,
@@ -300,11 +313,17 @@ pub struct Sentinel {
     fissure: CalcId,
 }
 
+impl HasShieldLock for Sentinel {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
+}
+
 impl Driver for Sentinel {
     const NAME: &'static str = "Sentinel";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Sentinel { duration: k.row("ShieldDuration"),
+        Sentinel { lock: ShieldLock::default(), duration: k.row("ShieldDuration"),
                    knockup: k.row("KnockupDuration"), reave: k.row("ManaReaveFlat"),
                    shield: k.calc("ShieldCalc1"), fissure: k.calc("MagicDamageCalc1") }
     }
@@ -312,7 +331,7 @@ impl Driver for Sentinel {
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.duration);
-        f.shield(amount, dur, "shockwave", false);
+        shield_lock(f, amount, dur, "shockwave");
         let tg = f.aoe_all();
         for d in tg.iter() {
             f.hit_ability(f.drv.fissure, Some(d), "fissure", 1.0);
@@ -325,6 +344,10 @@ impl Driver for Sentinel {
                 f.reave_mana(i, reave);
             }
         }
+    }
+
+    fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
+        shield_lock_broke(f);
     }
 }
 

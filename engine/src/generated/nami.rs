@@ -1,8 +1,10 @@
 //! Nami. A caster who still auto-attacks between casts: Tidal Wave opens the
 //! fight, Tidecaller's Blessing is self-cast alongside it to arm empowered
 //! hits, Aqua Prison's bubble lands on a delay after its cast, and Ebb and
-//! Flow resolves on cast; all four ride Tidecaller's Blessing's bonus on-hit
-//! damage whenever a charge is armed.
+//! Flow resolves with its cast; all four ride Tidecaller's Blessing's bonus
+//! on-hit damage whenever a charge is armed. Casts go one at a time: Q, W
+//! and R each keep Nami busy for their cast time before anything else casts
+//! or attacks.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -12,7 +14,7 @@ use crate::sheet::Sheet;
 
 /// Aqua Prison's bubble lands (after its cast + travel delay).
 const EV_Q_LAND: u8 = 0;
-/// Ebb and Flow is cast (and resolves immediately: no travel modeled).
+/// Ebb and Flow is cast (its damage lands with the cast).
 const EV_W_CAST: u8 = 1;
 /// Tidecaller's Blessing is cast on herself.
 const EV_E_CAST: u8 = 2;
@@ -26,9 +28,11 @@ pub struct GenDriver {
     windup_fraction: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_travel_s: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_duration_s: f64,
@@ -42,6 +46,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When Aqua Prison's pending bubble lands (INF: none pending).
     q_land_at: f64,
     w_ready: f64,
@@ -54,6 +60,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Spends one Tidecaller's Blessing charge if one is armed, returning
     /// whether its bonus damage should be dealt.
     fn try_consume_e(&mut self, t: f64) -> bool {
@@ -70,6 +89,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_land_at: INF,
             w_ready: 0.0,
             e_ready: 0.0,
@@ -83,9 +103,11 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("nami kit needs attack.windupFraction")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_travel_s: kit.num("gen.Q.travelTotalS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_duration_s: kit.num("gen.E.buffDurationS")?,
@@ -126,15 +148,15 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
-        e.lockout();
         e.prime_spellblade();
         self.s.q_land_at = t + self.q_travel_s;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -144,6 +166,7 @@ impl Driver for GenDriver {
         // the opening cast: the engine has already primed Spellblade and
         // held the first attack past the cast; the wave lands when it ends
         self.s.r_land_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -153,11 +176,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_land_at != INF {
@@ -171,6 +194,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_Q_LAND) => {
+                // not a cast: this is Q's damage landing after its own delay
                 self.s.q_land_at = INF;
                 e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
                 e.ability_cast_proc();
@@ -181,7 +205,6 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_W_CAST) => {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
-                e.lockout();
                 e.prime_spellblade();
                 e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
                 e.ability_cast_proc();
@@ -189,6 +212,7 @@ impl Driver for GenDriver {
                 if self.try_consume_e(t) {
                     e.deal(self.e_dmg, DType::Magic, SRC_E, false, false, 1.0);
                 }
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);

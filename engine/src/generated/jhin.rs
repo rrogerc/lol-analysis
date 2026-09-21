@@ -3,10 +3,14 @@
 //! missing-health execute rider. His attack speed is fixed (item bonus AS is
 //! cancelled from his attack timing and, with crit chance, instead feeds
 //! Every Moment Matters' bonus AD, applied to every attack and ability).
-//! Dancing Grenade and Deadly Flourish are cast on cooldown; Captive
-//! Audience is cast whenever a Lotus Trap charge is available, its damage
-//! landing after an arm+detonation delay; Curtain Call opens the fight and
-//! fires its four recasts as fast as their static 1s spacing allows.
+//! Casts go one at a time via one `busy_until`: Curtain Call opens the fight
+//! and its channel (through the fourth recast's landing) keeps Jhin busy
+//! ahead of Q, W and E, each of which then keeps him busy for its own cast
+//! time before the next cast or attack can start. Dancing Grenade and Deadly
+//! Flourish are cast on cooldown; Captive Audience is cast whenever a Lotus
+//! Trap charge is available, its damage landing after an arm+detonation
+//! delay; Curtain Call's four recasts fire as fast as their static 1s
+//! spacing allows.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -39,6 +43,7 @@ pub struct GenDriver {
     // Q
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
 
     // W
     w_dmg: f64,
@@ -74,6 +79,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     clip: i64,
     w_ready: f64,
     e_ready: f64,
@@ -81,6 +88,21 @@ struct State {
     e_recharge_at: f64,
     e_det: [f64; 3],
     r_shot_idx: i64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -113,6 +135,7 @@ impl Driver for GenDriver {
         let e_max_charges = kit.num("gen.E.maxCharges")? as i64;
 
         let state = State {
+            busy_until: 0.0,
             clip: 0,
             w_ready: 0.0,
             e_ready: 0.0,
@@ -136,6 +159,7 @@ impl Driver for GenDriver {
 
             q_dmg,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_dmg,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
@@ -227,7 +251,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -236,28 +260,28 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // The engine has already primed Spellblade and held the first
-        // attack past the opening cast; extend that hold to cover the
-        // whole channel through the fourth bullet.
+        // The channel (its Active cast plus the four 1s-spaced recasts)
+        // occupies Jhin until the fourth bullet lands: no attack and no
+        // other cast starts before then.
         let land3 = self.r_channel_cast_s
             + 3.0 * self.r_shot_delay_s
             + self.r_shot_fire_delay_s;
-        e.st.next_attack = pymax(e.st.next_attack, land3);
+        self.busy_for(e, land3);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_charges > 0 {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
                 n += 1;
             }
             if self.s.e_charges < self.e_max_charges && self.s.e_recharge_at != INF {
@@ -291,12 +315,11 @@ impl Driver for GenDriver {
         match kind {
             Kind::Ev(EV_W) => {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
-                e.st.next_attack = pymax(e.st.next_attack, t + self.w_cast_s);
                 e.deal(self.w_dmg, DType::Physical, self.src_w, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 let was_full = self.s.e_charges >= self.e_max_charges;
@@ -305,7 +328,6 @@ impl Driver for GenDriver {
                     self.s.e_recharge_at = t + e.basic_cd(self.e_recharge_s);
                 }
                 self.s.e_ready = t + e.basic_cd(self.e_base_cd);
-                e.st.next_attack = pymax(e.st.next_attack, t + self.e_cast_s);
                 let land = t + self.e_cast_s + self.e_arm_s + self.e_det_s;
                 for i in 0..3 {
                     if self.s.e_det[i] == INF {
@@ -314,7 +336,7 @@ impl Driver for GenDriver {
                     }
                 }
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_RECHARGE) => {
                 self.s.e_charges = imin(self.s.e_charges + 1, self.e_max_charges);

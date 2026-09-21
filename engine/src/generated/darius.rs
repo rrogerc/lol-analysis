@@ -2,7 +2,8 @@
 //! by every attack and ability, Decimate is a delayed-swing AoE cast on
 //! cooldown, Crippling Strike is woven in for its attack reset like an
 //! Empower, and Noxian Guillotine's single cast is held until Hemorrhage
-//! hits its 5-stack cap for the full true-damage multiplier.
+//! hits its 5-stack cap for the full true-damage multiplier, then spends its
+//! dossier cast time before anything else may start.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -36,10 +37,12 @@ pub struct GenDriver {
     q_cd: f64,
     w_bonus_ad_ratio: f64,
     w_cd: f64,
+    e_cast_s: f64,
     r_base: f64,
     r_bonusad_coef: f64,
     r_per_stack_frac: f64,
     r_cd: f64,
+    r_cast_s: f64,
     src_p_bleed: SourceId,
     s: State,
     s0: State,
@@ -47,6 +50,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When Decimate's damage lands (INF: none pending).
     q_swing_at: f64,
     w_ready: f64,
@@ -63,6 +68,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn bonus_ad_now(&self, e: &Engine, t: f64) -> f64 {
         let mut b = e.p.sheet.ad_bonus;
         if t < self.s.might_until {
@@ -95,6 +113,7 @@ impl Driver for GenDriver {
         let p_bleed_duration = kit.num("gen.P.bleedDurationS")?;
         let p_tick_interval = kit.num("gen.P.tickIntervalS")?;
         let state = State {
+            busy_until: 0.0,
             q_swing_at: INF,
             w_ready: 0.0,
             w_armed: false,
@@ -123,10 +142,12 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             w_bonus_ad_ratio: kit.at_rank("gen.W.bonusAdRatioByRank", ranks.w)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_base: kit.at_rank("gen.R.baseByRank", ranks.r)?,
             r_bonusad_coef: kit.num("gen.R.bonusAdRatio")?,
             r_per_stack_frac: kit.num("gen.R.perStackFrac")?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_p_bleed: intern("P bleed"),
             s: state,
             s0: state,
@@ -183,10 +204,13 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
+        // Decimate's cast time is stated as "none": the 0.75s wind-up is a
+        // separate, non-cast-time delay before the swing (handled by the
+        // EV_Q_SWING event), so no busy_for here.
         let t = e.st.t;
         e.st.q_ready = INF;
         self.s.q_swing_at = t + self.q_windup;
@@ -209,8 +233,8 @@ impl Driver for GenDriver {
             out[n] = (self.s.hemo_next_tick, Kind::Ev(EV_BLEED_TICK));
             n += 1;
         }
-        if self.ranks.r > 0 && self.s.r_ready <= e.st.t && self.s.hemo_stacks >= self.p_stack_cap {
-            out[n] = (e.st.t, Kind::Ev(EV_R_CAST));
+        if self.ranks.r > 0 && self.s.hemo_stacks >= self.p_stack_cap {
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -254,7 +278,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 e.ult_hatefog();
                 self.apply_hemo(t);
-                e.lockout();
+                self.busy_for(e, self.r_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

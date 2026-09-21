@@ -11,16 +11,26 @@
  ],
  "notes": [
   "Yasuo attacks and casts Steel Tempest (Q) on cooldown, tracking Gathering Storm (max 2 stacks, 6s each, refreshed on every landed Q); once 2 stacks are already up, the next landed Q becomes the empowered knock-up whirlwind, which the dossier states deals identical damage to a single target, so both variants share one damage constant.",
-  "Immediately after a knock-up whirlwind lands, Last Breath (R) is cast if it is off cooldown, reading Yasuo's own Q-whirlwind knock-up as satisfying its airborne-target requirement (the well-known live-game Q3->R combo); its damage and the attack lockout land 1 second later, when the knock-up (and R's channel) ends.",
-  "Sweeping Blade (E) is cast whenever its per-target cooldown (10 to 6 seconds by rank, starting on the dash) allows; because that cooldown always exceeds Ride the Wind's 5-second stack duration, the one stack from a previous cast has always decayed by the time E can be recast on the lone dummy, so E is modeled at its unstacked base damage only.",
-  "Wind Wall is never cast: it deals no damage and only blocks projectiles, which never matters against a stationary, non-attacking dummy.",
-  "Steel Tempest's cooldown shrinks with Yasuo's total bonus attack speed per its static formula (capped at 67% reduction at 111.1% bonus attack speed) before ability haste is applied on top via the normal formula; its cast-time reduction is not modeled because the engine only ever charges the flat 0.25s cast lockout, never an ability's own cast-time value.",
+  "Steel Tempest's damage lands as the cast starts, then its cast time keeps Yasuo busy (no other cast, no attack) until it ends; the wiki's 'effect at cast time end' phrasing is that same cast time, not a further delay.",
+  "Immediately after a knock-up whirlwind lands, Last Breath (R) is cast if it is off cooldown, reading Yasuo's own Q-whirlwind knock-up as satisfying its airborne-target requirement (the well-known live-game Q3->R combo); R itself has no cast time, but its damage and the attack lockout land 1 second later, when the knock-up (and R's channel) ends.",
+  "Sweeping Blade (E) is cast whenever its per-target cooldown (10 to 6 seconds by rank, starting on the dash) allows; because that cooldown always exceeds Ride the Wind's 5-second stack duration, the one stack from a previous cast has always decayed by the time E can be recast on the lone dummy, so E is modeled at its unstacked base damage only. E has no cast time but still waits for any Steel Tempest cast in progress.",
+  "Wind Wall (W) is never cast: it deals no damage and only blocks projectiles, which never matters against a stationary, non-attacking dummy; gen.W.castTimeS is recorded from the dossier for completeness only.",
+  "Steel Tempest's cooldown shrinks with Yasuo's total bonus attack speed per its static formula (capped at 67% reduction at 111.1% bonus attack speed) before ability haste is applied on top via the normal formula; its own cast time is modeled with the engine's cast-time/busy_until mechanism instead of the flat 0.25s lockout.",
   "Way of the Wanderer doubles Yasuo's total crit chance (capped at 100%) and converts crit chance in excess of 100% into bonus AD (0.5 per 1%); this bonus AD is folded into attack damage and into every ability's AD scaling. Steel Tempest's crit multiplier applies only to its AD-ratio term (its flat base damage never crits), using Yasuo's own crit chance/damage (95% of normal crit damage) baked into Q's damage as an expected value.",
   "The engine's basic-attack crit math reads the sheet's raw item crit chance/crit damage and has no hook for a champion-specific override, so this driver cannot apply Yasuo's crit-chance doubling or 95%-crit-damage reduction to plain basic-attack crits; only Steel Tempest's hand-computed crit is corrected. This is a known engine-limitation understatement for crit-heavy builds.",
   "Last Breath's 15-second bonus-armor-penetration-on-crit debuff is not modeled: the engine's only target-debuff primitive is a flat percent armor/MR shred applied to all damage, which would misrepresent an effect limited to bonus armor and to Yasuo's own crits, so it is omitted rather than approximated.",
   "The Flow shield from Way of the Wanderer is purely defensive (it only ever mitigates incoming damage) and the dummy never damages Yasuo, so it is omitted entirely.",
   "No Yasuo ability costs mana (the sheet lists 0 cost at every rank for all abilities), so mana is not modeled."
  ],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "Steel Tempest's thrust cast time shrinks continuously with bonus attack speed from 0.35s down to a capped 0.175s at 120% bonus attack speed; the driver uses the capped floor value as a fixed cast time since it does not recompute a continuously-scaling cast time per hit."
+  }
+ ],
+ "unused": {
+  "W": "Wind Wall only blocks projectiles and grants sight; it deals no damage and the dummy never attacks or casts projectiles, so casting it never affects the fight and the driver never casts it."
+ },
  "abilities": {
   "Q": {
    "name": "Steel Tempest",
@@ -75,10 +85,14 @@
     120
    ],
    "adRatio": 1.05,
+   "castTimeS": 0.175,
    "asCdCapBonusAsPct": 111.1,
    "asCdCapReductionFrac": 0.67,
    "gatheringStormStacksMax": 2,
    "gatheringStormDurationS": 6
+  },
+  "W": {
+   "castTimeS": 0.013
   },
   "E": {
    "baseDamage": [
@@ -118,7 +132,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yasuo.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yasuo.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yasuo.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yasuo.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

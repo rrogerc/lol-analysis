@@ -1,8 +1,9 @@
 //! Akshan. Auto-attacks feed Dirty Fighting: each primary attack, and its
 //! own delayed second shot, add a stack, and the third stack detonates a
-//! magic proc. Avengerang goes out and comes back on cooldown, Heroic Swing
-//! fires its two mandatory shots on cooldown, and Comeuppance channels to
-//! full bullets before firing its volley.
+//! magic proc. Avengerang (a real 0.25s cast) goes out and comes back on
+//! cooldown, Heroic Swing fires its two mandatory shots on cooldown, and
+//! Comeuppance channels to full bullets before firing its volley. Casts go
+//! one at a time via a single busy_until.
 
 use crate::fight::{Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -30,8 +31,9 @@ pub struct GenDriver {
     p_stack_duration: f64,
     p2_dmg: f64,
     p_proc_dmg: f64,
-    /// Avengerang: damage per pass, its cooldown and assumed travel time.
+    /// Avengerang: damage per pass, cast time, cooldown and assumed travel time.
     q_dmg: f64,
+    q_cast_s: f64,
     q_cd: f64,
     q_travel: f64,
     /// Heroic Swing: damage per shot (attack-speed and crit factors already
@@ -55,6 +57,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     p_stack_expire: f64,
     /// When the pending boomerang return lands (INF: none in flight).
@@ -70,6 +74,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// A basic attack, an ability hit, or the second shot applies a stack of
     /// Dirty Fighting; the third consumes them all for the magic proc.
     fn apply_dirty_fighting(&mut self, e: &mut Engine) {
@@ -102,6 +119,7 @@ impl Driver for GenDriver {
             + (e_crit_mod * sheet.crit_chance / 100.0) * (sheet.crit_damage / 100.0 - 1.0);
 
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_stack_expire: 0.0,
             q_return_at: INF,
@@ -119,6 +137,7 @@ impl Driver for GenDriver {
             p_proc_dmg: kit.at_level("gen.P.magicProcBase", level)?
                 + kit.num("gen.P.magicProcApRatio")? * sheet.ap,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_travel: kit.num("gen.Q.travelTimeS")?,
             e_shot_dmg: e_base * e_as_mult * e_crit_factor,
@@ -161,20 +180,21 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         // the outgoing throw; the cooldown does not start until the return
-        // pass lands, so hold q_ready at INF until then
+        // pass lands, so hold q_ready at INF until then. The cast itself
+        // costs its real 0.25s cast time: no other cast, no attack start.
         e.st.q_ready = INF;
         e.deal(self.q_dmg, DType::Physical, SRC_Q, false, true, 1.0);
         self.apply_dirty_fighting(e);
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.q_return_at = e.st.t + self.q_travel;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -196,7 +216,7 @@ impl Driver for GenDriver {
             if self.s.e_shot2_at != INF {
                 out[n] = (self.s.e_shot2_at, Kind::Ev(EV_E_SHOT2));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -204,7 +224,7 @@ impl Driver for GenDriver {
             if self.s.r_channel_end != INF {
                 out[n] = (self.s.r_channel_end, Kind::Ev(EV_R_FIRE));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             }
             n += 1;
         }
@@ -221,8 +241,9 @@ impl Driver for GenDriver {
                 e.st.q_ready = t + e.basic_cd(self.q_cd);
             }
             Kind::Ev(EV_E_CAST) => {
-                // first (start-of-swing) shot lands immediately; the
-                // cooldown does not start until the second shot lands
+                // first (start-of-swing) shot lands immediately; no cast
+                // time (none stated), so only lockout holds the next attack.
+                // The cooldown does not start until the second shot lands.
                 self.s.e_ready = INF;
                 e.deal(self.e_shot_dmg, DType::Physical, self.src_e, false, true, 1.0);
                 self.apply_dirty_fighting(e);

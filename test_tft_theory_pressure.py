@@ -158,7 +158,9 @@ class TestTheoryControl(unittest.TestCase):
         spec = UnitProfiles(snap, "clump" if targets == 3 else "spread").spec(
             unit["api"], 2, [], [], target_count=targets)
         spec["unit"]["api"] = api
+        # an instant cast: no bin cast time and no cast timeline of the unit's
         spec["unit"]["castTime"] = 0
+        spec["unit"]["timing"] = None
         spec["kits"]["base"]["stats"].update(initialMana=1000000, mana=1000000)
         spec["kits"]["base"]["rows"]["StunDuration"] = 2
         if name == "Hecarim":

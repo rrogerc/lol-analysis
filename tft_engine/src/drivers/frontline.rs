@@ -4,7 +4,8 @@
 //! Fiddlesticks.
 
 use crate::driver::Driver;
-use crate::drivers::helpers::{heal_over_time, tick_heal, HasHot, Hot};
+use crate::drivers::helpers::{heal_over_time, shield_lock, shield_lock_broke, tick_heal,
+                              HasHot, HasShieldLock, Hot, ShieldLock};
 use crate::fight::{Deal, Fight, Sel};
 use crate::kit::{CalcId, DType, Kit, RowId};
 use crate::pyf::{pyint, pymax};
@@ -103,54 +104,79 @@ impl Driver for Leona {
     }
 }
 
-/// Bellows Breath: a shield, then a cone over the dummies in reach. The
-/// Forge Power quest pays out Artifact Anvils between rounds, so nothing of
-/// it lands inside a fight.
+/// Bellows Breath: a shield, then a cone over the dummies in reach. Mana
+/// stays locked while the shield stands, for ShieldDuration at most (the
+/// `ShieldLock` rule). The Forge Power quest pays out Artifact Anvils
+/// between rounds, so nothing of it lands inside a fight.
 #[derive(Clone)]
 pub struct Ornn {
+    lock: ShieldLock,
     shield_dur: RowId,
     shield: CalcId,
     dmg: CalcId,
+}
+
+impl HasShieldLock for Ornn {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
 }
 
 impl Driver for Ornn {
     const NAME: &'static str = "Ornn";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Ornn { shield_dur: k.row("ShieldDuration"), shield: k.calc("ShieldCalc1"),
-               dmg: k.calc("MagicDamageCalc1") }
+        Ornn { lock: ShieldLock::default(), shield_dur: k.row("ShieldDuration"),
+               shield: k.calc("ShieldCalc1"), dmg: k.calc("MagicDamageCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.shield_dur);
-        f.shield(amount, dur, "ability", false);
+        shield_lock(f, amount, dur, "ability");
         let tg = f.aoe_all();
         for d in tg.iter() {
             f.hit_ability(f.drv.dmg, Some(d), "cone", 1.0);
         }
     }
+
+    fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
+        shield_lock_broke(f);
+    }
 }
 
-/// Entrancing Dance: a shield on himself. The decaying attack speed he hands
-/// the ally who has dealt the most damage has no ally to land on.
+/// Entrancing Dance: a shield on himself, holding his mana while it stands
+/// (the `ShieldLock` rule). The decaying attack speed he hands the ally who
+/// has dealt the most damage has no ally to land on.
 #[derive(Clone)]
 pub struct Rakan {
+    lock: ShieldLock,
     shield_dur: RowId,
     shield: CalcId,
+}
+
+impl HasShieldLock for Rakan {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
 }
 
 impl Driver for Rakan {
     const NAME: &'static str = "Rakan";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Rakan { shield_dur: k.row("ShieldDuration"), shield: k.calc("ShieldCalc1") }
+        Rakan { lock: ShieldLock::default(), shield_dur: k.row("ShieldDuration"),
+                shield: k.calc("ShieldCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.shield_dur);
-        f.shield(amount, dur, "ability", false);
+        shield_lock(f, amount, dur, "ability");
+    }
+
+    fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
+        shield_lock_broke(f);
     }
 }
 
@@ -244,7 +270,11 @@ impl Driver for Alistar {
 /// Spider Queen: the first cast transforms — bonus max health, and from then
 /// on every attack carries bonus magic damage and heals her. Later casts
 /// grant decaying attack speed; the row is a multiplier (2.75 = +175%) and
-/// decays to nothing, so half of it is applied flat for the duration.
+/// decays to nothing, so half of it is applied flat for the duration. Every
+/// cast holds her mana for the seconds that buff runs (TFTraits: "The mana
+/// lock lasts the 4.00 s the effect runs. Attacks continue." — third party,
+/// adopted like Azir's lock, not verified in game; it publishes one lock for
+/// the spell, so the transform is held for the same ASBuffDuration).
 #[derive(Clone)]
 pub struct Elise {
     spider: bool,
@@ -265,6 +295,8 @@ impl Driver for Elise {
     }
 
     fn cast(f: &mut Fight<Self>) {
+        let dur = f.row(f.drv.as_dur);
+        f.lock_until = pymax(f.lock_until, f.t + dur);
         if !f.drv.spider {
             f.drv.spider = true;
             let hp = f.row(f.drv.hp_buff);
@@ -272,7 +304,6 @@ impl Driver for Elise {
             return;
         }
         let pct = (f.row(f.drv.decaying_as) - 1.0) / 2.0;
-        let dur = f.row(f.drv.as_dur);
         f.buff_as(pct, dur);
     }
 
@@ -351,26 +382,36 @@ impl Driver for Scuttlecrab {
 }
 
 /// Sun's Wrath: a shield, then a cone and a line over the dummies in reach.
+/// Mana stays locked while the shield stands, for ShieldDuration at most
+/// (the `ShieldLock` rule).
 #[derive(Clone)]
 pub struct Sejuani {
+    lock: ShieldLock,
     shield_dur: RowId,
     shield: CalcId,
     cone: CalcId,
     line: CalcId,
 }
 
+impl HasShieldLock for Sejuani {
+    fn shield_lock_mut(&mut self) -> &mut ShieldLock {
+        &mut self.lock
+    }
+}
+
 impl Driver for Sejuani {
     const NAME: &'static str = "Sejuani";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Sejuani { shield_dur: k.row("ShieldDuration"), shield: k.calc("ShieldCalc1"),
+        Sejuani { lock: ShieldLock::default(), shield_dur: k.row("ShieldDuration"),
+                  shield: k.calc("ShieldCalc1"),
                   cone: k.calc("MagicDamageCalc1"), line: k.calc("MagicDamageCalc2") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.shield_dur);
-        f.shield(amount, dur, "ability", false);
+        shield_lock(f, amount, dur, "ability");
         let tg = f.aoe_all();
         for d in tg.iter() {
             f.hit_ability(f.drv.cone, Some(d), "cone", 1.0);
@@ -380,11 +421,20 @@ impl Driver for Sejuani {
             f.hit_ability(f.drv.line, Some(d), "line", 1.0);
         }
     }
+
+    fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
+        shield_lock_broke(f);
+    }
 }
 
 /// Ki Barrier: a shield on himself and one on a damaged ally (counted, not
 /// simulated), and his next few attacks come faster and carry bonus magic
-/// damage. The ally's copy of that buff is not simulated.
+/// damage. Mana stays locked until those ki strikes are spent, so his own
+/// attack speed decides how long he goes without it (TFTraits: "Attack speed
+/// shortens this lock: it lasts 3 empowered attacks", and the lock blocks
+/// "mana from attacks, ticks or damage taken" — third party, adopted like
+/// Azir's lock, not verified in game). The ally's copy of that buff is not
+/// simulated.
 #[derive(Clone)]
 pub struct Shen {
     ki: i64,
@@ -414,6 +464,12 @@ impl Driver for Shen {
         f.drv.ki = pyint(f.row(f.drv.n_attacks));
         f.as_extra = f.row(f.drv.as_buff);
         f.as_extra_until = 1e9;
+        if f.drv.ki > 0 {
+            // Hold attack mana, the regen ticks and the mana a tank takes off
+            // damage until the ki strikes are spent. The cast's own lock
+            // already covers the animation before this.
+            f.lock_until = 1e9;
+        }
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -424,6 +480,9 @@ impl Driver for Shen {
             f.hit_ability(f.drv.strike, Some(target), "ki strike", 1.0);
             if n == 1 {
                 f.as_extra_until = f.t;
+                // Attack mana is processed before this hook, so the third ki
+                // strike grants none; mana resumes for the time after it.
+                f.lock_until = f.t;
             }
         }
     }

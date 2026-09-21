@@ -11,10 +11,11 @@
  ],
  "notes": [
   "Karma is played as a pure caster here: her kit never touches basic attacks (no on-hit, no attack-speed steroid, no reset), so attack.never is set and attack-speed / on-hit items get no value from her, as instructed.",
-  "Opening: Mantra (R) is cast at t=0 (no cost, no cast time, cooldown starts on cast); its charge is spent immediately on the very next Q, turning it into Soulflare. The bonus impact and field damage this produces are attributed to R (the source of the empowerment), not Q, since Mantra itself never deals damage on its own cast.",
-  "Q (Inner Flame/Soulflare) is recast on cooldown for the rest of the fight; its impact damage lands on the cast (the 0.25s cast time is only the usual attack-lockout, per the Jax reference pattern) and, when Mantra-empowered, the field detonation lands 1.5s later per the wiki's stated field duration.",
+  "Casts go one at a time: Q and W each have a 0.25s cast time (per the dossier) during which no other cast and no attack starts; Mantra (R) has no cast time and no cost, so it never itself waits out a busy period, but it still cannot start inside a Q or W cast that is already in progress.",
+  "Opening: Mantra (R) is cast at t=0 (cooldown starts on cast); its charge is spent immediately on the very next Q, turning it into Soulflare. The bonus impact and field damage this produces are attributed to R (the source of the empowerment), not Q, since Mantra itself never deals damage on its own cast.",
+  "Q (Inner Flame/Soulflare) is recast on cooldown for the rest of the fight; its impact damage (and, when Mantra-empowered, its bonus impact) lands as the 0.25s cast starts, then the cast time keeps Karma busy; the field detonation lands 1.5s later per the wiki's stated field duration, as its own timed event (not a cast).",
   "Whenever Mantra comes off cooldown it is recast immediately, and the resulting charge is always reserved for the next Q cast, never W or E, since only Q's Mantra bonus deals damage (per the dossier's rotation).",
-  "W (Focused Resolve) is cast on cooldown for its initial damage; since the dummy is stationary and never breaks the tether, its aftereffect damage always lands 2s later as well.",
+  "W (Focused Resolve) is cast on cooldown for its initial damage, which lands as its 0.25s cast starts; since the dummy is stationary and never breaks the tether, its aftereffect damage always lands 2s later as its own timed event (not a cast).",
   "E (Inspire/Defiance) is never cast: it only shields/heals and has no offensive value against a stationary dummy, so it is skipped entirely.",
   "Gathering Fire (Passive): read as each individual damage instance -- Q's impact and field separately, W's initial hit and aftereffect separately -- independently cutting Mantra's current cooldown by 4s, matching the wiki's 4x10=40s cap math for 5 champions hit by two instances each; this is the chosen reading of an ambiguous passage.",
   "Mana costs are not modeled: Karma's costs (Q/W/E, 40-80 mana) are modest relative to a level-16 mana pool and are unlikely to bind inside a short fight.",
@@ -26,6 +27,11 @@
    "why": "Mantra's 8s empowerment window before an unspent charge decays is stated only in wiki text with no corresponding bin field; used only for internal decay bookkeeping since the charge is always consumed on the next Q well within 8s."
   }
  ],
+ "attack": {
+  "windupFraction": 0.16146,
+  "ranged": true,
+  "never": true
+ },
  "abilities": {
   "Q": {
    "name": "Inner Flame / Soulflare",
@@ -82,7 +88,8 @@
     ],
     "apRatio": 0.7
    },
-   "fieldDelayS": 1.5
+   "fieldDelayS": 1.5,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -95,7 +102,8 @@
     ],
     "apRatio": 0.45
    },
-   "tetherS": 2
+   "tetherS": 2,
+   "castTimeS": 0.25
   },
   "R": {
    "qBonusImpact": {
@@ -119,11 +127,8 @@
    "windowS": 8
   }
  },
- "attack": {
-  "windupFraction": 0.16146,
-  "ranged": true
- },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/karma.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/karma.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/karma.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/karma.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

@@ -1,11 +1,12 @@
 //! Skarner. Impale (R) opens the fight and briefly locks out Shattered
-//! Earth (Q); Q is recast on cooldown, arming 3 empowered basic attacks
-//! whose 3rd landing deals bonus max-health damage and restarts Q's
-//! cooldown; Seismic Bastion (W) is cast on cooldown; Threads of Vibration
-//! (P) stacks Quaking off every landed attack and Impale, triggering a
-//! max-health damage-over-time at 3 stacks. Ixtal's Impact (E) is never
-//! cast: it cannot land damage against a stationary dummy (see the kit's
-//! `unused` field).
+//! Earth (Q); Q is recast on cooldown (a 0.35s cast that arms 3 empowered
+//! basic attacks whose 3rd landing deals bonus max-health damage and
+//! restarts Q's cooldown), then keeps Skarner busy for that cast time;
+//! Seismic Bastion (W) is cast on cooldown; Threads of Vibration (P) stacks
+//! Quaking off every landed attack and Impale, triggering a max-health
+//! damage-over-time at 3 stacks. Ixtal's Impact (E) is never cast: it
+//! cannot land damage against a stationary dummy (see the kit's `unused`
+//! field).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -41,6 +42,7 @@ pub struct GenDriver {
     q_cd_base: f64,
     q_window_s: f64,
     q_empower_count: i64,
+    q_cast_s: f64,
     src_q_slam: SourceId,
 
     w_hit_dmg: f64,
@@ -60,6 +62,9 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
+
     p_stacks: i64,
     p_expire: f64,
     p_ticks_left: i64,
@@ -77,6 +82,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn apply_quaking(&mut self, e: &mut Engine, t: f64) {
         if t > self.s.p_expire {
             self.s.p_stacks = 0;
@@ -101,6 +119,7 @@ impl Driver for GenDriver {
         let q_block_until = if ranks.r > 0 { r_cast_s + r_suppress_s } else { 0.0 };
 
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_expire: -INF,
             p_ticks_left: 0,
@@ -131,6 +150,7 @@ impl Driver for GenDriver {
             q_cd_base: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_window_s: kit.num("gen.Q.windowS")?,
             q_empower_count: kit.num("gen.Q.empowerCount")? as i64,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             src_q_slam: intern("Q slam"),
 
             w_hit_dmg: kit.hit("gen.W.hitDamage", ranks.w, sheet)?,
@@ -194,7 +214,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(pymax(e.st.q_ready, e.st.t), self.q_block_until)
+        pymax(self.castable_at(e, e.st.q_ready), self.q_block_until)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -206,7 +226,7 @@ impl Driver for GenDriver {
         let b = self.bonus_as(t);
         e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -216,7 +236,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         self.s.r_dmg_at = t + self.r_cast_s;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -233,7 +253,7 @@ impl Driver for GenDriver {
             if self.s.w_dmg_at != INF {
                 out[n] = (self.s.w_dmg_at, Kind::Ev(EV_W_DMG));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -268,7 +288,7 @@ impl Driver for GenDriver {
                 self.s.w_dmg_at = t + self.w_cast_s;
                 self.s.w_ready = INF;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_DMG) => {
                 e.deal(self.w_hit_dmg, DType::Magic, SRC_W, false, true, 1.0);

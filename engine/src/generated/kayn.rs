@@ -1,11 +1,13 @@
-//! Kayn (Shadow Assassin form). Reaping Slash (dash+swing) and Blade's Reach
-//! (instant in this form) are cast on cooldown; once the dummy has been
-//! damaged once (the passive mark, treated as permanent thereafter) Umbral
-//! Trespass is cast on cooldown too: its opening cast is a no-op, and the
-//! vanish/dash/attach/channel/recast timeline is modeled as our own events,
-//! landing its damage and resetting Reaping Slash's cooldown on emerge. The
-//! Shadow Assassin Bonus applies its magic damage amp to ability damage for
-//! the fight's first 3 seconds.
+//! Kayn (Shadow Assassin form). Reaping Slash (dash+swing, no cast time but
+//! a 0.25s post-swing lockout) and Blade's Reach (a 0.55s cast in this form
+//! too, its shadow standing in for Kayn) are cast on cooldown; once the
+//! dummy has been damaged once (the passive mark, treated as permanent
+//! thereafter) Umbral Trespass is cast on cooldown too: its opening cast is
+//! a no-op, and the vanish/dash/attach/channel/recast timeline occupies
+//! Kayn as one long busy period, landing its damage and resetting Reaping
+//! Slash's cooldown on emerge. Everything shares one `busy_until` so only
+//! one cast is ever in flight. The Shadow Assassin Bonus applies its magic
+//! damage amp to ability damage for the fight's first 3 seconds.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -27,6 +29,7 @@ pub struct GenDriver {
     q_cd: f64,
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     r_dmg: f64,
     r_cd: f64,
     /// Shadow Assassin Bonus: percent of an ability hit dealt again as
@@ -46,11 +49,10 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     r_ready: f64,
-    /// Time Umbral Trespass's current channel, if any, keeps Kayn busy
-    /// (also blocks Q and W while in the future).
-    r_busy_until: f64,
     r_channeling: bool,
     r_damage_at: f64,
     /// Whether the dummy has ever been marked (damaged); treated as
@@ -62,6 +64,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn p_bonus_maybe(&mut self, e: &mut Engine, amount: f64) {
         if e.st.t < self.s.p_window_until {
             let bonus = amount * self.p_pct / 100.0;
@@ -75,9 +90,9 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let p_duration = kit.num("gen.P.durationS")?;
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             r_ready: 0.0,
-            r_busy_until: 0.0,
             r_channeling: false,
             r_damage_at: INF,
             marked: false,
@@ -90,6 +105,7 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             p_pct: kit.at_level("gen.P.percentByLevel", level)?,
@@ -124,13 +140,11 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        let ready = pymax(e.st.q_ready, e.st.t);
-        pymax(ready, self.s.r_busy_until)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        let t = e.st.t;
-        e.st.q_ready = t + e.basic_cd(self.q_cd);
+        e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
         // the dash: first physical damage instance
         e.deal(self.q_dmg, DType::Physical, SRC_Q, false, true, 1.0);
         self.p_bonus_maybe(e, self.q_dmg);
@@ -141,15 +155,14 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.s.marked = true;
-        e.lockout(); // the swing's 0.25s post-cast lockout
+        e.lockout(); // the swing's 0.25s post-cast lockout; no cast time
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let t = e.st.t;
         let mut n = 0;
         if self.ranks.w > 0 {
-            let ready = pymax(pymax(self.s.w_ready, t), self.s.r_busy_until);
-            out[n] = (ready, Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -157,10 +170,11 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_damage_at, Kind::Ev(EV_R_DAMAGE));
                 n += 1;
             } else if self.s.marked {
-                out[n] = (pymax(self.s.r_ready, t), Kind::Ev(EV_R_START));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_START));
                 n += 1;
             }
         }
+        let _ = t;
         n
     }
 
@@ -175,18 +189,18 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.s.marked = true;
-                // Shadow Assassin removes the cast time: no lockout
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_R_START) => {
-                // the vanish and dash-in; deals no damage itself
+                // the vanish and dash-in; deals no damage itself, but the
+                // whole timeline to the recast's damage is one busy period
                 self.s.r_channeling = true;
                 let land = t + self.r_dash_in + self.r_attach_delay
                     + self.r_min_channel + self.r_recast_delay;
                 self.s.r_damage_at = land;
-                self.s.r_busy_until = land;
-                e.st.next_attack = pymax(e.st.next_attack, land);
                 e.prime_spellblade();
                 e.ability_cast_proc();
+                self.busy_for(e, land - t);
             }
             Kind::Ev(EV_R_DAMAGE) => {
                 self.s.r_channeling = false;

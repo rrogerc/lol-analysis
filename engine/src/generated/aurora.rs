@@ -1,8 +1,10 @@
-//! Aurora. Between Worlds opens the fight for its shockwave; Twofold Hex is
-//! cast on cooldown and manually recast 0.1 s later every time; The Weirding
-//! is cast on cooldown; basic attacks fill the gaps. Every damaging attack
-//! and ability applies a stack of Spirit Abjuration, which caps at 3 and
-//! consumes itself for bonus max-health magic damage.
+//! Aurora. Between Worlds opens the fight for its shockwave (no cast time,
+//! but the dash locks out the next attack); Twofold Hex is cast on cooldown
+//! and manually recast 0.1 s later every time; The Weirding is cast on
+//! cooldown; basic attacks fill the gaps. Every damaging attack and ability
+//! applies a stack of Spirit Abjuration, which caps at 3 and consumes itself
+//! for bonus max-health magic damage. Casts go one at a time: Q and E each
+//! keep Aurora busy for their cast time before any other cast or attack.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -30,8 +32,10 @@ pub struct GenDriver {
     q_recast_dmg: f64,
     q_missing_coef: f64,
     q_recast_delay: f64,
+    q_cast_s: f64,
     q_cd: f64,
     e_dmg: f64,
+    e_cast_s: f64,
     e_cd: f64,
     r_dmg: f64,
     src_p: SourceId,
@@ -43,6 +47,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     /// When the current stacks lapse if nothing refreshes them.
     p_expire: f64,
@@ -52,6 +58,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// A damaging attack or ability applies a Spirit Abjuration stack; the
     /// 3rd consumes all three for the bonus max-health magic damage.
     fn add_p_stack(&mut self, e: &mut Engine, t: f64) {
@@ -74,6 +93,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_expire: -INF,
             e_ready: 0.0,
@@ -91,8 +111,10 @@ impl Driver for GenDriver {
             q_recast_dmg: kit.hit("gen.Q.recastDamage", ranks.q, sheet)?,
             q_missing_coef: kit.num("gen.Q.missingHpCoef")?,
             q_recast_delay: kit.num("gen.Q.recastDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             src_p: intern("P proc"),
@@ -128,7 +150,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -139,7 +161,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
         self.s.q_recast_at = t + self.q_recast_delay;
     }
 
@@ -154,16 +176,18 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         e.ult_hatefog();
+        // no cast time, but the opening dash still holds the next attack back
+        e.lockout();
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.q_recast_at != INF {
-            out[n] = (self.s.q_recast_at, Kind::Ev(EV_Q_RECAST));
+            out[n] = (self.castable_at(e, self.s.q_recast_at), Kind::Ev(EV_Q_RECAST));
             n += 1;
         }
         n
@@ -179,7 +203,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_Q_RECAST) => {
                 self.s.q_recast_at = INF;
@@ -190,6 +214,9 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
+                // the recast has no cast time of its own, but it did just
+                // consume this instant: nothing else should overlap it either
+                self.s.busy_until = pymax(self.s.busy_until, t);
             }
             other => panic!("unhandled event {other:?}"),
         }

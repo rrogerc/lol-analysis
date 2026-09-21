@@ -10,13 +10,13 @@
   "W"
  ],
  "notes": [
-  "Opens with Final Spark (R) at t=0; its 1 s cast time holds the next attack for the full second, not just the default 0.25 s lockout, and its damage lands when the cast ends.",
-  "Light Binding (Q) is cast on cooldown; only the single dummy target is hit (its two-target cap and 'dummy' second missile do not matter against one target), and its damage lands on cast like the 0.25 s cast time implies.",
-  "Lucent Singularity (E) is cast on cooldown and immediately recast so it detonates the instant the projectile arrives instead of waiting out its 5 s duration; the travel delay before detonation is not modeled positionally and is taken as an assumed constant (see 'assumed').",
-  "Only Lucent Singularity's initial cast counts as an ability activation for on-cast effects (Spellblade/Muramana); the automatic/manual recast that actually deals the detonation damage does not, per the wiki.",
+  "Casts go one at a time: Light Binding and Lucent Singularity each have a 0.25 s cast time, Final Spark has a 1 s cast time, and none of the three casts (nor the abilities they wait on) start inside another one's cast time.",
+  "Opens with Final Spark (R) at t=0; its 1 s cast time holds the next attack and any other cast for the full second, and its damage lands when the cast ends.",
+  "Light Binding (Q) is cast on cooldown as soon as it and any cast in progress allow it; only the single dummy target is hit (its two-target cap and 'dummy' second missile do not matter against one target), and its damage lands on cast, then its 0.25 s cast time keeps Lux busy.",
+  "Lucent Singularity (E) is cast on cooldown and immediately recast so it detonates the instant the projectile arrives instead of waiting out its 5 s duration; the initial cast has the stated 0.25 s cast time (which keeps Lux busy), the travel delay before detonation is not modeled positionally and is taken as an assumed constant (see 'assumed'), and the automatic/manual recast/detonation itself is instant (no cast time, matching the wiki's statement that only the initial cast counts as an ability activation).",
   "Illumination applies/refreshes a 6 s mark on the dummy whenever Q lands, E detonates, or R lands. Only basic attacks and Final Spark consume the mark for its bonus magic damage (Q and E only apply/refresh it, per the wiki text).",
   "Final Spark is assumed to also refresh the Illumination mark on the hit it lands (in addition to being able to consume an existing one), since the passive text describes 'Lux's abilities' generically as markers; this is an open reading and is flagged here.",
-  "Prismatic Barrier (W) only shields allies and never touches the dummy, so it is never cast.",
+  "Prismatic Barrier (W) only shields allies and never touches the dummy, so it is never cast; see 'unused'.",
   "Mana is not modeled: Lux's level-16 mana pool comfortably covers a 15 s rotation of Q/E/R casts."
  ],
  "assumed": [
@@ -25,6 +25,9 @@
    "why": "delivery delay for Lucent Singularity before an immediate recast detonates it; the engine does not model cast distance, so this is taken as half of the ability's 1100-unit maximum range divided by its 1200 projectile speed (550/1200 s)"
   }
  ],
+ "unused": {
+  "W": "Prismatic Barrier only shields allies and never touches the dummy, so it is never cast; its cast time is not exercised."
+ },
  "abilities": {
   "Q": {
    "name": "Light Binding",
@@ -100,7 +103,11 @@
      240
     ],
     "apRatio": 0.75
-   }
+   },
+   "castTimeS": 0.25
+  },
+  "W": {
+   "castTimeS": 0.25
   },
   "E": {
    "damage": {
@@ -113,7 +120,8 @@
     ],
     "apRatio": 0.8
    },
-   "travelTimeS": 0.458333
+   "travelTimeS": 0.458333,
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -132,6 +140,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lux.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lux.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lux.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lux.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

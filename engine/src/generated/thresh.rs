@@ -3,7 +3,9 @@
 //! cast on cooldown and recast immediately to cut short its own attack lock,
 //! Flay's active goes out on cooldown while its passive empowers every
 //! basic attack with a damage ramp that resets on landing, and The Box opens
-//! the fight for its single burst of damage.
+//! the fight for its single burst of damage. Casts go one at a time: a
+//! single busy_until tracks the cast in progress (Q, E and R each have a
+//! real cast time), and no other cast or attack starts inside it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,11 +27,13 @@ pub struct GenDriver {
     q_cd: f64,
     q_hit_cdr: f64,
     q_recast_delay: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_per_soul_total: f64,
     e_ad_ratio: f64,
     e_full_charge: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_cast_s: f64,
     src_e_onhit: SourceId,
@@ -40,11 +44,28 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     e_ready: f64,
     /// When The Box's damage lands (INF: none pending).
     r_hit_at: f64,
     /// The time of the last landed basic attack, driving Flay's ramp.
     last_attack_t: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -57,6 +78,7 @@ impl Driver for GenDriver {
 
         let e_full_charge = kit.num("gen.E.fullChargeDurationS")?;
         let state = State {
+            busy_until: 0.0,
             e_ready: 0.0,
             r_hit_at: INF,
             last_attack_t: -e_full_charge,
@@ -70,11 +92,13 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_hit_cdr: kit.num("gen.Q.hitBonusCooldownS")?,
             q_recast_delay: kit.num("gen.Q.recastDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, &sheet2)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_per_soul_total: kit.num("gen.E.passiveDmgPerSoul")? * souls,
             e_ad_ratio: kit.at_rank("gen.E.passiveAdRatio", ranks.e)?,
             e_full_charge,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, &sheet2)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             src_e_onhit: intern("E onhit"),
@@ -116,7 +140,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -125,28 +149,33 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         // Landing always cuts the current cooldown by 2s (no spell shield on a dummy).
         e.st.q_ready = pymax(t, t + e.basic_cd(self.q_cd) - self.q_hit_cdr);
-        // Recast as Deathly Leap as soon as possible to end the Shackled attack-lock early.
+        self.busy_for(e, self.q_cast_s);
+        // Recast as Deathly Leap as soon as possible to end the Shackled attack-lock early
+        // (its own recast has no cast time; this only matters if it would end sooner
+        // than the cast time itself already holds the attack back).
         e.st.next_attack = pymax(e.st.next_attack, t + self.q_recast_delay);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the cast; the walls' damage lands
-        // when the cast completes
+        // the opening cast (the engine has already primed Spellblade): the
+        // walls' damage lands when the cast completes, and the cast keeps
+        // Thresh busy for its own duration
         self.s.r_hit_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.s.r_hit_at != INF {
+            // a scheduled hit, not a fresh cast: it fires exactly when the
+            // opening cast set it, not gated behind busy_until again
             out[n] = (self.s.r_hit_at, Kind::Ev(EV_R_HIT));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -168,7 +197,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

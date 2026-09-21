@@ -10,11 +10,11 @@
   "Q"
  ],
  "notes": [
-  "The opening cast is Buster Shot (R) at t=0; Explosive Charge (E), Rocket Jump (W) and Rapid Fire (Q) are then each cast as soon as their cooldowns allow, and Tristana attacks continuously throughout.",
+  "Casts go one at a time: Buster Shot (R) and Rocket Jump (W) each have a 0.25 s cast time and keep Tristana busy for it (no other cast, no attack starts inside it); Explosive Charge (E) uses a fixed 0.225625 s cast time (its base-attack-speed value) rather than recomputing live from current attack speed, and likewise keeps her busy until it ends; Rapid Fire (Q) has no cast time and never waits on or blocks another cast.",
+  "The opening cast is Buster Shot (R) at t=0; because it has a cast time, Rocket Jump, Explosive Charge and Rapid Fire (all ready at t=0) each wait for Tristana to stop being busy before they can start, and then queue up one after another the same way for the rest of the fight as their cooldowns come up.",
   "Explosive Charge's toss deals no damage and is not itself counted as one of its four stacks: four further basic-attack or ability hits on the charged target are needed to force an instant detonation, otherwise it detonates automatically once its 4 s attach duration elapses.",
   "Every basic attack (an on-hit application) and every landed Rocket Jump or Buster Shot adds one Explosive Charge stack while a charge is attached; Rapid Fire never touches the target and never stacks it.",
   "Detonating Explosive Charge at its stack cap resets Rocket Jump's cooldown, since the dummy counts as an enemy champion for that mechanic; otherwise Rocket Jump is simply cast on cooldown.",
-  "Explosive Charge's cast time equals 100% of Tristana's current attack windup and is recomputed live from her attack speed (including Rapid Fire) at every cast; it only delays her next attack and is separate from the generic 0.25 s ability-cast lockout used for Rocket Jump and Buster Shot.",
   "Explosive Charge's passive on-kill explosion never triggers because the dummy is never killed.",
   "Rapid Fire's attack-speed buff is a non-refreshing 7 s buff; since its cooldown (16-20 s) always outlasts the 7 s buff at every rank, casting it on cooldown never wastes or clashes with an active buff.",
   "The automatic basic attack Tristana is ordered to make after Explosive Charge's and Buster Shot's casts is read as simply firing her next regular attack rather than a bonus extra swing, since the sources do not establish that it resets her attack timer.",
@@ -22,7 +22,12 @@
   "Mana is not modeled: none of the four abilities' costs are large enough relative to a level 16 mana pool to meaningfully cap casts within a 15 s fight.",
   "Explosive Charge's detonation is physical damage and is not itself a critical strike; the crit-chance-based amplification from the wiki is applied as its own multiplier using the build's crit chance and crit damage at the moment of detonation."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.E.castTimeS",
+   "why": "Explosive Charge's cast time equals 100% of Tristana's current attack windup and so really scales live with attack speed; the sources flag this as an open question between recomputing it live and using the fixed base-attack-speed value, and the fixed 0.225625 s value is used here for simplicity."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Rapid Fire",
@@ -136,7 +141,7 @@
    "critChanceModifier": 0.4,
    "maxStacks": 4,
    "activeDurationS": 4,
-   "castTimeAtBaseAsS": 0.225625
+   "castTimeS": 0.225625
   },
   "R": {
    "damage": {
@@ -156,6 +161,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/tristana.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/tristana.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/tristana.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/tristana.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

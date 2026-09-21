@@ -2,7 +2,9 @@
 //! recast the instant it lands, Tempest (E) and Dragon's Rage (R) go out on
 //! cooldown; Flurry (P) arms +40% bonus attack speed on the next 2 attacks
 //! after every damaging cast. Safeguard/Iron Will (W) and Cripple never fire
-//! since neither deals damage to the dummy.
+//! since neither deals damage to the dummy. Every cast with a cast time
+//! (Q1, E, R) keeps Lee Sin busy until it ends; Q2 is a dash with no cast
+//! time and only holds the next attack back like a lockout.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,10 +28,13 @@ pub struct GenDriver {
     q1_dmg: f64,
     q2_dmg: f64,
     q_missing_mod: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_cd: f64,
+    r_cast_s: f64,
     src_q2: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
@@ -39,6 +44,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Flurry: attacks still empowered, and how long that lasts.
     p_flurry_charges: i64,
     p_flurry_until: f64,
@@ -50,6 +57,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Arms Flurry: the next 2 attacks that land within the window gain
     /// bonus attack speed.
     fn arm_flurry(&mut self, t: f64) {
@@ -66,8 +86,8 @@ impl GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.arm_flurry(t);
-        e.lockout();
         self.s.r_ready = t + e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 }
 
@@ -75,6 +95,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_flurry_charges: 0,
             p_flurry_until: 0.0,
             q_pending_recast: false,
@@ -92,10 +113,13 @@ impl Driver for GenDriver {
             q1_dmg: kit.hit("gen.Q.q1Damage", ranks.q, sheet)?,
             q2_dmg: kit.hit("gen.Q.q2Damage", ranks.q, sheet)?,
             q_missing_mod: kit.num("gen.Q.missingHealthMod")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_q2: intern("Q recast"),
             s: state,
             s0: state,
@@ -140,16 +164,16 @@ impl Driver for GenDriver {
             return INF;
         }
         if self.s.q_pending_recast {
-            return e.st.t;
+            return self.castable_at(e, e.st.t);
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         if self.s.q_pending_recast {
-            // Resonating Strike: consumes the mark, scaled by the target's
-            // missing health (0 to 100% bonus damage).
+            // Resonating Strike: no cast time (a dash), consumes the mark,
+            // scaled by the target's missing health (0 to 100% bonus damage).
             self.s.q_pending_recast = false;
             let missing = (e.target_hp - pymax(e.st.hp, 0.0)) / e.target_hp;
             let missing = pymax(pymin(missing, 1.0), 0.0);
@@ -159,8 +183,10 @@ impl Driver for GenDriver {
             e.eclipse_hit();
             e.prime_spellblade();
             self.arm_flurry(t);
+            e.lockout();
         } else {
-            // Sonic Wave: the cooldown starts here, not on the recast.
+            // Sonic Wave: the cooldown starts here, not on the recast; its
+            // 0.25 s cast time keeps Lee Sin busy until it ends.
             e.st.q_ready = t + e.basic_cd(self.q_cd);
             e.deal(self.q1_dmg, DType::Physical, SRC_Q, false, true, 1.0);
             e.ability_cast_proc();
@@ -168,7 +194,7 @@ impl Driver for GenDriver {
             e.prime_spellblade();
             self.arm_flurry(t);
             self.s.q_pending_recast = true;
-            e.lockout();
+            self.busy_for(e, self.q_cast_s);
         }
     }
 
@@ -182,11 +208,11 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 && self.s.r_ready != INF {
-            out[n] = (self.s.r_ready, Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -196,13 +222,16 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_E_CAST) => {
+                // Tempest: its 0.25 s cast time keeps Lee Sin busy until it
+                // ends; the cooldown starts here, not on the Cripple recast
+                // (which is never cast).
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.arm_flurry(t);
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.fire_r(e);

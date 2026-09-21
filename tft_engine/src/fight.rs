@@ -29,8 +29,24 @@
 //! or `f.as_extra` + `f.as_extra_until`; `f.ad_extra`, `f.ap_extra`,
 //! `f.amp_extra`. Mana: `f.mana`, `f.sheet.mana_max`, `f.lock_until`.
 //! `f.after(delay, tag)` queues `Driver::event(f, tag)`.
+//!
+//! The cast window (`spec::CastTiming`, from data/tft/set<N>/cast-timing.json):
+//! a cast made possible by an attack starts at that attack's unlock point,
+//! and from there the unit neither attacks (`casting_until`) nor gains mana
+//! (`lock_until`) for the cast animation and any channel; a fresh attack
+//! starts when that window ends. The engine writes both fields at the start
+//! of the cast, before calling `cast_started`/`cast`, and never overrules
+//! what a driver writes afterwards — a driver owns them from then on
+//! (Pebbles' drain releases `lock_until` and moves `casting_until` every
+//! tick; Azir, Murkwolf and Nidalee hold `lock_until = 1e9` and release it
+//! at the last empowered attack). A lock that lasts as long as an EFFECT is
+//! written from the effect's own clock, which starts when the ability lands
+//! (`f.t` inside `cast`), not from the start of the cast: the barrier, the
+//! flock and Frenzy all begin there, so the lock ends with them. It
+//! therefore outlasts the figure TFTraits prints — which is measured from
+//! the cast — by the effect time, at most the cast animation.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 
@@ -38,11 +54,19 @@ use crate::driver::Driver;
 use crate::fx::{combined_durability, Fx};
 use crate::kit::{CalcId, DType, Kit, RowId, Runtime};
 use crate::pyf::{pymax, pymin, pysum};
-use crate::spec::{CellSpec, DummySpec, EnemyDebuffs, Kind};
+use crate::spec::{CastTiming, CastWindow, CellSpec, DummySpec, EnemyDebuffs, Kind};
 
 pub const AS_CAP: f64 = 5.0;
-pub const CRIT_EXCESS_TO_DAMAGE: f64 = 1.0;
+// Crit chance over 100% becomes crit damage at this rate. Riot's patch 12.23
+// introduced the conversion "at a 2:1 ratio" (0.5) and patch 13.18 raised it
+// "from 50% to 80% conversion", the latest primary statement; TFTips' Set 18
+// page still says x0.5 and the wiki's stale wording reads as 1:1 (what this
+// constant was). Unverified for Set 18. tft.py carries the same number.
+pub const CRIT_EXCESS_TO_DAMAGE: f64 = 0.8;
 pub const PRECISION_EXTRA_CRIT_DAMAGE: f64 = 0.10;
+// The flat cast rules: a one-second mana lock and the bins' quarter-second
+// cast. They remain for every unit without a cast timeline (spec::CastTiming:
+// summons, synthetic fixtures, the manaless kits) and for the dummies.
 pub const MANA_LOCK_S: f64 = 1.0;
 pub const CAST_TIME_DEFAULT: f64 = 0.25;
 pub const TICK_S: f64 = 0.25;
@@ -119,14 +143,26 @@ impl Sheet {
         }
     }
 
+    /// Blue Buff's "10% additional Attack Damage and Ability Power from all
+    /// sources" (`adap_mult`) multiplies what the unit gains — items, traits
+    /// and every stack a fight adds — never the base it starts with: an
+    /// adopted reading, by analogy with Adaptive Helm's "additional Mana from
+    /// all sources", and unverified in game. Copies multiply each other. A
+    /// sheet without the item keeps the plain expression, bit for bit.
     #[inline]
     pub fn ad(&self, ad_pct_extra: f64) -> f64 {
-        self.base_ad * (1.0 + self.ad_pct + ad_pct_extra) * self.adap_mult
+        if self.adap_mult == 1.0 {
+            return self.base_ad * (1.0 + self.ad_pct + ad_pct_extra);
+        }
+        self.base_ad * (1.0 + (self.ad_pct + ad_pct_extra) * self.adap_mult)
     }
 
     #[inline]
     pub fn ap(&self, ap_extra: f64) -> f64 {
-        (self.ap_flat + ap_extra) * self.adap_mult
+        if self.adap_mult == 1.0 {
+            return self.ap_flat + ap_extra;
+        }
+        crate::kit::BASE_AP + (self.ap_flat - crate::kit::BASE_AP + ap_extra) * self.adap_mult
     }
 
     #[inline]
@@ -414,8 +450,9 @@ pub struct Deal {
 impl Deal {
     /// Python's defaults: ability damage that may crit (with Precision).
     pub const ABILITY: Deal = Deal { ability: true, crit: true, raw: false };
-    /// `ability=True, crit=False`.
-    pub const ABILITY_NOCRIT: Deal = Deal { ability: true, crit: false, raw: false };
+    // (`ability=True, crit=False` had one caller, Draven's giant-axe
+    // cash-out, and it now crits with the bleed ticks it replaces. A driver
+    // that needs the combination again writes the `Deal` out.)
     /// `ability=False, crit=False`: burns, thorns, executes.
     pub const PLAIN: Deal = Deal { ability: false, crit: false, raw: false };
     /// `ability=False, crit=False, raw=True`: Solar's bonus.
@@ -426,6 +463,9 @@ impl Deal {
 pub enum Event {
     /// The engine's own: the ability lands when its cast time is up.
     Cast,
+    /// The engine's own: the attack that filled the bar has reached its
+    /// unlock point, where the cast it made possible begins.
+    CastStart,
     /// A driver's, dispatched to `Driver::event`.
     Driver(u32),
     /// Complete the currently selected engagement, ignoring superseded moves.
@@ -596,6 +636,15 @@ impl TeamClock {
 pub struct Fight<'a, D: Driver> {
     pub kit: &'a Kit,
     pub unit_cast_time: Option<f64>,
+    /// The equipped form's cast timeline; None keeps the flat rules.
+    timing: Option<CastTiming>,
+    /// A new attack is starting from zero — the fight's first, or the first
+    /// after a cast window: it lands its attack delay after the unit is
+    /// free, whatever the period-based `next_attack` says.
+    fresh_attack: bool,
+    /// Set by `default_cast_time`: whether the driver's `cast_time` was the
+    /// data's default or the driver's own channel.
+    default_cast_time_read: Cell<bool>,
     pub sheet: Sheet,
     pub fx: Fx,
     timed_stats_next: Vec<f64>,
@@ -708,10 +757,16 @@ impl<'a, D: Driver> Fight<'a, D> {
         let pressure = spec.pressure_for(fx.form);
         let thorns_ready = vec![0.0; fx.thorns.len()];
         let timed_stats_next = fx.timed_stats.iter().map(|grant| grant.after).collect();
+        // Like the range, the timeline follows the equipped form.
+        let timing = spec.timing_for(fx.form);
         let mut f = Fight {
             kit,
             timed_stats_next,
             unit_cast_time: spec.unit.cast_time,
+            timing,
+            // the opening attack has its wind-up too
+            fresh_attack: timing.is_some(),
+            default_cast_time_read: Cell::new(false),
             sheet,
             fx,
             targets: dummies,
@@ -847,10 +902,25 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     pub fn default_cast_time(&self) -> f64 {
+        // `cast` reads this mark to tell the data's default from a channel
+        // the driver declares, without a second hook on the Driver trait.
+        self.default_cast_time_read.set(true);
         match self.unit_cast_time {
             Some(ct) => ct,
             None => CAST_TIME_DEFAULT,
         }
+    }
+
+    /// The attack animation's pace against the timeline's base attack speed:
+    /// attack delay and recovery are seconds at base speed and shrink with
+    /// it; cast, effect and channel windows never do (TFTraits: "Items,
+    /// traits and damage taken change the mana pace; the cast, effect and
+    /// channel windows do not").
+    fn attack_scale(&self) -> f64 {
+        let speed = self.attack_speed();
+        // a unit that cannot attack has no animation to scale (and 0 x inf
+        // must not reach the clock)
+        if speed > 0.0 { self.sheet.base_as / speed } else { 1.0 }
     }
 
     /// The explicit average engagement delay, not a champion animation value.
@@ -896,6 +966,16 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     fn attack_ready_at(&self) -> f64 {
+        if let (true, Some(timing)) = (self.fresh_attack, self.timing) {
+            // A fresh attack starts when the unit is free (`casting_until`,
+            // wherever a driver has pushed it by then) and lands its attack
+            // delay later, even when that is before the old period was up:
+            // the cast cut the rest of the previous attack. The delay is read
+            // at the attack speed of the moment, so it is never scheduled
+            // behind the clock.
+            let lands = pymax(self.casting_until + timing.attack_delay * self.attack_scale(), self.t);
+            return pymax(lands, pymax(self.movement_until, self.combat_stunned_until));
+        }
         pymax(pymax(self.next_attack, self.casting_until),
               pymax(self.movement_until, self.combat_stunned_until))
     }
@@ -1937,14 +2017,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             // effects landing now (a channel's damage) come first
             while !self.pending.is_empty() && self.pending[0].0 <= self.t + 1e-9 {
                 let (_, _, ev) = self.pending.remove(0);
-                match ev {
-                    Event::Cast => {
-                        self.record("land", 0.0, None, "");
-                        D::cast(self);
-                    }
-                    Event::Driver(tag) => D::event(self, tag),
-                    Event::Reposition(generation) => self.complete_reposition(generation),
-                }
+                self.dispatch(ev);
             }
             if self.kill_time.is_some() {
                 break;
@@ -2049,6 +2122,27 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.seq += 1;
         self.pending.push((self.t + pymax(0.0, delay), self.seq, ev));
         self.pending.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
+    }
+
+    /// One due event. The standalone loop, the team scheduler and the theory
+    /// scheduler all run their queue through here.
+    fn dispatch(&mut self, ev: Event) {
+        match ev {
+            Event::Cast => {
+                self.record("land", 0.0, None, "");
+                D::cast(self);
+            }
+            Event::CastStart => {
+                // The bar can have been reaved since the attack landed; a
+                // lost target or a walk is `cast`'s own check. The tick or
+                // the arrival starts the cast then.
+                if self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0 && self.alive_unit {
+                    self.cast();
+                }
+            }
+            Event::Driver(tag) => D::event(self, tag),
+            Event::Reposition(generation) => self.complete_reposition(generation),
+        }
     }
 
     fn next_incoming(&self) -> f64 {
@@ -2370,6 +2464,8 @@ impl<'a, D: Driver> Fight<'a, D> {
             Some(i) => i,
             None => return,
         };
+        // this attack has landed: the next one follows the period again
+        self.fresh_attack = false;
         self.attacks += 1;
         self.record("attack", 0.0, Some(tgt), "");
         self.on_attack_stacks();
@@ -2380,14 +2476,36 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.gain_mana(mana);
         D::attack(self, tgt);
         if self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0 && self.alive_unit {
-            self.cast();
+            self.cast_after_attack();
         }
         // the next attack a period later, at the attack speed the unit has
         // now (a cast's attack-speed buff counts from this attack on)
         self.next_attack = self.t + 1.0 / self.attack_speed();
     }
 
-    /// Fight._cast; public so the tests can start a cast by hand.
+    /// The attack that filled the bar. With a cast timeline the cast begins
+    /// at the attack's unlock point, its recovery later (TFTraits: "a cast
+    /// that becomes possible at the landing starts at that unlock point,
+    /// cutting the rest of the attack"); without one, at the landing.
+    fn cast_after_attack(&mut self) {
+        let wait = match self.timing {
+            Some(CastTiming { cast: Some(_), attack_recovery, .. }) =>
+                attack_recovery * self.attack_scale(),
+            _ => 0.0,
+        };
+        if wait > 0.0 && self.target().is_some() && self.t >= self.movement_until {
+            // the unit is still in its attack: nothing else starts before
+            // the unlock point, neither an attack nor a tick's cast
+            self.casting_until = pymax(self.casting_until, self.t + wait);
+            self.push_event(wait, Event::CastStart);
+        } else {
+            self.cast();
+        }
+    }
+
+    /// Fight._cast: a cast begins now. Every start comes through here — the
+    /// attack that fills the bar (by way of its unlock point), the tick, a
+    /// reposition's arrival; public so the tests can start one by hand.
     pub fn cast(&mut self) {
         if self.target().is_none() || !self.alive_unit || self.t < self.movement_until {
             return;
@@ -2402,19 +2520,46 @@ impl<'a, D: Driver> Fight<'a, D> {
         let overflow = pymax(0.0, self.mana - mana_cost);
         self.mana = pymin(overflow, self.sheet.mana_max);   // overflow carries up to one cast
         self.mana_reave = 0.0;
+        self.default_cast_time_read.set(false);
         let cast_time = D::cast_time(self);
-        self.casting_until = self.t + cast_time;
-        // no mana while casting nor for the second after: a channel the
-        // driver declares locks through its length plus that second; the
-        // data's default animation is inside the second
-        self.lock_until = self.t + MANA_LOCK_S
-            + if cast_time > CAST_TIME_DEFAULT { cast_time } else { 0.0 };
-        D::cast_started(self, cast_time);
+        let own_channel = !self.default_cast_time_read.get();
+        // `lands`: when the ability takes effect, from now
+        let lands = match self.timing.and_then(|timing| timing.cast) {
+            None => {
+                self.casting_until = self.t + cast_time;
+                // no mana while casting nor for the second after: a channel the
+                // driver declares locks through its length plus that second; the
+                // data's default animation is inside the second
+                self.lock_until = self.t + MANA_LOCK_S
+                    + if cast_time > CAST_TIME_DEFAULT { cast_time } else { 0.0 };
+                cast_time
+            }
+            Some(CastWindow { busy, effect_at, mana_lock }) => {
+                // The form's cast window (TFTraits' cast timeline, an adopted
+                // rule like Azir's lock: not verified in game) replaces the
+                // flat second: while the animation and any channel play the
+                // unit cannot attack and gains no mana from any source, and a
+                // fresh attack starts when they end. A channel the driver
+                // declares keeps its own length and landing when that is
+                // longer; the data's default cast lands where the timeline
+                // says the ability takes effect, inside the window. All of
+                // it is set before the driver runs, which may overwrite
+                // `casting_until` and `lock_until` (an effect that holds the
+                // bar, a drain that keeps regenerating) and is never
+                // overruled afterwards.
+                let held = if own_channel { pymax(busy, cast_time) } else { busy };
+                self.casting_until = self.t + held;
+                self.lock_until = self.t + pymax(held, mana_lock);
+                self.fresh_attack = true;
+                if own_channel { cast_time } else { pymin(effect_at.unwrap_or(cast_time), busy) }
+            }
+        };
+        D::cast_started(self, lands);
         if self.fx.ap_per_cast != 0.0 {
             self.ap_stack += self.fx.ap_per_cast;
         }
-        if cast_time > 0.0 && !D::LANDS_AT_START {
-            self.push_event(cast_time, Event::Cast);
+        if lands > 0.0 && !D::LANDS_AT_START {
+            self.push_event(lands, Event::Cast);
         } else {
             D::cast(self);
         }
@@ -2533,11 +2678,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         while !self.pending.is_empty() && self.pending[0].0 <= time + 1e-9 && time + 1e-9 >= self.combat_stunned_until {
             let (_, _, event) = self.pending.remove(0);
             if !self.alive_unit { continue; }
-            match event {
-                Event::Cast => { self.record("land", 0.0, None, ""); D::cast(self); }
-                Event::Driver(tag) => D::event(self, tag),
-                Event::Reposition(generation) => self.complete_reposition(generation),
-            }
+            self.dispatch(event);
         }
         if clock.next_tick <= time + 1e-9 {
             self.tick(time, clock.next_second, &mut clock.interval_next,
@@ -2563,11 +2704,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             && time + 1e-9 >= self.combat_stunned_until {
             let (_, _, event) = self.pending.remove(0);
             if !self.alive_unit { continue; }
-            match event {
-                Event::Cast => { self.record("land", 0.0, None, ""); D::cast(self); }
-                Event::Driver(tag) => D::event(self, tag),
-                Event::Reposition(generation) => self.complete_reposition(generation),
-            }
+            self.dispatch(event);
         }
         if clock.next_tick <= time + 1e-9 {
             self.tick(time, clock.next_second, &mut clock.interval_next,

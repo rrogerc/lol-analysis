@@ -1,10 +1,11 @@
 //! Renata Glasc. Leverage marks the dummy on Renata's first attack for a
 //! one-time bonus (it never expires against a single stationary target);
-//! Bailout is self-cast immediately for a ramping attack-speed buff (it
-//! deals no direct damage of its own); Handshake goes out on cooldown with
-//! its recast landing right after; Loyalty Program is cast on cooldown for
-//! one magic-damage hit; Hostile Takeover is never cast since it deals no
-//! damage here.
+//! Bailout is self-cast at the open for a ramping attack-speed buff only (it
+//! deals no direct damage of its own here); Handshake goes out on cooldown
+//! with its recast landing within the same cast; Loyalty Program is cast on
+//! cooldown for one magic-damage hit; Hostile Takeover is never cast since
+//! it deals no damage here. Casts go one at a time: Q and E each cost their
+//! 0.25 s cast time (busy_until), while W is instant but still waits its turn.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -29,14 +30,18 @@ pub struct GenDriver {
     src_p: SourceId,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     src_q_recast: SourceId,
     /// Bailout: base bonus attack speed in PERCENT (already includes the AP
-    /// ratio, constant for the fight), and how long it ramps/lasts.
+    /// ratio, constant for the fight), how long it ramps/lasts, and its
+    /// (zero) cast time. It deals no damage of its own in this fight.
     w_as_pct: f64,
     w_dur_s: f64,
     w_cd: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
     s0: State,
@@ -44,6 +49,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When Leverage's mark on the dummy expires (0.0: never marked yet).
     p_mark_until: f64,
     w_ready: f64,
@@ -53,10 +60,26 @@ struct State {
     e_ready: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_mark_until: 0.0,
             w_ready: 0.0,
             w_cast_at: 0.0,
@@ -72,12 +95,15 @@ impl Driver for GenDriver {
             src_p: intern("P"),
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             src_q_recast: intern("Q recast"),
             w_as_pct: kit.at_rank("gen.W.asBase", ranks.w)? + sheet.ap * kit.num("gen.W.apRatioPctPerAp")?,
             w_dur_s: kit.num("gen.W.durationS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             s: state,
             s0: state,
         })
@@ -124,13 +150,13 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        // The initial hook, then the recast knockback, both landing on the
-        // same instant (its travel and the tether are not modeled beyond
-        // the usual cast lockout); the cooldown starts once both land.
+        // The initial hook, then the recast knockback, both landing within
+        // the same 0.25 s cast (the recast has no cast time of its own
+        // stated by the sources); the cooldown starts once both land.
         e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
         e.ability_cast_proc();
         e.eclipse_hit();
@@ -140,17 +166,17 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -174,7 +200,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

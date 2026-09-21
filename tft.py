@@ -24,6 +24,10 @@ Numbers come from data, mechanics from code:
 - data/tft/set<N>/item-effects.json, trait-effects.json — which item
   passives and trait bonuses the engine models, as references to the
   data's own rows (so a number change in the data flows through).
+- data/tft/set<N>/cast-timing.json — every unit's cast and attack timeline
+  (cast animation, channel, when the ability takes effect, attack delay
+  and recovery), transcribed from TFTraits: a third-party source adopted
+  as a model rule, not verified in game.
 - tft_engine/ — the compiled engine (Rust, imported as lol_tft from
   lol_tft.abi3.so at the repo root; jobs/build-engine.sh builds it): the
   fight, the item and trait effects, and one short driver per unit — the
@@ -35,7 +39,9 @@ Numbers come from data, mechanics from code:
 
 The fight is a unit's mana cycle against stat dummies derived from
 the set's own units: attacks at the unit's attack speed grant role-based
-mana, the ability casts when the bar fills, damage goes through the
+mana, the ability casts when the bar fills — for the length of its cast
+animation (and channel) the unit neither attacks nor gains mana, then a
+fresh attack starts — damage goes through the
 armor/MR formula with sunder, shred, crit, Precision and post-mitigation
 damage amp. "spread" puts the dummies out of each other's reach (area
 abilities hit one), "clump" puts them together (area abilities hit all).
@@ -108,10 +114,21 @@ AD_PER_STAR = 1.5      # attack damage multiplies by this per star above one
 HP_PER_STAR = 1.8      # max health likewise
 BASE_AP = 100.0        # every unit's ability power before items
 AS_CAP = 5.0           # attacks per second, soft cap
-CRIT_EXCESS_TO_DAMAGE = 1.0   # 1% crit chance over 100% -> 1% crit damage
+# Crit chance over 100% becomes crit damage at this rate: Riot's patch 12.23
+# introduced the conversion "at a 2:1 ratio" (0.5), patch 13.18 raised it
+# "from 50% to 80% conversion" — the latest primary statement. TFTips' Set 18
+# page says x0.5 and the wiki's stale wording reads as 1:1 (this constant's
+# old value). Unverified for Set 18; the engine's fight.rs carries the number.
+CRIT_EXCESS_TO_DAMAGE = 0.8
 PRECISION_EXTRA_CRIT_DAMAGE = 0.10  # a second source of Precision
+# The flat cast rules, for the units cast-timing.json has no timeline for
+# (the manaless kits, summons, synthetic fixtures) and for the dummies:
 MANA_LOCK_S = 1.0      # no mana for a second after a cast starts
 CAST_TIME_DEFAULT = 0.25  # when the character bin has no cast time
+# cast-timing.json's lock rules that are a fixed time from the start of the
+# cast, which the engine applies itself; the others (effectDuration,
+# shieldHolds, empoweredAttacks, none) follow the fight and are the driver's.
+FIXED_LOCK_RULES = ("castAnimation", "channel", "untilEffectEnds")
 TICK_S = 0.25          # granularity of regen, burns and timed stacks
 # fighters gain attack speed by stage: "5-30% (based on Stage)"; the
 # per-stage curve is patch 15.4's "Stage 2-6: 5/10/20/30/30%"
@@ -319,8 +336,21 @@ def tft_patch_key(patch):
     return int(major), int(minor), ord(suffix) - ord("a") + 1 if suffix else 0
 
 
+_MID_PATCH_MAJOR = re.compile(r"mid-?\s*patch\s+updates?", re.I)
+_DATED_HEADING = re.compile(r"(?:january|february|march|april|may|june|july|august|september|october|"
+                            r"november|december)\s+\d{1,2}\b", re.I)
+
+
 class PatchNotesParser(HTMLParser):
-    """Keep update dates, sections and parent item names with each change."""
+    """Keep update dates, sections and parent item names with each change.
+
+    Riot has used two shapes for a hotfix block. 18.1: <h2>Mid-Patch Updates</h2>
+    with one <h3> per dated update and <h4> sections beneath it. 18.2:
+    <h2>MID-PATCH UPDATE</h2> with the date as an <h4> ("SEPTEMBER 14") ahead of
+    the <h4> sections. Both are a dated update: the second shape used to leave
+    `updates` empty, so the 18.2 hotfix kept the label 18.2 and its notes reached
+    the reconciler as an unlabelled same-patch revision.
+    """
 
     def __init__(self):
         super().__init__()
@@ -364,10 +394,13 @@ class PatchNotesParser(HTMLParser):
             return
         if tag == self.heading:
             label = " ".join("".join(self.heading_text).split())
+            mid_patch = bool(_MID_PATCH_MAJOR.fullmatch(self.major.strip()))
             if tag == "h2":
                 self.major = self.section = label
                 self.update = ""
-            elif tag == "h3" and self.major.lower() == "mid-patch updates":
+            elif mid_patch and (tag == "h3" or _DATED_HEADING.match(label)):
+                # Any <h3> names an update (Riot has also written "18.1e UPDATE");
+                # a lower heading does only when it is a date, never a section.
                 self.update = label
                 if label and label not in self.updates:
                     self.updates.append(label)
@@ -580,9 +613,18 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
                     # must validate every carried correction before publication.
                     shutil.copyfile(source, os.path.join(staging, name))
         report(phase="validating", message=f"Checking {patch} against the active snapshot and patch notes.")
+
+        def unsettled(snapshot):
+            """Audit findings that are not current, plus any base-stat disagreement with
+            the freshly downloaded CommunityDragon export that a reconciled audit does
+            not know: the export can change while the lookup and the notes stand still."""
+            findings, _ = check_patch_notes(snapshot)
+            sources = check_sources(snapshot)
+            return ([f for f in findings if f["status"] != "current"]
+                    + [d for d in sources["disagreements"] if sources["audited"] and d["status"] == "unreviewed"])
+
         candidate = Snapshot(set_no, patch, directory=staging)
-        findings, unmatched = check_patch_notes(candidate)
-        needs_review = [f for f in findings if f["status"] != "current"]
+        needs_review = unsettled(candidate)
         if automatic and (not candidate.audit or needs_review):
             from tft_update import reconcile
             try:
@@ -593,8 +635,7 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
                     with open(os.path.join(staging, name), "w") as f:
                         json.dump(content, f, indent=2)
                 candidate = Snapshot(set_no, patch, directory=staging)
-                findings, unmatched = check_patch_notes(candidate)
-                needs_review = [f for f in findings if f["status"] != "current"]
+                needs_review = unsettled(candidate)
             except Exception:
                 pending = os.path.join(set_dir(set_no), ".pending", patch)
                 shutil.copytree(staging, pending, dirs_exist_ok=True)
@@ -966,6 +1007,75 @@ def load_trait_effects(set_no):
 
 def load_kits(set_no):
     return _hand_file(set_no, "kits.json")
+
+
+@lru_cache(maxsize=4)
+def _cast_timing_file(path, mtime_ns, size):
+    with open(path) as f:
+        return json.load(f)
+
+
+def load_cast_timing(set_no):
+    """cast-timing.json: every unit's cast and attack timeline as TFTraits
+    publishes it. Every cell_spec reads it, so the parsed file is kept while
+    it is unchanged on disk; callers must not modify what they get."""
+    path = os.path.join(set_dir(set_no), "cast-timing.json")
+    try:
+        st = os.stat(path)
+    except FileNotFoundError:
+        return {}
+    return _cast_timing_file(path, st.st_mtime_ns, st.st_size)
+
+
+def cast_timing_spec(unit, cast_timing):
+    """The unit's timelines for the engine, {"base": ..., "AD": ..., "AP":
+    ...} with only the numbers it reads, or None when the file has nothing
+    to time (no entry, a manaless kit): the engine then keeps its flat rules
+    — the bin's cast time, a one-second lock, attacks landing when due.
+
+    `base` is the form TFTraits lists first, `AD`/`AP` the Adaptor's other
+    form. A form takes its cast fields from its own entry when that has a
+    cast animation (or says it has none) and its attack fields when it has
+    an attack delay; whatever it lacks comes from the base entry, since
+    TFTraits only repeats what differs. manaLock goes along only under the
+    rules that are a fixed time from the start of the cast."""
+    entry = ((cast_timing or {}).get("units") or {}).get(unit["api"]) or {}
+    base = entry.get("base") or {}
+
+    def resolve(own):
+        cast = own if "castAnimation" in own or own.get("noCastAnimation") else base
+        attack = own if "attackDelay" in own else base
+        out = {}
+        if cast.get("castAnimation") is not None:
+            out = {k: float(cast[k]) for k in ("castAnimation", "channel", "effectAt")
+                   if cast.get(k) is not None}
+            if cast.get("lockRule") in FIXED_LOCK_RULES and cast.get("manaLock") is not None:
+                out["manaLock"] = float(cast["manaLock"])
+        out.update({k: float(attack[k]) for k in ("attackDelay", "attackRecovery")
+                    if attack.get(k) is not None})
+        return out
+
+    forms = {"base": resolve(base)}
+    for form in unit.get("forms") or {}:
+        forms[form] = resolve(entry.get(form) or {})
+    forms = {form: timing for form, timing in forms.items() if timing}
+    return forms or None
+
+
+def cast_timing_note(snap):
+    """What the dashboard can say about the cast rule: the source, its date
+    and standing, and how many of the modeled units it covers (the rest
+    keep the flat `manaLock` second and the bins' cast time)."""
+    table = load_cast_timing(snap.set_no)
+    timed = [u["api"] for u in modeled_units(snap)
+             if any("castAnimation" in form for form in (cast_timing_spec(u, table) or {}).values())]
+    return {"source": table.get("source"), "retrieved": table.get("retrieved"),
+            "unitsWithCastWindow": len(timed), "fixedLockRules": list(FIXED_LOCK_RULES),
+            "rule": "While a unit's cast animation (and channel) plays it neither attacks nor gains mana; "
+                    "a cast made possible by an attack starts at that attack's unlock point, a fresh attack "
+                    "starts when the window ends, and attack delay and recovery scale with attack speed. "
+                    "Third-party timelines (TFTraits), adopted as a model rule and not verified in game; "
+                    "a unit without one keeps a one-second mana lock after a 0.25 s cast."}
 
 
 def row_value(curve, spec, star=1):
@@ -1609,13 +1719,15 @@ def trait_notes(snap, ctx_traits, trait_fx):
 
 
 def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None, pressure=None,
-              item_fx=None, trait_fx=None, pool=(), items=(), driver=None):
+              item_fx=None, trait_fx=None, pool=(), items=(), driver=None, cast_timing=None):
     """Everything the engine needs for one unit's fights: kits per form,
     dummies (armed and standing for the board per the objective), the
     role's and the traits' contributions, the item pool for an
-    enumeration or the build's items for one fight."""
+    enumeration or the build's items for one fight. `cast_timing` replaces
+    the set's cast-timing.json ({} = no timelines: the flat cast rules)."""
     item_fx = item_fx if item_fx is not None else load_item_effects(snap.set_no)
     trait_fx = trait_fx if trait_fx is not None else load_trait_effects(snap.set_no)
+    cast_timing = cast_timing if cast_timing is not None else load_cast_timing(snap.set_no)
     objective = unit.get("objective", "carry")
     auto_pressure = pressure is None
     if pressure is None:
@@ -1636,8 +1748,12 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     return {
         "unit": {"api": unit["api"], "name": unit["name"], "kind": kind, "attack": bool(unit["attack"]),
                  "objective": objective, "range": unit["stats"]["range"],
-                 "castTime": unit.get("castTime"), "hasForms": bool(unit.get("forms")),
-                 "extras": {api: e["stats"] for api, e in snap.extras.items()}},
+                 "castTime": unit.get("castTime"), "timing": cast_timing_spec(unit, cast_timing),
+                 "hasForms": bool(unit.get("forms")),
+                 # a copy per spec: handing out the snapshot's own stat dicts
+                 # let a caller that edited a summon's numbers (a test tuning
+                 # Krug's mini) change them for every later fight in the process
+                 "extras": {api: dict(e["stats"]) for api, e in snap.extras.items()}},
         "star": star, "kits": kits, "geometry": geometry, "duration": float(duration),
         "meleeRepositionSeconds": dummy_spec.get("meleeRepositionSeconds", 0.0),
         "pressure": bool(pressure), "autoPressure": auto_pressure, "immortal": objective == "tank",
@@ -1654,14 +1770,14 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
 
 
 def simulate(snap, unit, star, item_apis, geometry, ctx_traits, dummy_spec, duration=None,
-             item_fx=None, trait_fx=None, driver=None, pressure=None, trace=False):
+             item_fx=None, trait_fx=None, driver=None, pressure=None, trace=False, cast_timing=None):
     """One build's fight: (opening sheet, result). The duration and whether
     the dummies hit back follow the unit's objective unless given; `driver`
     names another engine driver ("Driver" is the plain base: attacks only);
     with `trace` the result carries every event as (t, kind, amount,
     target, src, hp)."""
     spec = cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration, pressure,
-                     item_fx, trait_fx, items=list(item_apis), driver=driver)
+                     item_fx, trait_fx, items=list(item_apis), driver=driver, cast_timing=cast_timing)
     return engine().simulate(spec, trace)
 
 
@@ -1983,7 +2099,7 @@ def cell_paths(snap=None):
     base = hashlib.sha256(SOURCE_HASH.encode())
     base.update(snap.patch.encode())
     base.update(snap.hash_inputs().encode())
-    for fn in ("item-effects.json", "trait-effects.json", "kits.json"):
+    for fn in ("item-effects.json", "trait-effects.json", "kits.json", "cast-timing.json"):
         p = os.path.join(set_dir(snap.set_no), fn)
         if os.path.exists(p):
             with open(p, "rb") as f:
@@ -2822,6 +2938,7 @@ def api_meta(snap=None):
         "objectives": OBJECTIVES,
         "rules": {"adPerStar": AD_PER_STAR, "hpPerStar": HP_PER_STAR,
                   "critExcess": CRIT_EXCESS_TO_DAMAGE, "manaLock": MANA_LOCK_S,
+                  "castTiming": cast_timing_note(snap),
                   "asCap": AS_CAP, "stage": STAGE, "duration": FIGHT_DURATION,
                   "tankDuration": TANK_DURATION,
                   "tankMana": [TANK_MANA_PER_PREMIT, TANK_MANA_PER_POSTMIT, TANK_MANA_PER_HIT_CAP],
@@ -2886,6 +3003,73 @@ def check_audit(snap, notes):
     covered = {normalize(label) for c in audit.get("checks", [])
                for label in (c["what"], c.get("patchLine", {}).get("what", c["what"]))}
     return findings, [ch for ch in notes.get("changes", []) if normalize(ch["what"]) not in covered]
+
+
+CROSS_CHECKED_STATS = (("hp", "hp"), ("ad", "damage"), ("as", "attackSpeed"), ("armor", "armor"),
+                       ("mr", "magicResist"), ("mana", "mana"), ("initialMana", "initialMana"), ("range", "range"))
+
+
+def source_disagreements(snap):
+    """The base stats a unit fights with, against the archived CommunityDragon export.
+
+    Two independent extractions of the game's files. The lookup supplies every
+    simulation input and CommunityDragon used to be read only to FILL missing
+    stats, so a lookup that lagged the live game went unnoticed: in the published
+    18.2 snapshot Kha'Zix had 850 health (live 950) and Pebbles 30 attack damage
+    (live 35), with the export that said so archived next to it.
+
+    CommunityDragon's champion records are keyed by asset name. A unit's first
+    asset is its base record; an Adaptor's later asset is its alternate form, and
+    the `_AD`/`_AP` suffix of either names the form, which `kit_spec` resolves
+    the way the engine does (an AP form attacks with its `AutoAttackDamageAP`
+    row, not with `stats.damage`). Other later assets are variants the Snapshot
+    does not model (Lux's nine origins): counted, never compared.
+
+    Returns {"compared", "unmodeled", "disagreements"}; each disagreement has the
+    unit, the asset, the stat and both values (None = that side has none).
+    """
+    champions = {c.get("apiName"): c for c in (snap.communitydragon or {}).get("champions") or []}
+    compared, unmodeled, found = 0, [], []
+    for unit in snap.units.values():
+        for index, asset in enumerate(unit["assets"]):
+            record = champions.get(asset)
+            if record is None:
+                continue
+            suffix = re.search(r"_(AD|AP)$", asset)
+            form = suffix.group(1) if suffix and unit["forms"] else None
+            if index and (form is None or form not in unit["forms"]):
+                unmodeled.append(asset)
+                continue
+            compared += 1
+            kit = kit_spec(unit, 1, form)
+            mine = dict(kit["stats"], ad=kit["baseAd"])
+            theirs = record.get("stats") or {}
+            for stat, key in CROSS_CHECKED_STATS:
+                have, want = mine.get(stat), theirs.get(key)
+                if have is None and want is None:
+                    continue
+                if have is None or want is None or not math.isclose(have, want, rel_tol=1e-6, abs_tol=1e-6):
+                    found.append({"api": unit["api"], "name": unit["name"], "asset": asset, "form": form, "stat": stat,
+                                  "effective": have, "communitydragon": None if want is None else round(want, 6)})
+    return {"compared": compared, "unmodeled": unmodeled, "disagreements": found}
+
+
+def check_sources(snap):
+    """`source_disagreements` with each one's standing in the snapshot's audit:
+    "explained" (a review record with its evidence), "inherited" (carried from an
+    earlier snapshot, reviewed by nobody) or "unreviewed"."""
+    result = source_disagreements(snap)
+    recorded = (snap.audit or {}).get("sourceCrossCheck") or {}
+    known = {(r["api"], r["asset"], r["stat"]): (group, r)
+             for group in ("explained", "inherited") for r in recorded.get(group, [])}
+    for item in result["disagreements"]:
+        group, record = known.get((item["api"], item["asset"], item["stat"]), (None, None))
+        current = record is not None and all(record.get(k) == item[k] for k in ("effective", "communitydragon"))
+        item["status"] = group if current else "unreviewed"
+        if current and group == "explained":
+            item["disposition"], item["reason"] = record.get("disposition"), record.get("reason")
+    result["audited"] = "sourceCrossCheck" in (snap.audit or {})
+    return result
 
 
 def check_patch_notes(snap):
@@ -2977,11 +3161,26 @@ def cmd_check(args):
           f"{len(unmatched)} patch-note lines outside the numeric checks:")
     for ch in unmatched[:40]:
         print(f"   ? {ch['what']}: {ch['old']} ⇒ {ch['new']}")
+    sources = check_sources(snap)
+    unreviewed = [d for d in sources["disagreements"] if d["status"] == "unreviewed"]
+    print(f"\nBase stats against CommunityDragon: {sources['compared']} records compared, "
+          f"{len(sources['disagreements'])} disagreements, {len(unreviewed)} unreviewed"
+          + (f"; {len(sources['unmodeled'])} records describe variants the snapshot does not model" if sources["unmodeled"] else "")
+          + (":" if sources["disagreements"] else "."))
+    number = lambda value: "none" if value is None else f"{value:g}"
+    for d in sources["disagreements"]:
+        mark = {"explained": "ok   ", "inherited": "OLD  ", "unreviewed": "SRC  "}[d["status"]]
+        why = f"  {d['disposition']}" if d["status"] == "explained" else ""
+        print(f"{mark} {d['name']:<14} {d['stat']:<12} snapshot {number(d['effective'])} ≠ CommunityDragon "
+              f"{number(d['communitydragon'])} ({d['asset']}){why}")
+    if unreviewed and not sources["audited"]:
+        print("   This audit predates the source cross-check, so these are reported, not failed. "
+              "The next reconciled snapshot has to explain each one.")
     if snap.audit:
         unresolved = snap.audit.get("unresolved", [])
         print(f"\nPatch-note audit: {len(snap.audit.get('checks', []))} explicit checks; "
               f"{len(unresolved)} source limitations recorded in {snap.dir}/audit.json.")
-        if stale:
+        if stale or (unreviewed and sources["audited"]):
             sys.exit(2)
         return
     if stale:
@@ -3004,13 +3203,19 @@ def cmd_check(args):
 
 def cmd_units(args):
     snap = load_snapshot(args.set, args.patch)
+    cast_timing = load_cast_timing(snap.set_no)
     for u in sorted(snap.units.values(), key=lambda u: (u["cost"], u["name"])):
         drv = "driver" if has_driver(u) else "-"
         s = u["stats"]
+        # the bin's cast time, and the cast window (animation + channel) of
+        # cast-timing.json during which the unit neither attacks nor gains mana
+        timing = (cast_timing_spec(u, cast_timing) or {}).get("base") or {}
+        window = (f"  window {timing['castAnimation'] + timing.get('channel', 0.0):g}"
+                  if "castAnimation" in timing else "")
         print(f"{u['cost']}  {u['name']:<14} {drv:<7} {u['roleName']:<18} {u['objective']:<8} "
               f"{'/'.join(u['traits']):<32} hp {s['hp']:.0f} ad {s['ad']:.0f} as {s['as']:.2f} "
               f"mana {s['initialMana']:.0f}/{s['mana']:.0f} range {s['range']:.0f}"
-              f"  cast {u.get('castTime') if u.get('castTime') is not None else '-'}")
+              f"  cast {u.get('castTime') if u.get('castTime') is not None else '-'}{window}")
 
 
 def cmd_sim(args):
@@ -3041,6 +3246,17 @@ def cmd_sim(args):
           f" +{fx['manaRegen'] * fx['manaMult']:.1f}/s"
           f"  HP {sheet['hp']:.0f} armor {sheet['armor']:.0f} MR {sheet['mr']:.0f} "
           f"durability {sheet['durability']*100:.0f}% omnivamp {sheet['omnivamp']*100:.0f}%")
+    # The cast timeline the fight ran on, so a --trace is readable: the
+    # window holds the attacks and the bar, the ability lands inside it.
+    forms = spec["unit"]["timing"] or {}
+    timing = forms.get(sheet["form"] or "base") or forms.get("base") or {}
+    if "castAnimation" in timing:
+        print(f"  cast window {timing['castAnimation'] + timing.get('channel', 0.0):g}s"
+              f" (no attacks, no mana)"
+              + (f", ability at +{timing['effectAt']:g}s" if "effectAt" in timing else "")
+              + (f"; attack delay {timing['attackDelay']:g}s / recovery {timing['attackRecovery']:g}s"
+                 f" at base attack speed" if "attackDelay" in timing else "")
+              + " — TFTraits' timeline, adopted, not verified in game")
     target_fx = spec["targetDebuffs"]
     print("  dummies: " + "; ".join(f"{s['hp']} HP / {s['armor'] * (1 - target_fx.get('sunder', 0)):g} armor / "
                                     f"{s['mr'] * (1 - target_fx.get('shred', 0)):g} MR ({s['kind']})"

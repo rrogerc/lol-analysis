@@ -1,9 +1,10 @@
 //! Poppy. Iron Ambassador periodically arms an on-hit magic proc on her next
-//! attack (checked at windup start); Hammer Shock is cast on cooldown for
-//! its two same-instance hits 1s apart; Steadfast Presence and Heroic
-//! Charge are cast on cooldown for their instant damage; Keeper's Verdict
-//! opens the fight, channels the 0.5s minimum for its charged tier, then
-//! releases, holding attacks through the whole channel and release cast.
+//! attack (checked at windup start); Hammer Shock has a 0.3325s cast time and
+//! is cast on cooldown for its two same-instance hits 1s apart; Steadfast
+//! Presence and Heroic Charge have no cast time and are cast on cooldown for
+//! their instant damage; Keeper's Verdict opens the fight, channels the 0.5s
+//! minimum for its charged tier, then releases with its own cast time,
+//! holding attacks through the whole channel and release cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -34,6 +35,7 @@ pub struct GenDriver {
     q_dmg: f64,
     q_hp_ratio: f64,
     q_delay: f64,
+    q_cast_s: f64,
     w_cd: f64,
     w_dmg: f64,
     e_cd: f64,
@@ -52,6 +54,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_ready: f64,
     p_armed: bool,
     w_ready: f64,
@@ -62,10 +66,26 @@ struct State {
     r_damage_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_ready: 0.0,
             p_armed: false,
             w_ready: 0.0,
@@ -84,6 +104,7 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_hp_ratio: kit.at_rank("gen.Q.targetMaxHpRatioPct", ranks.q)? / 100.0,
             q_delay: kit.num("gen.Q.delayBetweenHitsS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
@@ -138,7 +159,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -148,8 +169,8 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.q_rupture_at = e.st.t + self.q_delay;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -168,11 +189,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -181,7 +202,7 @@ impl Driver for GenDriver {
             } else if self.s.r_recast_at != INF {
                 out[n] = (self.s.r_recast_at, Kind::Ev(EV_R_RELEASE));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_START));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_START));
             }
             n += 1;
         }

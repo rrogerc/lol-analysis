@@ -1,0 +1,957 @@
+{
+ "_comment": [
+  "Per-unit cast and attack timelines, transcribed from TFTraits (https://tftraits.com/cast-timelines/ and each",
+  "https://tftraits.com/champions/<slug>/ page), retrieved 2026-09-20. TFTraits is a third party; its own",
+  "disclaimer: \"not 100% accurate: they combine publicly available game data with gameplay observation\".",
+  "The engine adopts these windows as a model rule with the standing of Azir's six-command mana lock and the",
+  "0.5 s melee reposition: adopted, not verified in game. Re-transcribe when a patch changes animations.",
+  "Seconds. attackDelay (from the start of an attack until it lands) and attackRecovery (after the landing",
+  "until the unit can cast or attack again) are at base attack speed and scale with the attack animation;",
+  "castAnimation (no attacks, no mana while it plays), channel (extra busy time after it) and effectAt (when",
+  "the ability takes effect, from the start of the cast; absent = not stated) never scale.",
+  "`base` is the form TFTraits lists first; `AD` / `AP` is the Adaptor's other form. A form takes its cast",
+  "fields from its own entry when that has a castAnimation (or says noCastAnimation), its attack fields when",
+  "it has an attackDelay, and the base entry's otherwise (tft.cast_timing_spec).",
+  "What the engine reads: castAnimation, channel, effectAt, attackDelay, attackRecovery, and manaLock only",
+  "under the lockRules that are a fixed time from the start of the cast (castAnimation, channel,",
+  "untilEffectEnds). The other rules depend on the fight and belong to the unit's driver: effectDuration,",
+  "shieldHolds (at most manaLock), empoweredAttacks (manaLock is at base attack speed), none. They are kept",
+  "here, with lockNote, as the record of what the source says. A driver measures such a lock from the",
+  "effect's own clock, which starts when the ability lands (effectAt into the cast, or the bin's cast time)",
+  "and not from the start of the cast as this table's manaLock column does: the barrier, the flock and",
+  "Frenzy begin at the landing, so the lock ends with them rather than while they are still up. Its end is",
+  "therefore effectAt later than the figure here (Diana +0.66 s, Mama Beak +0.27 s, Brambleback +0.25 s) —",
+  "seconds the unit spent inside the cast window anyway, and well inside the source's own precision.",
+  "firstCast is TFTraits' own first cast of an itemless unit and `assumed` the bar, mana per attack, regen",
+  "and attacks per second its card states for it: the acceptance reference of test_tft_cast_timing.",
+  "noMana / noCastAnimation: the kit has no bar or no cast; nothing to time."
+ ],
+ "source": "https://tftraits.com/cast-timelines/",
+ "retrieved": "2026-09-20",
+ "units": {
+  "TFT18_Akali": {
+   "name": "Akali",
+   "source": "https://tftraits.com/champions/akali/",
+   "base": {
+    "castAnimation": 0.8,
+    "effectAt": 0.27,
+    "manaLock": 0.8,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.38,
+    "attackRecovery": 0.29,
+    "firstCast": 3.33,
+    "assumed": {"manaStart": 0, "mana": 25, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   },
+   "AP": {
+    "attackDelay": 0.38,
+    "attackRecovery": 0.29,
+    "firstCast": 3.33
+   }
+  },
+  "TFT18_Camille": {
+   "name": "Camille",
+   "source": "https://tftraits.com/champions/camille/",
+   "base": {
+    "castAnimation": 1.54,
+    "effectAt": 0.29,
+    "manaLock": 1.54,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.2,
+    "attackRecovery": 0.34,
+    "firstCast": 3.2,
+    "assumed": {"manaStart": 0, "mana": 25, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Cinderling": {
+   "name": "Cinderling",
+   "source": "https://tftraits.com/champions/cinderling/",
+   "base": {
+    "castAnimation": 1.63,
+    "manaLock": 1.63,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.34,
+    "attackRecovery": 0.25,
+    "firstCast": 7.74,
+    "assumed": {"manaStart": 0, "mana": 50, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Karma": {
+   "name": "Karma",
+   "source": "https://tftraits.com/champions/karma/",
+   "base": {
+    "castAnimation": 0.6,
+    "channel": 1.5,
+    "manaLock": 2.1,
+    "lockRule": "channel",
+    "lockNote": "Mana locked through the 1.50 s channel after the cast; no attacks during it.",
+    "attackDelay": 0.3,
+    "attackRecovery": 0.27,
+    "firstCast": 6.0,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Kobuko": {
+   "name": "Kobuko",
+   "source": "https://tftraits.com/champions/kobuko/",
+   "base": {
+    "castAnimation": 2.0,
+    "manaLock": 2.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.23,
+    "attackRecovery": 0.38,
+    "firstCast": 26.77,
+    "assumed": {"manaStart": 0, "mana": 90, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Leona": {
+   "name": "Leona",
+   "source": "https://tftraits.com/champions/leona/",
+   "base": {
+    "castAnimation": 0.92,
+    "effectAt": 0.25,
+    "manaLock": 0.92,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.29,
+    "attackRecovery": 0.33,
+    "firstCast": 26.77,
+    "assumed": {"manaStart": 0, "mana": 90, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Ornn": {
+   "name": "Ornn",
+   "source": "https://tftraits.com/champions/ornn/",
+   "base": {
+    "castAnimation": 0.62,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.46,
+    "firstCast": 22.33,
+    "assumed": {"manaStart": 30, "mana": 100, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Pebbles": {
+   "name": "Pebbles",
+   "source": "https://tftraits.com/champions/pebbles/",
+   "base": {
+    "castAnimation": 3.31,
+    "effectAt": 0.2,
+    "lockRule": "none",
+    "lockNote": "No mana lock: mana keeps coming in during the ability, which drains max mana and ends at 0 mana. Mana regen makes it last longer.",
+    "attackDelay": 0.26,
+    "attackRecovery": 0.24,
+    "firstCast": 9.25,
+    "assumed": {"manaStart": 0, "mana": 70, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Rakan": {
+   "name": "Rakan",
+   "source": "https://tftraits.com/champions/rakan/",
+   "base": {
+    "castAnimation": 0.86,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.25,
+    "attackRecovery": 0.41,
+    "firstCast": 33.99,
+    "assumed": {"manaStart": 0, "mana": 105, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_RekSai": {
+   "name": "Rek'Sai",
+   "source": "https://tftraits.com/champions/reksai/",
+   "base": {
+    "castAnimation": 0.91,
+    "manaLock": 0.91,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.36,
+    "attackRecovery": 0.37,
+    "firstCast": 35.27,
+    "assumed": {"manaStart": 0, "mana": 100, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.55}
+   }
+  },
+  "TFT18_Varus": {
+   "name": "Varus",
+   "source": "https://tftraits.com/champions/varus/",
+   "base": {
+    "castAnimation": 2.0,
+    "manaLock": 2.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.18,
+    "attackRecovery": 0.39,
+    "firstCast": 17.71,
+    "assumed": {"manaStart": 0, "mana": 120, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Veigar": {
+   "name": "Veigar",
+   "source": "https://tftraits.com/champions/veigar/",
+   "base": {
+    "castAnimation": 0.89,
+    "manaLock": 0.89,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.59,
+    "attackRecovery": 0.41,
+    "firstCast": 4.5,
+    "assumed": {"manaStart": 0, "mana": 30, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Xayah": {
+   "name": "Xayah",
+   "source": "https://tftraits.com/champions/xayah/",
+   "base": {
+    "castAnimation": 0.68,
+    "manaLock": 5.44,
+    "lockRule": "empoweredAttacks",
+    "lockNote": "Attack speed shortens this lock: it lasts 5 empowered attacks. Shown at base attack speed.",
+    "attackDelay": 0.19,
+    "attackRecovery": 0.39,
+    "firstCast": 6.29,
+    "assumed": {"manaStart": 0, "mana": 50, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Yorick": {
+   "name": "Yorick",
+   "source": "https://tftraits.com/champions/yorick/",
+   "base": {
+    "castAnimation": 0.9,
+    "effectAt": 0.31,
+    "manaLock": 0.9,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.33,
+    "attackRecovery": 0.34,
+    "firstCast": 35.67,
+    "assumed": {"manaStart": 0, "mana": 110, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Alistar": {
+   "name": "Alistar",
+   "source": "https://tftraits.com/champions/alistar/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.5,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.26,
+    "attackRecovery": 0.44,
+    "firstCast": 29.04,
+    "assumed": {"manaStart": 0, "mana": 90, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Caitlyn": {
+   "name": "Caitlyn",
+   "source": "https://tftraits.com/champions/caitlyn/",
+   "base": {
+    "attackDelay": 0.11,
+    "attackRecovery": 0.46,
+    "noCastAnimation": true
+   }
+  },
+  "TFT18_Elise": {
+   "name": "Elise",
+   "source": "https://tftraits.com/champions/elise/",
+   "base": {
+    "castAnimation": 2.0,
+    "effectAt": 0.2,
+    "manaLock": 4.0,
+    "lockRule": "effectDuration",
+    "lockNote": "The mana lock lasts the 4.00 s the effect runs. Attacks continue.",
+    "attackDelay": 0.45,
+    "attackRecovery": 0.16,
+    "firstCast": 20.62,
+    "assumed": {"manaStart": 0, "mana": 70, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Gromp": {
+   "name": "Gromp",
+   "source": "https://tftraits.com/champions/gromp/",
+   "base": {
+    "castAnimation": 1.02,
+    "manaLock": 1.02,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.36,
+    "attackRecovery": 0.35,
+    "firstCast": 6.43,
+    "assumed": {"manaStart": 0, "mana": 45, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   },
+   "AD": {
+    "castAnimation": 1.02,
+    "manaLock": 1.02,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.36,
+    "attackRecovery": 0.35,
+    "firstCast": 12.14,
+    "assumed": {"manaStart": 0, "mana": 80, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Kayle": {
+   "name": "Kayle",
+   "source": "https://tftraits.com/champions/kayle/",
+   "base": {
+    "noMana": true
+   }
+  },
+  "TFT18_LeBlanc": {
+   "name": "LeBlanc",
+   "source": "https://tftraits.com/champions/leblanc/",
+   "base": {
+    "castAnimation": 1.83,
+    "manaLock": 1.83,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.19,
+    "attackRecovery": 0.38,
+    "firstCast": 6.29,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Murkwolf": {
+   "name": "Murkwolf",
+   "source": "https://tftraits.com/champions/murkwolf/",
+   "base": {
+    "castAnimation": 0.6,
+    "manaLock": 1.57,
+    "lockRule": "empoweredAttacks",
+    "lockNote": "Attack speed shortens this lock: it lasts 2 empowered attacks. Shown at base attack speed.",
+    "attackDelay": 0.39,
+    "attackRecovery": 0.28,
+    "firstCast": 4.67,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Scuttlecrab": {
+   "name": "Scuttlecrab",
+   "source": "https://tftraits.com/champions/scuttlecrab/",
+   "base": {
+    "castAnimation": 3.0,
+    "effectAt": 0.2,
+    "manaLock": 3.0,
+    "lockRule": "castAnimation",
+    "firstCast": 30.77,
+    "assumed": {"manaStart": 0, "mana": 100, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65},
+    "attackNote": "TFTraits shows no attack delay or recovery for this unit: its timeline lands every attack at 100% of the attack animation, a full period after it starts, which reads as a placeholder rather than a measurement. Left out here, so the engine lands its attacks when they are due, as it did before the timeline."
+   }
+  },
+  "TFT18_Sejuani": {
+   "name": "Sejuani",
+   "source": "https://tftraits.com/champions/sejuani/",
+   "base": {
+    "castAnimation": 1.05,
+    "effectAt": 0.6,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.36,
+    "attackRecovery": 0.3,
+    "firstCast": 32.33,
+    "assumed": {"manaStart": 0, "mana": 100, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Shen": {
+   "name": "Shen",
+   "source": "https://tftraits.com/champions/shen/",
+   "base": {
+    "castAnimation": 1.3,
+    "manaLock": 4.59,
+    "lockRule": "empoweredAttacks",
+    "lockNote": "Attack speed shortens this lock: it lasts 3 empowered attacks. Shown at base attack speed.",
+    "attackDelay": 0.22,
+    "attackRecovery": 0.4,
+    "firstCast": 26.77,
+    "assumed": {"manaStart": 0, "mana": 90, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Teemo": {
+   "name": "Teemo",
+   "source": "https://tftraits.com/champions/teemo/",
+   "base": {
+    "castAnimation": 1.58,
+    "effectAt": 0.19,
+    "manaLock": 1.58,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.22,
+    "attackRecovery": 0.31,
+    "firstCast": 7.2,
+    "assumed": {"manaStart": 0, "mana": 50, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Warwick": {
+   "name": "Warwick",
+   "source": "https://tftraits.com/champions/warwick/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.43,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.29,
+    "attackRecovery": 0.25,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Yunara": {
+   "name": "Yunara",
+   "source": "https://tftraits.com/champions/yunara/",
+   "base": {
+    "castAnimation": 0.4,
+    "effectAt": 0.4,
+    "manaLock": 0.4,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.06,
+    "attackRecovery": 0.47,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 35, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Azir": {
+   "name": "Azir",
+   "source": "https://tftraits.com/champions/azir/",
+   "base": {
+    "castAnimation": 0.8,
+    "effectAt": 0.3,
+    "manaLock": 4.0,
+    "lockRule": "empoweredAttacks",
+    "lockNote": "Attack speed shortens this lock: it lasts 6 empowered attacks. Shown at base attack speed.",
+    "attackDelay": 0.18,
+    "attackRecovery": 0.36,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 35, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Cassiopeia": {
+   "name": "Cassiopeia",
+   "source": "https://tftraits.com/champions/cassiopeia/",
+   "base": {
+    "castAnimation": 1.01,
+    "effectAt": 0.25,
+    "manaLock": 1.01,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.45,
+    "attackRecovery": 0.08,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 30, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Diana": {
+   "name": "Diana",
+   "source": "https://tftraits.com/champions/diana/",
+   "base": {
+    "castAnimation": 0.66,
+    "effectAt": 0.96,
+    "manaLock": 2.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 2.00 s. Attacks continue.",
+    "attackDelay": 0.22,
+    "attackRecovery": 0.22,
+    "firstCast": 4.19,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Fiddlesticks": {
+   "name": "Fiddlesticks",
+   "source": "https://tftraits.com/champions/fiddlesticks/",
+   "base": {
+    "castAnimation": 2.25,
+    "effectAt": 0.25,
+    "manaLock": 2.25,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.36,
+    "attackRecovery": 0.27,
+    "firstCast": 26.79,
+    "assumed": {"manaStart": 0, "mana": 90, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Hecarim": {
+   "name": "Hecarim",
+   "source": "https://tftraits.com/champions/hecarim/",
+   "base": {
+    "castAnimation": 3.0,
+    "effectAt": 0.5,
+    "manaLock": 3.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.32,
+    "attackRecovery": 0.3,
+    "firstCast": 32.92,
+    "assumed": {"manaStart": 0, "mana": 110, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_KhaZix": {
+   "name": "Kha'Zix",
+   "source": "https://tftraits.com/champions/khazix/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.25,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.04,
+    "attackRecovery": 0.05,
+    "firstCast": 2.44,
+    "assumed": {"manaStart": 0, "mana": 25, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.85}
+   }
+  },
+  "TFT18_KogMaw": {
+   "name": "Kog'Maw",
+   "source": "https://tftraits.com/champions/kogmaw/",
+   "base": {
+    "castAnimation": 0.98,
+    "effectAt": 0.37,
+    "manaLock": 0.98,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.16,
+    "attackRecovery": 0.34,
+    "firstCast": 6.5,
+    "assumed": {"manaStart": 0, "mana": 55, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   },
+   "AP": {
+    "attackDelay": 0.16,
+    "attackRecovery": 0.34,
+    "firstCast": 6.5
+   }
+  },
+  "TFT18_Krug": {
+   "name": "Krug",
+   "source": "https://tftraits.com/champions/krug/",
+   "base": {
+    "castAnimation": 1.73,
+    "effectAt": 0.66,
+    "manaLock": 1.73,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.57,
+    "attackRecovery": 0.1,
+    "firstCast": 44.0,
+    "assumed": {"manaStart": 0, "mana": 135, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_MamaBeak": {
+   "name": "Mama Beak",
+   "source": "https://tftraits.com/champions/mama-beak/",
+   "base": {
+    "castAnimation": 0.86,
+    "effectAt": 0.27,
+    "manaLock": 5.0,
+    "lockRule": "effectDuration",
+    "lockNote": "The mana lock lasts the 5.00 s the effect runs. Attacks continue. The effect's duration scales with Ability Power: 5.00 s at base AP, longer with more AP.",
+    "attackDelay": 0.32,
+    "attackRecovery": 0.2,
+    "firstCast": 7.19,
+    "assumed": {"manaStart": 0, "mana": 60, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_MasterYi": {
+   "name": "Master Yi",
+   "source": "https://tftraits.com/champions/master-yi/",
+   "base": {
+    "attackDelay": 0.71,
+    "attackRecovery": 0.04,
+    "noCastAnimation": true
+   },
+   "AP": {
+    "attackDelay": 0.66,
+    "attackRecovery": 0.04,
+    "noCastAnimation": true
+   }
+  },
+  "TFT18_Rammus": {
+   "name": "Rammus",
+   "source": "https://tftraits.com/champions/rammus/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.49,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.45,
+    "attackRecovery": 0.72,
+    "firstCast": 26.17,
+    "assumed": {"manaStart": 0, "mana": 80, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Rengar": {
+   "name": "Rengar",
+   "source": "https://tftraits.com/champions/rengar/",
+   "base": {
+    "castAnimation": 0.35,
+    "effectAt": 0.24,
+    "manaLock": 0.35,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.33,
+    "firstCast": 5.87,
+    "assumed": {"manaStart": 0, "mana": 50, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Tristana": {
+   "name": "Tristana",
+   "source": "https://tftraits.com/champions/tristana/",
+   "base": {
+    "castAnimation": 0.7,
+    "effectAt": 0.25,
+    "manaLock": 4.0,
+    "lockRule": "effectDuration",
+    "lockNote": "The mana lock lasts the 4.00 s the effect runs. Attacks continue.",
+    "attackDelay": 0.16,
+    "attackRecovery": 0.37,
+    "firstCast": 7.2,
+    "assumed": {"manaStart": 0, "mana": 60, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Vi": {
+   "name": "Vi",
+   "source": "https://tftraits.com/champions/vi/",
+   "base": {
+    "castAnimation": 0.77,
+    "manaLock": 3.0,
+    "lockRule": "effectDuration",
+    "lockNote": "The mana lock lasts the 3.00 s the effect runs. Attacks continue.",
+    "attackDelay": 0.25,
+    "attackRecovery": 0.29,
+    "firstCast": 15.2,
+    "assumed": {"manaStart": 0, "mana": 60, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Ahri": {
+   "name": "Ahri",
+   "source": "https://tftraits.com/champions/ahri/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.5,
+    "manaLock": 2.25,
+    "lockRule": "untilEffectEnds",
+    "lockNote": "Mana locked until the ability's effect ends, 2.25 s after the cast starts.",
+    "attackDelay": 0.33,
+    "attackRecovery": 0.08,
+    "firstCast": 12.92,
+    "assumed": {"manaStart": 0, "mana": 100, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Amumu": {
+   "name": "Amumu",
+   "source": "https://tftraits.com/champions/amumu/",
+   "base": {
+    "castAnimation": 2.88,
+    "effectAt": 0.76,
+    "manaLock": 2.88,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.69,
+    "attackRecovery": 0.11,
+    "firstCast": 35.08,
+    "assumed": {"manaStart": 0, "mana": 125, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.7}
+   }
+  },
+  "TFT18_Aphelios": {
+   "name": "Aphelios",
+   "source": "https://tftraits.com/champions/aphelios/",
+   "base": {
+    "castAnimation": 1.65,
+    "channel": 2.0,
+    "manaLock": 3.65,
+    "lockRule": "channel",
+    "lockNote": "Mana locked through the 2.00 s channel after the cast; no attacks during it.",
+    "firstCast": 8.75,
+    "assumed": {"manaStart": 0, "mana": 70, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.8},
+    "attackNote": "TFTraits shows no attack delay or recovery for this unit: its timeline lands every attack at 100% of the attack animation, a full period after it starts, which reads as a placeholder rather than a measurement. Left out here, so the engine lands its attacks when they are due, as it did before the timeline."
+   }
+  },
+  "TFT18_Brambleback": {
+   "name": "Brambleback",
+   "source": "https://tftraits.com/champions/brambleback/",
+   "base": {
+    "castAnimation": 1.13,
+    "manaLock": 8.0,
+    "lockRule": "effectDuration",
+    "lockNote": "The mana lock lasts the 8.00 s the effect runs. Attacks continue.",
+    "attackDelay": 0.45,
+    "attackRecovery": 0.64,
+    "firstCast": 6.55,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.55}
+   }
+  },
+  "TFT18_Ezreal": {
+   "name": "Ezreal",
+   "source": "https://tftraits.com/champions/ezreal/",
+   "base": {
+    "castAnimation": 1.77,
+    "manaLock": 1.77,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.27,
+    "attackRecovery": 0.27,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 30, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Lillia": {
+   "name": "Lillia",
+   "source": "https://tftraits.com/champions/lillia/",
+   "base": {
+    "castAnimation": 1.2,
+    "effectAt": 0.17,
+    "manaLock": 1.2,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.08,
+    "attackRecovery": 0.24,
+    "firstCast": 41.86,
+    "assumed": {"manaStart": 0, "mana": 140, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Malphite": {
+   "name": "Malphite",
+   "source": "https://tftraits.com/champions/malphite/",
+   "base": {
+    "castAnimation": 0.7,
+    "effectAt": 0.05,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.75,
+    "attackRecovery": 0.0,
+    "firstCast": 28.03,
+    "assumed": {"manaStart": 0, "mana": 80, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.55}
+   }
+  },
+  "TFT18_Morgana": {
+   "name": "Morgana",
+   "source": "https://tftraits.com/champions/morgana/",
+   "base": {
+    "castAnimation": 1.9,
+    "effectAt": 0.18,
+    "manaLock": 1.9,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.18,
+    "attackRecovery": 0.35,
+    "firstCast": 8.53,
+    "assumed": {"manaStart": 0, "mana": 65, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Nidalee": {
+   "name": "Nidalee",
+   "source": "https://tftraits.com/champions/nidalee/",
+   "base": {
+    "castAnimation": 1.02,
+    "manaLock": 2.52,
+    "lockRule": "empoweredAttacks",
+    "lockNote": "Attack speed shortens this lock: it lasts 3 empowered attacks. Shown at base attack speed.",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.29,
+    "firstCast": 5.5,
+    "assumed": {"manaStart": 0, "mana": 45, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.8}
+   },
+   "AD": {
+    "castAnimation": 1.0,
+    "effectAt": 0.37,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.26,
+    "attackRecovery": 0.21,
+    "firstCast": 1.65,
+    "assumed": {"manaStart": 0, "mana": 20, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.85}
+   }
+  },
+  "TFT18_Sentinel": {
+   "name": "Sentinel",
+   "source": "https://tftraits.com/champions/sentinel/",
+   "base": {
+    "castAnimation": 2.0,
+    "manaLock": 4.0,
+    "lockRule": "shieldHolds",
+    "lockNote": "The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.",
+    "attackDelay": 0.47,
+    "attackRecovery": 0.19,
+    "firstCast": 49.0,
+    "assumed": {"manaStart": 0, "mana": 150, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.6}
+   }
+  },
+  "TFT18_Sett": {
+   "name": "Sett",
+   "source": "https://tftraits.com/champions/sett/",
+   "base": {
+    "castAnimation": 0.6,
+    "manaLock": 0.6,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.3,
+    "attackRecovery": 0.59,
+    "firstCast": 40.9,
+    "assumed": {"manaStart": 0, "mana": 135, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Sivir": {
+   "name": "Sivir",
+   "source": "https://tftraits.com/champions/sivir/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.18,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.3,
+    "firstCast": 5.5,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Soraka": {
+   "name": "Soraka",
+   "source": "https://tftraits.com/champions/soraka/",
+   "base": {
+    "castAnimation": 1.98,
+    "manaLock": 1.98,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.32,
+    "firstCast": 4.53,
+    "assumed": {"manaStart": 0, "mana": 30, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Zyra": {
+   "name": "Zyra",
+   "source": "https://tftraits.com/champions/zyra/",
+   "base": {
+    "castAnimation": 1.2,
+    "effectAt": 0.42,
+    "manaLock": 1.2,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.37,
+    "attackRecovery": 0.17,
+    "firstCast": 5.87,
+    "assumed": {"manaStart": 0, "mana": 45, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.75}
+   }
+  },
+  "TFT18_Alune": {
+   "name": "Alune",
+   "source": "https://tftraits.com/champions/alune/",
+   "base": {
+    "castAnimation": 2.18,
+    "effectAt": 0.74,
+    "manaLock": 2.18,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.28,
+    "attackRecovery": 0.23,
+    "firstCast": 4.25,
+    "assumed": {"manaStart": 0, "mana": 35, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Ashe": {
+   "name": "Ashe",
+   "source": "https://tftraits.com/champions/ashe/",
+   "base": {
+    "castAnimation": 1.58,
+    "effectAt": 0.27,
+    "manaLock": 1.58,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.21,
+    "attackRecovery": 0.29,
+    "firstCast": 10.5,
+    "assumed": {"manaStart": 0, "mana": 80, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Draven": {
+   "name": "Draven",
+   "source": "https://tftraits.com/champions/draven/",
+   "base": {
+    "castAnimation": 1.43,
+    "manaLock": 1.43,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.19,
+    "attackRecovery": 0.4,
+    "firstCast": 12.35,
+    "assumed": {"manaStart": 0, "mana": 110, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.85}
+   }
+  },
+  "TFT18_ElderDragon": {
+   "name": "Elder Dragon",
+   "source": "https://tftraits.com/champions/elder-dragon/",
+   "base": {
+    "castAnimation": 1.21,
+    "effectAt": 0.45,
+    "manaLock": 1.21,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.51,
+    "attackRecovery": 0.27,
+    "firstCast": 10.79,
+    "assumed": {"manaStart": 0, "mana": 60, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.5}
+   }
+  },
+  "TFT18_Gnar": {
+   "name": "Gnar",
+   "source": "https://tftraits.com/champions/gnar/",
+   "base": {
+    "castAnimation": 0.97,
+    "effectAt": 0.7,
+    "manaLock": 0.97,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.14,
+    "attackRecovery": 0.31,
+    "firstCast": 7.11,
+    "assumed": {"manaStart": 0, "mana": 70, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.9}
+   }
+  },
+  "TFT18_Ivern": {
+   "name": "Ivern",
+   "source": "https://tftraits.com/champions/ivern/",
+   "base": {
+    "castAnimation": 1.0,
+    "effectAt": 0.15,
+    "manaLock": 1.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.08,
+    "attackRecovery": 0.42,
+    "firstCast": 10.5,
+    "assumed": {"manaStart": 0, "mana": 80, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Kennen": {
+   "name": "Kennen",
+   "source": "https://tftraits.com/champions/kennen/",
+   "base": {
+    "castAnimation": 2.0,
+    "effectAt": 0.0,
+    "manaLock": 2.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.44,
+    "attackRecovery": 0.01,
+    "firstCast": 3.98,
+    "assumed": {"manaStart": 0, "mana": 40, "manaPerAttack": 10, "manaRegen": 0, "attackSpeed": 0.85}
+   }
+  },
+  "TFT18_Lux_Base": {
+   "name": "Lux",
+   "source": "https://tftraits.com/champions/lux/",
+   "base": {
+    "castAnimation": 2.0,
+    "effectAt": 0.7,
+    "manaLock": 2.0,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.15,
+    "attackRecovery": 0.35,
+    "firstCast": 9.25,
+    "assumed": {"manaStart": 0, "mana": 70, "manaPerAttack": 7, "manaRegen": 2, "attackSpeed": 0.8}
+   }
+  },
+  "TFT18_Maokai": {
+   "name": "Maokai",
+   "source": "https://tftraits.com/champions/maokai/",
+   "base": {
+    "castAnimation": 1.75,
+    "effectAt": 0.24,
+    "manaLock": 1.75,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.62,
+    "attackRecovery": 0.0,
+    "firstCast": 29.85,
+    "assumed": {"manaStart": 0, "mana": 100, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.65}
+   }
+  },
+  "TFT18_Taric": {
+   "name": "Taric",
+   "source": "https://tftraits.com/champions/taric/",
+   "base": {
+    "castAnimation": 0.8,
+    "manaLock": 0.8,
+    "lockRule": "castAnimation",
+    "attackDelay": 0.23,
+    "attackRecovery": 0.26,
+    "firstCast": 16.48,
+    "assumed": {"manaStart": 0, "mana": 65, "manaPerAttack": 5, "manaRegen": 0, "attackSpeed": 0.75}
+   }
+  }
+ }
+}

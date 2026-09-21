@@ -2,7 +2,9 @@
 //! opening for a permanent on-hit bolt, Rootcaller and Triggerseed go out on
 //! cooldown for their magic damage, and Daisy! summons an independent pet
 //! that auto-attacks the dummy on her own timer, firing a shockwave every
-//! third consecutive hit.
+//! third consecutive hit. Casts go one at a time: Rootcaller, Brushmaker and
+//! Daisy! each have a cast time that keeps Ivern busy; Triggerseed has none
+//! but still waits for a cast in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,13 +27,16 @@ pub struct GenDriver {
     windup_fraction: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_explode_delay: f64,
     daisy_ad: f64,
     daisy_period: f64,
     shock_dmg: f64,
+    r_cast_s: f64,
     src_w: SourceId,
     src_e: SourceId,
     src_daisy: SourceId,
@@ -44,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     e_ready: f64,
     /// When the pending Triggerseed explosion lands (INF: none pending).
     e_explode_at: f64,
@@ -56,12 +63,28 @@ struct State {
     daisy_consec: i64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let daisy_as_pct = kit.at_rank("gen.R.daisy.asPctByRank", ranks.r)?;
         let daisy_base_as = kit.num("gen.R.daisy.baseAttackSpeed")?;
         let state = State {
+            busy_until: 0.0,
             e_ready: 0.0,
             e_explode_at: INF,
             w_done: false,
@@ -75,13 +98,16 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("ivern kit needs attack.windupFraction")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.onhit", ranks.w, sheet)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_explode_delay: kit.num("gen.E.explodeDelayS")?,
             daisy_ad: kit.hit("gen.R.daisy.ad", ranks.r, sheet)?,
             daisy_period: 1.0 / (daisy_base_as * (1.0 + daisy_as_pct / 100.0)),
             shock_dmg: kit.hit("gen.R.shockwave.damage", ranks.r, sheet)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_w: intern("W onhit"),
             src_e: intern("E"),
             src_daisy: intern("R Daisy"),
@@ -119,7 +145,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -128,31 +154,37 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         if self.ranks.r == 0 {
             return;
         }
-        // Daisy lands shortly after the cast and starts attacking; her
-        // travel is not modeled beyond the usual cast lockout
+        // the opening cast: only this initial cast counts as an activation;
+        // its cast time keeps Ivern busy, and Daisy starts attacking once it
+        // ends
         self.s.daisy_summoned = true;
-        self.s.daisy_next_attack = e.st.t + ABILITY_LOCKOUT_S;
         self.s.daisy_consec = 0;
+        e.prime_spellblade();
+        self.busy_for(e, self.r_cast_s);
+        self.s.daisy_next_attack = self.s.busy_until;
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 && !self.s.w_done {
-            out[n] = (pymax(0.0, e.st.t), Kind::Ev(EV_W_CAST));
+            // a one-time cast; readied at 0, but still waits for a cast in
+            // progress
+            out[n] = (self.castable_at(e, 0.0), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
             if self.s.e_explode_at != INF {
                 out[n] = (self.s.e_explode_at, Kind::Ev(EV_E_EXPLODE));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                // no cast time, but still cannot start inside another cast
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -167,14 +199,15 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_W_CAST) => {
-                // the one-time cast that grows the brush Ivern stands in
+                // the one-time cast that grows the brush Ivern stands in;
+                // its cast time keeps Ivern busy before anything else
                 self.s.w_done = true;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
-                // no lockout: Triggerseed has no cast time; the cooldown
-                // waits for the explosion, so park it until then
+                // no cast time (none): costs nothing and delays nothing; the
+                // cooldown waits for the explosion, so park it until then
                 self.s.e_explode_at = t + self.e_explode_delay;
                 self.s.e_ready = INF;
                 e.prime_spellblade();

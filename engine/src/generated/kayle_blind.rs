@@ -4,6 +4,8 @@
 //! rearmed the instant it is ready and rides the very next attack for its
 //! reset and missing-health on-hit; Radiant Blast goes out on cooldown for
 //! its damage and Sundered shred; Divine Judgment is self-cast at t=0.
+//! Casts go one at a time: Q and R both have a cast time that keeps Kayle
+//! busy (no other cast, no attack) for its length; W is never cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -35,6 +37,7 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cd: f64,
     q_cast_delay: f64,
+    q_cast_time: f64,
     q_shred_duration: f64,
     e_passive_dmg: f64,
     /// Fraction of the target's missing health dealt by E's active.
@@ -42,6 +45,7 @@ pub struct GenDriver {
     e_cd: f64,
     r_dmg: f64,
     r_delay: f64,
+    r_cast_time: f64,
     src_e_onhit: SourceId,
     src_e_active: SourceId,
     src_p_wave: SourceId,
@@ -52,6 +56,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     zeal_stacks: i64,
     /// When the current Zeal stacks lapse if unrefreshed (INF: permanent/none).
     zeal_expire: f64,
@@ -61,6 +67,21 @@ struct State {
     q_hit_at: f64,
     /// When R's damage lands (INF: none pending).
     r_hit_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -94,6 +115,7 @@ impl Driver for GenDriver {
         let q_dmg = kit.hit("gen.Q.damage", ranks.q, sheet)?;
         let q_cd = kit.at_rank("abilities.Q.cooldownS", ranks.q)?;
         let q_cast_delay = kit.num("gen.Q.castDelayS")?;
+        let q_cast_time = kit.num("gen.Q.castTimeS")?;
         let q_shred_duration = kit.num("abilities.Q.shred.durationS")?;
 
         let e_passive_dmg = kit.hit("gen.E.passiveDamage", ranks.e, sheet)?;
@@ -104,8 +126,10 @@ impl Driver for GenDriver {
 
         let r_dmg = kit.hit("gen.R.damage", ranks.r, sheet)?;
         let r_delay = kit.num("gen.R.invulnDurationS")?;
+        let r_cast_time = kit.num("gen.R.castTimeS")?;
 
         let state = State {
+            busy_until: 0.0,
             zeal_stacks: 0,
             zeal_expire: INF,
             e_armed: false,
@@ -128,12 +152,14 @@ impl Driver for GenDriver {
             q_dmg,
             q_cd,
             q_cast_delay,
+            q_cast_time,
             q_shred_duration,
             e_passive_dmg,
             e_active_pct,
             e_cd,
             r_dmg,
             r_delay,
+            r_cast_time,
             src_e_onhit: intern("E onhit"),
             src_e_active: intern("E active"),
             src_p_wave: intern("P wave"),
@@ -214,7 +240,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -222,7 +248,7 @@ impl Driver for GenDriver {
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.s.q_hit_at = t + self.q_cast_delay;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_time);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -232,6 +258,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         self.s.r_hit_at = t + self.r_delay;
         e.prime_spellblade();
+        self.busy_for(e, self.r_cast_time);
     }
 
     fn events(&self, _e: &Engine, out: &mut Events) -> usize {

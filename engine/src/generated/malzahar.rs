@@ -1,8 +1,10 @@
 //! Malzahar. A pure caster: no basic attacks. Nether Grasp opens the fight
 //! (single cast, its cooldown never returns within the window), Malefic
 //! Visions follows to start its DoT, then Call of the Void (delayed 0.4s
-//! hit) and Void Swarm (summoning Voidlings from Zz'Rot Swarm stacks) go out
-//! on cooldown for the rest of the fight.
+//! hit after its own 0.25s cast) and Void Swarm (summoning Voidlings from
+//! Zz'Rot Swarm stacks) go out on cooldown for the rest of the fight. Casts
+//! go one at a time: Q, E and R each have a cast time that keeps Malzahar
+//! busy (no other cast, no attack) until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -32,6 +34,7 @@ pub struct GenDriver {
     ranks: Ranks,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_delay: f64,
     e_dmg_total: f64,
     e_tick_dmg: f64,
@@ -39,12 +42,14 @@ pub struct GenDriver {
     e_tick_interval: f64,
     e_duration: f64,
     e_cd: f64,
+    e_cast_s: f64,
     w_cd: f64,
     w_per_attack: f64,
     w_duration: f64,
     w_summon_delay: f64,
     w_stack_cap: i64,
     w_attack_interval: f64,
+    r_cast_s: f64,
     r_beam_tick: f64,
     r_beam_ticks: i64,
     r_beam_interval: f64,
@@ -59,6 +64,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     q_hit_at: f64,
     w_ready: f64,
     e_ready: f64,
@@ -74,6 +81,21 @@ struct State {
     void_start: [f64; N_VOID],
     void_end: [f64; N_VOID],
     void_tick_next: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -109,6 +131,7 @@ impl Driver for GenDriver {
         };
 
         let state = State {
+            busy_until: 0.0,
             q_hit_at: INF,
             w_ready: 0.0,
             e_ready: 0.0,
@@ -130,6 +153,7 @@ impl Driver for GenDriver {
             ranks,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_delay: kit.num("gen.Q.postCastDelayS")?,
             e_dmg_total,
             e_tick_dmg,
@@ -137,12 +161,14 @@ impl Driver for GenDriver {
             e_tick_interval,
             e_duration,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_per_attack,
             w_duration: kit.at_rank("gen.W.durationByRank", ranks.w)?,
             w_summon_delay: kit.num("gen.W.summonDelayS")?,
             w_stack_cap: kit.num("gen.W.stackCap")? as i64,
             w_attack_interval: kit.num("gen.W.assumedAttackIntervalS")?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_beam_tick,
             r_beam_ticks,
             r_beam_interval: kit.num("gen.R.beamTickIntervalS")?,
@@ -178,17 +204,17 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.s.stacks = imin(self.s.stacks + 1, self.w_stack_cap);
-        self.s.q_hit_at = t + self.q_delay;
+        self.s.q_hit_at = t + self.q_cast_s + self.q_delay;
         e.prime_spellblade();
         e.ability_cast_proc();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -197,13 +223,13 @@ impl Driver for GenDriver {
         }
         let t = e.st.t;
         self.s.stacks = imin(self.s.stacks + 1, self.w_stack_cap);
-        self.s.r_tether_next = t + self.r_beam_interval;
+        self.s.r_tether_next = t + self.r_cast_s + self.r_beam_interval;
         self.s.r_tether_done = 0;
-        self.s.r_zone_next = t + self.r_zone_interval;
+        self.s.r_zone_next = t + self.r_cast_s + self.r_zone_interval;
         self.s.r_zone_done = 0;
         e.ability_cast_proc();
         e.eclipse_hit();
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -213,7 +239,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_tick_next != INF {
@@ -221,7 +247,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.s.void_tick_next != INF {
@@ -254,12 +280,12 @@ impl Driver for GenDriver {
                 self.s.stacks = imin(self.s.stacks + 1, self.w_stack_cap);
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_active = true;
-                self.s.e_dot_end = t + self.e_duration;
-                self.s.e_tick_next = t + self.e_tick_interval;
+                self.s.e_dot_end = t + self.e_cast_s + self.e_duration;
+                self.s.e_tick_next = t + self.e_cast_s + self.e_tick_interval;
                 e.prime_spellblade();
                 e.ability_cast_proc();
                 e.eclipse_hit();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_TICK) => {
                 if self.s.e_active && t < self.s.e_dot_end {

@@ -1,9 +1,12 @@
 //! Kled. A mixed auto-attacker/ability caster who never dismounts against a
-//! stationary target: Bear Trap on a Rope goes out on cooldown and its
-//! tether pulls 1.75 s later, Violent Tendencies passively arms while off
-//! cooldown and its 4th attack is empowered, Jousting is cast then recast at
-//! its 0.5 s minimum delay every cycle, and Chaaaaaaaarge!!! is cast once at
-//! the opening at its assumed fully-ramped damage.
+//! stationary target: Bear Trap on a Rope goes out on cooldown, taking its
+//! 0.25 s cast time before its first hit lands, then its tether pulls 1.75 s
+//! later; Violent Tendencies passively arms while off cooldown and its 4th
+//! attack is empowered; Jousting is cast then recast at its 0.5 s minimum
+//! delay every cycle; Chaaaaaaaarge!!! is cast once at the opening at its
+//! assumed fully-ramped damage. Casts go one at a time: Bear Trap on a
+//! Rope's cast time keeps Kled busy, and no other cast or attack starts
+//! inside it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -29,6 +32,7 @@ pub struct GenDriver {
     q_pull_dmg: f64,
     q_cd: f64,
     q_pop_time: f64,
+    q_cast_s: f64,
 
     w_flat: f64,
     w_pct: f64,
@@ -54,6 +58,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When Q's pending tether pulls (INF: none pending).
     q_pop_at: f64,
     /// Violent Tendencies: ready time (buff available once past this),
@@ -66,6 +72,21 @@ struct State {
     /// none pending).
     e_ready: f64,
     e_recast_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -85,6 +106,7 @@ impl Driver for GenDriver {
         let r_pct = r_pct_base + bonus_ad / 100.0 * r_ad_coef;
 
         let state = State {
+            busy_until: 0.0,
             q_pop_at: INF,
             w_cd_ready: 0.0,
             w_stacks: 0,
@@ -102,6 +124,7 @@ impl Driver for GenDriver {
             q_pull_dmg: kit.hit("gen.Q.pullDamage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_pop_time: kit.num("gen.Q.tetherPopTimeS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_flat: kit.at_rank("gen.W.flatBase", ranks.w)?,
             w_pct,
@@ -185,7 +208,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -196,7 +219,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.s.q_pop_at = t + self.q_pop_time;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -218,9 +241,9 @@ impl Driver for GenDriver {
         }
         if self.ranks.e > 0 {
             if self.s.e_recast_at != INF {
-                out[n] = (self.s.e_recast_at, Kind::Ev(EV_E_RECAST));
+                out[n] = (self.castable_at(e, self.s.e_recast_at), Kind::Ev(EV_E_RECAST));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -239,7 +262,8 @@ impl Driver for GenDriver {
                 e.deal(self.q_pull_dmg, DType::Physical, self.src_q_pull, false, true, 1.0);
             }
             Kind::Ev(EV_E_CAST) => {
-                // the cooldown starts at this first dash, not the recast
+                // the cooldown starts at this first dash, not the recast;
+                // no cast time, but it still cannot start inside Q's cast
                 self.s.e_ready = t + e.basic_cd(self.e_cd_base);
                 self.s.e_recast_at = t + self.e_recast_delay;
                 e.deal(self.e_dmg, DType::Physical, SRC_E, false, true, 1.0);

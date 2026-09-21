@@ -2,9 +2,12 @@
 //! together replace the engine's own AD hit, blended into one expected-value
 //! instance per attack; an ammo system of 2 shells gates when attacks can
 //! happen at all; Quickdraw is woven in on cooldown purely for its reload +
-//! attack-reset (it deals no damage) and its own cooldown melts per pellet
-//! landed; Q is cast on cooldown for its initial hit and delayed detonation;
-//! W is cast on cooldown; R opens the fight.
+//! attack-reset (it deals no damage, and per the dossier has no cast time)
+//! and its own cooldown melts per pellet landed; Q is cast on cooldown for
+//! its initial hit and delayed detonation; W is cast on cooldown; R opens
+//! the fight. Q, W and R each have a 0.25 s cast time: their damage lands as
+//! the cast starts, then a single `busy_until` keeps Graves from starting
+//! another cast or attack until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -12,14 +15,14 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// Q's powder trail detonation, 2 s after the initial hit.
+/// Q's powder trail detonation, 2 s after the initial hit (a delayed hit,
+/// not a cast).
 const EV_Q_DET: u8 = 0;
 /// W cast on cooldown.
 const EV_W_CAST: u8 = 1;
-/// Quickdraw cast on cooldown.
+/// Quickdraw cast on cooldown (no cast time, but still waits for a cast in
+/// progress).
 const EV_E_CAST: u8 = 2;
-/// R's shell + cone explosion, after its 0.25 s cast.
-const EV_R_SWING: u8 = 3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -38,9 +41,11 @@ pub struct GenDriver {
     q_init_dmg: f64,
     q_det_dmg: f64,
     q_det_delay: f64,
+    q_cast_s: f64,
     q_cd: f64,
     q_cost: f64,
     w_dmg: f64,
+    w_cast_s: f64,
     w_cd: f64,
     w_cost: f64,
     e_cd: f64,
@@ -69,12 +74,25 @@ struct State {
     q_det_at: f64,
     w_ready: f64,
     e_ready: f64,
-    /// R's pending swing time (INF once used or never cast).
-    r_swing_at: f64,
     mana: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// The expected-value pellet blend shared by the passive hit itself and
     /// Quickdraw's per-pellet cooldown reduction.
     fn crit_terms(&self, e: &Engine) -> (f64, f64) {
@@ -98,8 +116,8 @@ impl Driver for GenDriver {
             q_det_at: INF,
             w_ready: 0.0,
             e_ready: 0.0,
-            r_swing_at: INF,
             mana: sheet.mana,
+            busy_until: 0.0,
         };
         Ok(GenDriver {
             ranks,
@@ -114,9 +132,11 @@ impl Driver for GenDriver {
             q_init_dmg: kit.hit("gen.Q.initialDamage", ranks.q, sheet)?,
             q_det_dmg: kit.hit("gen.Q.detonationDamage", ranks.q, sheet)?,
             q_det_delay: kit.num("gen.Q.detonationDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_cost: kit.at_rank("gen.Q.costMana", ranks.q)?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_cost: kit.at_rank("gen.W.costMana", ranks.w)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
@@ -191,7 +211,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 || self.s.mana < self.q_cost {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -202,33 +222,38 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         if self.ranks.r == 0 || self.s.mana < self.r_cost {
             return;
         }
+        // the opening cast (the engine has primed Spellblade): both the
+        // shell hit and the cone explosion land with the cast, which then
+        // keeps Graves busy for its cast time
         self.s.mana -= self.r_cost;
-        self.s.r_swing_at = e.st.t + self.r_cast_s;
+        e.deal(self.r_dmg, DType::Physical, SRC_R, false, true, 1.0);
+        e.deal(self.r_falloff, DType::Physical, self.src_r_falloff, false, true, 1.0);
+        e.ability_cast_proc();
+        e.eclipse_hit();
+        e.ult_hatefog();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.s.q_det_at != INF {
+            // a delayed hit, not a cast: it reports its own time
             out[n] = (self.s.q_det_at, Kind::Ev(EV_Q_DET));
             n += 1;
         }
         if self.ranks.w > 0 && self.s.w_ready != INF {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 && self.s.e_ready != INF {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
-            n += 1;
-        }
-        if self.s.r_swing_at != INF {
-            out[n] = (self.s.r_swing_at, Kind::Ev(EV_R_SWING));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -249,12 +274,14 @@ impl Driver for GenDriver {
                     e.eclipse_hit();
                     e.prime_spellblade();
                     self.s.w_ready = t + e.basic_cd(self.w_cd);
-                    e.lockout();
+                    self.busy_for(e, self.w_cast_s);
                 } else {
                     self.s.w_ready = INF;
                 }
             }
             Kind::Ev(EV_E_CAST) => {
+                // no cast time, so no `busy_for`: it just cannot start
+                // inside another cast (already enforced by castable_at)
                 if self.s.mana >= self.e_cost {
                     self.s.mana -= self.e_cost;
                     if self.s.reloading {
@@ -270,14 +297,6 @@ impl Driver for GenDriver {
                 } else {
                     self.s.e_ready = INF;
                 }
-            }
-            Kind::Ev(EV_R_SWING) => {
-                self.s.r_swing_at = INF;
-                e.deal(self.r_dmg, DType::Physical, SRC_R, false, true, 1.0);
-                e.deal(self.r_falloff, DType::Physical, self.src_r_falloff, false, true, 1.0);
-                e.ability_cast_proc();
-                e.eclipse_hit();
-                e.ult_hatefog();
             }
             other => panic!("unhandled event {other:?}"),
         }

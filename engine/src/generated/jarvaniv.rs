@@ -1,9 +1,11 @@
 //! Jarvan IV. Martial Cadence rides every basic attack, gated by an internal
 //! per-target cooldown that scales with level; Dragon Strike (Q) goes out on
-//! cooldown and shreds armor after its own hit; Demacian Standard (E) goes
-//! out on cooldown for magic damage and doubles Jarvan's bonus attack speed
-//! from its passive while its flag is deployed; Cataclysm (R) opens the
-//! fight, its damage landing after a short leap, and is recast on cooldown.
+//! cooldown, costs its 0.4 s cast time, and shreds armor after its own hit;
+//! Demacian Standard (E) goes out on cooldown for magic damage and doubles
+//! Jarvan's bonus attack speed from its passive while its flag is deployed;
+//! Cataclysm (R) opens the fight, its damage landing after a short leap, and
+//! is recast on cooldown. Casts go one at a time: Q's cast time keeps
+//! Jarvan busy, and every other cast waits for it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +30,7 @@ pub struct GenDriver {
     p_cd: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_shred_dur: f64,
     e_dmg: f64,
     e_cd: f64,
@@ -46,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Martial Cadence: when it may next proc, and the target's health
     /// snapshotted just before the current attack's own damage.
     p_next_ready: f64,
@@ -60,10 +65,26 @@ struct State {
     r_ready: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_next_ready: 0.0,
             p_snapshot_hp: 0.0,
             e_ready: 0.0,
@@ -79,6 +100,7 @@ impl Driver for GenDriver {
             p_cd: kit.at_level("gen.P.cooldownByLevel", level)?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_shred_dur: kit.num("abilities.Q.shred.durationS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
@@ -144,7 +166,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -157,7 +179,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -165,7 +187,7 @@ impl Driver for GenDriver {
             return;
         }
         // the opening cast: the engine has already primed Spellblade; the
-        // leap lands after its travel time
+        // leap has no cast time and lands after its travel time
         let t = e.st.t;
         self.s.r_land_at = t + self.r_travel;
         self.s.r_ready = INF;
@@ -174,14 +196,14 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
             if self.s.r_land_at != INF {
                 out[n] = (self.s.r_land_at, Kind::Ev(EV_R_LAND));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             }
             n += 1;
         }

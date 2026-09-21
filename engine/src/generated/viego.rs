@@ -1,11 +1,14 @@
 //! Viego. Blade of the Ruined King rides every basic attack (a current-health
 //! on-hit rider, plus a second strike whenever a pending mark is consumed);
 //! Q's active thrust, W's blast, and R's arrival damage all apply or consume
-//! that mark. W is charged for the minimum time (its damage does not scale
-//! with charge) and immediately recast for its attack-timer reset. E is a
-//! pure attack-speed self-buff for the duration of its mist. R deals its
-//! arrival damage, applies Blade of the Ruined King's on-hit effects, and
-//! forces a follow-up basic attack.
+//! that mark. Casts go one at a time: Q (0.25 s) and R (0.5 s) each hold a
+//! single `busy_until` in state while they resolve; W and E have no cast time
+//! of their own but still wait for one in progress. W is charged for the
+//! minimum time (its damage does not scale with charge) and immediately
+//! recast for its attack-timer reset. E is a pure attack-speed self-buff for
+//! the duration of its mist. R deals its arrival damage after its cast time,
+//! applies Blade of the Ruined King's on-hit effects, and forces a follow-up
+//! basic attack.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +31,7 @@ pub struct GenDriver {
     windup_fraction: f64,
 
     q_cd: f64,
+    q_cast_s: f64,
     q_active_dmg: f64,
     q_active_critcoef: f64,
     q_onhit_pct: f64,
@@ -61,6 +65,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When a pending mark (from Q's active or W) expires; consumed by the
     /// next on-hit application. -INF: none pending.
     mark_until: f64,
@@ -75,6 +81,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Blade of the Ruined King's on-hit application: the percent-health
     /// rider (with its own partial crit term and a floor), and, if a mark is
     /// pending, the second strike that consumes it (a full, independently
@@ -114,12 +133,14 @@ impl GenDriver {
         e.prime_spellblade();
     }
 
+    /// Heartbreaker's blink: a real 0.25 s (rank-independent) cast time keeps
+    /// Viego busy; the damage lands via a separate delayed event.
     fn fire_r(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
         self.s.r_land_at = t + self.r_cast_s;
         e.prime_spellblade();
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_cast_s);
+        self.busy_for(e, self.r_cast_s);
     }
 }
 
@@ -127,6 +148,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             mark_until: -INF,
             w_ready: 0.0,
             e_ready: 0.0,
@@ -140,6 +162,7 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("viego kit needs attack.windupFraction")?,
 
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_active_dmg: kit.hit("gen.Q.active.damage", ranks.q, sheet)?,
             q_active_critcoef: kit.num("gen.Q.active.critCoef")?,
             q_onhit_pct: kit.at_rank("gen.Q.onhit.pctPercent", ranks.q)? / 100.0,
@@ -206,7 +229,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -220,7 +243,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -235,15 +258,15 @@ impl Driver for GenDriver {
             out[n] = (self.s.r_land_at, Kind::Ev(EV_R_LAND));
             n += 1;
         } else if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         n

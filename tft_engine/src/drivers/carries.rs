@@ -4,7 +4,7 @@
 //! bounces, charges and attack replacements.
 
 use crate::driver::Driver;
-use crate::fight::{Deal, Fight, MANA_LOCK_S};
+use crate::fight::{Deal, Fight, TICK_S};
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
 use crate::pyf::{pyint, pymax, pymin};
@@ -102,7 +102,10 @@ impl Driver for Draven {
             }
             f.dm(d).dots.retain(|x| x.src != "bleed axes");
             if rest > 0.0 {
-                f.deal(rest, DType::Physical, Some(d), "giant axes", Deal::ABILITY_NOCRIT);
+                // "instantly dealing the remaining damage": the same ability
+                // damage the ticks would have paid, so it crits with
+                // Precision exactly as they do (the rest is kept pre-crit).
+                f.deal(rest, DType::Physical, Some(d), "giant axes", Deal::ABILITY);
             }
         }
         // Both passes follow the selected line even if the outward pass
@@ -352,14 +355,25 @@ impl Driver for Lux {
     }
 }
 
-/// Azure Laser: channels while draining mana, ticking damage and flat
-/// magic-resist reduction on the target. With the Riftbeast Alpha Mark,
-/// mana regen accrues per seconds channeled.
+/// Azure Laser: "begin consuming {PercentManaPerSecond} max Mana per second
+/// and channeling a laser" — the channel drains her bar, overflow included,
+/// ticking damage and flat magic-resist reduction on the target until the
+/// bar is empty. There is no mana lock: whatever comes in while she channels,
+/// regen above all, is drained too and lengthens the laser (TFTraits: "No
+/// mana lock: mana keeps coming in during the ability, which drains max mana
+/// and ends at 0 mana. Mana regen makes it last longer." — third party,
+/// adopted like Azir's lock, not verified in game). She does not attack
+/// while channeling. With the Riftbeast Alpha Mark, mana regen accrues per
+/// seconds channeled.
 #[derive(Clone)]
 pub struct Pebbles {
-    channel_until: f64,
+    /// From the cast until the bar runs dry.
+    channeling: bool,
+    /// The laser and the drain are settled through this time.
     last: f64,
     channeled: f64,
+    /// The end event that still counts: every newer projection replaces it.
+    end_tag: u32,
     per_second: RowId,
     mr_reduction: RowId,
     trait_seconds: RowId,
@@ -367,34 +381,20 @@ pub struct Pebbles {
     laser: CalcId,
 }
 
-impl Driver for Pebbles {
-    const NAME: &'static str = "Pebbles";
-    const LANDS_AT_START: bool = true;
-
-    fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Pebbles { channel_until: 0.0, last: 0.0, channeled: 0.0,
-                  per_second: k.row("PercentManaPerSecond"), mr_reduction: k.row("MRReduction"),
-                  trait_seconds: k.row("TraitChannelSecondsTooltip"),
-                  trait_regen: k.row("TraitManaRegenTooltip"), laser: k.calc("MagicDamageCalc1") }
+impl Pebbles {
+    /// Mana the channel consumes per second.
+    fn drain(f: &Fight<Self>) -> f64 {
+        f.row(f.drv.per_second) * f.sheet.mana_max
     }
 
-    fn cast_time(f: &Fight<Self>) -> f64 {
-        1.0 / f.row(f.drv.per_second)
+    /// Mana regeneration per second, as the engine's ticks pay it.
+    fn income(f: &Fight<Self>) -> f64 {
+        f.fx.mana_regen * f.fx.mana_mult
     }
 
-    fn cast(f: &mut Fight<Self>) {
-        let ct = Self::cast_time(f);
-        f.drv.channel_until = f.t + ct;
-        f.drv.last = f.t;
-        f.mana = 0.0;
-        // The endpoint need not coincide with the quarter-second tick.
-        f.after(ct, 0);
-    }
-
-    fn tick(f: &mut Fight<Self>) {
-        let until = f.drv.channel_until;
-        let through = pymin(f.t, until);
-        let span = through - f.drv.last;
+    /// `span` seconds of laser: the damage, the magic-resist strip and the
+    /// Teal Buff's channel time.
+    fn pay(f: &mut Fight<Self>, span: f64) {
         if span <= 0.0 {
             return;
         }
@@ -402,7 +402,6 @@ impl Driver for Pebbles {
             Some(d) => d,
             None => return,
         };
-        f.drv.last = through;
         f.hit_ability(f.drv.laser, Some(d), "laser", span);
         let red = f.row(f.drv.mr_reduction) * span;
         f.dm(d).mr_flat += red;
@@ -417,8 +416,111 @@ impl Driver for Pebbles {
         }
     }
 
-    fn event(f: &mut Fight<Self>, _tag: u32) {
-        Self::tick(f);
+    /// Hold her attacks — and the engine's own cast check, the draining bar
+    /// starts full — until the bar is due to run dry, and queue that exact
+    /// instant once no tick can come before it. The engine pays regen in a
+    /// lump on its ticks, so between them the bar is the mana on the books
+    /// less what has drained since, plus the regen accrued and not yet paid.
+    fn project(f: &mut Fight<Self>) {
+        f.drv.end_tag = f.drv.end_tag.wrapping_add(1);
+        let net = Self::drain(f) - Self::income(f);
+        if net <= 0.0 {
+            // Regen keeps pace with the drain: the laser never stops.
+            f.casting_until = 1e9;
+            return;
+        }
+        let left = pymax(0.0, f.mana / net - (f.t - f.drv.last));
+        f.casting_until = f.t + left;
+        if left <= TICK_S {
+            f.after(left, f.drv.end_tag);
+        }
+    }
+}
+
+impl Driver for Pebbles {
+    const NAME: &'static str = "Pebbles";
+    const LANDS_AT_START: bool = true;
+
+    fn new(k: &Kit, _u: &UnitSpec) -> Self {
+        Pebbles { channeling: false, last: 0.0, channeled: 0.0, end_tag: 0,
+                  per_second: k.row("PercentManaPerSecond"), mr_reduction: k.row("MRReduction"),
+                  trait_seconds: k.row("TraitChannelSecondsTooltip"),
+                  trait_regen: k.row("TraitManaRegenTooltip"), laser: k.calc("MagicDamageCalc1") }
+    }
+
+    /// A bare bar's channel. `cast` replaces the window the engine derives
+    /// from it with the drain's own.
+    fn cast_time(f: &Fight<Self>) -> f64 {
+        1.0 / f.row(f.drv.per_second)
+    }
+
+    fn cast(f: &mut Fight<Self>) {
+        // The engine has taken the cast's cost off the bar and kept the
+        // overflow; this ability spends the bar by draining it instead.
+        f.mana += f.sheet.mana_max;
+        f.drv.channeling = true;
+        f.drv.last = f.t;
+        // No mana lock: regen and procs keep coming in from the cast on.
+        f.lock_until = f.t;
+        Self::project(f);
+    }
+
+    fn tick(f: &mut Fight<Self>) {
+        if !f.drv.channeling {
+            return;
+        }
+        if !f.alive_unit {
+            // A shared fight can kill her mid-channel: the laser dies with her.
+            f.drv.channeling = false;
+            return;
+        }
+        let span = f.t - f.drv.last;
+        if span > 0.0 {
+            // The engine has just paid this interval's regen into the bar.
+            let drain = Self::drain(f);
+            let bar = f.mana - drain * span;
+            f.drv.last = f.t;
+            if bar <= 0.0 {
+                // Dry inside this interval with its end event held up (a
+                // stun in a shared fight) or a rounding away: the bar fell
+                // `net` a second, so it was overdrawn for `over` seconds.
+                // The regen accrued after that stays on the bar.
+                let net = drain - Self::income(f);
+                let over = if net > 0.0 { pymin(span, -bar / net) } else { span };
+                f.drv.channeling = false;
+                f.mana = bar + drain * over;
+                f.casting_until = f.t;
+                Self::pay(f, span - over);
+                return;
+            }
+            f.mana = bar;
+            Self::pay(f, span);
+        }
+        Self::project(f);
+    }
+
+    /// The bar runs dry: the last stretch of laser, then she attacks again.
+    fn event(f: &mut Fight<Self>, tag: u32) {
+        if !f.drv.channeling || tag != f.drv.end_tag {
+            return;
+        }
+        let span = f.t - f.drv.last;
+        let net = Self::drain(f) - Self::income(f);
+        if net <= 0.0 || f.mana / net - span > 1e-6 {
+            // Mana came in since the projection (a takedown's): not yet.
+            Self::project(f);
+            return;
+        }
+        // (a stun in a shared fight can hold this event past the dry bar)
+        let ran = pymin(span, f.mana / net);
+        f.drv.channeling = false;
+        f.drv.last = f.t;
+        // The regen accrued since the last tick went into the drain; the
+        // engine's next tick pays only for the time after this instant.
+        f.mana = 0.0;
+        f.lock_until = f.t;
+        f.casting_until = f.t;
+        Self::pay(f, ran);
     }
 }
 
@@ -540,9 +642,11 @@ impl Driver for Tristana {
         let pct = f.calc(f.drv.speed);
         f.buff_as(pct, dur);
         f.drv.charge = Some((f.t + dur, 0));
-        // "each attack while casting": mana-locked through the charge and
-        // the second after it
-        f.lock_until = pymax(f.lock_until, f.t + dur + MANA_LOCK_S);
+        // "each attack while casting": mana-locked for as long as the
+        // charge runs and no longer (TFTraits: "The mana lock lasts the
+        // 4.00 s the effect runs. Attacks continue." — a third-party
+        // statement, adopted like Azir's, not verified in game).
+        f.lock_until = pymax(f.lock_until, f.t + dur);
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -607,8 +711,9 @@ impl Driver for Varus {
 /// that deal the ability's damage (with on-hit effects; crit only with
 /// Precision, like every attack replacement) and strip flat armor. She is
 /// casting for as long as the feathers last — no mana until they are spent
-/// and the second after — or a 0/50 marksman at 10 mana an attack would
-/// never leave them.
+/// — or a 0/50 marksman at 10 mana an attack would never leave them. The
+/// lock ends with the last feather (TFTraits: "it lasts 5 empowered
+/// attacks"; third party, adopted like Azir's, not verified in game).
 #[derive(Clone)]
 pub struct Xayah {
     feathers: i64,
@@ -650,7 +755,9 @@ impl Driver for Xayah {
         f.dm(target).armor_flat += strip;
         if n - 1 == 0 {
             f.as_extra_until = f.t;
-            f.lock_until = f.t + MANA_LOCK_S;
+            // Attack mana is processed before this hook, so the last
+            // feather grants none; regen resumes for the time after it.
+            f.lock_until = f.t;
         }
     }
 }

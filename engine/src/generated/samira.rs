@@ -4,7 +4,9 @@
 //! stack; Flair is cast on cooldown, Blade Whirl is cast on cooldown despite
 //! its attack lockout, Wild Rush is cast on cooldown for its damage and
 //! attack speed window, and Inferno Trigger fires as soon as 6 Style stacks
-//! and its cooldown both allow.
+//! and its cooldown both allow. Casts go one at a time: Flair and Blade
+//! Whirl each have a real cast time that keeps Samira busy (no other cast,
+//! no attack) until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -34,9 +36,11 @@ pub struct GenDriver {
     /// Flair's damage, with its halved expected crit bonus already baked in.
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_spin_dur: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     e_as_pct: f64,
@@ -53,6 +57,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast (Q or W) in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     /// While t < this, basic attacks and Flair are locked out by the spin.
     w_block_until: f64,
@@ -71,6 +77,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn style_now(&self, t: f64) -> i64 {
         if t - self.s.style_last_hit > self.style_duration {
             0
@@ -108,6 +127,9 @@ impl GenDriver {
         if t < self.s.w_block_until {
             return;
         }
+        if t < self.s.busy_until {
+            return;
+        }
         if t < self.s.r_ready {
             return;
         }
@@ -136,6 +158,7 @@ impl Driver for GenDriver {
         _prestacked: bool,
     ) -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_block_until: -INF,
             w_slash2_at: INF,
@@ -167,9 +190,11 @@ impl Driver for GenDriver {
             style_max: kit.num("gen.P.styleMaxStacks")? as i64,
             q_dmg,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_spin_dur: kit.num("gen.W.spinDurationS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_as_pct: kit.at_rank("gen.E.bonusAsPct", ranks.e)?,
@@ -223,8 +248,8 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        let block = pymax(self.s.r_active_until, self.s.w_block_until);
-        pymax(pymax(e.st.q_ready, block), e.st.t)
+        let block = pymax(pymax(self.s.r_active_until, self.s.w_block_until), self.s.busy_until);
+        self.castable_at(e, pymax(e.st.q_ready, block))
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -237,7 +262,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.note_hit(t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
         self.maybe_cast_r(e);
     }
 
@@ -247,8 +272,8 @@ impl Driver for GenDriver {
             if self.s.w_slash2_at != INF {
                 out[n] = (self.s.w_slash2_at, Kind::Ev(EV_W_SLASH2));
             } else {
-                let block = self.s.r_active_until;
-                out[n] = (pymax(pymax(self.s.w_ready, block), e.st.t), Kind::Ev(EV_W_CAST));
+                let block = pymax(self.s.r_active_until, self.s.busy_until);
+                out[n] = (self.castable_at(e, pymax(self.s.w_ready, block)), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
@@ -278,6 +303,7 @@ impl Driver for GenDriver {
                 let bonus = self.blade_bonus(e);
                 e.deal(bonus, DType::Magic, self.src_p, false, false, 1.0);
                 self.note_hit(t);
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_SLASH2) => {
                 self.s.w_slash2_at = INF;

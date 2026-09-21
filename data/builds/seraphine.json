@@ -10,23 +10,27 @@
   "W"
  ],
  "notes": [
-  "The opening cast is Encore (R): Echo (Stage Presence) starts at its maximum of 2 stacks at the start of the game, so this very first ability cast immediately consumes them, granting a free extra cast of Encore about 1.01 seconds later.",
-  "Encore's damage lands 0.5 seconds after the cast starts (it fires from Seraphine's location at the end of the first cast time); the further 0.5 second phase is a pure lockout on Seraphine, so attacks are held for a full 1.0 second around every Encore cast, and an Echoed Encore is modeled the same way, starting after a further 0.01 second delay.",
-  "High Note and Beat Drop are cast on cooldown; their damage is applied at the moment of the cast, matching the usual 0.25 second cast-time lockout (the extra missile travel time described on the wiki is not modeled, as with Jax's dashes), and an Echoed cast of either resolves 0.25s + 0.01s later the same way.",
-  "Echo stacks up to 2 on any basic ability cast; once at 2 stacks the next cast is doubled for free and stacks reset to 0. The doubled cast does not add a new Echo stack itself, is not cheaper and does not touch the mimicked ability's cooldown, but it is treated as its own separate damage instance (High Note's missing-health amplifier is recalculated against the dummy's health at that later moment).",
+  "Casts go one at a time: a cast takes effect as it starts and then keeps Seraphine busy for its cast time (no other cast, no attack) — tracked as one busy_until in the state, exactly as the guide's reference driver does.",
+  "The opening cast is Encore (R): Echo (Stage Presence) starts at its maximum of 2 stacks at the start of the game, so this very first ability cast immediately consumes them, scheduling a free extra cast of Encore once the first one fully resolves.",
+  "Encore's damage lands 0.5 seconds after the cast starts (it fires from Seraphine's location at the end of the first cast time); that first 0.5s is the busy_until that blocks any other cast and any attack. The further 0.5s phase is a pure lockout on Seraphine's basic attacks only (the wiki: 'the second cast time only serves as a lockout for Seraphine', and she may buffer other casts during it), so attacks alone are held for a full 1.0 second (gen.R.attackLockS) around every Encore cast, while Q/E/the echo event may already start once the first 0.5s ends.",
+  "High Note and Beat Drop are cast on cooldown; their 0.25s cast time is the busy_until window (no other cast, no attack, starts) and their damage lands at the cast, matching the usual reading (the extra missile travel time described on the wiki is not modeled, as with Jax's dashes). An Echoed cast of either resolves 0.01s after that cast time ends, and is itself subject to the same busy_until rule.",
+  "Echo stacks up to 2 on any basic ability cast; once at 2 stacks the next cast is doubled for free (after the mimicked cast's full completion time, plus the 0.01s Echo delay) and stacks reset to 0. The doubled cast does not add a new Echo stack itself, is not cheaper and does not touch the mimicked ability's cooldown, but it is treated as its own separate damage instance (High Note's missing-health amplifier is recalculated against the dummy's health at that later moment).",
   "Harmony grants a Note to Seraphine on every ability cast, including Echoed casts, stacking up to 4 and refreshing a shared 6 second timer. Whenever at least one Note is active, Seraphine's next basic attack fires all of them at the target as separate magic damage instances in addition to the attack's own damage, then the stack is spent.",
   "Note damage is assumed not to critically strike: only the wiki's own basic attack is stated to critically strike, not each Note instance, so Note damage is treated as ordinary (non-crit) on-hit magic damage.",
-  "Surround Sound (W) is never cast: it deals no direct damage, so the cast slot is spent on Q/E/R and attacks instead, which do more damage; it is only included here for completeness.",
+  "Surround Sound (W) is never cast: it deals no direct damage and only shields/heals, so the cast slot is always spent on Q/E/R and attacks instead, which do more damage.",
   "Beat Drop's 70% damage reduction against minions does not apply because the stat dummy counts as a champion.",
   "The 75% damage reduction for Notes that originated from an ally does not apply: with no allies present every Note is Seraphine's own, at full value.",
   "Mana costs are not modeled: at level 16 Seraphine's mana pool comfortably covers the handful of Q/E/R casts made within a fight of this length."
  ],
  "assumed": [
   {
-   "path": "gen.R.castTimeS",
-   "why": "the wiki states Encore's second 0.5s phase is 'a lockout' for Seraphine after the wave fires; assumed this also holds her basic attacks (not just further casts), so the model holds attacks for a full 1.0s (both phases) around each Encore cast."
+   "path": "gen.R.attackLockS",
+   "why": "the wiki states Encore's second 0.5s phase is 'a lockout' for Seraphine's attacks specifically (she may still buffer other casts during it); modeled as 1.0s (both 0.5s phases) of held attacks, while the busy_until that blocks other casts is only the first 0.5s (gen.R.castTimeS)."
   }
  ],
+ "unused": {
+  "W": "Surround Sound only shields/heals; the damage-maximizing rotation never casts it, so its 0.25s cast time never applies to any fight."
+ },
  "abilities": {
   "Q": {
    "name": "High Note",
@@ -109,6 +113,9 @@
    "damageAmpCapPct": 75,
    "castTimeS": 0.25
   },
+  "W": {
+   "castTimeS": 0.25
+  },
   "E": {
    "damage": {
     "base": [
@@ -131,7 +138,8 @@
     ],
     "apRatio": 0.4
    },
-   "castTimeS": 0.5
+   "castTimeS": 0.5,
+   "attackLockS": 1.0
   }
  },
  "attack": {
@@ -139,6 +147,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/seraphine.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/seraphine.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/seraphine.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/seraphine.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

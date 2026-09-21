@@ -10,6 +10,10 @@ Frenzy stacking or a duration-long mana lock:
 https://raw.communitydragon.org/latest/game/characters/da_brambleback18.cdtb.bin.json
 The single-active-buff tests below verify our conservative refresh policy,
 not an independently verified claim about live recast behavior.
+
+Since 2026-09-20 the driver adopts TFTraits' third-party statement that the
+mana lock lasts the eight seconds Frenzy runs (test_tft_driver_fixes pins
+it), so a live Frenzy is only ever refreshed by mana that ignores the lock.
 """
 
 from copy import deepcopy
@@ -112,7 +116,13 @@ class TestConservativeBramblebackFrenzy(unittest.TestCase):
         opening, result = ENGINE.simulate(spec, True)
         self.assertEqual(opening["ad"], 165)
         self.assertEqual(opening["ap"], 130)
-        self.assertGreater(result["casts"], 10)  # repeated overlapping windows exercised
+        # Frenzy now locks mana for its eight seconds (the adopted TFTraits
+        # rule, 2026-09-20), so ordinary mana recasts it only after it has
+        # ended: several windows back to back, none overlapping. The refresh
+        # of a live Frenzy is exercised above through a proc that ignores locks.
+        self.assertGreaterEqual(result["casts"], 3)
+        lands = [hit[0] for hit in events(result, "land")]
+        self.assertTrue(all(later - earlier >= 8 for earlier, later in zip(lands, lands[1:])))
         # At 130 AP the personal ignore is 10% + 30%*1.3 = 49%.
         # Base crit EV is 1.1; no other trait, AD item or proc raises this bound.
         frenzy_hit = 165 * 1.8 * 1.1 / 1.51

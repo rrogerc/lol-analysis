@@ -10,19 +10,23 @@
   "W"
  ],
  "notes": [
-  "Opens with Purgatory (R) at t=0: the totem travels 0.5s then, after a 0.25s landing delay, fires its magic nail damage; if the target is at or below the execute threshold right after that hit, a true-damage execute is dealt in the same resolution (the dossier leaves this timing open; instant resolution is the simplest and most common reading).",
-  "Soul Ignition (W) is cast as soon as it is off cooldown (t=0) purely for its attack-speed buff; its grey-health banking and heal-on-recast do not matter to a damage race against a stationary dummy and are not modeled, nor is its health-per-tick cost (mana/health resources are not modeled per the general rule, since neither plausibly stops a cast inside 15s at this rank).",
-  "Ritual Nails (Q) is cast on cooldown and both free recasts are always taken back-to-back at their fixed 0.5s intervals (unaffected by haste) to land all three nails and reach 3 Soul Nails stacks as fast as possible; the ability's cooldown starts when the last recast lands (post-effect), matching its 'cdstart = post-effect' data.",
+  "Casts go one at a time: Purgatory (0.25s cast time), Ritual Nails and each of its free recasts (0.25s each), and Ashen Pursuit's blink (0.5s) all keep Locke busy for that long, during which no other cast starts and no attack lands; Soul Ignition has no cast time of its own but still waits for any cast in progress before it fires.",
+  "Opens with Purgatory (R) at t=0: its 0.25s cast time elapses first, then (independent of that busy period) the totem travels 0.5s and, after a further 0.25s landing delay, fires its magic nail damage 0.75s after the cast started; if the target's health is then at or below the execute threshold, a true-damage execute resolves in the same instant (the dossier leaves this timing open; instant resolution on the same hit is the simplest and most common reading).",
+  "Once Purgatory's cast time is over, Ritual Nails (Q) is cast (0.25s cast time) and both free recasts are taken back-to-back at their fixed 0.5s intervals (unaffected by haste; each recast is likewise treated as a 0.25s cast that waits behind any other cast in progress) to land all three nails and reach 3 Soul Nails stacks as fast as possible; the ability's cooldown starts when the last recast lands (post-effect).",
+  "Soul Ignition (W) is cast the instant it is off cooldown and no other cast is in progress, purely for its attack-speed buff; its grey-health banking, heal-on-recast, and mana/health costs are not modeled (irrelevant to a damage race against a stationary dummy, and not plausible to bind casts inside 15s at this rank).",
   "Every basic attack applies Silver Stake's (P) bonus magic on-hit, scaled continuously from +10% AP (0% target missing health) up to +20% AP (70%+ missing health, capping there per the wiki's stated formula), and also consumes any live Soul Nails stacks for their bonus damage if present.",
-  "Ashen Pursuit (E) is cast on cooldown: its blink damage lands on cast, and 0.1s later its empowered dash lands separately, dealing its own damage and applying the same on-hit effects (Silver Stake plus Soul Nails consumption) to the target; the dash does not touch the attack timer, matching the wiki's note that it is not a basic attack.",
+  "Ashen Pursuit (E) is cast on cooldown as soon as it is free of any other cast in progress: its blink deals damage on cast and keeps Locke busy for its 0.5s cast time; 0.1s after the cast started (independent of the cast-time busy period, per the dossier's fixed delay), the empowered dash lands separately, dealing its own damage and applying the same on-hit effects (Silver Stake plus Soul Nails consumption); the dash itself has no cast time and does not touch the attack timer, matching the wiki's note that it is not a basic attack.",
   "Locke's permanent Sealed Champion stacks (from prior kills, raising R's execute threshold) are assumed to be 0 for a level-16 damage fight with no prior takedowns.",
-  "W's cooldown array uses the ddragon/wiki-agreeing values [18,17,16,15,14] rather than the bin's disagreeing [20,18,16,14,12].",
-  "R's cast time uses the bin's 0.25s cast lock; the wiki's separate 0.5s is modeled as the totem's travel time before its 0.25s landing delay, so total time from cast to nail damage is 0.75s."
+  "W's cooldown array uses the ddragon/wiki-agreeing values [18,17,16,15,14] rather than the bin's disagreeing [20,18,16,14,12]."
  ],
  "assumed": [
   {
    "path": "gen.R.assumedSealedStacks",
    "why": "permanent execute-threshold stacks earned by prior kills; a fresh damage-dummy fight has none"
+  },
+  {
+   "path": "gen.R.castTimeS",
+   "why": "the wiki infobox's 0.5s is the totem's travel/queue time to the target location, not the champion-locking cast animation; the bin's 0.25s castTime field is used as the actual cast time that keeps Locke busy"
   }
  ],
  "abilities": {
@@ -152,7 +156,8 @@
    "recastIntervalS": 0.5,
    "ammo": 3,
    "maxStacks": 3,
-   "nailDurationS": 4
+   "nailDurationS": 4,
+   "castTimeS": 0.25
   },
   "W": {
    "asPctByLevel": [
@@ -198,7 +203,8 @@
     ],
     "apRatio": 0.4
    },
-   "dashDelayS": 0.1
+   "dashDelayS": 0.1,
+   "castTimeS": 0.5
   },
   "R": {
    "damage": {
@@ -217,7 +223,8 @@
    "executePerStack": 0.005,
    "assumedSealedStacks": 0,
    "travelS": 0.5,
-   "landDelayS": 0.25
+   "landDelayS": 0.25,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -225,6 +232,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/locke.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/locke.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/locke.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/locke.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

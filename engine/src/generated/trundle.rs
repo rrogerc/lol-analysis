@@ -3,7 +3,8 @@
 //! grants Trundle bonus AD; Frozen Domain (W) is a no-cast-time attack-speed
 //! buff kept up on cooldown; Subjugate (R) is cast at t=0 and drains %max HP
 //! magic damage half on-cast and half over four ticks while shredding the
-//! target's armor/MR. Pillar of Ice (E) deals no damage and is never cast.
+//! target's armor/MR. Pillar of Ice (E) deals no damage and is never cast
+//! (its 0.25 s cast time is kept in the kit for completeness only).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -70,6 +71,9 @@ impl Driver for GenDriver {
             r_next_tick_at: INF,
             r_tick_dmg: 0.0,
         };
+        // Pillar of Ice (E) is never cast; its cast time is still read here so
+        // the number is validated against the kit even though it goes unused.
+        let _e_cast_time_unused = kit.num("gen.E.castTimeS")?;
         Ok(GenDriver {
             ranks,
             attack_range: sheet.base_attack_range,

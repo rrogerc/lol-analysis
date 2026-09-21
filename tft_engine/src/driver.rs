@@ -9,6 +9,11 @@
 //! animation unless `LANDS_AT_START`), `tick` every 0.25 s, `hit` after
 //! the unit takes damage, `kill` when a dummy dies to the unit, `died`
 //! when the unit falls, `event` for anything queued with `f.after`.
+//!
+//! The fight opens the cast's window (no attacks, no mana) before calling
+//! `cast_started` and `cast`, and never overrules `f.casting_until` or
+//! `f.lock_until` after a driver has written them; `fight.rs`'s module doc
+//! has the rule and the convention for an effect-long lock.
 
 use crate::fight::Fight;
 use crate::kit::Kit;
@@ -32,7 +37,10 @@ pub trait Driver: Clone + Sized + Send {
 
     /// Effects explicitly active during the already-modeled cast window.
     /// This does not add a second animation or move the landing callback.
-    fn cast_started(_f: &mut Fight<Self>, _duration: f64) {}
+    /// `lands` is how long from now the ability takes effect — the cast
+    /// window's `effectAt` where the unit has a timeline, the driver's own
+    /// channel where it declares one, the bin's cast time otherwise.
+    fn cast_started(_f: &mut Fight<Self>, _lands: f64) {}
 
     fn attack(f: &mut Fight<Self>, target: usize) {
         f.hit_attack(target, 1.0, "auto");

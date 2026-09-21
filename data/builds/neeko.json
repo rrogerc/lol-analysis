@@ -11,11 +11,12 @@
  ],
  "notes": [
   "Inherent Glamour (P) and Shapesplitter's clone (W active) need an allied champion or a non-champion unit to disguise as or send the clone toward; with no allies, minions or terrain in this fight they contribute nothing, so only W's on-hit passive is modeled.",
-  "Pop Blossom is cast immediately at t = 0; its dossier is unsettled on whether the 1.25s wind-up blocks actions before the 0.6s cast time proper, so this kit takes the higher-impact reading (Neeko is airborne for most of it) and holds all attacks, Q and E until the full 1.25 + 0.6 = 1.85s has elapsed, when the damage lands. Its ~90-120s cooldown means it is never available again inside the fight.",
-  "Blooming Burst's up to two re-blooms occur automatically at a fixed 0.75s interval, since the dummy always counts as a hit champion; only the initial burst is treated as the 'cast' for on-cast item procs (Muramana, Spellblade, Eclipse) per the dossier's unsettled reading, the re-blooms are pure follow-up damage.",
+  "Casts go one after another: Neeko keeps one busy_until timer. Blooming Burst and Tangle-Barbs each have a 0.25s cast time (the dossier's castTime) during which no other cast and no attack starts; Pop Blossom's 1.25s wind-up plus 0.6s cast time are both treated as commitment time before its damage lands, since the dossier is unsettled on whether the wind-up alone blocks actions and this is the higher-impact reading.",
+  "Pop Blossom is cast immediately at t = 0 and commits Neeko (no other cast, no attack) until 1.25 + 0.6 = 1.85s have elapsed, when its damage lands. Its ~90-120s cooldown means it is never available again inside the fight.",
+  "Blooming Burst's up to two re-blooms occur automatically at a fixed 0.75s interval, since the dummy always counts as a hit champion; they are not new casts (no further cast time), just delayed damage from the original cast. Only the initial burst is treated as the 'cast' for on-cast item procs (Muramana, Spellblade, Eclipse) per the dossier's unsettled reading.",
   "Q's and W's bonus monster damage is not applied since the dummy counts as a champion, not a monster.",
   "Shapesplitter's passive is the only source of W damage in this fight: every attack adds a refreshing stack (cap 2), and the attack that reaches 2 stacks consumes them for a non-crit bonus magic on-hit strike; the bonus movement speed from both the passive and the active is irrelevant to damage.",
-  "Tangle-Barbs is cast as soon as its 0.25s cast time allows and thereafter on cooldown; its root duration does not matter since the dummy never acts.",
+  "Tangle-Barbs is cast as soon as its 0.25s cast time and any other cast in progress allow, and thereafter on cooldown; its root duration does not matter since the dummy never acts.",
   "Mana is not modeled: at level 16 the handful of Q/E casts over the fight window do not plausibly exhaust Neeko's mana pool."
  ],
  "abilities": {
@@ -80,7 +81,8 @@
     ],
     "apRatio": 0.25
    },
-   "repeatDelayS": 0.75
+   "repeatDelayS": 0.75,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -105,7 +107,8 @@
      210
     ],
     "apRatio": 0.65
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -125,6 +128,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/neeko.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/neeko.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/neeko.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/neeko.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

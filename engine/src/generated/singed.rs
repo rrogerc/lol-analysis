@@ -1,8 +1,9 @@
 //! Singed. Poison Trail is toggled on before the fight and ticks continuously
 //! on the stationary, always-in-range dummy; Insanity Potion is cast at the
 //! opening for its AP buff (which lasts the whole fight and boosts both Q and
-//! E); Fling goes out on cooldown for its burst; Mega Adhesive is never cast
-//! since it deals no damage.
+//! E); Fling goes out on cooldown for its burst, with its 0.25 s cast time
+//! keeping Singed busy for that window; Mega Adhesive is never cast since it
+//! deals no damage.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,11 +26,12 @@ pub struct GenDriver {
     q_tick_ap_ratio: f64,
     q_tick_interval: f64,
     /// Fling: base damage (with base AP already folded in), the raw AP
-    /// ratio, the target-max-health fraction, and its cooldown.
+    /// ratio, the target-max-health fraction, its cooldown and cast time.
     e_dmg_base: f64,
     e_ap_ratio: f64,
     e_target_hp_ratio: f64,
     e_cd: f64,
+    e_cast_s: f64,
     /// Insanity Potion: bonus AP while active, and its duration.
     r_bonus_ap: f64,
     r_duration: f64,
@@ -40,6 +42,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Whether the one-time extra poison instance (on the very first
     /// application of the fight) has already been dealt.
     q_first_tick_done: bool,
@@ -49,6 +53,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Insanity Potion's bonus AP, if its buff is currently active.
     fn bonus_ap(&self, t: f64) -> f64 {
         if t < self.s.r_until {
@@ -63,6 +80,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             q_first_tick_done: false,
             e_ready: 0.0,
             r_until: -INF,
@@ -78,6 +96,7 @@ impl Driver for GenDriver {
             e_ap_ratio: kit.num("gen.E.damage.apRatio")?,
             e_target_hp_ratio: kit.at_rank("gen.E.targetMaxHpRatio", ranks.e)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_bonus_ap: kit.at_rank("gen.R.bonusAP", ranks.r)?,
             r_duration: kit.num("gen.R.durationS")?,
             s: state,
@@ -110,6 +129,8 @@ impl Driver for GenDriver {
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
+        // the toggle's tick: not an ability activation, no cast time, no
+        // lockout, and it never waits on another cast in progress
         let t = e.st.t;
         e.st.q_ready = t + self.q_tick_interval;
         let bonus_ap = self.bonus_ap(t);
@@ -132,7 +153,7 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         n
@@ -142,6 +163,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_E) => {
+                e.st.q_ready = e.st.q_ready; // no-op: keeps Q's own schedule untouched
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 let bonus_ap = self.bonus_ap(t);
                 let amt = self.e_dmg_base
@@ -151,7 +173,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

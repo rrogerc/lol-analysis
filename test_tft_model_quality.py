@@ -43,15 +43,23 @@ class TestFrontlineItemization(unittest.TestCase):
         self.assertEqual(self.before["poolRevision"], self.after["poolRevision"])
         self.assertEqual(self.before["poolSplit"], "search")
 
-    def test_enemy_position_exposes_a_frontline_failure_hidden_at_the_center(self):
+    def test_enemy_position_decides_whether_the_frontline_failure_shows(self):
+        """Where the enemy stands still decides whether this board's thin
+        frontline costs it the fight, and defense still converts the losing
+        position. Which position that is flipped on 2026-09-20: the cast
+        timelines and the effect-long mana locks changed every unit on this
+        board (Nidalee, Brambleback, Diana, Morgana) and its opponent's, so
+        the center is now the loss and the flanks the wins. The outcomes are
+        re-pinned like a golden; the phenomenon the fixture was frozen for is
+        unchanged."""
         fights = {fight["key"]: fight for fight in self.before["matchups"]}
         better = {fight["key"]: fight for fight in self.after["matchups"]}
         for initiative in (0, 1):
             center = f"aphelios-rapidfire-p0-i{initiative}"
-            flank = f"aphelios-rapidfire-p2-i{initiative}"
-            self.assertEqual(fights[center]["outcome"], "win")
-            self.assertEqual(fights[flank]["outcome"], "loss")
-            self.assertEqual(better[flank]["outcome"], "win")
+            flanks = [f"aphelios-rapidfire-p{position}-i{initiative}" for position in (2, 4)]
+            self.assertEqual(fights[center]["outcome"], "loss")
+            self.assertEqual([fights[flank]["outcome"] for flank in flanks], ["win", "win"])
+            self.assertEqual(better[center]["outcome"], "win")
         self.assertEqual(self.before["opponentCount"], 12)
         self.assertEqual(self.before["metrics"]["benchmarkCount"], 72)
 

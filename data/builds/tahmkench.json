@@ -11,18 +11,22 @@
  ],
  "notes": [
   "Opening: Tahm Kench auto-attacks and casts Tongue Lash (Q) on cooldown, and casts Abyssal Dive (W) on cooldown as soon as it is up.",
+  "Casts go one at a time: Tongue Lash (0.25 s) and Devour (0.25 s) each keep Tahm Kench busy for their cast time before any other cast or attack starts, exactly as the dossier's castTime states; Abyssal Dive has no cast time but its 1.35 s channel, 0.15 s pre-blink delay and 0.65 s post-blink lockout are modeled as their own busy window since the dossier states them as real time after the cast.",
   "Every basic attack and every Tongue Lash hit carries An Acquired Taste's bonus magic damage (a fixed number for the fight, computed once from the build's bonus health and AP) and adds a stack of it to the target.",
   "Attacks and Tongue Lash land well inside An Acquired Taste's 5 s stack duration for the whole fight, so stacks never lapse; the driver does not model the per-stack decay once the duration ends, since it is never reached.",
-  "As soon as the target holds 3 stacks of An Acquired Taste, Devour (R) is cast on it, consuming the stacks; Regurgitate is then cast at the earliest legal moment (1 s later, rather than waiting for the automatic 3 s cast) to land its target-max-health magic damage as soon as possible and minimize the window where the target is swallowed and untargetable. Tahm Kench cannot attack or cast Q/W during the swallow or the 0.4 s lockout after Regurgitate.",
+  "As soon as the target holds 3 stacks of An Acquired Taste, Devour (R) is cast on it (0.25 s cast time), consuming the stacks; Regurgitate is then cast at the earliest legal moment (1 s later, rather than waiting for the automatic 3 s cast) to land its target-max-health magic damage as soon as possible and minimize the window where the target is swallowed and untargetable. Tahm Kench cannot attack or cast Q/W during Devour's cast time, the swallow, or the 0.4 s lockout after Regurgitate.",
   "Abyssal Dive's 1.35 s channel, 0.15 s pre-blink delay and 0.65 s post-blink lockout are all treated as time Tahm Kench cannot attack or cast; its damage lands at the end of the delay. Its cooldown starts on cast; since the dummy counts as an enemy champion it is always hit, so the cooldown (and, unmodeled, 40% of the mana cost) is refunded by the same per-rank percentage every cast.",
   "An Acquired Taste's flat per-level base uses the dossier's reconciled level-by-level array (matching the wiki's stated progression) rather than the raw sheet byLevel array, which did not match the wiki's plateau shape; this is the open reading picked.",
   "An Acquired Taste's per-stack decay interval (0.67 s wiki vs 1 s sheet PerStackDecayTimer) is left unmodeled entirely, since stacks never lapse in this rotation regardless of which is correct.",
-  "Tongue Lash's damage is treated as landing on cast; its missile travel time beyond the usual 0.25 s cast lockout is not modeled, since every cast is assumed to hit.",
+  "Tongue Lash's 0.25 s cast time is the only delay modeled for it: its damage lands with the cast, and its missile travel time beyond that is not modeled, since every cast is assumed to hit.",
   "Devour's cooldown uses the ddragon/wiki array [120, 100, 80] directly, since the bin's cooldown-multiplier term (CooldownMultiplierCalculationPart) could not be resolved.",
-  "Thick Skin (E) is purely defensive (grey health storage, decay-heal, shield) and deals no damage, so it is never cast; it is maxed last.",
+  "Thick Skin (E) is purely defensive (grey health storage, decay-heal, shield) and deals no damage, so it is never cast; see 'unused'. It is maxed last.",
   "Mana is not modeled: at level 16 the pool comfortably covers this cadence of Q/W/R, especially with Abyssal Dive's mana refund on every cast."
  ],
  "assumed": [],
+ "unused": {
+  "E": "Thick Skin is purely defensive (grey health storage, decay-heal, shield): it deals no damage, so the driver never casts it."
+ },
  "abilities": {
   "Q": {
    "name": "Tongue Lash",
@@ -102,7 +106,8 @@
      255
     ],
     "apRatio": 1.0
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -136,7 +141,8 @@
    "targetMaxHpRatioPerAp": 0.0007,
    "recastDelayS": 1,
    "postRegurgitateLockoutS": 0.4,
-   "stacksNeeded": 3
+   "stacksNeeded": 3,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -144,6 +150,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/tahmkench.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/tahmkench.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/tahmkench.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/tahmkench.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

@@ -2,7 +2,8 @@
 //! cooldown, stacking Hyper (W) on every on-hit / Q hit and building Rage
 //! from Q's first hit and on-hit attacks; the instant Rage reaches 100 he
 //! transforms into Mega Gnar, who casts Boulder Toss (Q), Wallop (W) and
-//! Crunch (E) on the same shared cooldowns plus GNAR! (R) on its own.
+//! Crunch (E) on the same shared cooldowns plus GNAR! (R) on its own. Q, W
+//! and R each keep Gnar busy for their own cast time; Hop/Crunch has none.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -43,6 +44,7 @@ pub struct GenDriver {
     q_mega_dmg: f64,
     q_mega_keep: f64,
     q_cd: f64,
+    q_cast_s: f64,
 
     w_hyper_dmg: f64,
     w_hyper_target_hp_ratio: f64,
@@ -50,6 +52,7 @@ pub struct GenDriver {
     hyper_dur: f64,
     w_mega_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
 
     e_mini_dmg: f64,
     e_mega_dmg: f64,
@@ -62,6 +65,7 @@ pub struct GenDriver {
     r_dmg: f64,
     r_dmg_delay: f64,
     r_cd: f64,
+    r_cast_s: f64,
 
     src_w_hyper: SourceId,
     src_e_shock: SourceId,
@@ -87,11 +91,25 @@ struct State {
     e_crunch_impact_at: f64,
     e_crunch_shock_at: f64,
     r_dmg_at: f64,
-    /// Q/W/R are locked out while this is in the future (Crunch's impact+shockwave window).
+    /// The cast in progress ends here: no other cast, no attack before it
+    /// (also used to hold everything through Crunch's impact+shockwave window).
     busy_until: f64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Hyper: applied by every on-hit attack and damaging ability hit while
     /// Mini Gnar; the third stack (within its duration) consumes them all.
     fn apply_hyper(&mut self, e: &mut Engine, t: f64) {
@@ -168,6 +186,7 @@ impl Driver for GenDriver {
             q_mega_dmg: kit.hit("gen.Q.megaDamage", ranks.q, sheet)?,
             q_mega_keep: 1.0 - kit.num("gen.Q.megaCDRefund")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             w_hyper_dmg: kit.hit("gen.W.hyperDamage", ranks.w, sheet)?,
             w_hyper_target_hp_ratio: kit.at_rank("gen.W.hyperTargetHpRatio", ranks.w)?,
@@ -175,6 +194,7 @@ impl Driver for GenDriver {
             hyper_dur: kit.num("gen.W.hyperStackDurationS")?,
             w_mega_dmg: kit.hit("gen.W.megaDamage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
 
             e_mini_dmg: kit.hit("gen.E.miniDamage", ranks.e, sheet)?,
             e_mega_dmg: kit.hit("gen.E.megaDamage", ranks.e, sheet)?,
@@ -187,6 +207,7 @@ impl Driver for GenDriver {
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_dmg_delay: kit.num("gen.R.dmgDelayS")?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
 
             src_w_hyper: intern("W onhit"),
             src_e_shock: intern("E shockwave"),
@@ -235,7 +256,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(pymax(e.st.q_ready, e.st.t), self.s.busy_until)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -255,13 +276,13 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(pymax(self.s.e_ready, e.st.t), self.s.busy_until), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_hop_land_at != INF {
@@ -277,11 +298,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 && self.s.form_mega {
-            out[n] = (pymax(pymax(self.s.w_ready, e.st.t), self.s.busy_until), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.r > 0 && self.s.form_mega {
-            out[n] = (pymax(pymax(self.s.r_ready, e.st.t), self.s.busy_until), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         if self.s.r_dmg_at != INF {
@@ -336,13 +357,13 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
                 self.s.r_dmg_at = t + self.r_dmg_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_DMG) => {
                 self.s.r_dmg_at = INF;

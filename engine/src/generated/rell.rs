@@ -6,7 +6,11 @@
 //! (self-cast, since no ally exists, but the explosion still lands on the
 //! dummy through the qualifying attack or Q), and attacks continuously so
 //! Break the Mold's on-hit damage and stacking resistance shred apply on
-//! every hit.
+//! every hit. Casts go one at a time: Shattering Strike, Crash Down and
+//! Magnet Storm each have a real cast time (plus, for Q, a further post-cast
+//! lockout) that is tracked as one `busy_until` and blocks any other cast or
+//! attack from starting until it ends; Mount Up and Full Tilt have no cast
+//! time and cost nothing.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -36,12 +40,15 @@ pub struct GenDriver {
 
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
+    q_post_lock_s: f64,
 
     w_crash_dmg: f64,
     w_mount_dmg: f64,
     w_cd: f64,
     w_dismount_resist_pct: f64,
     w_dismount_as_pct: f64,
+    w_crash_cast_s: f64,
     w_mount_cast_s: f64,
     w_mount_window_s: f64,
 
@@ -51,6 +58,7 @@ pub struct GenDriver {
 
     r_tick_dmg: f64,
     r_cd: f64,
+    r_cast_s: f64,
     r_tick_interval: f64,
     r_ticks_total: i64,
 
@@ -66,6 +74,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     mounted: bool,
     w_ready: f64,
     mount_armed: bool,
@@ -81,6 +91,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn apply_p_stack(&mut self, e: &mut Engine) {
         let t = e.st.t;
         if t - self.s.p_last_hit > self.p_stack_duration {
@@ -95,7 +118,6 @@ impl GenDriver {
 
     fn start_r(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        e.lockout();
         e.prime_spellblade();
         e.ability_cast_proc();
         e.eclipse_hit();
@@ -103,6 +125,7 @@ impl GenDriver {
         self.s.r_ticks_left = self.r_ticks_total;
         self.s.r_tick_next = t + self.r_tick_interval;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
+        self.busy_for(e, self.r_cast_s);
     }
 
     /// If Full Tilt is armed and still within its window, this qualifying
@@ -133,6 +156,7 @@ impl Driver for GenDriver {
         let e_pct = e_base + (e_ap_coef / 100.0) * sheet.ap;
 
         let state = State {
+            busy_until: 0.0,
             mounted: true,
             w_ready: 0.0,
             mount_armed: false,
@@ -159,12 +183,15 @@ impl Driver for GenDriver {
 
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
+            q_post_lock_s: kit.num("gen.Q.postCastLockoutS")?,
 
             w_crash_dmg: kit.hit("gen.W.crashDownDamage", ranks.w, sheet)?,
             w_mount_dmg: kit.hit("gen.W.mountUpDamage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_dismount_resist_pct: kit.num("gen.W.dismountResistPct")?,
             w_dismount_as_pct: kit.num("gen.W.dismountAsPct")?,
+            w_crash_cast_s: kit.num("gen.W.crashCastTimeS")?,
             w_mount_cast_s: kit.num("gen.W.mountUpCastTimeS")?,
             w_mount_window_s: kit.num("gen.W.mountUpWindowS")?,
 
@@ -174,6 +201,7 @@ impl Driver for GenDriver {
 
             r_tick_dmg: kit.hit("gen.R.tickDamage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             r_tick_interval,
             r_ticks_total,
 
@@ -241,7 +269,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -252,7 +280,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.try_consume_e(e);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s + self.q_post_lock_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -265,18 +293,18 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
             if self.s.r_ticks_left > 0 {
                 out[n] = (self.s.r_tick_next, Kind::Ev(EV_R_TICK));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             }
             n += 1;
         }
@@ -294,13 +322,13 @@ impl Driver for GenDriver {
                     e.ability_cast_proc();
                     e.eclipse_hit();
                     e.prime_spellblade();
-                    e.lockout();
+                    self.busy_for(e, self.w_crash_cast_s);
                 } else {
                     self.s.mounted = true;
                     self.s.mount_armed = true;
                     self.s.mount_expire = t + self.w_mount_window_s;
                     e.prime_spellblade();
-                    e.st.next_attack = t + self.w_mount_cast_s;
+                    e.st.next_attack = pymax(e.st.next_attack, t + self.w_mount_cast_s);
                 }
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
             }

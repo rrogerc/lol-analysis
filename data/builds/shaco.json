@@ -10,13 +10,14 @@
   "W"
  ],
  "notes": [
-  "Opens with Deceive (Q) at t=0 to blink and go invisible; its empowered-attack bonus is applied to the very next basic attack, treating that attack as always landing inside the 0.25 s window since the driver casts Q right before an attack lands.",
+  "Casts go one at a time: Hallucinate (R) is the ability the engine offers at t=0 and it has a 0.25 s cast time, so it starts first and keeps Shaco busy until 0.25 s; Deceive (Q) has no cast time of its own but still cannot start inside another cast, so it goes out right after, at 0.25 s, rather than in the same instant as R.",
+  "Deceive's empowered-attack bonus is applied to the very next basic attack after the cast (the driver casts Q right before an attack lands, so that attack always falls inside the 0.25 s window).",
   "Backstab (P), and the from-behind bonuses on Deceive and Two-Shiv Poison, are assumed to apply for the whole fight (the dummy is treated as being attacked from behind throughout), the most common in-game reading and the one that maximizes a well-played Shaco's damage.",
   "Deceive's empowered attack always deals its guaranteed critical strike: the multiplier is computed as an expected value blending the fixed 1 + 0.6*(critDamage-1) non-rolled modifier with the full critDamage multiplier, weighted by the build's crit chance, per the bin's QCritDamageMod note.",
   "Deceive's cooldown starts post-effect (after its stealth duration ends), so the true gap between casts is stealth duration plus the listed cooldown.",
-  "Jack in the Box (W) is thrown at the dummy's feet and assumed to spring the instant it finishes arming (2 s) since the dummy stands in its detection range; it then fires the single-target tick (only one enemy is ever present) every 0.5 s for 5 s (10 ticks) before expiring, and is recast on cooldown.",
-  "Two-Shiv Poison (E) is cast on cooldown (8 s); its dagger damage and its Backstab bonus are each multiplied 1.5x whenever the dummy's current health is below 30% of its maximum.",
-  "Hallucinate (R) is cast once at t=0 (its 80-100 s cooldown never comes back up in a fight this short). Its real payoff (the clone's explosion and three mini-boxes) only resolves when the clone dies or expires at 18 s, which a stationary, non-retaliating dummy will never cause inside an 8-15 s fight; per the dossier's own unsettled-question options, this kit assumes the simulator's dummy fight forces that payoff to resolve immediately after the 0.25 s cast completes, so R's damage is counted rather than wasted. The three mini-boxes are modeled as one combined magic-damage tick (three simultaneous single-target hits) every 0.5 s for their 6 s lifetime, since R's boxes 'possess Jack in the Box effects' and no separate interval is given for them.",
+  "Jack in the Box (W) has a 0.25 s cast time (keeping Shaco busy until it ends, no other cast or attack starts inside it) and is thrown at the dummy's feet, assumed to spring the instant it finishes arming (2 s) since the dummy stands in its detection range; it then fires the single-target tick (only one enemy is ever present) every 0.5 s for 5 s (10 ticks) before expiring, and is recast on cooldown.",
+  "Two-Shiv Poison (E) also has a 0.25 s cast time (same busy-until rule) and is cast on cooldown (8 s); its dagger damage and its Backstab bonus are each multiplied 1.5x whenever the dummy's current health is below 30% of its maximum.",
+  "Hallucinate (R) is cast once at t=0 (its 80-100 s cooldown never comes back up in a fight this short); its 0.25 s cast time keeps Shaco busy until 0.25 s, after which its damage is assumed to resolve immediately (see below). Its real payoff (the clone's explosion and three mini-boxes) only resolves when the clone dies or expires at 18 s, which a stationary, non-retaliating dummy will never cause inside an 8-15 s fight; per the dossier's own unsettled-question options, this kit assumes the simulator's dummy fight forces that payoff to resolve right as the 0.25 s cast completes, so R's damage is counted rather than wasted. The three mini-boxes are modeled as one combined magic-damage tick (three simultaneous single-target hits) every 0.5 s for their 6 s lifetime, since R's boxes 'possess Jack in the Box effects' and no separate interval is given for them.",
   "Two conflicting sources exist for R's single-target mini-box base damage (bin HallucinateFull.STBaseDamage=[25,50,75] vs. the ability JSON's recorded [25,75,75]); this kit uses the bin's [25,50,75], which also matches a literal arithmetic reading of the wiki's '25 to 75' over 3 ranks.",
   "Mana is not modeled: Q/E/W/R costs (40/70-50/75/100) stay well under a level-16 mana pool across a 15 s fight and never gate a cast."
  ],
@@ -129,7 +130,8 @@
    },
    "armTimeS": 2,
    "activeDurationS": 5,
-   "tickIntervalS": 0.5
+   "tickIntervalS": 0.5,
+   "castTimeS": 0.25
   },
   "E": {
    "damage": {
@@ -167,7 +169,8 @@
     "apRatio": 0.1
    },
    "executeThreshold": 0.3,
-   "executeMult": 1.5
+   "executeMult": 1.5,
+   "castTimeS": 0.25
   },
   "R": {
    "explosion": {
@@ -197,6 +200,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/shaco.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/shaco.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/shaco.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/shaco.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

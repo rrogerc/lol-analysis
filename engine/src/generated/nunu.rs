@@ -1,9 +1,9 @@
 //! Nunu & Willump. An ability-driven rotation: Absolute Zero opens the fight
 //! and is channeled to full duration, Biggest Snowball Ever! is channeled to
 //! its damage cap then released, Snowball Barrage fires all three volleys
-//! back-to-back plus its delayed Snowbound root tick, and Consume fills the
-//! gaps. Call of the Freljord grants a brief attack-speed buff whenever
-//! damage lands on the dummy.
+//! back-to-back plus its delayed Snowbound root tick, and Consume (a 0.3s
+//! cast) fills the gaps. Call of the Freljord grants a brief attack-speed
+//! buff whenever damage lands on the dummy.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -33,6 +33,7 @@ pub struct GenDriver {
     p_retrigger_cd: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_max_time: f64,
@@ -52,12 +53,11 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// A cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Call of the Freljord: current buff expiry and next time it may retrigger.
     p_buff_until: f64,
     p_next_ok: f64,
-    /// Shared gate: blocks starting Absolute Zero/Biggest Snowball/Snowball
-    /// Barrage while another of them is in progress.
-    busy_until: f64,
     /// Absolute Zero: when its explosion lands (INF: none pending).
     r_damage_at: f64,
     /// Biggest Snowball Ever!
@@ -74,6 +74,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Call of the Freljord triggers on any damage dealt to the dummy,
     /// subject to its per-target retrigger cooldown.
     fn trigger_passive(&mut self, t: f64) {
@@ -94,9 +107,9 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_buff_until: 0.0,
             p_next_ok: 0.0,
-            busy_until: 0.0,
             r_damage_at: INF,
             w_ready: 0.0,
             w_channeling: false,
@@ -119,6 +132,7 @@ impl Driver for GenDriver {
             p_retrigger_cd: kit.num("gen.P.retriggerCooldownS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_max_time: kit.num("gen.W.maxDamageTimeS")?,
@@ -172,7 +186,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, pymax(self.s.busy_until, e.st.t))
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -183,7 +197,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.trigger_passive(t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -208,8 +222,7 @@ impl Driver for GenDriver {
             if self.s.w_channeling {
                 out[n] = (self.s.w_release_at, Kind::Ev(EV_W_RELEASE));
             } else {
-                let cand = pymax(self.s.w_ready, pymax(self.s.busy_until, e.st.t));
-                out[n] = (cand, Kind::Ev(EV_W_START));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_START));
             }
             n += 1;
         }
@@ -217,8 +230,7 @@ impl Driver for GenDriver {
             if self.s.e_seq_active {
                 out[n] = (self.s.e_next_volley_at, Kind::Ev(EV_E_VOLLEY));
             } else {
-                let cand = pymax(self.s.e_ready, pymax(self.s.busy_until, e.st.t));
-                out[n] = (cand, Kind::Ev(EV_E_VOLLEY));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_VOLLEY));
             }
             n += 1;
             if self.s.e_root_at != INF {

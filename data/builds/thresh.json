@@ -12,10 +12,11 @@
  "notes": [
   "A stationary dummy fight never produces Souls (they only drop from dying units near Thresh), so a fixed representative soul count of 15 is assumed for the whole fight; this feeds Damnation's permanent +1 AP per soul (added to the caster's AP before evaluating every AP-scaling ability) and Flay's flat 1.7-per-soul on-hit base. The +1 bonus armor per soul is not modeled since armor does not affect outgoing damage in this fight.",
   "Dark Passage (W) has no damage component (a shield only), so it is never cast; it earns no value in a pure damage fight.",
-  "The Box (R) is cast immediately at t=0; its cast is uninterruptible and its damage is assumed to land when the 0.45s cast completes (the wall-contact geometry is not modeled, matching how the engine treats other delayed-hit ultimates). Its long cooldown (80-120s) means only one cast happens in any fight length in scope.",
-  "Death Sentence (Q) is cast on cooldown; its magic damage lands on the cast itself (the scythe travel is not modeled beyond the standard 0.25s cast lockout, the same convention used for other dash/skillshot casts). Landing it always reduces its own current cooldown by 2 seconds, since the dummy can never spell-shield it.",
-  "Q's Shackled mark normally blocks basic attacks, but the driver immediately recasts as Deathly Leap 0.5 seconds after Q lands (the earliest allowed recast against a champion) purely to restore Thresh's ability to attack sooner, rather than waiting out the full 1.5s mark; this is modeled by holding the next attack for 0.5s after each Q hit instead of the full mark duration.",
-  "Flay (E) is cast on cooldown; its active magic damage lands at the start of the cast (per its own tooltip note), so no extra delay is added beyond the standard 0.25s cast lockout.",
+  "Casts go one at a time: a single busy_until in the state tracks the current cast, and every cast (Q, E, R) starts at castable_at (not before now, not inside another cast) and then keeps Thresh busy for its own cast time, holding the next attack back with it. The Box opens the fight (0.45 s cast), then Death Sentence and Flay are cast on cooldown once the previous cast is clear.",
+  "The Box (R) is cast at t=0; its damage is assumed to land when its 0.45 s cast completes (the wall-contact geometry is not modeled). Its long cooldown (80-120 s) means only one cast happens in any fight length in scope.",
+  "Death Sentence (Q) has a real 0.5 s cast time (the dossier's castTime); its magic damage lands as the cast starts, and the cast then keeps Thresh busy for 0.5 s (the scythe travel itself is not modeled). Landing it always reduces its own current cooldown by 2 seconds, since the dummy can never spell-shield it.",
+  "Q's Shackled mark normally blocks basic attacks; the driver recasts as Deathly Leap (no cast time on the recast) 0.5 seconds after Q lands, the earliest allowed recast against a champion, purely to restore Thresh's ability to attack as soon as possible rather than waiting out the full 1.5 s mark. Since this equals Q's own cast time, it adds no further delay beyond the cast.",
+  "Flay (E) has a real 0.3889 s cast time (effects start at the start of the cast, per its own note); its active magic damage lands as the cast starts, and the cast then keeps Thresh busy for 0.3889 s.",
   "Flay's passive empowers every basic attack with bonus magic damage (1.7 per soul, plus an AD ratio that ramps linearly from 0% to its rank's maximum over 10 seconds without landing a basic attack, resetting to 0 whenever it lands); Thresh is assumed to enter the fight already fully charged, since the opening seconds are spent casting R/Q rather than attacking. This bonus damage cannot critically strike, per the wiki.",
   "Mana is not modeled: nothing here binds inside a 15s fight at level 16."
  ],
@@ -82,7 +83,8 @@
     "apRatio": 0.9
    },
    "hitBonusCooldownS": 2,
-   "recastDelayS": 0.5
+   "recastDelayS": 0.5,
+   "castTimeS": 0.5
   },
   "E": {
    "damage": {
@@ -103,7 +105,8 @@
     1.8,
     2.1
    ],
-   "fullChargeDurationS": 10
+   "fullChargeDurationS": 10,
+   "castTimeS": 0.3889
   },
   "R": {
    "damage": {
@@ -122,6 +125,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/thresh.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/thresh.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/thresh.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/thresh.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

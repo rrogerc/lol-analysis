@@ -1,8 +1,9 @@
 //! Quinn. Behind Enemy Lines (R) opens the fight and recasts on cooldown all
-//! fight long: its 2 s channel blocks attacks and Q/E, and the first attack
-//! after the channel both lands and auto-triggers Skystrike (R's damage),
-//! which marks the target and starts R's post-effect cooldown. Between R
-//! cycles, Blinding Assault (Q) and Vault (E) go out on cooldown, each
+//! fight long: its 0.25 s cast time keeps Quinn busy, then its 2 s channel
+//! blocks attacks and Q/E, and the first attack after the channel both lands
+//! and auto-triggers Skystrike (R's damage), which marks the target and
+//! starts R's post-effect cooldown. Between R cycles, Blinding Assault (Q,
+//! 0.25 s cast time) and Vault (E, no cast time) go out on cooldown, each
 //! applying a Harrier mark; the next attack that lands on a still-marked
 //! target consumes it for Harrier's on-hit bonus damage and Heightened
 //! Senses' attack-speed buff.
@@ -33,6 +34,7 @@ pub struct GenDriver {
     harrier_lock_s: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
     /// Heightened Senses' bonus attack speed (percent) and its buff duration.
@@ -41,6 +43,7 @@ pub struct GenDriver {
     r_dmg: f64,
     r_cd: f64,
     r_channel_s: f64,
+    r_cast_s: f64,
     src_p: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
@@ -50,6 +53,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     mark_active: bool,
     mark_expiry: f64,
     /// Harrier cannot reapply a mark before this time.
@@ -66,6 +71,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Applies a Harrier mark at `t` lasting `dur`, respecting the 1s
     /// reapplication lockout after a mark is consumed or times out.
     fn try_mark(&mut self, t: f64, dur: f64) {
@@ -80,15 +98,15 @@ impl GenDriver {
         }
     }
 
-    /// Begins Behind Enemy Lines' channel: holds attacks (and, via q_at /
-    /// events, Q and E) until it completes.
+    /// Begins Behind Enemy Lines' cast time and channel: holds attacks (and,
+    /// via q_at / events, Q and E) until it completes.
     fn start_r_channel(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        self.s.r_channel_until = t + self.r_channel_s;
+        self.busy_for(e, self.r_cast_s);
+        self.s.r_channel_until = t + self.r_cast_s + self.r_channel_s;
         self.s.r_active = false;
         e.st.next_attack = pymax(e.st.next_attack, self.s.r_channel_until);
         e.prime_spellblade();
-        e.lockout();
     }
 }
 
@@ -115,6 +133,7 @@ impl Driver for GenDriver {
         let w_as_pct = kit.at_rank("gen.W.asBonus", ranks.w)? * 100.0;
 
         let state = State {
+            busy_until: 0.0,
             mark_active: false,
             mark_expiry: 0.0,
             harrier_lock_until: 0.0,
@@ -134,6 +153,7 @@ impl Driver for GenDriver {
             harrier_lock_s: kit.num("gen.P.harrierLockoutS")?,
             q_dmg,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             w_as_pct,
@@ -141,6 +161,7 @@ impl Driver for GenDriver {
             r_dmg,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_channel_s: kit.num("gen.R.channelS")?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_p: intern("P onhit"),
             s: state,
             s0: state,
@@ -205,7 +226,7 @@ impl Driver for GenDriver {
             // Behind Enemy Lines' channel holds Q
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -216,7 +237,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.try_mark(t, self.mark_dur_qe);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -228,7 +249,7 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 && self.s.r_channel_until == INF {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -236,7 +257,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_channel_until, Kind::Ev(EV_R_CHANNEL_END));
                 n += 1;
             } else if !self.s.r_active {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_START));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_START));
                 n += 1;
             }
         }

@@ -3,7 +3,8 @@
 //! (the dummy can never break the tether), Tormented Shadow is recast on
 //! cooldown for its on-cast hit and nine further ticks, and Dark Binding
 //! goes out on cooldown. Every landed ability hit shaves 5% of Tormented
-//! Shadow's total cooldown off its live timer (Soul Siphon).
+//! Shadow's total cooldown off its live timer (Soul Siphon). Casts go one
+//! at a time: each of Q, W and R keeps Morgana busy for its own cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,12 +29,14 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_interval: f64,
     w_tick_count: i64,
     w_amp_max: f64,
     w_cdr_frac: f64,
+    w_cast_s: f64,
     r_dmg: f64,
     r_cd: f64,
     r_cast_s: f64,
@@ -45,6 +48,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// When Tormented Shadow may next be cast.
     w_ready: f64,
     /// Time of the next pending tick (INF: none).
@@ -59,12 +64,25 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Fires (or re-fires) Soul Shackles: schedules its initial hit after
-    /// the cast time and locks out the next attack.
+    /// the cast time and keeps Morgana busy for that cast time.
     fn fire_r(&mut self, e: &mut Engine) {
         self.s.r_init_at = e.st.t + self.r_cast_s;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     /// One Soul Shackles hit landing (initial or aftereffect): identical
@@ -101,6 +119,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_next_tick: INF,
             w_ticks_left: 0,
@@ -113,12 +132,14 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_interval: kit.num("gen.W.tickIntervalS")?,
             w_tick_count: kit.num("gen.W.tickCount")? as i64,
             w_amp_max: kit.num("gen.W.missingHealthAmpMax")?,
             w_cdr_frac: kit.num("gen.W.cdRefundFrac")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
@@ -149,7 +170,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -159,7 +180,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.soul_siphon(e);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -172,7 +193,7 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.s.w_next_tick < INF {
@@ -189,7 +210,7 @@ impl Driver for GenDriver {
                 n += 1;
             }
             if self.s.r_ready < INF {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_RECAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_RECAST));
                 n += 1;
             }
         }
@@ -207,7 +228,7 @@ impl Driver for GenDriver {
                 self.deal_w_tick(e);
                 self.s.w_ticks_left = self.w_tick_count - 1;
                 self.s.w_next_tick = if self.s.w_ticks_left > 0 { t + self.w_interval } else { INF };
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_TICK) => {
                 self.deal_w_tick(e);

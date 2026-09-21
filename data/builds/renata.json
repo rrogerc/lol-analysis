@@ -10,17 +10,32 @@
   "W"
  ],
  "notes": [
-  "Renata opens by self-casting Bailout (W) immediately, since it has no cast time, to start its attack-speed ramp as early as possible; within the usual 8-15 s fight window it is cast only once (cooldown 24-28 s), but it recasts on cooldown if a longer fight allows it.",
-  "Handshake (Q) is cast on cooldown; its recast (the knockback) is modeled as landing right after the initial hook hit, since the hook's travel and the ~1 s tether are not modeled beyond the usual cast lockout, giving two magic-damage instances per Q cycle and the cooldown starting once both land.",
+  "Casts go one at a time: Handshake (Q) and Loyalty Program (E) each have a 0.25 s cast time that keeps Renata busy (no other cast, no attack) until it ends; Bailout (W) has no cast time and costs nothing, but still cannot start inside another ability's cast.",
+  "The opening at t=0 is Q, then W, then E, one after another: Q's 0.25 s cast comes first (Q is resolved ahead of same-instant events), then Bailout fires the instant it is free (it costs no time), then Loyalty Program's own 0.25 s cast follows; the first auto-attack therefore lands only once both cast times have elapsed.",
+  "Handshake (Q) is cast on cooldown; its recast (the knockback) is modeled as landing within the same 0.25 s cast as the initial hook, since the sources give the ability one cast time and do not state a separate one for the recast (the recast's own 'queue time' is not a cast time) - this gives two magic-damage instances per Q cycle, with the cooldown starting once both land.",
   "Loyalty Program (E) is cast on cooldown for a single magic-damage instance: the dummy is read as being hit once by the missile's arrival (the common reading), not separately by the instant side rockets and the pass-through.",
   "Leverage (P) procs its bonus magic damage on Renata's first attack, since the dummy starts unmarked; against one stationary target the mark only ever refreshes on later attacks and never expires, so it fires exactly once for the whole fight.",
-  "Bailout's attack-speed bonus ramps linearly from its base value at cast to double that value at 5 s elapsed (RenataW.MaxStatMultiplier=2, taken as a continuous ramp); its movement-speed bonus and ally-targeting are not modeled since movement and allies do not matter in this fight.",
-  "Hostile Takeover (R) is never cast: it deals no direct damage, and with no allied unit for a berserked dummy to redirect its attention to, casting it only spends cast time and mana for nothing.",
+  "Bailout's attack-speed bonus ramps linearly from its base value at cast to double that value at 5 s elapsed (RenataW.MaxStatMultiplier=2, taken as a continuous ramp); it is cast once at the open of the fight (its 24-28 s cooldown is longer than most fight windows) and recast on cooldown if a longer fight allows it. Its movement-speed bonus and ally-targeting are not modeled since movement and allies do not matter in this fight. Bailout deals no damage of its own in this dummy fight: its only effect here is the attack-speed ramp (read through bonus_as) and a fatal-damage save that never triggers against a dummy that never damages Renata, so it has no 'W' damage source.",
+  "Hostile Takeover (R) is never cast: it deals no direct damage, and with no allied unit for a berserked dummy to redirect its attention to, casting it only spends its 0.75 s cast time and mana for nothing; its cast time is still recorded at gen.R.castTimeS for documentation but is not read anywhere since the driver never calls cast_r.",
   "Mana costs are not modeled: none of Q/W/E's costs would stop casting inside a 15 s fight at level 16."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "Handshake's recast (the knockback) is treated as landing within the same 0.25 s cast as the initial hook rather than costing a further cast time of its own; the dossier gives Handshake one cast time (0.25 s) and states only a 'queue time' for the recast, not a separate cast time."
+  },
+  {
+   "path": "gen.W.castTimeS",
+   "why": "Bailout's cast time is stated as none by the dossier; the value 0 is used so it can be checked against another cast in progress like every other ability, without itself costing time."
+  },
+  {
+   "path": "gen.R.castTimeS",
+   "why": "Hostile Takeover's 0.75 s cast time from the dossier is recorded here for completeness even though the driver never casts R (it deals no direct damage in this fight), so the number is never read."
+  }
+ ],
  "unused": {
-  "W": "Bailout deals no direct damage of its own (its only damage-relevant mechanic in a 1v1 damage fight is the ramping attack-speed self-buff, which is cast and modeled through bonus_as and shows up as extra 'auto' source damage); its fatal-damage restore/burn mechanic never triggers here since the dummy never damages Renata."
+  "W": "Bailout only grants Renata (self-cast) ramping bonus attack speed / movement speed and a fatal-damage-save-plus-burn that never triggers against a dummy which never damages Renata; it deals no direct damage of its own in this fight, so no damage source starts with W. Its attack-speed bonus is applied through bonus_as instead.",
+  "R": "Hostile Takeover deals no direct damage and its berserk effect has no useful target in a 1v1 dummy fight with no allies, so the driver never calls cast_r; its cast time is kept in the kit only for documentation."
  },
  "abilities": {
   "Q": {
@@ -97,7 +112,8 @@
      260
     ],
     "apRatio": 0.8
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "asBase": [
@@ -108,7 +124,8 @@
     30
    ],
    "apRatioPctPerAp": 0.01,
-   "durationS": 5
+   "durationS": 5,
+   "castTimeS": 0.0
   },
   "E": {
    "damage": {
@@ -122,6 +139,9 @@
     "apRatio": 0.55
    },
    "castTimeS": 0.25
+  },
+  "R": {
+   "castTimeS": 0.75
   }
  },
  "attack": {
@@ -129,6 +149,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/renata.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/renata.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/renata.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/renata.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

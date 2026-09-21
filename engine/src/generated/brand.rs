@@ -1,9 +1,12 @@
 //! Brand. A mage whose damage rides Ablaze: every ability hit stacks it
 //! (up to 3, refreshing its shared expiry), reaching 3 stacks arms a delayed
 //! ring explosion, and Pillar of Flame is empowered 25% against a live
-//! Ablaze target. Sear, Conflagration and Pillar of Flame go out on
-//! cooldown; Pyroclasm opens the fight and is recast on cooldown, each cast
-//! landing 3 separate hits on the sole target.
+//! Ablaze target. Casts go one at a time: each of Sear, Pillar of Flame,
+//! Conflagration and Pyroclasm has a 0.25s cast time that keeps Brand busy
+//! (no other cast, no attack) until it ends, tracked with one shared
+//! `busy_until`. Pyroclasm opens the fight and is recast on cooldown, each
+//! cast landing 3 separate hits on the sole target (only the first of the
+//! three is itself a new cast).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +31,7 @@ pub struct GenDriver {
 
     q_dmg: f64,
     q_cd: f64,
+    q_cast_time: f64,
 
     w_dmg: f64,
     w_cd: f64,
@@ -37,10 +41,12 @@ pub struct GenDriver {
 
     e_dmg: f64,
     e_cd: f64,
+    e_cast_time: f64,
 
     r_dmg: f64,
     r_cd: f64,
     r_bounce_delay: f64,
+    r_cast_time: f64,
 
     ablaze_max: i64,
     ablaze_duration: f64,
@@ -59,6 +65,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
+
     ablaze_count: i64,
     ablaze_until: f64,
     next_tick_at: f64,
@@ -76,6 +84,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn apply_ablaze(&mut self, e: &mut Engine) {
         let t = e.st.t;
         let was_active = self.s.ablaze_count > 0 && t < self.s.ablaze_until;
@@ -105,7 +126,7 @@ impl GenDriver {
         self.apply_ablaze(e);
         self.s.r_hit2_at = t + self.r_bounce_delay * 2.0;
         self.s.r_hit3_at = t + self.r_bounce_delay * 4.0;
-        e.lockout();
+        self.busy_for(e, self.r_cast_time);
     }
 }
 
@@ -124,6 +145,7 @@ impl Driver for GenDriver {
         let ablaze_tick_frac = (ablaze_dot_pct / 100.0) / ticks;
 
         let state = State {
+            busy_until: 0.0,
             ablaze_count: 0,
             ablaze_until: 0.0,
             next_tick_at: INF,
@@ -144,6 +166,7 @@ impl Driver for GenDriver {
 
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_time: kit.num("gen.Q.castTimeS")?,
 
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
@@ -153,10 +176,12 @@ impl Driver for GenDriver {
 
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_time: kit.num("gen.E.castTimeS")?,
 
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_bounce_delay: kit.num("gen.R.bounceDelayS")?,
+            r_cast_time: kit.num("gen.R.castTimeS")?,
 
             ablaze_max: kit.num("gen.P.ablazeMaxStacks")? as i64,
             ablaze_duration,
@@ -196,7 +221,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -206,7 +231,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.apply_ablaze(e);
-        e.lockout();
+        self.busy_for(e, self.q_cast_time);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -222,12 +247,12 @@ impl Driver for GenDriver {
             if self.s.w_hit_at != INF {
                 out[n] = (self.s.w_hit_at, Kind::Ev(EV_W_HIT));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.next_tick_at != INF {
@@ -247,7 +272,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.r > 0 && self.s.r_hit2_at == INF && self.s.r_hit3_at == INF {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -260,7 +285,7 @@ impl Driver for GenDriver {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 self.s.w_hit_at = t + self.w_cast_time + self.w_eruption_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_time);
             }
             Kind::Ev(EV_W_HIT) => {
                 self.s.w_hit_at = INF;
@@ -281,7 +306,7 @@ impl Driver for GenDriver {
                 e.eclipse_hit();
                 e.prime_spellblade();
                 self.apply_ablaze(e);
-                e.lockout();
+                self.busy_for(e, self.e_cast_time);
             }
             Kind::Ev(EV_ABLAZE_TICK) => {
                 if self.s.ablaze_count > 0 && t < self.s.ablaze_until {

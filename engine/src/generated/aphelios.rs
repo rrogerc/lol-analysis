@@ -1,7 +1,9 @@
 //! Aphelios. Main weapon cycles Calibrum -> Gravitum -> Infernum -> Crescendum
 //! as Moonlight is spent by attacks and Q casts (off-hand modeled as fixed
 //! Severum for the fight, see notes); Q's effect follows the current main
-//! weapon, and Moonlight Vigil opens the fight while Calibrum is main.
+//! weapon, and Moonlight Vigil opens the fight while Calibrum is main. Casts
+//! go one at a time: every Q cast and the R cast keep Aphelios busy for their
+//! own cast time before any other cast or attack starts.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -47,6 +49,11 @@ pub struct GenDriver {
     q_dmg_gravitum: f64,
     q_dmg_infernum: f64,
     q_dmg_crescendum: f64,
+    /// Cast times: shared by Moonshot and Duskwave (both 0.4 s); the other
+    /// two weapons' Qs have their own cast time.
+    q_cast_s: f64,
+    q_cast_gravitum_s: f64,
+    q_cast_crescendum_s: f64,
     r_cast_s: f64,
     r_smite_dmg: f64,
     r_calibrum_mark_bonus: f64,
@@ -74,6 +81,8 @@ struct State {
     sentry_end: f64,
     sentry_next_tick: f64,
     r_swing_at: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
 }
 
 impl GenDriver {
@@ -86,6 +95,19 @@ impl GenDriver {
             self.s.weapon_lock_until = t + self.assembly_time_s;
             self.s.q_lock_until = t + self.q_lockout_s;
         }
+    }
+
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
     }
 }
 
@@ -137,6 +159,7 @@ impl Driver for GenDriver {
             sentry_end: 0.0,
             sentry_next_tick: INF,
             r_swing_at: INF,
+            busy_until: 0.0,
         };
 
         Ok(GenDriver {
@@ -165,6 +188,9 @@ impl Driver for GenDriver {
             q_dmg_gravitum,
             q_dmg_infernum,
             q_dmg_crescendum,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
+            q_cast_gravitum_s: kit.num("gen.Q.castTimeGravitumS")?,
+            q_cast_crescendum_s: kit.num("gen.Q.castTimeCrescendumS")?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
             r_smite_dmg,
             r_calibrum_mark_bonus,
@@ -241,7 +267,8 @@ impl Driver for GenDriver {
         if self.s.main_idx == GRAVITUM && e.st.t >= self.s.gravitum_slow_until {
             return INF;
         }
-        pymax(pymax(e.st.q_ready, self.s.q_lock_until), pymax(e.st.t, self.s.weapon_lock_until))
+        let ready = pymax(e.st.q_ready, pymax(self.s.q_lock_until, self.s.weapon_lock_until));
+        self.castable_at(e, ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -256,7 +283,7 @@ impl Driver for GenDriver {
                 self.spend_ammo(e, self.ammo_per_q);
                 self.s.mark_active = true;
                 self.s.mark_deadline = t + self.calibrum_mark_dur_s;
-                e.lockout();
+                self.busy_for(e, self.q_cast_s);
             }
             GRAVITUM => {
                 e.st.q_ready = t + e.basic_cd(self.q_cd_gravitum);
@@ -266,7 +293,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.spend_ammo(e, self.ammo_per_q);
                 self.s.gravitum_slow_until = t;
-                e.lockout();
+                self.busy_for(e, self.q_cast_gravitum_s);
             }
             INFERNUM => {
                 e.st.q_ready = t + e.basic_cd(self.q_cd_infernum);
@@ -278,7 +305,7 @@ impl Driver for GenDriver {
                 self.s.volley_pending = true;
                 self.s.volley_time = t + self.duskwave_volley_delay_s;
                 e.st.next_attack = pymax(e.st.next_attack, self.s.volley_time);
-                e.lockout();
+                self.busy_for(e, self.q_cast_s);
             }
             _ => {
                 e.st.q_ready = t + e.basic_cd(self.q_cd_crescendum);
@@ -287,7 +314,7 @@ impl Driver for GenDriver {
                 self.s.sentry_active = true;
                 self.s.sentry_end = t + self.sentry_arm_delay_s + self.sentry_active_dur_s;
                 self.s.sentry_next_tick = t + self.sentry_arm_delay_s;
-                e.lockout();
+                self.busy_for(e, self.q_cast_crescendum_s);
             }
         }
     }
@@ -298,6 +325,7 @@ impl Driver for GenDriver {
         }
         let t = e.st.t;
         self.s.r_swing_at = t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, _e: &Engine, out: &mut Events) -> usize {

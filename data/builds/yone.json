@@ -10,12 +10,15 @@
   "E"
  ],
  "notes": [
-  "Opening: Fate Sealed is cast at t=0; its mixed-damage gust lands after the 0.75 s cast time plus the 0.3 s travel delay, once, since its minimum 80 s cooldown will not come off cooldown again inside the fight.",
+  "Casts go one at a time: a cast that has a cast time keeps Yone busy until it ends (no other cast, no attack starts inside it). One busy_until is tracked in state and every cast (Q, W, the ult's opening cast, Soul Unbound's recast) reports castable_at and then calls busy_for with the cast time it uses.",
+  "Mortal Steel's and Spirit Cleave's cast times shrink with bonus attack speed per the dossier's quoted formulas (Q: 0.35s minus 0.035s per 24% bonus AS, capped at 50% reduction at 120% AS; W: 0.5s times one minus 0.01 per 1.68% bonus AS, capped at 62.5% reduction at 105% AS); both are computed once from the build's static bonus attack speed (nothing in this kit grants bonus AS mid-fight) and kept as constants.",
+  "Opening: Fate Sealed is cast at t=0; its mixed-damage gust lands after the 0.75 s cast time plus the 0.3 s travel delay, once, since its minimum 80 s cooldown will not come off cooldown again inside the fight. The 0.75 s cast time holds every other cast and the first attack back.",
   "Basic attacks permanently alternate Steel (100% physical) and Azakana (50% AD physical + 50% AD magic, dealt as two same-swing instances); the driver toggles this every attack starting with Steel, with no timeout.",
   "Yone's passive doubles total crit chance (capped at 100%) and multiplies bonus crit damage by 0.95, and converts crit chance in excess of 100% (after doubling) into 0.5 bonus AD per 1% excess; because the engine's own crit modelling only knows the sheet's un-doubled crit chance and un-reduced crit damage, the driver compensates the AD it feeds into each basic attack so its expected damage matches Yone's true passive, and separately applies the same expected-crit multiplier by hand to Mortal Steel's AD-scaling portion, the only ability whose damage the wiki states can critically strike.",
   "Mortal Steel's Gathering Storm empowerment (dash + whirlwind) cannot hit the same target twice, so against a single stationary dummy it always lands exactly one hit, identical in total damage to an unempowered cast; the driver therefore does not track Gathering Storm stacks and simply casts Mortal Steel on cooldown.",
-  "Mortal Steel and Spirit Cleave each have their own bonus-attack-speed-based cooldown reduction (from the numbers sheet's static formulas), applied before ability haste's normal reduction via e.basic_cd; their attack-speed-based cast time reduction is not modelled since the engine only ever applies the fixed 0.25 s cast lockout regardless of the true cast time.",
+  "Mortal Steel and Spirit Cleave each have their own bonus-attack-speed-based cooldown reduction (from the numbers sheet's static formulas), applied before ability haste's normal reduction via e.basic_cd.",
   "Spirit Cleave's damage is taken as base + percent of the target's maximum health only (the wiki's leveling table), split evenly physical/magic; the sheet's extra flat 1x AD term on WDamage is treated as stale per the dossier's binNote and is not used.",
+  "Soul Unbound's initial cast is a dash with no cast time (per the dossier's 'None'), so it only holds the next attack back 0.25 s like any cast-time-less dash; its recast has a fixed 0.225 s cast time per the dossier, which holds later casts and attacks.",
   "Soul Unbound is cast as soon as it is off cooldown and held for its full 5 s Spirit Form duration before recasting, to maximize the damage it marks. The engine does not expose post-mitigation damage to the driver, so the stored mark is approximated from the expected pre-mitigation damage of Yone's basic attacks, Mortal Steel, Spirit Cleave and Fate Sealed landed while Spirit Form is active, at the dossier's percent-of-damage-dealt reading (25-35% by rank); item and rune procs are not tracked, matching the ability's own text.",
   "Mana is not modeled: every cost in the numbers sheet is 0."
  ],
@@ -76,7 +79,11 @@
    ],
    "adRatio": 1.1,
    "asCdPercent": 0.6,
-   "asCdMax": 0.66667
+   "asCdMax": 0.66667,
+   "castTimeBaseS": 0.35,
+   "castTimeAsStepPct": 24,
+   "castTimeReductionPerStepS": 0.035,
+   "castTimeCapFraction": 0.5
   },
   "W": {
    "halfBase": [
@@ -94,7 +101,11 @@
     0.06
    ],
    "asCdPercent": 0.6,
-   "asCdMax": 0.57142
+   "asCdMax": 0.57142,
+   "castTimeBaseS": 0.5,
+   "castTimeAsStepPct": 1.68,
+   "castTimeReductionFractionPerStep": 0.01,
+   "castTimeCapFraction": 0.625
   },
   "E": {
    "markPercent": [
@@ -104,7 +115,8 @@
     0.325,
     0.35
    ],
-   "spiritFormDurationS": 5
+   "spiritFormDurationS": 5,
+   "recastCastTimeS": 0.225
   },
   "R": {
    "physicalBase": [
@@ -128,7 +140,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yone.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yone.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yone.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yone.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

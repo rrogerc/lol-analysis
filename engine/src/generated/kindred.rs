@@ -3,7 +3,10 @@
 //! W, then keeps basic-attacking the dummy: each landed attack stacks
 //! Mounting Dread, whose 3rd stack detonates Wolf's pounce, while Wolf
 //! independently ticks the dummy for the whole zone duration and Q is
-//! recast on its (zone-reduced) cooldown throughout.
+//! recast on its (zone-reduced) cooldown throughout. Casts go one at a
+//! time: Mounting Dread's 0.25s cast time keeps Lamb busy, and every other
+//! cast (Q, Wolf's Frenzy, though neither has a cast time of its own)
+//! still waits for it to end.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -42,6 +45,7 @@ pub struct GenDriver {
     e_cd: f64,
     e_stacks_needed: i64,
     e_crit_mult: f64,
+    e_cast_time: f64,
 
     s: State,
     s0: State,
@@ -50,6 +54,7 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
     q_buff_until: f64,
     w_ready: f64,
     w_active: bool,
@@ -58,6 +63,21 @@ struct State {
     e_ready: f64,
     e_mark_active: bool,
     e_stacks: i64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -79,6 +99,7 @@ impl Driver for GenDriver {
         let e_crit_mult = 1.0 + 0.5 * crit_chance_frac * (crit_dmg_mult - 1.0);
 
         let state = State {
+            busy_until: 0.0,
             q_buff_until: 0.0,
             w_ready: 0.0,
             w_active: false,
@@ -112,6 +133,7 @@ impl Driver for GenDriver {
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_stacks_needed: kit.num("gen.E.stacksToProc")? as i64,
             e_crit_mult,
+            e_cast_time: kit.num("gen.E.castTimeS")?,
 
             s: state,
             s0: state,
@@ -159,7 +181,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -183,7 +205,7 @@ impl Driver for GenDriver {
         let mut n = 0;
         if self.ranks.w > 0 {
             if !self.s.w_active {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
                 n += 1;
             } else {
                 if self.s.w_next_tick != INF {
@@ -195,7 +217,7 @@ impl Driver for GenDriver {
             }
         }
         if self.ranks.e > 0 && !self.s.e_mark_active {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n
@@ -236,11 +258,11 @@ impl Driver for GenDriver {
                 self.s.w_effect_end = INF;
             }
             Kind::Ev(EV_E_CAST) => {
-                e.lockout();
                 e.prime_spellblade();
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_mark_active = true;
                 self.s.e_stacks = 0;
+                self.busy_for(e, self.e_cast_time);
             }
             other => panic!("unhandled event {other:?}"),
         }

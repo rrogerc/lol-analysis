@@ -2,8 +2,10 @@
 //! damage); Needlework opens the fight and free-recasts twice at a fixed
 //! 1s interval to unload all 9 needles; Skip 'n Slash is woven in on
 //! cooldown for its attack-speed/on-hit window and attack-timer reset; Snip
-//! Snip! is cast on cooldown, its mini-snip count driven by Snippy stacks
-//! built up from the actual attack timeline.
+//! Snip! is cast on cooldown (a 0.5s cast time), its mini-snip count driven
+//! by Snippy stacks built up from the actual attack timeline. Casts go one
+//! at a time: Snip Snip!'s cast time keeps Gwen busy, and every other cast
+//! waits for it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,6 +28,7 @@ pub struct GenDriver {
     /// A Thousand Cuts: fraction of the target's max health, and its AP scaling.
     p_pct: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_mini_dmg: f64,
     q_final_dmg: f64,
     q_true_conv: f64,
@@ -53,6 +56,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     q_stack_count: i64,
     q_stack_expire: f64,
     e_ready: f64,
@@ -63,12 +68,28 @@ struct State {
     r_next_at: f64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let p_base = kit.num("gen.P.onhitPct.base")?;
         let p_ap_per100 = kit.num("gen.P.onhitPct.apPer100")?;
         let state = State {
+            busy_until: 0.0,
             q_stack_count: 0,
             q_stack_expire: -1.0,
             e_ready: 0.0,
@@ -84,6 +105,7 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("gwen kit needs attack.windupFraction")?,
             p_pct: p_base + p_ap_per100 * (sheet.ap / 100.0),
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_mini_dmg: kit.hit("gen.Q.miniDamage", ranks.q, sheet)?,
             q_final_dmg: kit.hit("gen.Q.finalDamage", ranks.q, sheet)?,
             q_true_conv: kit.num("gen.Q.trueDamageConversion")?,
@@ -166,7 +188,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -197,7 +219,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -207,12 +229,13 @@ impl Driver for GenDriver {
         self.s.r_stage = 1;
         self.s.r_land_at = t + self.r_cast_time_first;
         self.s.r_next_at = t + self.r_recast_interval;
+        self.busy_for(e, self.r_cast_time_first);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_land_at != INF {
@@ -220,7 +243,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.s.r_next_at != INF {
-            out[n] = (self.s.r_next_at, Kind::Ev(EV_R_NEXT));
+            out[n] = (self.castable_at(e, self.s.r_next_at), Kind::Ev(EV_R_NEXT));
             n += 1;
         }
         n
@@ -230,7 +253,8 @@ impl Driver for GenDriver {
         let t = e.st.t;
         match kind {
             Kind::Ev(EV_E_CAST) => {
-                // no cast time: an instant cast that resets the attack timer
+                // no cast time: an instant cast that resets the attack timer,
+                // but it still waits for any cast in progress (castable_at)
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.e_buff_until = t + self.e_buff_dur;
                 self.s.e_refund_pending = true;
@@ -264,7 +288,7 @@ impl Driver for GenDriver {
                         self.s.r_next_at = INF;
                     }
                     e.prime_spellblade();
-                    e.lockout();
+                    self.busy_for(e, self.r_cast_time_recast);
                 } else {
                     self.s.r_next_at = INF;
                 }

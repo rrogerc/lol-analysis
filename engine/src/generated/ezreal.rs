@@ -4,7 +4,8 @@
 //! for its bonus damage by whichever of an attack, Mystic Shot or Arcane
 //! Shift lands on the dummy next; Arcane Shift goes out on cooldown; Trueshot
 //! Barrage opens the fight and is recast on cooldown if it comes up again.
-//! Rising Spell Force stacks attack speed on every ability hit.
+//! Rising Spell Force stacks attack speed on every ability hit. Casts go one
+//! at a time: each holds one shared busy_until for its cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -18,8 +19,6 @@ const EV_W_CAST: u8 = 0;
 const EV_E_CAST: u8 = 1;
 /// Trueshot Barrage is off cooldown and cast again (after the t = 0 opener).
 const EV_R_CAST: u8 = 2;
-/// Trueshot Barrage's damage lands, after its 1 s cast time.
-const EV_R_HIT: u8 = 3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -33,11 +32,14 @@ pub struct GenDriver {
     q_cd: f64,
     /// Mystic Shot's current-cooldown refund on hit, applied to Q/W/E/R.
     q_cdr: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd: f64,
     w_mark_dur: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     r_dmg: f64,
     r_cd: f64,
     r_cast_s: f64,
@@ -50,6 +52,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     /// When the current batch of Rising Spell Force stacks expires.
     p_until: f64,
@@ -58,14 +62,23 @@ struct State {
     w_mark_active: bool,
     w_mark_until: f64,
     e_ready: f64,
-    /// Trueshot Barrage's next-cast readiness (only meaningful once it is
-    /// not mid-cast, i.e. `r_hit_at == INF`).
     r_ready: f64,
-    /// When a cast Trueshot Barrage's damage lands (INF: none pending).
-    r_hit_at: f64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Gains (or refreshes) a Rising Spell Force stack from an ability hit.
     fn stack_p(&mut self, t: f64) {
         if t > self.s.p_until {
@@ -84,7 +97,7 @@ impl GenDriver {
         if self.ranks.e > 0 {
             self.s.e_ready = pymax(t, self.s.e_ready - self.q_cdr);
         }
-        if self.ranks.r > 0 && self.s.r_hit_at == INF {
+        if self.ranks.r > 0 {
             self.s.r_ready = pymax(t, self.s.r_ready - self.q_cdr);
         }
     }
@@ -114,6 +127,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_until: -1.0,
             w_ready: 0.0,
@@ -121,7 +135,6 @@ impl Driver for GenDriver {
             w_mark_until: -1.0,
             e_ready: 0.0,
             r_ready: 0.0,
-            r_hit_at: INF,
         };
         Ok(GenDriver {
             ranks,
@@ -132,11 +145,14 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_cdr: kit.num("gen.Q.cdrOnHitS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_mark_dur: kit.num("gen.W.markDurationS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
@@ -180,7 +196,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -193,34 +209,36 @@ impl Driver for GenDriver {
         self.stack_p(t);
         self.try_detonate_w(e, true);
         self.apply_q_cdr(e, t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has already primed Spellblade; hold
-        // attacks for the full 1 s cast (longer than the standard lockout)
+        // the opening cast (the engine has primed Spellblade): the damage
+        // lands with the cast, which then keeps Ezreal busy for its cast time
         let t = e.st.t;
-        self.s.r_hit_at = t + self.r_cast_s;
+        e.deal(self.r_dmg, DType::Magic, SRC_R, false, true, 1.0);
+        e.ability_cast_proc();
+        e.eclipse_hit();
+        e.ult_hatefog();
+        self.stack_p(t);
+        self.try_detonate_w(e, true);
+        self.apply_q_cdr(e, t);
         self.s.r_ready = t + e.ult_cd(self.r_cd);
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_cast_s);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
-            if self.s.r_hit_at != INF {
-                out[n] = (self.s.r_hit_at, Kind::Ev(EV_R_HIT));
-            } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
-            }
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -233,9 +251,8 @@ impl Driver for GenDriver {
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 self.s.w_mark_active = true;
                 self.s.w_mark_until = t + self.w_mark_dur;
-                self.stack_p(t);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
@@ -245,22 +262,18 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.stack_p(t);
                 self.try_detonate_w(e, true);
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
-                self.s.r_hit_at = t + self.r_cast_s;
-                self.s.r_ready = t + e.ult_cd(self.r_cd);
-                e.prime_spellblade();
-                e.st.next_attack = pymax(e.st.next_attack, t + self.r_cast_s);
-            }
-            Kind::Ev(EV_R_HIT) => {
-                self.s.r_hit_at = INF;
                 e.deal(self.r_dmg, DType::Magic, SRC_R, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.ult_hatefog();
                 self.stack_p(t);
                 self.try_detonate_w(e, true);
+                self.apply_q_cdr(e, t);
+                self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.busy_for(e, self.r_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

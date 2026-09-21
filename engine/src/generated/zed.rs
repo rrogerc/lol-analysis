@@ -4,7 +4,9 @@
 //! for a second mimicking Shadow, Shadow Slash goes out on cooldown for its
 //! single damage instance (and clips Living Shadow's remaining cooldown),
 //! and Contempt for the Weak rides basic attacks once the dummy is below
-//! half health.
+//! half health. Casts go one at a time: Razor Shuriken has a 0.25s cast
+//! time that keeps Zed busy, and the Death Mark dash likewise holds every
+//! other cast and attack until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +30,7 @@ pub struct GenDriver {
     p_icd: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_cd: f64,
     w_shadow_dur: f64,
     e_dmg: f64,
@@ -48,13 +51,13 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     w_shadow_until: f64,
     e_ready: f64,
-    /// Time the Death Mark dash finishes (INF once fired); also used to
-    /// hold Q/E/W casts until the dash resolves.
+    /// Time the Death Mark dash finishes (INF once fired).
     r_dash_end: f64,
-    r_busy_until: f64,
     r_shadow_until: f64,
     /// Pending detonation time (INF when no mark is active).
     r_mark_end: f64,
@@ -63,6 +66,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn add_stored(&mut self, e: &Engine, amt: f64) {
         if self.s.r_mark_end != INF && e.st.t <= self.s.r_mark_end {
             self.s.r_stored += amt;
@@ -74,11 +90,11 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_shadow_until: 0.0,
             e_ready: 0.0,
             r_dash_end: INF,
-            r_busy_until: 0.0,
             r_shadow_until: 0.0,
             r_mark_end: INF,
             r_stored: 0.0,
@@ -92,6 +108,7 @@ impl Driver for GenDriver {
             p_icd: kit.num("gen.P.icdS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_shadow_dur: kit.num("gen.W.shadowDurationS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
@@ -150,7 +167,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(pymax(e.st.q_ready, e.st.t), self.s.r_busy_until)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -169,7 +186,7 @@ impl Driver for GenDriver {
             e.deal(self.q_dmg, DType::Physical, self.src_q_mimic, false, true, 1.0);
             self.add_stored(e, self.q_dmg);
         }
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -179,8 +196,10 @@ impl Driver for GenDriver {
         let t = e.st.t;
         let dash_end = t + self.r_dash_delay + self.r_dash_travel;
         self.s.r_dash_end = dash_end;
-        self.s.r_busy_until = dash_end;
         self.s.r_shadow_until = t + self.r_shadow_dur;
+        // no cast time key here (dash timing is modeled with an event), but
+        // the dash still keeps Zed from casting or attacking until it ends
+        self.s.busy_until = dash_end;
         e.st.next_attack = pymax(e.st.next_attack, dash_end);
     }
 
@@ -195,11 +214,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(pymax(self.s.w_ready, e.st.t), self.s.r_busy_until), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(pymax(self.s.e_ready, e.st.t), self.s.r_busy_until), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n

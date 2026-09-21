@@ -2,6 +2,8 @@
 //! Null Sphere and Force Pulse go out on cooldown while mana allows, Nether
 //! Blade is re-armed after every attack for its own on-hit-replacing bonus
 //! and attack-timer reset, and every cast shaves Force Pulse's cooldown.
+//! Casts go one at a time: a single `busy_until` tracks Q/E/R's 0.25s cast
+//! times (Nether Blade's active has none and costs no time).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,10 +30,12 @@ pub struct GenDriver {
     q_dmg: f64,
     q_cost: f64,
     q_cd: f64,
+    q_cast_time_s: f64,
     e_dmg: f64,
     e_cost: f64,
     e_cd: f64,
     e_cdr: f64,
+    e_cast_time_s: f64,
     w_active_dmg: f64,
     w_onhit_dmg: f64,
     w_window_s: f64,
@@ -53,6 +57,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     mana: f64,
     e_ready: f64,
     w_ready: f64,
@@ -71,6 +77,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Riftwalk's stacks in effect at time `t` (they lapse once their 15s
     /// duration, refreshed on every cast, runs out).
     fn effective_r_stacks(&self, t: f64) -> i64 {
@@ -103,6 +122,7 @@ impl Driver for GenDriver {
         -> Result<Self, String> {
         let mana_start_pct = kit.num("gen.P.manaStartFullPct")?;
         let state = State {
+            busy_until: 0.0,
             mana: sheet.mana * mana_start_pct / 100.0,
             e_ready: 0.0,
             w_ready: 0.0,
@@ -122,10 +142,12 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cost: kit.at_rank("gen.Q.costMana", ranks.q)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_time_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cost: kit.at_rank("gen.E.costMana", ranks.e)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_cdr: kit.num("gen.E.cdrPerCastS")?,
+            e_cast_time_s: kit.num("gen.E.castTimeS")?,
             w_active_dmg: kit.hit("gen.W.activeDamage", ranks.w, sheet)?,
             w_onhit_dmg: kit.hit("gen.W.onhitDamage", ranks.w, sheet)?,
             w_window_s: kit.num("gen.W.windowS")?,
@@ -196,6 +218,7 @@ impl Driver for GenDriver {
             e.st.next_attack = t + e.attack_period(b);
         }
         // arm Nether Blade for the following attack as soon as it is ready
+        // (no cast time, no time cost: it does not need `busy_for`)
         if self.ranks.w > 0 && !self.s.w_armed && t >= self.s.w_ready {
             self.s.w_armed = true;
             self.s.w_armed_until = t + self.w_window_s;
@@ -211,7 +234,7 @@ impl Driver for GenDriver {
         if self.s.mana < self.q_cost {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -222,7 +245,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_time_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -242,22 +265,20 @@ impl Driver for GenDriver {
         self.s.r_land_at = t + self.r_cast_time_s;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
         self.reduce_e_cd(t);
+        self.busy_for(e, self.r_cast_time_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
-        if self.ranks.e > 0 {
-            let ready_t = pymax(self.s.e_ready, e.st.t);
-            if self.s.mana >= self.e_cost {
-                out[n] = (ready_t, Kind::Ev(EV_E_CAST));
-                n += 1;
-            }
+        if self.ranks.e > 0 && self.s.mana >= self.e_cost {
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
+            n += 1;
         }
         if self.s.r_land_at != INF {
             out[n] = (self.s.r_land_at, Kind::Ev(EV_R_LAND));
             n += 1;
         } else if self.ranks.r > 0 {
-            let ready_t = pymax(self.s.r_ready, e.st.t);
+            let ready_t = self.castable_at(e, self.s.r_ready);
             let stacks = self.effective_r_stacks(ready_t);
             let cost = self.r_cast_cost(stacks);
             if self.s.mana >= cost {
@@ -283,7 +304,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_time_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 let stacks = self.effective_r_stacks(t);
@@ -293,8 +314,7 @@ impl Driver for GenDriver {
                 self.s.r_land_at = t + self.r_cast_time_s;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
                 self.reduce_e_cd(t);
-                e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.r_cast_time_s);
             }
             Kind::Ev(EV_R_LAND) => {
                 self.s.r_land_at = INF;

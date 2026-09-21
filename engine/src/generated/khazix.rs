@@ -2,7 +2,9 @@
 //! Assault (R) is opened purely to arm Unseen Threat and to grant its free
 //! recast for a second proc, while Taste Their Fear (Q, evolved and always
 //! Isolated-tier against the lone dummy), Void Spike (W) and Leap (E) are
-//! each cast as soon as they come off cooldown.
+//! each cast as soon as they come off cooldown. Casts go one at a time: Q
+//! and W each keep Kha'Zix busy for their 0.25 s cast time; E and R have no
+//! cast time of their own but still wait for one in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -23,13 +25,15 @@ pub struct GenDriver {
     p_dmg_base: f64,
     p_ad_ratio: f64,
     /// Taste Their Fear's Isolated damage instance (always used: the dummy
-    /// is always Isolated), its base cooldown and Evolved Reaper Claws'
-    /// isolated-target cooldown reduction fraction.
+    /// is always Isolated), its base cooldown, Evolved Reaper Claws'
+    /// isolated-target cooldown reduction fraction, and its cast time.
     q_iso_dmg: f64,
     q_cd_base: f64,
     q_evo_cdr_frac: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_cd_base: f64,
+    w_cast_s: f64,
     e_dmg: f64,
     e_cd_base: f64,
     /// Void Assault's stealth duration and the delay after leaving it before
@@ -45,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     e_ready: f64,
     /// When Void Assault's free recast may be used (INF: none pending).
@@ -55,10 +61,26 @@ struct State {
     p_armed_this_attack: bool,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
             r_recast_at: INF,
@@ -73,8 +95,10 @@ impl Driver for GenDriver {
             q_iso_dmg: kit.hit("gen.Q.isoDamage", ranks.q, sheet)?,
             q_cd_base: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_evo_cdr_frac: kit.num("gen.Q.evolvedIsolationCdrPct")? / 100.0,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd_base: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd_base: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             r_stealth_s: kit.num("gen.R.stealthDurationS")?,
@@ -123,7 +147,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -135,12 +159,12 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // The opening cast: no direct damage, just arms Unseen Threat and
-        // schedules the free recast for a second proc
+        // The opening cast: no direct damage, no cast time of its own, just
+        // arms Unseen Threat and schedules the free recast for a second proc
         let t = e.st.t;
         self.s.p_pending = true;
         self.s.r_recast_at = t + self.r_stealth_s + self.r_recast_delay_s;
@@ -150,15 +174,15 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E));
             n += 1;
         }
         if self.s.r_recast_at != INF {
-            out[n] = (self.s.r_recast_at, Kind::Ev(EV_R_RECAST));
+            out[n] = (self.castable_at(e, self.s.r_recast_at), Kind::Ev(EV_R_RECAST));
             n += 1;
         }
         n
@@ -173,18 +197,21 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E) => {
-                // no cast time: Leap's landing damage, no attack lockout
+                // no cast time: Leap's landing damage lands with the cast,
+                // but the leap itself still holds the next attack back
                 self.s.e_ready = t + e.basic_cd(self.e_cd_base);
                 e.deal(self.e_dmg, DType::Physical, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
+                e.lockout();
             }
             Kind::Ev(EV_R_RECAST) => {
-                // the free recast: no damage, just a second Unseen Threat
+                // the free recast: no damage, no cast time, just a second
+                // Unseen Threat
                 self.s.r_recast_at = INF;
                 self.s.p_pending = true;
                 e.prime_spellblade();

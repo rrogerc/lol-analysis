@@ -10,13 +10,14 @@
   "W"
  ],
  "notes": [
-  "Opens with Collateral Damage (R) at t=0; the shell-hit and cone-explosion damage are both assumed to land on the single dummy target, the most common in-game reading when a champion stands point-blank in the cone (an open question in the dossier).",
+  "Casts go one at a time: a cast's damage lands as it starts, then it keeps Graves busy for its cast time (no other cast, no attack) — Q, W and R each have a 0.25 s cast time per the dossier; Quickdraw's cast time is stated as none, so it costs nothing and delays nothing but still waits out any cast already in progress.",
+  "Opens with Collateral Damage (R) at t=0: both the shell-hit and cone-explosion damage land immediately with the cast (the most common in-game reading of a champion standing point-blank in the cone, an open question in the dossier), then Graves is busy for R's 0.25 s cast time before anything else can start.",
   "Basic attacks are New Destiny's 4-pellet spray (6 pellets on crit): the first pellet deals the full per-level AD ratio and each further pellet deals 0.333x of it, and a crit applies a reduced bonus multiplier (1 + 0.5*(critDamage-1)) to every pellet instead of the normal crit multiplier; because the engine models crit as an expected value, this is computed as a single blended expected-value hit per attack (attack_damage is overridden to 0 and the whole pellet instance is dealt in before_attack) rather than as discrete pellets or a discrete crit roll.",
   "The per-level base pellet AD ratio is not resolvable from the bin (unresolved ByCharLevelFormulaCalculationPart) so it is computed directly from the wiki's stated formula 100*(0.6895+0.01765*x*(0.595+0.0225*(x-1)))% AD for levels 1-18 and stored as a by-level table.",
   "The ammo system is modeled as: 2 shells, each attack spends one, and emptying the clip starts a flat 2.08 s reload during which Graves cannot attack; the 1-shell idle-then-1.3s-reload path never triggers because the rotation always attacks the instant it can. Reload speed's stated (and explicitly 'confusing', non-monotonic) scaling with bonus attack speed is not modeled; the flat base time is used throughout, per the dossier's own fallback option.",
-  "Quickdraw (E) is cast the instant it is off cooldown purely for its attack-reset and reload-1-shell effect (it deals no damage): if cast while reloading it cancels the reload and leaves 1 shell instead of 2, otherwise it tops the clip up by 1; either way it resets the attack timer. Its own cooldown ticks down 0.5 s per expected pellet landed (4 normal / 6 on crit, blended the same way as the passive) while it is on cooldown.",
-  "Q (End of the Line) is cast on cooldown: the initial pass deals its damage on cast, and the powder trail is assumed to detonate on the same stationary dummy 2 seconds later for its separate damage instance.",
-  "W (Smoke Screen) is cast on cooldown for its impact damage; travel time is not modeled beyond the usual 0.25 s cast lockout.",
+  "Quickdraw (E) is cast the instant it is off cooldown (and not blocked by a cast in progress) purely for its attack-reset and reload-1-shell effect (it deals no damage): if cast while reloading it cancels the reload and leaves 1 shell instead of 2, otherwise it tops the clip up by 1; either way it resets the attack timer. Its own cooldown ticks down 0.5 s per expected pellet landed (4 normal / 6 on crit, blended the same way as the passive) while it is on cooldown.",
+  "Q (End of the Line) is cast on cooldown: the initial pass deals its damage as the cast starts (then a 0.25 s busy window), and the powder trail is assumed to detonate on the same stationary dummy 2 seconds later for its separate damage instance (a delayed hit, not a new cast, so it does not itself wait on other casts).",
+  "W (Smoke Screen) is cast on cooldown for its impact damage, which lands as the cast starts, followed by its own 0.25 s busy window.",
   "Mana is modeled as a single pool starting at the level-16 sheet's mana value with no regeneration (the fight is short); once a cast's cost cannot be paid, that ability stops being cast for the rest of the fight instead of looping. This is because Graves' four costed abilities can plausibly drain a level-16 mana pool inside 15 s.",
   "True Grit's bonus armor/MR from Quickdraw only affects damage taken, not dealt, and is omitted."
  ],
@@ -126,6 +127,7 @@
     ]
    },
    "detonationDelayS": 2,
+   "castTimeS": 0.25,
    "costMana": [
     80,
     80,
@@ -145,6 +147,7 @@
     ],
     "apRatio": 0.6
    },
+   "castTimeS": 0.25,
    "costMana": [
     70,
     75,
@@ -183,6 +186,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/graves.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/graves.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/graves.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/graves.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

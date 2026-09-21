@@ -11,11 +11,12 @@
  ],
  "notes": [
   "Sovereign's Domination (P) requires an enemy champion takedown to ever trigger, which never happens against a stationary dummy, so it contributes nothing and is omitted entirely.",
-  "Q's cast time is the engine's standard 0.25 s ability lockout, matching the dossier's quoted cast time.",
+  "Q's active thrust has a real 0.25 s cast time (the dossier's quoted castTime): it lands with the cast, then keeps Viego busy for 0.25 s (no other cast, no attack) via a single busy_until tracked in state.",
+  "R's blink also has a real cast time (0.5 s, dossier-quoted): it likewise lands with the cast and then keeps Viego busy for 0.5 s; W and E, which have no cast time, still wait for any cast in progress but cost nothing themselves once they start.",
   "The crit-scaling terms on Q's active thrust, Q's on-hit passive, and R's arrival damage are Riot's own continuous expected-value formulas (partial coefficients of 0.6 / 0.7 / 0.7 on crit chance times crit damage bonus), applied manually rather than through the engine's own crit multiplier; the second-strike (mark consumption) instead rolls a full standard crit, so it uses the engine's crit_mod handling.",
   "Spectral Maw (W) is charged for the minimum time and recast immediately: its damage is fixed regardless of charge duration and only stun/range (irrelevant against a stationary dummy) scale with charge, so the charge is treated as instantaneous; the recast still resets the attack timer and applies the mark.",
   "Harrowed Path (E) is cast on cooldown purely for its attack-speed buff, which is read as lasting the full 8 s mist duration even while Viego keeps attacking (only the movement speed/camouflage portion is stated to be interrupted by attacking or casting).",
-  "Heartbreaker (R) is cast at the opening and again whenever its cooldown allows within the fight; on arrival it deals its AD-ratio damage plus the missing-health bonus to the target, applies Blade of the Ruined King's on-hit effects (the passive rider and any pending mark consumption), and then issues Viego an automatic follow-up basic attack.",
+  "Heartbreaker (R) is cast at the opening and again whenever its cooldown allows within the fight; after its 0.5 s cast time, it deals its AD-ratio damage plus the missing-health bonus to the target, applies Blade of the Ruined King's on-hit effects (the passive rider and any pending mark consumption), and then issues Viego an automatic follow-up basic attack.",
   "Every basic attack applies Blade of the Ruined King's on-hit rider (percent current health, floored at its minimum, capable of a partial crit), and additionally consumes any pending mark for the second strike (full crit-capable, on-hit but not ability-tagged damage) left by Q's active or W.",
   "None of Viego's abilities cost mana or energy, so no resource pool is modeled.",
   "The monster damage cap on Q's on-hit rider is not applied since the dummy counts as an enemy champion."
@@ -62,6 +63,7 @@
  },
  "gen": {
   "Q": {
+   "castTimeS": 0.25,
    "active": {
     "damage": {
      "base": [
@@ -143,7 +145,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/viego.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/viego.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/viego.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/viego.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

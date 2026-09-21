@@ -10,17 +10,19 @@
   "W"
  ],
  "notes": [
-  "Opening and loop: Sleepy Trouble Bubble (E) and Paddle Star! (Q) are each cast the instant they come off cooldown, Spell Thief (W) is cast continuously (its 0.25 s cooldown is not a real gate), and Zoe auto-attacks in every gap; Portal Jump (R) is never cast.",
+  "Casts go one at a time: Sleepy Trouble Bubble and Paddle Star! each have a 0.25 s cast time, Spell Thief has a 0.01 s cast time; during any of these no other cast and no attack starts. The opening therefore lands E, then (0.25 s later) Q, rather than both at 0.00 s.",
+  "Opening and loop: Sleepy Trouble Bubble (E) and Paddle Star! (Q) are each cast the instant they come off cooldown (and are not blocked by another cast in progress), Spell Thief (W) is cast continuously (its 0.25 s cooldown is not a real gate), and Zoe auto-attacks in every gap; Portal Jump (R) is never cast.",
   "Paddle Star!'s total damage scales 0% to ~150% (bugged to 146.6%) with distance travelled before impact. Because the dummy is stationary and always in range, the star is assumed to hit it immediately at the moment of cast, so the distance bonus is fixed at 0% and the recast (which needs the star to reach and linger at max range without hitting anyone) never becomes available and is not modeled.",
-  "Sleepy Trouble Bubble's cast time is taken from the wiki's explicit 0.25 s rather than the bin's conflicting 0.3 s.",
+  "Sleepy Trouble Bubble's cast time is taken from the wiki's explicit 0.25 s rather than the bin's conflicting 0.3 s, for both the check and the driver's busy window.",
+  "Spell Thief's cast time is the bin's 0.01 s (the wiki gives no cast-time field for it); this is carried as gen.W.castTimeS and applied with busy_for on every cast.",
   "Ability damage is treated as landing on the cast (missile travel time is not modeled), matching the engine's usual simplification for Q and E.",
   "Spell Thief is assumed to trigger its Wheeeee proc (movement speed + three bolts) on every cast even without a held Spell Shard, since the stat dummy fight offers no shards to pick up and this is the well-established baseline use of the button.",
-  "The three bolts from a Spell Thief cast are assumed to fire one every 0.5 s at the always-in-range dummy (no cadence number is given in the sources); once a set's three bolts have all fired, the next cast is folded in immediately, so recasting replaces rather than stacks bolt sets.",
+  "The three bolts from a Spell Thief cast are assumed to fire one every 0.5 s at the always-in-range dummy (no cadence number is given in the sources); once a set's three bolts have all fired, the next cast is folded in immediately, so recasting replaces rather than stacks bolt sets. Only the bolt-set start (the cast itself) costs the 0.01 s cast time; the bolts that follow are their own timed events, not casts.",
   "More Sparkles! arms on every Q, E, or W cast (a 5 s window) and is consumed by whichever lands first, an attack or a bolt; it does not stack.",
   "Sleepy Trouble Bubble's wake-up bonus true damage (equal to the post-mitigation damage of the next qualifying hit, capped at the bubble's own damage) is modeled as always dealing its full capped value on the next attack, bolt, or Q cast that lands while the target is asleep or within 1 s after, because the engine does not expose a hit's post-mitigation result back to the driver.",
   "Sleepy Trouble Bubble's percent cooldown refund is applied on every cast since the stat dummy counts as an enemy champion and the bubble always hits it.",
   "The magic resistance shred applied while the target sleeps is declared under abilities.Q.shred only because that is the one slot the engine reads; it is actually Sleepy Trouble Bubble's (E's) effect.",
-  "Portal Jump is omitted: it deals no damage itself, and its cast-time lockout plus the lockout on blinking back would cost more attack/cast time in a short single-target fight than its attack-reset is worth.",
+  "Portal Jump is omitted: it deals no damage itself, and its cast-time lockout plus the lockout on blinking back would cost more attack/cast time in a short single-target fight than its attack-reset is worth; its 0.25 s cast time is carried at gen.R.castTimeS so the check has a number even though the driver never casts it (see unused.R).",
   "Mana costs are not modeled; nothing here binds inside a 15 s fight at level 16."
  ],
  "assumed": [
@@ -33,6 +35,9 @@
    "why": "Paddle Star!'s distance-based damage bonus is fixed at 0% because the star is assumed to hit the stationary, always-in-range dummy immediately, never reaching the lingering/recast range"
   }
  ],
+ "unused": {
+  "R": "Portal Jump deals no damage itself; its cast-time lockout and the further lockout on blinking back cost more time than the attack-reset is worth in a short single-target fight, so it is never cast."
+ },
  "abilities": {
   "Q": {
    "name": "Paddle Star!",
@@ -136,7 +141,8 @@
     46,
     50
    ],
-   "distanceBonusPct": 0
+   "distanceBonusPct": 0,
+   "castTimeS": 0.25
   },
   "W": {
    "boltDamage": {
@@ -150,7 +156,8 @@
     "apRatio": 0.1
    },
    "boltsPerCast": 3,
-   "boltIntervalS": 0.5
+   "boltIntervalS": 0.5,
+   "castTimeS": 0.01
   },
   "E": {
    "damage": {
@@ -172,7 +179,11 @@
    ],
    "drowsyDurationS": 1.4,
    "sleepDurationS": 2.25,
-   "wakeLingerS": 1
+   "wakeLingerS": 1,
+   "castTimeS": 0.25
+  },
+  "R": {
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -180,6 +191,8 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zoe.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zoe.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zoe.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zoe.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

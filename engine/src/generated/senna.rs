@@ -3,7 +3,9 @@
 //! current-health-percent bonus damage and a permanent Mist stack (bonus AD),
 //! Relic Cannon adds on-hit damage to attacks and Piercing Darkness, and
 //! Piercing Darkness's cooldown is refunded on-attack. Dawning Shadow opens
-//! the fight; Piercing Darkness and Last Embrace go out on cooldown.
+//! the fight; Piercing Darkness and Last Embrace go out on cooldown. Curse of
+//! the Black Mist deals no damage and is never cast. Casts go one at a time:
+//! each keeps Senna busy for its own cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -32,9 +34,11 @@ pub struct GenDriver {
     q_bad_ratio: f64,
     q_cd: f64,
     q_cdr_onhit: f64,
+    q_cast_s: f64,
     w_base: f64,
     w_bad_ratio: f64,
     w_cd: f64,
+    w_cast_s: f64,
     r_base: f64,
     r_ap_ratio: f64,
     r_bad_ratio: f64,
@@ -49,6 +53,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     mist_stacks: i64,
     mark_active: bool,
     mark_expire: f64,
@@ -59,6 +65,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// The bonus AD Mist stacks are currently granting, on top of the
     /// build's own bonus AD.
     fn bonus_ad_now(&self, e: &Engine) -> f64 {
@@ -93,6 +112,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             mist_stacks: 0,
             mark_active: false,
             mark_expire: 0.0,
@@ -113,9 +133,11 @@ impl Driver for GenDriver {
             q_bad_ratio: kit.num("gen.Q.damage.bonusAdRatio")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_cdr_onhit: kit.num("gen.Q.cdReductionOnHitS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_base: kit.at_rank("gen.W.damage.base", ranks.w)?,
             w_bad_ratio: kit.num("gen.W.damage.bonusAdRatio")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             r_base: kit.at_rank("gen.R.damage.base", ranks.r)?,
             r_ap_ratio: kit.num("gen.R.damage.apRatio")?,
             r_bad_ratio: kit.num("gen.R.damage.bonusAdRatio")?,
@@ -162,7 +184,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -178,21 +200,21 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has primed Spellblade and delayed the
-        // first attack; Dawning Shadow's 1s cast time is longer, so extend it
+        // the opening cast (the engine has primed Spellblade): its damage
+        // lands after the cast time, so it schedules its own event
         let t = e.st.t;
         self.s.r_land_at = t + self.r_cast_s;
-        e.st.next_attack = pymax(e.st.next_attack, t + self.r_cast_s);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.s.r_land_at != INF {
@@ -214,7 +236,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_R) => {
                 self.s.r_land_at = INF;

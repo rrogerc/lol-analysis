@@ -10,11 +10,12 @@
   "E"
  ],
  "notes": [
-  "Opens with Trueshot Barrage (R) at t = 0; its 1 s cast time holds attacks (and the mark/CDR machinery) until it lands, then it is recast on cooldown if it comes up again inside the fight.",
+  "Casts go one at a time: a cast takes effect as it starts and then keeps Ezreal busy for its cast time (Mystic Shot, Essence Flux and Arcane Shift each have a 0.25 s cast time; Trueshot Barrage has 1 s) — no other cast and no attack starts inside that window. One busy_until timer, shared by every cast, enforces this throughout the fight.",
+  "Opens with Trueshot Barrage (R) at t = 0; its damage lands with the cast itself, and its 1 s cast time then holds every other cast and every attack until it ends. It is recast on cooldown if it comes up again inside the fight.",
   "Mystic Shot (Q) is cast on cooldown throughout; it is modeled as able to critically strike, since the wiki explicitly calls it 'basic damage' rather than a pure spell-damage ability.",
   "Every Mystic Shot hit reduces the CURRENT cooldowns of Q, W, E and R by 1.5 s; R is included in that reduction (the dossier leaves this open, and 'all of Ezreal's abilities' is read literally as including the ultimate).",
-  "Essence Flux (W) is cast on cooldown to refresh its mark; the mark deals 0 damage itself and is detonated for its bonus magic damage by whichever of a basic attack, Mystic Shot or Arcane Shift lands on the dummy next, matching 'his next basic attack or ability against the target detonates the mark'. Total damage is the same regardless of which of the three detonates it, so no priority is enforced beyond natural timing.",
-  "Arcane Shift (E) is cast on cooldown for its own magic damage; against a single stationary target it is always the 'nearest enemy' the homing bolt strikes, and its short blink/travel time is not modeled beyond the standard 0.25 s cast lockout.",
+  "Essence Flux (W) is cast on cooldown to refresh its mark (its 0.25 s cast time holds other casts and attacks, but it deals 0 damage on application, matching the wiki); the mark deals 0 damage itself and is detonated for its bonus magic damage by whichever of a basic attack, Mystic Shot or Arcane Shift lands on the dummy next, matching 'his next basic attack or ability against the target detonates the mark'. Total damage is the same regardless of which of the three detonates it, so no priority is enforced beyond natural timing.",
+  "Arcane Shift (E) is cast on cooldown for its own magic damage, landing with the cast; against a single stationary target it is always the 'nearest enemy' the homing bolt strikes, and its short blink/travel time is not modeled beyond its 0.25 s cast time.",
   "Rising Spell Force (P) gains a stack (capped at 5, 10% bonus AS each) whenever an ability (Q, W's application, E, R, or the Essence Flux detonation) hits the dummy; all current stacks are modeled as sharing one refreshing 6 s timer rather than expiring individually, since casts land close enough together for this to make no practical difference.",
   "Mana is not modeled: at level 16 nothing here plausibly runs the fight out of mana inside 15 s."
  ],
@@ -77,7 +78,8 @@
     "adRatio": 1.3,
     "apRatio": 0.4
    },
-   "cdrOnHitS": 1.5
+   "cdrOnHitS": 1.5,
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -91,7 +93,8 @@
     "bonusAdRatio": 1.0,
     "apRatio": 0.9
    },
-   "markDurationS": 4
+   "markDurationS": 4,
+   "castTimeS": 0.25
   },
   "E": {
    "damage": {
@@ -104,7 +107,8 @@
     ],
     "bonusAdRatio": 0.6,
     "apRatio": 0.75
-   }
+   },
+   "castTimeS": 0.25
   },
   "R": {
    "damage": {
@@ -124,6 +128,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ezreal.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ezreal.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ezreal.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ezreal.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

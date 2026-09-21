@@ -6,6 +6,8 @@
 //! fight, channels for 1 s, then fires. Yordle Snap Trap is cast once, its
 //! trap placed on the dummy's own stationary location so it springs the
 //! instant it arms, granting its bonus Headshot damage as a single instance.
+//! Casts go one at a time: each ability's own cast time keeps Caitlyn busy
+//! (no other cast, no attack) until it ends, tracked by one `busy_until`.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -13,9 +15,9 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// 90 Caliber Net is cast on cooldown; Ace in the Hole's channel ends and its
-/// bullet lands; Yordle Snap Trap is placed once and its bonus damage lands
-/// when it arms and springs.
+/// 90 Caliber Net is cast on cooldown; Ace in the Hole's channel starts and
+/// its bullet lands; Yordle Snap Trap is placed once and its bonus damage
+/// lands when it arms and springs.
 const EV_E_CAST: u8 = 0;
 const EV_R_CAST: u8 = 1;
 const EV_R_FIRE: u8 = 2;
@@ -34,17 +36,21 @@ pub struct GenDriver {
     p_headshot_coef: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     w_dmg: f64,
     w_arm_s: f64,
+    w_cast_s: f64,
     /// When Yordle Snap Trap's single cast is placed: right when Ace in the
     /// Hole's channel ends, or at t=0 if the ult is not ranked.
     w_cast_at: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     /// Ace in the Hole's damage, already folded with its crit-scaling term.
     r_dmg: f64,
     r_cd: f64,
     r_channel_s: f64,
+    r_cast_s: f64,
     src_headshot: SourceId,
     src_w: SourceId,
     /// The rotation state, and the pristine copy `reset` restores.
@@ -55,6 +61,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     p_headshot_pending: bool,
     e_ready: f64,
@@ -69,8 +77,22 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Starts (or restarts) Ace in the Hole's channel: holds attacks and the
-    /// other basics until it ends.
+    /// other basics until it ends (the channel's full 1 s, not just the
+    /// 0.375 s cast time inside it).
     fn start_r_channel(&mut self, e: &mut Engine) {
         let t = e.st.t;
         self.s.r_fire_at = t + self.r_channel_s;
@@ -92,6 +114,7 @@ impl Driver for GenDriver {
         let r_channel_s = kit.num("gen.R.channelDurationS")?;
         let w_cast_at = if ranks.r > 0 { r_channel_s } else { 0.0 };
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_headshot_pending: false,
             e_ready: 0.0,
@@ -108,14 +131,18 @@ impl Driver for GenDriver {
             p_headshot_coef: level_term + crit_chance * (crit_damage - 1.0),
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_arm_s: kit.num("gen.W.armTimeS")?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             w_cast_at,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg: r_base * r_mult,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_channel_s,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_headshot: intern("P headshot"),
             src_w: intern("W"),
             s: state,
@@ -168,7 +195,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -177,12 +204,14 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
-        // Piltover Peacemaker resets Caitlyn's attack timer on hit: the next
-        // attack becomes available one windup after this cast.
         let t = e.st.t;
+        self.busy_for(e, self.q_cast_s);
+        // Piltover Peacemaker resets Caitlyn's attack timer on hit: the next
+        // attack becomes available one windup after the cast starts, or
+        // when the cast time ends, whichever is later.
         let b = self.bonus_as(t);
-        e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
+        let reset_at = t + e.attack_windup(b, self.windup_fraction);
+        e.st.next_attack = pymax(e.st.next_attack, reset_at);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -190,12 +219,13 @@ impl Driver for GenDriver {
             return;
         }
         self.start_r_channel(e);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -203,13 +233,13 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_fire_at, Kind::Ev(EV_R_FIRE));
                 n += 1;
             } else if self.s.r_ready != INF {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
                 n += 1;
             }
         }
         if self.ranks.w > 0 {
             if self.s.w_cast_pending {
-                out[n] = (pymax(self.w_cast_at, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.w_cast_at), Kind::Ev(EV_W_CAST));
                 n += 1;
             } else if self.s.w_spring_at != INF {
                 out[n] = (self.s.w_spring_at, Kind::Ev(EV_W_SPRING));
@@ -227,11 +257,12 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_R_CAST) => {
                 self.s.r_ready = INF;
                 self.start_r_channel(e);
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_FIRE) => {
                 self.s.r_fire_at = INF;
@@ -247,7 +278,7 @@ impl Driver for GenDriver {
                 self.s.w_cast_pending = false;
                 self.s.w_spring_at = e.st.t + self.w_arm_s;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_W_SPRING) => {
                 self.s.w_spring_at = INF;

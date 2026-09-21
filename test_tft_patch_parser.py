@@ -95,6 +95,46 @@ class TestPatchNotesParser(unittest.TestCase):
         self.assertEqual((main["what"], main["update"], main["major"]),
                          ("Bloodthirster Trigger Health", "", "LARGE CHANGES"))
 
+    REAL_18_2_MID_PATCH = """
+        <h1>Teamfight Tactics patch 18.2</h1>
+        <h2>MID-PATCH UPDATE</h2><h4>SEPTEMBER 14</h4>
+        <h4>SYSTEMS</h4><ul><li>XP From Level 8-9: 64 ⇒ 68</li><li>XP From Level 9-10: 64 ⇒ 68</li></ul>
+        <h4>UNITS</h4><ul>
+          <li>Camille Ability Damage: 160/240/410/700 AD ⇒ 150/225/375/640 AD</li>
+          <li>Brambleback: Fixed a bug where his baseline Armor Ignore was higher than intended.</li>
+          <li>Draven Bounty Hunter:<ul><li>Casts for 4-costs: 5 ⇒ 6</li></ul></li>
+        </ul>
+        <h2>18.2 PERFORMANCE/STABILITY IMPROVEMENTS</h2><ul><li>Engine Load/Start-up: faster.</li></ul>
+        <h2>SYSTEMS</h2><h4>XP PER LEVEL</h4><ul><li>Level 8 to Level 9: 68 ⇒ 64</li></ul>
+        <h2>LARGE CHANGES</h2><h4>UNITS: TIER 4</h4><ul><li>Ashe Arrow Damage: 440/660 AD ⇒ 465/700 AD</li></ul>"""
+
+    def test_real_18_2_singular_heading_with_the_date_as_h4_is_a_dated_update(self):
+        # 18.1 wrote <h2>Mid-Patch Updates</h2><h3>AUGUST 27TH</h3><h4>CHAMPIONS</h4>. 18.2 wrote the
+        # shape above. Unrecognised, it left the hotfix labelled 18.2 with an empty update list.
+        document = tft.patch_notes_document(self.REAL_18_2_MID_PATCH, "18.2")
+        self.assertEqual((document["patch"], document["updates"]), ("18.2b", ["SEPTEMBER 14"]))
+        by_label = {c["what"]: c for c in document["changes"]}
+        for what, section in [("XP From Level 8-9", "SYSTEMS"), ("Camille Ability Damage", "UNITS"),
+                              ("Draven Bounty Hunter Casts for 4-costs", "UNITS")]:
+            self.assertEqual((by_label[what]["update"], by_label[what]["section"], by_label[what]["major"]),
+                             ("SEPTEMBER 14", section, "MID-PATCH UPDATE"))
+        # the date is never mistaken for a section, and nothing leaks into the article below it
+        self.assertNotIn("SEPTEMBER 14", {n["section"] for n in document["notes"]})
+        for what in ("Level 8 to Level 9", "Ashe Arrow Damage"):
+            self.assertEqual(by_label[what]["update"], "")
+        performance = next(n for n in document["notes"] if n["text"].startswith("Engine Load"))
+        self.assertEqual((performance["update"], performance["major"]), ("", "18.2 PERFORMANCE/STABILITY IMPROVEMENTS"))
+
+    def test_only_a_date_promotes_a_lower_heading_and_only_inside_a_mid_patch_block(self):
+        html = self.REAL_18_2_MID_PATCH.replace("<h4>SEPTEMBER 14</h4>", "<h4>MAYHEM CHANGES</h4>")
+        document = tft.patch_notes_document(html, "18.2")
+        self.assertEqual((document["patch"], document["updates"]), ("18.2", []))
+        elsewhere = """<h2>LARGE CHANGES</h2><h4>SEPTEMBER 14</h4>
+            <ul><li>Ashe Arrow Damage: 440/660 AD ⇒ 465/700 AD</li></ul>"""
+        document = tft.patch_notes_document(elsewhere, "18.2")
+        self.assertEqual((document["patch"], document["changes"][0]["section"], document["changes"][0]["update"]),
+                         ("18.2", "SEPTEMBER 14", ""))
+
     def test_numeric_ratio_colon_is_kept_for_review_instead_of_becoming_a_label(self):
         parsed = tft.patch_entry_changes(entry("Damage Ratio: 1:2 AD/AP ⇒ 2:3 AD/AP", parent="Champion AP Form"))
         self.assertEqual(len(parsed), 1)

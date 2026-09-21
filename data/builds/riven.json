@@ -10,19 +10,22 @@
   "E"
  ],
  "notes": [
-  "Opens with R (Blade of the Exile) at t=0: its 20% bonus AD is computed once from the sheet's AD (it is locked in at cast and does not change afterward), and it plus Wind Slash access apply 0.5 s later, per the wiki's separate 'bonuses apply after 0.5s' note (distinct from the 0.25s cast time).",
+  "Opens with R (Blade of the Exile) at t=0: its 0.25 s cast time (gen.R.castTimeS) keeps Riven busy before anything else starts, matching the wiki/bin castTime; its 20% bonus AD is computed once from the sheet's AD (it is locked in at cast and does not change afterward), and it plus Wind Slash access apply 0.5 s after the cast started, per the wiki's separate 'bonuses apply after 0.5s' note (distinct from the 0.25 s cast time).",
   "R's cooldown only starts after its 15 s effect ends and its minimum value (60 s at rank 3) is far longer than any fight modeled here, so R is cast exactly once, at the opening.",
-  "Immediately chains all three Broken Wings (Q) casts 0.3125 s apart (the static inter-cast gap, unaffected by haste); each sub-cast deals its own damage, resets the attack timer (Riven is ordered to attack the target), and generates/refreshes a Runic Blade Charge. Recasts again whenever the 13 s main cooldown (started on the first sub-cast) is next available.",
+  "Once R's 0.25 s cast time ends, immediately chains all three Broken Wings (Q) casts 0.3125 s apart (the static inter-cast gap, unaffected by haste); Broken Wings has no cast time so it never keeps Riven busy itself, but it still cannot start inside R's or Ki Burst's cast. Each sub-cast deals its own damage, resets the attack timer (Riven is ordered to attack the target), and generates/refreshes a Runic Blade Charge. Recasts again whenever the 13 s main cooldown (started on the first sub-cast) is next available.",
   "Assumes each of the three Broken Wings sub-casts is its own ability activation that generates a Runic Blade Charge (the wiki explicitly calls each sub-cast 'a single ability activation for on-cast effects'), settling the dossier's open question about stack generation in favor of the higher-uptime reading.",
   "The 4 s window in which Broken Wings' sub-casts must be chained is never modeled explicitly since the driver always recasts within the static 0.3125 s gap.",
-  "Ki Burst (W) is cast every time it comes off cooldown for its AoE hit and to refresh a Charge stack; its damage and stun are treated as landing on cast (the wiki says its effects apply before the cast time finishes).",
-  "Wind Slash is cast once both the 0.5 s Blade of the Exile delay has passed and the opening Broken Wings combo has landed, to bank some of its missing-health amplification without waiting on an unknown total fight length. Its damage is read as interpolating linearly between the minimum and maximum tooltip values by the target's missing health, capped at 75% missing health -- the most common reading of the wiki's percent-per-percent text, since the bin carries no explicit interpolation formula.",
+  "Ki Burst (W) is cast every time it comes off cooldown for its AoE hit and to refresh a Charge stack; its damage and stun are treated as landing on cast (the wiki says its effects apply before the cast time finishes), but the cast still costs its castTimeS (gen.W.castTimeS = 0.2667 s, the bin's actual live value; the wiki tooltip's rounded 0.25 s is the same field per the dossier's binNote) during which no other cast or attack starts.",
+  "Wind Slash is cast once both the 0.5 s Blade of the Exile delay has passed and the opening Broken Wings combo has landed, to bank some of its missing-health amplification without waiting on an unknown total fight length. Its damage is read as interpolating linearly between the minimum and maximum tooltip values by the target's missing health, capped at 75% missing health -- the most common reading of the wiki's percent-per-percent text, since the bin carries no explicit interpolation formula. Its own cast time is not modeled (treated as an instant follow-up, matching the prior admitted behavior; only Blade of the Exile's opening cast and Ki Burst carry a modeled cast time here).",
   "Runic Blade's bonus on-hit damage is treated as triggering once per basic attack (the wiki notes it is 'not on-hit', i.e. not a generic on-hit proc that could double-trigger), consuming and refreshing a Charge stack (max 3, 6 s duration); it is crit-modified and counted as proc damage, not ability damage.",
   "Only Runic Blade's on-hit damage is treated as able to critically strike; Broken Wings, Ki Burst and Wind Slash are plain ability damage per the wiki text, which only calls out crit for Runic Blade.",
   "Valor (E) is never cast: it deals no damage, and this is a stationary fight where its shield and dash have no value.",
   "Mana is not modeled: none of Riven's abilities cost mana."
  ],
  "assumed": [],
+ "unused": {
+  "E": "Valor deals no damage; only a shield and dash, which a stationary damage fight has no use for."
+ },
  "abilities": {
   "Q": {
    "name": "Broken Wings",
@@ -117,12 +120,14 @@
      185
     ],
     "bonusAdRatio": 1.0
-   }
+   },
+   "castTimeS": 0.2667
   },
   "R": {
    "bonusAdPct": 0.2,
    "bonusDelayS": 0.5,
    "durationS": 15,
+   "castTimeS": 0.25,
    "minDamage": {
     "base": [
      100,
@@ -147,7 +152,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/riven.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/riven.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/riven.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/riven.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

@@ -10,15 +10,16 @@
   "E"
  ],
  "notes": [
+  "Casts go one at a time: Jhin keeps one busy_until in his state. Q (0.25s), W (0.75s) and E (0.25s) each keep him busy for their cast time - no other cast and no attack starts until it ends - and Curtain Call's opening channel plus its four 1s-spaced recasts are treated as one continuous busy period lasting until the fourth bullet lands, during which Q, W, E and attacks all wait.",
+  "The fight opens with Curtain Call: its Active cast sets busy_until to the fourth recast's landing time (channelCastTimeS + 3*shotDelayS + shotFireDelayS), so Q, W, E and attacks only begin once the ult's four shots have all landed; this also prevents every ability from resolving simultaneously at 0.00s.",
   "Dancing Grenade's bounce needs an additional nearby enemy that has not been hit; against a lone stationary dummy (per the fight's general rule that anything needing another unit does nothing) it never bounces, so Q always lands as a single hit and its on-kill/stacking amplification never triggers.",
   "Lotus Trap is assumed to bloom as soon as it finishes arming, since the stationary dummy is already standing in its radius; this is an assumption noted because the wiki's mechanic describes an enemy 'crossing' the trap.",
   "Captive Audience is assumed to start the fight with both Lotus Trap charges banked (a level-16 champion arriving at a fight plausibly has its passive charges stocked); each detonation lands more than 1 second apart in this rotation so the 65% reduced-damage-vs-recently-hit case never applies.",
   "Curtain Call's 3%-per-1%-missing-health amplification is applied to all four bullets, including the doubled fourth bullet (amp multiplies the fourth bullet's already-doubled base), which is the reading used here for the dossier's open question.",
-  "Curtain Call's channel is treated as ending once its fourth bullet lands (rather than occupying the full 10 seconds), so Jhin's attacks resume immediately after; basic attacks are held for the whole channel via the attack timer.",
   "Jhin's attack speed cannot be increased by items (only by leveling): the build's bonus attack speed is cancelled out of his attack timing entirely and, together with his crit chance, is instead read by Every Moment Matters to grant bonus attack damage - this bonus AD is folded into every ability's and attack's AD scaling.",
   "The engine centrally computes crit as an expected value from the build's crit chance/crit damage for every basic attack, which this framework's hooks cannot suppress per-shot; Jhin's fourth shot's guaranteed, reduced-multiplier critical strike is therefore approximated as a flat +50% (Riot's FourthShotDamageMult) rider added on top of whatever the engine's own attack computation already produced for that shot. This is a known simplification.",
   "The fourth shot's missing-health execute bonus is added as its own physical rider (not itself treated as critically striking) and is not capped, since the dummy is champion-classified and the 800 cap only applies to monsters.",
-  "Q, W and E's short travel/cast delay is collapsed to landing at the moment of cast for damage purposes; the cast time is still honored by holding Jhin's next basic attack until the cast completes. Lotus Trap's arm time and detonation delay are modeled as real delays since they matter for timing near the edges of a fight.",
+  "Q, W and E's damage lands at the moment their cast time starts (per the general rule that a cast's effect lands as it starts, then costs its cast time); Lotus Trap's separate arm time and detonation delay are still modeled as real delays after that cast, since they matter for timing near the edges of a fight.",
   "Mana costs are not modeled; nothing here is expected to bind a level-16 Jhin across a 15 s fight, and out-of-combat reload is irrelevant since Jhin is always attacking or casting."
  ],
  "abilities": {
@@ -126,7 +127,8 @@
      0.74
     ],
     "apRatio": 0.6
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -192,6 +194,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jhin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jhin.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jhin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jhin.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

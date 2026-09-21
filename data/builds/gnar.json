@@ -14,9 +14,10 @@
   "Rage generation is simplified to the instant per-hit grants only: Boomerang Throw's first hit and each on-hit basic attack instantly grant Rage against a champion (25% and 50% respectively of the level-16, >=11 pp breakpoint value of 11). The separate 2-second 'deal or receive damage' trickle is not modeled, since the dummy never damages Gnar back and modeling it on top of the instant grants would double count the same attacks; Hop/Crunch/Wallop/GNAR! are not given a Rage value either since the wiki only states instant grants for Q and on-hit attacks.",
   "Gnar transforms into Mega Gnar the instant Rage reaches 100, approximating 'casting the next ability triggers an instant transform' rather than waiting out the separate 4 s auto-transform window.",
   "Boomerang Throw's return pass is assumed to always re-cross and hit the dummy and be caught for the 40% cooldown refund; Boulder Toss's boulder is assumed to always be retrieved for its 70% cooldown refund; no travel/positioning time is charged for either.",
-  "Hop/Crunch have no listed cast time, so their landing damage is assumed to land GnarE.TravelTime (0.6 s) after the cast, with Crunch's shockwave following a further 0.25 s later; both Crunch's impact and its shockwave are assumed to hit the single dummy. Gnar cannot cast Q/W/R (but keeps attacking) for the duration of that impact+shockwave window, per the wiki's 'locked out of using any other abilities during Crunch'.",
+  "Casts go one at a time: Boomerang Throw and GNAR! each keep Gnar busy for their 0.25 s cast time, Wallop for its 0.6 s cast time (all from the dossier); no other cast or attack starts until each ends. Hop/Crunch has no cast time (the dossier lists 'none'), so it costs nothing and does not by itself hold up a later cast.",
+  "Hop/Crunch have no listed cast time, so their landing damage is assumed to land GnarE.TravelTime (0.6 s) after the cast, with Crunch's shockwave following a further 0.25 s later; both Crunch's impact and its shockwave are assumed to hit the single dummy. Gnar cannot cast Q/W/R (but keeps attacking) for the duration of that impact+shockwave window, per the wiki's 'locked out of using any other abilities during Crunch'; this is a post-cast delay held in busy_until, not a cast time on E.",
   "Hyper's stack cap is taken as 3 (stated twice in the wiki's prose) rather than the bin's conflicting value of 2.",
-  "As Mega Gnar, Wallop (W) and GNAR! (R) are cast on cooldown once transformed; GNAR!'s base damage is applied after the 0.4 s delay the wiki states for its (non-wall) knockback damage. Its wall-collision bonus damage and stun are never modeled since the fight has no terrain.",
+  "As Mega Gnar, Wallop (W) and GNAR! (R) are cast on cooldown once transformed; GNAR!'s base damage is applied after the 0.4 s delay the wiki states for its (non-wall) knockback damage, on top of its own 0.25 s cast time. Its wall-collision bonus damage and stun are never modeled since the fight has no terrain.",
   "Q, W(mega)/Hyper(mini) and E are never given a crit multiplier: no Gnar ability is stated to critically strike.",
   "If Rage never reaches 100 within the fight window, Gnar simply remains Mini Gnar for the whole fight and never casts Wallop or GNAR' - this is expected, and damage still only grows as the fight gets longer.",
   "Mana is not modeled: none of Gnar's abilities have a cost."
@@ -107,7 +108,8 @@
     ],
     "adRatio": 1.4
    },
-   "megaCDRefund": 0.7
+   "megaCDRefund": 0.7,
+   "castTimeS": 0.25
   },
   "W": {
    "hyperDamage": {
@@ -138,7 +140,8 @@
      165
     ],
     "adRatio": 1.0
-   }
+   },
+   "castTimeS": 0.6
   },
   "E": {
    "miniDamage": {
@@ -182,7 +185,8 @@
     "apRatio": 1.0,
     "bonusAdRatio": 0.5
    },
-   "dmgDelayS": 0.4
+   "dmgDelayS": 0.4,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -190,7 +194,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/gnar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/gnar.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/gnar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/gnar.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

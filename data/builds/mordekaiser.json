@@ -10,11 +10,12 @@
   "W"
  ],
  "notes": [
-  "Opens with Realm of Death (R) at t = 0: its true damage (10% of the dummy's maximum health) and the target's 10% armor/magic resistance reduction (modeled with the engine's shred slot, declared under Q as the engine requires) land when the 0.5 s cast completes; the rest of R's stat theft (AP/attack speed/health gained by Mordekaiser, the target's base AD reduced) is not modeled since it does not translate into measurable extra damage against a stationary dummy with unspecified own AP/attack speed.",
+  "Casts go one at a time: each of Realm of Death, Obliterate and Death's Grasp has a real cast time (0.5 s, 0.5 s, 0.25 s per the dossier) that keeps Mordekaiser busy — no other cast and no attack starts inside it. A single busy_until tracks this.",
+  "Opens with Realm of Death (R) at t = 0: its cast (0.5 s) ends with its true damage (10% of the dummy's maximum health) landing and the target's 10% armor/magic resistance reduction applying (modeled with the engine's shred slot, declared under Q as the engine requires); the rest of R's stat theft (AP/attack speed/health gained by Mordekaiser, the target's base AD reduced) is not modeled since it does not translate into measurable extra damage against a stationary dummy with unspecified own AP/attack speed.",
   "R's true damage ignores mitigation and does not trigger on-ability-damage item effects (Muramana, Eclipse), per the wiki's damage flags (dApplyDamageModifier = false).",
-  "Obliterate (Q) and Death's Grasp (E) are cast on cooldown for the whole fight; Q's isolated-hit multiplier is always applied because the dummy is the only enemy present.",
+  "Obliterate (Q) and Death's Grasp (E) are then cast on cooldown for the rest of the fight, each waiting for any cast already in progress; Q's isolated-hit multiplier is always applied because the dummy is the only enemy present.",
   "Q's flat level-based bonus damage (0 through level 9, +5 per level from 10 to 18) is included per the wiki's reconstructed formula for MordekaiserQ#QDamage.",
-  "Death's Grasp's claw damage lands 0.5 s after the cast starts (the dossier's stated delay before it hits); its 0.25 s cast time only costs the usual 0.25 s attack lockout. Death's Grasp's passive magic penetration (5-15%) is not modeled: the engine exposes no caster-penetration path to the driver.",
+  "Death's Grasp's claw damage lands 0.5 s after its cast starts (the dossier's stated delay), which is after its own 0.25 s cast time completes; the cast time itself keeps Mordekaiser busy and holds attacks, while the extra time to the claw's damage is modeled as its own event. Death's Grasp's passive magic penetration (5-15%) is not modeled: the engine exposes no caster-penetration path to the driver.",
   "Darkness Rise (Passive) gains a stack (capped at 3, refreshing a 4 s window) from basic attacks, Obliterate and Death's Grasp; at 3 stacks it deals its magic-damage aura to the dummy every 1 second until the stack window lapses without a refresh. The dummy is treated as a champion, so the aura's monster damage cap never applies. Darkness Rise's on-hit bonus magic damage (40% AP) applies on every basic attack.",
   "Indestructible (W) is never cast: it produces no damage, only a defensive shield/heal that the damage fight ignores.",
   "Mana is not modeled: every Mordekaiser ability costs 0 per the numbers sheet.",
@@ -23,7 +24,7 @@
  "assumed": [
   {
    "path": "gen.E.delayS",
-   "why": "Death's Grasp's 0.5 s pre-damage delay is modeled as measured from the start of the cast rather than as additional time after the 0.25 s cast time completes; the dossier does not distinguish the two readings."
+   "why": "Death's Grasp's 0.5 s pre-damage delay is modeled as measured from the start of the cast (after its own 0.25 s cast time completes) rather than as additional time after the cast time; the dossier does not distinguish the two readings."
   }
  ],
  "abilities": {
@@ -144,7 +145,8 @@
     1.4,
     1.45,
     1.5
-   ]
+   ],
+   "castTimeS": 0.5
   },
   "E": {
    "damage": {
@@ -157,7 +159,8 @@
     ],
     "apRatio": 0.45
    },
-   "delayS": 0.5
+   "delayS": 0.5,
+   "castTimeS": 0.25
   },
   "R": {
    "castTimeS": 0.5,
@@ -171,7 +174,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mordekaiser.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mordekaiser.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mordekaiser.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mordekaiser.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

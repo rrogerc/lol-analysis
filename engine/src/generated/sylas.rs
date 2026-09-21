@@ -1,9 +1,11 @@
 //! Sylas. Q/W/E go out on cooldown; Chain Lash's chain hit and its
-//! 0.6 s-delayed explosion are two damage instances from one cast. Every
-//! ability cast (including the opening Hijack, which deals no damage against
-//! a dummy) refreshes a shared Unshackled stack timer, which grants flat
-//! bonus attack speed while up and turns the next attack into Petricite
-//! Burst's own magic damage instead of a normal physical hit.
+//! 0.6 s-delayed explosion are two damage instances from one cast, with
+//! Chain Lash's 0.4 s cast time and Hijack's 0.25 s cast time keeping Sylas
+//! busy (no other cast, no attack) until they end. Every ability cast
+//! (including the opening Hijack, which deals no damage against a dummy)
+//! refreshes a shared Unshackled stack timer, which grants flat bonus attack
+//! speed while up and turns the next attack into Petricite Burst's own
+//! magic damage instead of a normal physical hit.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -31,11 +33,13 @@ pub struct GenDriver {
     q_dmg: f64,
     q_explode_dmg: f64,
     q_explode_delay: f64,
+    q_cast_s: f64,
     q_cd: f64,
     w_dmg: f64,
     w_cd: f64,
     e_dmg: f64,
     e_cd: f64,
+    r_cast_s: f64,
     src_p: SourceId,
     src_q_explosion: SourceId,
     s: State,
@@ -45,6 +49,7 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
     stack_count: i64,
     stack_expire_at: f64,
     empowered_this_attack: bool,
@@ -55,6 +60,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// The Unshackled stacks actually up at time `t` (0 if the shared timer
     /// has already lapsed).
     fn effective_stacks(&self, t: f64) -> i64 {
@@ -78,6 +96,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             stack_count: 0,
             stack_expire_at: -INF,
             empowered_this_attack: false,
@@ -97,11 +116,13 @@ impl Driver for GenDriver {
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_explode_dmg: kit.hit("gen.Q.explosionDamage", ranks.q, sheet)?,
             q_explode_delay: kit.num("gen.Q.detonationDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             w_dmg: kit.hit("gen.W.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_p: intern("P"),
             src_q_explosion: intern("Q explosion"),
             s: state,
@@ -167,7 +188,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -179,16 +200,17 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
         // Hijack: no enemy ultimate exists to steal against a dummy, so it
-        // deals no damage; it still counts as an ability cast for the stack.
+        // deals no damage; it still counts as an ability cast for the stack,
+        // and its 0.25 s cast time keeps Sylas busy before anything else.
         let t = e.st.t;
         self.refresh_stack(t);
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -198,11 +220,11 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         n

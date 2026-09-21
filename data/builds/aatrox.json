@@ -10,11 +10,11 @@
   "E"
  ],
  "notes": [
-  "World Ender (R) is cast at t=0 to secure its bonus AD for as much of the fight as possible; Q, W and basic attacks read their AD-scaling damage from Aatrox's current total AD at the moment they land, so the R buff amplifies them too, per the mechanic that Q/W damage is calculated from current stats.",
+  "Casts go one at a time: one busy_until timer tracks the champion's current cast, and no other cast or attack starts inside it. World Ender is cast first at t=0 (its 0.25 s cast time, during which nothing else starts) to secure its bonus AD for as much of the fight as possible; Q and W read their AD-scaling damage from Aatrox's current total AD at the moment they land, so the R buff amplifies them too, per the mechanic that Q/W damage is calculated from current stats.",
   "Deathbringer Stance (P) is assumed pre-charged and ready at t=0 (the more common reading for a level-16 fight); each landed basic attack that does not consume it reduces its remaining cooldown by 2s, and a landed Q cast (assumed sweetspot, see below) or W hit reduces it by 2s/4s respectively; consuming it resets the cooldown to the full level-based value.",
-  "Every Darkin Blade (Q) cast is assumed to land its Sweetspot against the stationary dummy (maximum damage reading, doubling the Deathbringer Stance cooldown refund on each cast); Q's own cast time is not modeled beyond the standard 0.25s cast lockout, and the three casts are chained back-to-back at the 1-second static gap between casts stated for the ability, which is unaffected by ability haste.",
-  "Infernal Chains (W) is cast on cooldown; since the dummy never moves the 1.5s tether always survives, so both the initial hit and the delayed pull hit land, each dealing the base+40% AD physical damage (the wiki's literal 'the same damage again' reading) and each independently refunding 2s of Deathbringer Stance cooldown.",
-  "Umbral Dash (E) deals no damage and is used purely as an attack-timer reset, cast the instant it is off cooldown to squeeze in an extra basic attack; its passive lifesteal-style heal never changes damage dealt so it is ignored.",
+  "Every Darkin Blade (Q) cast is assumed to land its Sweetspot against the stationary dummy (maximum damage reading, doubling the Deathbringer Stance cooldown refund on each cast); each cast has a 0.6s cast time (no other cast or attack starts inside it), and the three casts are chained back-to-back at the 1-second static gap between casts (unaffected by ability haste), which is longer than the cast time so the gap alone paces them.",
+  "Infernal Chains (W) is cast on cooldown, with a 0.25s cast time (busy until it ends); since the dummy never moves the 1.5s tether always survives, so both the initial hit and the delayed pull hit land, each dealing the base+40% AD physical damage (the wiki's literal 'the same damage again' reading) and each independently refunding 2s of Deathbringer Stance cooldown; the delayed pull is a scheduled effect, not a new cast, so it does not itself hold up other casts.",
+  "Umbral Dash (E) deals no damage and is used purely as an attack-timer reset, cast the instant it is off cooldown (and not inside another cast) to squeeze in an extra basic attack; it has no cast time and costs nothing. Its passive lifesteal-style heal never changes damage dealt so it is ignored.",
   "Mana is not modeled: none of Aatrox's abilities cost mana in this data set."
  ],
  "assumed": [],
@@ -121,7 +121,8 @@
    "rampBonus": 0.25,
    "sweetspotBonus": 0.75,
    "staticGapS": 1,
-   "recastWindowS": 4
+   "recastWindowS": 4,
+   "castTimeS": 0.6
   },
   "W": {
    "baseByRank": [
@@ -132,7 +133,8 @@
     70
    ],
    "adRatio": 0.4,
-   "pullDelayS": 1.5
+   "pullDelayS": 1.5,
+   "castTimeS": 0.25
   },
   "E": {},
   "R": {
@@ -141,7 +143,8 @@
     0.3,
     0.4
    ],
-   "activeDurationS": 10
+   "activeDurationS": 10,
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -149,7 +152,8 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aatrox.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aatrox.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aatrox.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aatrox.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ],
  "manaless": true
 }

@@ -14,7 +14,7 @@
   "Poison Trail's tick damage (base/4 per tick, AP ratio 0.10625 per tick) is dealt every 0.25 s continuously; the wiki's 'extra instance on first application' is applied exactly once, at the very start of the fight, since every later tick is a refresh of the same debuff rather than a fresh application.",
   "Toggling Poison Trail is not an ability activation (the wiki states this explicitly), so its ticks do not call ability_cast_proc, eclipse_hit or prime_spellblade, and never trigger the 0.25 s cast lockout.",
   "Insanity Potion is cast immediately at t = 0 for its 25 s buff, which covers the entire fight; only its AP term is modeled since it also boosts Poison Trail and Fling, while its armor/MR/movement speed/regen do not change damage dealt to a stationary dummy.",
-  "Fling is cast on cooldown for its burst magic damage (flat + AP ratio + target max-health ratio); the wiki's note that a basic attack can land on the airborne target is treated as a positional corner case and not modeled as a bonus attack.",
+  "Fling is cast on cooldown for its burst magic damage (flat + AP ratio + target max-health ratio); it has a 0.25 s cast time, kept as gen.E.castTimeS, so it keeps Singed busy for that long and Poison Trail's next tick (which is not a cast) can still land in that window while Fling itself cannot overlap another cast. The wiki's note that a basic attack can land on the airborne target is treated as a positional corner case and not modeled as a bonus attack.",
   "Mega Adhesive is never cast: it deals no damage and only slows/grounds, which is irrelevant against a target that never moves or acts.",
   "Grievous Wounds applied by Poison Trail while Insanity Potion is active is ignored: the dummy never heals, so it never changes damage dealt.",
   "Noxious Slipstream (passive) only grants Singed movement speed and never affects damage dealt or taken, so it is not modeled.",
@@ -22,6 +22,9 @@
   "Basic attacks are otherwise plain: Singed has no on-hit, attack-speed steroid, or attack reset, so attacks use engine defaults and are woven in between Fling casts."
  ],
  "assumed": [],
+ "unused": {
+  "W": "Mega Adhesive deals no damage and only slows/grounds a target that never moves or acts, so it is never cast against the stationary dummy."
+ },
  "abilities": {
   "Q": {
    "name": "Poison Trail",
@@ -76,6 +79,9 @@
    },
    "tickIntervalS": 0.25
   },
+  "W": {
+   "castTimeS": 0.25
+  },
   "E": {
    "damage": {
     "base": [
@@ -93,7 +99,8 @@
     0.07,
     0.075,
     0.08
-   ]
+   ],
+   "castTimeS": 0.25
   },
   "R": {
    "bonusAP": [
@@ -109,6 +116,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/singed.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/singed.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/singed.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/singed.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

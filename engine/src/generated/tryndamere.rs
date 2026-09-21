@@ -44,6 +44,9 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State { fury: 0.0, e_ready: 0.0 };
+        // gen.W.castTimeS is kept for reference (Mocking Shout is never cast
+        // by this driver: see the kit's "unused" note), so it is not read here.
+        let _ = kit.num("gen.W.castTimeS")?;
         Ok(GenDriver {
             ranks,
             attack_range: sheet.base_attack_range,

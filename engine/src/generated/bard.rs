@@ -1,8 +1,8 @@
 //! Bard. A basic-attacker whose Meeps (Traveler's Call) ride his attacks
 //! with bonus magic damage, resolved for an assumed Chime count; Cosmic
-//! Binding goes out on cooldown for flat+AP magic damage. Caretaker's
-//! Shrine, Magical Journey and Tempered Fate never damage the dummy and are
-//! not cast.
+//! Binding goes out on cooldown for flat+AP magic damage, its 0.25 s cast
+//! time keeping Bard busy until it ends. Caretaker's Shrine, Magical
+//! Journey and Tempered Fate never damage the dummy and are not cast.
 
 use crate::fight::{Driver, Engine, Events, Kind};
 use crate::fx::*;
@@ -19,6 +19,7 @@ pub struct GenDriver {
     attack_range: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     meep_spawn_cd: f64,
     meep_dmg_base: f64,
     meep_ap_ratio: f64,
@@ -31,8 +32,24 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
     meep_stacks: i64,
     meep_ready_at: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -41,6 +58,7 @@ impl Driver for GenDriver {
         let meep_spawn_cd = kit.num("gen.P.meepSpawnCdS")?;
         let starting_meeps = kit.num("gen.P.startingMeeps")? as i64;
         let state = State {
+            busy_until: 0.0,
             meep_stacks: starting_meeps,
             meep_ready_at: meep_spawn_cd,
         };
@@ -49,6 +67,7 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             meep_spawn_cd,
             meep_dmg_base: kit.num("gen.P.meepDamageBase")?,
             meep_ap_ratio: kit.num("gen.P.meepApRatio")?,
@@ -84,7 +103,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -93,7 +112,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {

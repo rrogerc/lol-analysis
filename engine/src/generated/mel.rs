@@ -3,8 +3,9 @@
 //! their current health), while Searing Brilliance arms her next attack with
 //! bonus blazing projectiles per ability cast. Q and E are cast on cooldown
 //! and R is fired once, after Q and E have each landed at least once, to
-//! detonate against a well-stacked target. Rebuttal (W) is never cast: see
-//! the kit's "unused" note.
+//! detonate against a well-stacked target. Casts go one at a time: each of
+//! Q, E and R keeps Mel busy for its own cast time before another cast or an
+//! attack can start. Rebuttal (W) is never cast: see the kit's "unused" note.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -36,16 +37,19 @@ pub struct GenDriver {
     q_sub: f64,
     q_count: i64,
     q_cd: f64,
+    q_cast_s: f64,
     // E
     e_orb: f64,
     e_tick: f64,
     e_ticks_count: i64,
     e_tick_interval: f64,
     e_cd: f64,
+    e_cast_s: f64,
     // R
     r_base: f64,
     r_perstack: f64,
     r_cd: f64,
+    r_cast_s: f64,
     src_q_sub: SourceId,
     src_e_tick: SourceId,
     src_p_burst: SourceId,
@@ -56,6 +60,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     // Overwhelm ledger on the target.
     ow_stacks: i64,
     ow_until: f64,
@@ -75,6 +81,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Records one instance of Mel's damage applying an Overwhelm stack on
     /// the target, storing its share of magic damage and bursting it all if
     /// the stored total now exceeds the target's current health.
@@ -133,6 +152,7 @@ impl Driver for GenDriver {
         let e_tick_interval = kit.num("gen.E.tickIntervalS")?;
 
         let state = State {
+            busy_until: 0.0,
             ow_stacks: 0,
             ow_until: 0.0,
             ow_stored: 0.0,
@@ -162,14 +182,17 @@ impl Driver for GenDriver {
             q_sub: kit.hit("gen.Q.subDamage", ranks.q, sheet)?,
             q_count: kit.at_rank("gen.Q.explosionCount", ranks.q)? as i64,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_orb: kit.hit("gen.E.orbDamage", ranks.e, sheet)?,
             e_tick: kit.hit("gen.E.tickDamage", ranks.e, sheet)?,
             e_ticks_count: (e_dot_dur / e_tick_interval) as i64,
             e_tick_interval,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_base: kit.hit("gen.R.ultBaseDamage", ranks.r, sheet)?,
             r_perstack: kit.hit("gen.R.ultPerStackDamage", ranks.r, sheet)?,
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             src_q_sub: intern("Q explosion"),
             src_e_tick: intern("E tick"),
             src_p_burst: intern("P burst"),
@@ -221,7 +244,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -236,14 +259,14 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.q_cast_count += 1;
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_tick_next != INF {
@@ -253,7 +276,7 @@ impl Driver for GenDriver {
         let q_gate = self.ranks.q == 0 || self.s.q_cast_count >= 1;
         let e_gate = self.ranks.e == 0 || self.s.e_cast_count >= 1;
         if self.ranks.r > 0 && !self.s.r_cast && self.s.ow_stacks > 0 && q_gate && e_gate {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         n
@@ -270,10 +293,10 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
                 self.s.e_cast_count += 1;
                 self.s.e_ticks_left = self.e_ticks_count;
                 self.s.e_tick_next = t + self.e_tick_interval;
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_TICK) => {
                 e.deal(self.e_tick, DType::Magic, self.src_e_tick, false, true, 1.0);
@@ -298,10 +321,10 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
                 e.ult_hatefog();
                 self.s.r_cast = true;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
+                self.busy_for(e, self.r_cast_s);
             }
             other => panic!("unhandled event {other:?}"),
         }

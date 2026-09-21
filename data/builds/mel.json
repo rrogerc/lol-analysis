@@ -10,10 +10,11 @@
   "W"
  ],
  "notes": [
-  "Opens by auto-attacking (applying the first Overwhelm stack), then fires Radiant Volley (Q) and Solar Snare (E) as soon as each comes off cooldown, weaving attacks between casts; Golden Eclipse (R) is held until Q and E have each landed once so it detonates against a meaningfully stacked target, then fired as soon as legal and never again (its cooldown far exceeds the fight length).",
+  "Casts go one at a time: Radiant Volley (Q, 0.35s), Solar Snare (E, 0.25s) and Golden Eclipse (R, 0.75s) each keep Mel busy for their cast time (no other cast, no attack) before the next one can start; a single `busy_until` tracks this.",
+  "Opens by auto-attacking (applying the first Overwhelm stack), then casts Q as soon as it is castable (t=0), E as soon as its cast time frees Mel up, and holds Golden Eclipse (R) until Q and E have each landed at least once so it detonates against a stacked target and its own cast time does not stack at t=0 with the others; thereafter Q and E are cast on cooldown (subject to the same one-at-a-time rule) and R is fired once and never again (its cooldown far exceeds the fight length), with attacks woven in between casts.",
   "Rebuttal (W) is never cast: see \"unused\".W below.",
-  "Radiant Volley's 0.5s bolt channel and Solar Snare's orb travel time are treated as landing instantly on cast (only the usual 0.25s cast-time lockout applies), matching how a single stationary hitbox receives every bolt/orb regardless of travel; each of Q's several explosions and each of E's field ticks is still dealt as its own damage instance, each applying its own Overwhelm stack.",
-  "Solar Snare's field is modeled as 4 ticks (its 0.5s DoT duration over the 0.125s tick interval from the numbers sheet), starting immediately on the orb's impact; the 0.5s expansion delay only affects radius, not tick timing, and is not modeled.",
+  "Radiant Volley's 0.5s bolt channel and Solar Snare's orb travel time are treated as landing instantly once the ability's own cast time ends (only that cast time, 0.35s/0.25s, delays anything); each of Q's several explosions and each of E's field ticks is still dealt as its own damage instance at that moment, each applying its own Overwhelm stack.",
+  "Solar Snare's field is modeled as 4 ticks (its 0.5s DoT duration over the 0.125s tick interval from the numbers sheet), starting immediately after the orb's impact (which itself lands at the end of E's 0.25s cast); the 0.5s expansion delay only affects radius, not tick timing, and is not modeled.",
   "Overwhelm's stored-damage figures (flat + per-stack) are read from the numbers-sheet bin (MelR.BasePassiveFlatDamage/BasePassiveStackDamage, ranks 1-3) plus the wiki's rank-0 values (50 flat / 2 per stack, active even before Golden Eclipse is ranked); these two sources agree once combined (e.g. 50+10=60), resolving the dossier's flagged discrepancy rather than leaving it open.",
   "Overwhelm's burst-release condition ('stored post-mitigation damage exceeds the target's current health') is approximated by comparing the raw (pre-mitigation) stored magic damage against the dummy's current health, since the driver has no access to the engine's internal mitigation math; this can only ever add extra true-to-source magic damage, never remove any.",
   "Searing Brilliance's bonus blazing projectiles from an empowered attack are each treated as their own Overwhelm-stacking damage instance (one interpretation of an unsettled dossier question), since they are direct hits from Mel rather than an itemized on-hit effect.",
@@ -132,7 +133,8 @@
     8,
     9,
     10
-   ]
+   ],
+   "castTimeS": 0.35
   },
   "E": {
    "orbDamage": {
@@ -156,7 +158,8 @@
     "apRatio": 0.01
    },
    "dotDurationS": 0.5,
-   "tickIntervalS": 0.125
+   "tickIntervalS": 0.125,
+   "castTimeS": 0.25
   },
   "R": {
    "ultBaseDamage": {
@@ -174,7 +177,8 @@
      10
     ],
     "apRatio": 0.04
-   }
+   },
+   "castTimeS": 0.75
   }
  },
  "attack": {
@@ -182,6 +186,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mel.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mel.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mel.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mel.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

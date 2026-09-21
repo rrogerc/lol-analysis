@@ -11,11 +11,12 @@
  ],
  "notes": [
   "Simulates Kayn in Shadow Assassin form (the more commonly played form): Blade's Reach loses its cast time, the passive Shadow Assassin Bonus is active, and emerging from Umbral Trespass resets Reaping Slash's cooldown. Rhaast's alternate Q/R formulas and heals are not modeled.",
+  "Casts go one at a time via a single busy_until: Reaping Slash has no cast time (a dash+swing, per the dossier) and only imposes its documented 0.25s post-swing lockout; Blade's Reach keeps its base 0.55s cast time (gen.W.castTimeS) even though the Shadow Assassin blurb says a conjured shadow performs the sweep instead, because the simulated Kayn is still occupied for that long before he can act again; Umbral Trespass's vanish/dash/attach/channel/recast timeline occupies Kayn for its whole length as one long 'cast'.",
   "The fight begins with Kayn already in combat with the dummy, so the Shadow Assassin Bonus's 3-second window is treated as active from t=0; since Kayn never leaves combat with the dummy for the required 8 seconds, it never retriggers for the rest of the fight.",
   "The Shadow Assassin Bonus's magic damage is modeled as a percentage of the pre-mitigation amount of each ABILITY damage instance Kayn deals (an approximation of the wiki's 'post-mitigation' wording, since the engine does not return realized post-mitigation damage to the driver) rather than on his basic attacks, since the blurb text is ambiguous between the two and the engine gives no per-attack damage figure to a driver hook.",
-  "Reaping Slash (Q) deals its dash and its swing as two identical physical damage instances on cast, followed by the ability's documented 0.25s post-swing lockout.",
-  "Blade's Reach (W) is cast on cooldown with no cast time (Shadow Assassin removes it) and lands immediately.",
-  "Umbral Trespass (R) can only be cast once Kayn has already damaged the dummy (the passive mark); since the dummy is fought continuously, once the mark is first earned it is treated as permanently available for the rest of the fight. The opening cast itself (the engine's cast_r hook) deals no damage and is left a no-op; the vanish, 0.25s dash, 0.5s attach delay, 0.1s minimum channel and recast delay are modeled through the driver's own event queue, with the damage landing (and Reaping Slash's cooldown reset) at the recast.",
+  "Reaping Slash (Q) deals its dash and its swing as two identical physical damage instances on cast, followed by the ability's documented 0.25s post-swing lockout; it is cast on cooldown whenever no other cast is in progress.",
+  "Blade's Reach (W) is cast on cooldown, once no other cast is in progress: its damage lands as the cast starts, then its 0.55s cast time keeps Kayn busy (no other cast, no attack) before anything else can start.",
+  "Umbral Trespass (R) can only be cast once Kayn has already damaged the dummy (the passive mark); since the dummy is fought continuously, once the mark is first earned it is treated as permanently available for the rest of the fight. The opening cast itself (the engine's cast_r hook) deals no damage and is left a no-op; the vanish, 0.25s dash, 0.5s attach delay, 0.1s minimum channel and recast delay are modeled through the driver's own event queue as one continuous busy period, with the damage landing (and Reaping Slash's cooldown reset) at the recast.",
   "The recast is fired at the earliest legal moment to maximize damage output, per the rotation's stated goal.",
   "Shadow Step (E) is never cast: it deals no damage to the dummy and is purely defensive/mobility.",
   "Mana is not modeled: none of Kayn's costs meaningfully bind inside a 15s fight at level 16.",
@@ -117,7 +118,8 @@
      265
     ],
     "bonusAdRatio": 1.1
-   }
+   },
+   "castTimeS": 0.55
   },
   "R": {
    "damage": {
@@ -139,6 +141,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayn.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayn.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

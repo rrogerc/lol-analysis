@@ -76,6 +76,67 @@ impl Objective {
     }
 }
 
+/// The cast window of one form (data/tft/set<N>/cast-timing.json, resolved
+/// by tft.cast_timing_spec): TFTraits' figures, a third-party source adopted
+/// as a model rule and not verified in game. Seconds; they never scale with
+/// attack speed.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CastWindow {
+    /// Cast animation plus any channel after it: no attacks and no mana.
+    pub busy: f64,
+    /// When the ability takes effect, from the start of the cast; missing
+    /// keeps the character bin's cast time.
+    pub effect_at: Option<f64>,
+    /// A mana lock the source states as a fixed time from the start of the
+    /// cast (Ahri's runs past her animation); zero when it has none.
+    pub mana_lock: f64,
+}
+
+/// One form's attack and cast timeline. The attack figures are seconds at
+/// base attack speed and scale with the attack animation.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CastTiming {
+    /// From the start of an attack until it lands.
+    pub attack_delay: f64,
+    /// After the landing until the unit can cast or attack again.
+    pub attack_recovery: f64,
+    /// Missing: no cast animation on record, a cast keeps the flat rule.
+    pub cast: Option<CastWindow>,
+}
+
+impl CastTiming {
+    fn from_py(d: &Bound<'_, PyDict>) -> PyResult<CastTiming> {
+        let seconds = |key: &str| -> PyResult<Option<f64>> {
+            match get(d, key)? {
+                Some(v) if !v.is_instance_of::<PyBool>() => {
+                    let value: f64 = v.extract()?;
+                    if !value.is_finite() || value < 0.0 {
+                        return Err(PyValueError::new_err(format!(
+                            "timing.{key}: expected a finite, nonnegative number of seconds")));
+                    }
+                    Ok(Some(value))
+                }
+                Some(_) => Err(PyValueError::new_err(format!(
+                    "timing.{key}: expected a finite, nonnegative number of seconds"))),
+                None => Ok(None),
+            }
+        };
+        let cast = match seconds("castAnimation")? {
+            Some(animation) => Some(CastWindow {
+                busy: animation + seconds("channel")?.unwrap_or(0.0),
+                effect_at: seconds("effectAt")?,
+                mana_lock: seconds("manaLock")?.unwrap_or(0.0),
+            }),
+            None => None,
+        };
+        Ok(CastTiming {
+            attack_delay: seconds("attackDelay")?.unwrap_or(0.0),
+            attack_recovery: seconds("attackRecovery")?.unwrap_or(0.0),
+            cast,
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 #[allow(dead_code)]   // api and range name the unit in the spec; the gates that read them run in Python
 pub struct UnitSpec {
@@ -86,6 +147,11 @@ pub struct UnitSpec {
     pub objective: Objective,
     pub range: f64,
     pub cast_time: Option<f64>,
+    /// Per-form timelines; a unit without an entry keeps the flat rules
+    /// (the bin's cast time, a one-second lock, attacks landing when due).
+    pub timing: Option<CastTiming>,
+    pub timing_ad: Option<CastTiming>,
+    pub timing_ap: Option<CastTiming>,
     pub has_forms: bool,
     /// Stats of the set's non-shop units (summons, transformed forms) a
     /// driver may read: Yorick's spirit, Krug's kruglette.
@@ -100,6 +166,16 @@ impl UnitSpec {
                 extras.insert(k.extract::<String>()?, Stats::from_py(&dict_of(&v)?)?);
             }
         }
+        let timing = getd(d, "timing")?;
+        let timing_of = |form: &str| -> PyResult<Option<CastTiming>> {
+            match &timing {
+                Some(forms) => match getd(forms, form)? {
+                    Some(entry) => Ok(Some(CastTiming::from_py(&entry)?)),
+                    None => Ok(None),
+                },
+                None => Ok(None),
+            }
+        };
         Ok(UnitSpec {
             api: reqs(d, "api")?,
             name: reqs(d, "name")?,
@@ -111,6 +187,9 @@ impl UnitSpec {
                 Some(v) => Some(v.extract()?),
                 None => None,
             },
+            timing: timing_of("base")?,
+            timing_ad: timing_of("AD")?,
+            timing_ap: timing_of("AP")?,
             has_forms: truthy(d, "hasForms")?,
             extras,
         })
@@ -376,6 +455,15 @@ impl CellSpec {
             let bonus = kit.row("AdditionalAttackRange");
             range + if bonus == RowId::MISSING { 0.0 } else { kit.row_value(bonus) }
         } else { range }
+    }
+
+    /// The equipped form's timeline, the base one when the form has none.
+    pub fn timing_for(&self, form: Option<Form>) -> Option<CastTiming> {
+        match form {
+            Some(Form::AD) => self.unit.timing_ad.or(self.unit.timing),
+            Some(Form::AP) => self.unit.timing_ap.or(self.unit.timing),
+            None => self.unit.timing,
+        }
     }
 
     pub fn pressure_for(&self, form: Option<Form>) -> bool {

@@ -13,13 +13,17 @@
   "Opens by casting Trample (E) at t=0 to start its 5 s ticking DoT and stack generation, then casts Pulverize (Q) and Headbutt (W) as soon as they are off cooldown, auto-attacking continuously throughout and recasting Q/W/E on cooldown for the rest of the fight.",
   "Trample ticks every 0.5 s for 5 s (10 ticks); each tick is treated as damaging the dummy (which counts as an enemy champion for this fight), building a stack up to 5. At 5 stacks the next landed basic attack consumes them for the bonus proc damage (read from the by-level table, independent of Trample's rank) instead of ordinary on-hit damage.",
   "The window to land the empowered attack after reaching 5 stacks is read as 6 seconds, the wiki's stated text, even though a bin field elsewhere (FullChargeDuration=5) suggests 5 seconds; the two never differ in outcome here since Alistar's attack period is far shorter than either number.",
-  "Pulverize has a 0.25 s cast time and triggers the usual 0.25 s attack lockout; Headbutt and Trample have no cast time (the wiki lists 'none') and do not lock out attacks. Headbutt's dash is not modeled beyond that: its damage lands on cast since the stationary dummy is always within the 400-unit arrival check.",
+  "Pulverize's standard cast time is 0.25 s (the dossier's primary castTime value); it is not buffered during Headbutt's dash in this rotation (Q and W are cast independently, each on its own cooldown), so the reduced 0.15 s buffered cast time never applies. Pulverize's 0.25 s cast time keeps Alistar busy: no other cast and no attack starts until it ends.",
+  "Headbutt and Trample have no cast time (the wiki lists 'none') and do not lock out attacks or hold up other casts beyond the instant they resolve. Headbutt's dash is not modeled beyond that: its damage lands on cast since the stationary dummy is always within the 400-unit arrival check.",
   "Trample's cooldown starts on cast (cdstart = on-cast) and, even at rank 1 (12 s), always exceeds the 5 s tick duration, so a second cast never overlaps the first and stacks can simply be reset to 0 when a new cast begins.",
   "Unbreakable Will (R) deals no damage: it only reduces incoming damage and cleanses crowd control, neither of which matters against a passive, non-attacking dummy, so it is never cast.",
   "Triumphant Roar (P) is a self/ally heal with no damage component and is not modeled.",
   "Mana is not modeled: costs of 50-70 against 10-14 s cooldowns are not binding within a short fight at level 16."
  ],
  "assumed": [],
+ "unused": {
+  "R": "Unbreakable Will (Ferocious Howl) only reduces incoming damage and cleanses crowd control; it deals no damage of its own, so against a passive, non-attacking dummy it is never worth the 0.25 s cast time and is never cast."
+ },
  "abilities": {
   "Q": {
    "name": "Pulverize",
@@ -71,7 +75,8 @@
      220
     ],
     "apRatio": 0.8
-   }
+   },
+   "castTimeS": 0.25
   },
   "W": {
    "damage": {
@@ -120,6 +125,9 @@
     260,
     275
    ]
+  },
+  "R": {
+   "castTimeS": 0.25
   }
  },
  "attack": {
@@ -127,6 +135,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/alistar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/alistar.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/alistar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/alistar.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

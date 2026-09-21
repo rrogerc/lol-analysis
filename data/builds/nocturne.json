@@ -13,10 +13,10 @@
   "Umbra Blades (P) is modeled as an on-attack rider: it starts ready at t = 0 and, once ready, empowers the next attack, whose extra damage is added as an expected-value rider on top of the engine's own attack damage (so the total works out to 120% AD on a non-crit and 110% AD x total crit damage on a crit, matching the wiki); the timer then resets to its 12s base.",
   "Every attack in this fight lands on the dummy, which counts as an enemy champion, so Umbra Blades' cooldown is always reduced by the champion/monster value (3s) per attack rather than the base 1s.",
   "Umbra Blades' self-heal is ignored (healing does not affect the fight) and its secondary-target proc damage is skipped since the dummy fight has only one target.",
-  "Duskbringer (Q) is cast on cooldown for its own damage; it is assumed Nocturne stays on his own Dusk Trail for its full 5s window each cast, granting the bonus AD to basic attacks (and, transitively, to Umbra Blades and Paranoia's dash, both of which read total/bonus AD live). Q's own damage never benefits from this bonus AD, per the wiki's explicit note. Movement speed from the trail is ignored.",
+  "Duskbringer (Q) has a 0.25s cast time (gen.Q.castTimeS): it starts a cast, its damage lands with the cast, and no other cast or attack starts until the cast time is over (tracked with the shared busy_until state, as every other cast checks against it too). It is cast on cooldown for its own damage; it is assumed Nocturne stays on his own Dusk Trail for its full 5s window each cast, granting the bonus AD to basic attacks (and, transitively, to Umbra Blades and Paranoia's dash, both of which read total/bonus AD live). Q's own damage never benefits from this bonus AD, per the wiki's explicit note. Movement speed from the trail is ignored.",
   "Shroud of Darkness (W) is never actively cast: its active spell shield has nothing to block against a stationary, non-casting dummy, so the doubled attack speed never triggers. Only its always-on passive bonus attack speed is applied.",
-  "Unspeakable Horror (E) is cast on the dummy on cooldown; its tether is never broken (the dummy cannot move), so all 4 ticks over 2s land. Its on-cast item procs (Muramana, Eclipse) are triggered once at the tether's application rather than once per tick.",
-  "Paranoia (R) is cast at t = 0 for its nearsight (no damage), then recast as soon as allowed (0.25s later); the dash to the dummy is treated as instantaneous given the close engagement range, so its damage lands right at the recast. Its cooldown starts post-effect (at the recast) and the initial-cast/recast cycle repeats once it comes off cooldown. The wiki's quoted cooldown (140/115/90, matching the NocturneParanoia bin row) is used rather than the differing NocturneParanoia2 row.",
+  "Unspeakable Horror (E) has no cast time but, like every cast, still waits for a cast already in progress (checked against busy_until); it is cast on the dummy on cooldown and its tether is never broken (the dummy cannot move), so all 4 ticks over 2s land. Its on-cast item procs (Muramana, Eclipse) are triggered once at the tether's application rather than once per tick.",
+  "Paranoia (R) has no cast time on either its initial cast or its recast; both still wait for a cast in progress. It is cast at t = 0 for its nearsight (no damage), then recast as soon as allowed (0.25s later); the dash to the dummy is treated as instantaneous given the close engagement range, so its damage lands right at the recast. Its cooldown starts post-effect (at the recast) and the initial-cast/recast cycle repeats once it comes off cooldown. The wiki's quoted cooldown (140/115/90, matching the NocturneParanoia bin row) is used rather than the differing NocturneParanoia2 row.",
   "Mana costs are not modeled: nothing on this kit would gate a cast inside a 15s fight at level 16 with a typical mana pool."
  ],
  "assumed": [],
@@ -85,7 +85,8 @@
     45,
     55
    ],
-   "buffDurationS": 5
+   "buffDurationS": 5,
+   "castTimeS": 0.25
   },
   "W": {
    "passiveAsPct": [
@@ -127,6 +128,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nocturne.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nocturne.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nocturne.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nocturne.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

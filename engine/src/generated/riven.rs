@@ -1,7 +1,9 @@
 //! Riven. Opens with Blade of the Exile (R) for its locked-in bonus AD and
-//! Wind Slash access, immediately chains the three Broken Wings (Q) casts,
-//! keeps Ki Burst (W) on cooldown, fires Wind Slash once the burst has
-//! landed, and lets Runic Blade (P) consume a Charge on every basic attack.
+//! Wind Slash access (its 0.25 s cast time keeps her busy first), then
+//! immediately chains the three Broken Wings (Q) casts, keeps Ki Burst (W)
+//! on cooldown (its own 0.2667 s cast time also keeps her busy), fires Wind
+//! Slash once the burst has landed, and lets Runic Blade (P) consume a
+//! Charge on every basic attack.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -39,9 +41,11 @@ pub struct GenDriver {
     q_dmg_with_r: f64,
     /// Ki Burst.
     w_cd: f64,
+    w_cast_s: f64,
     w_dmg_base: f64,
     w_dmg_with_r: f64,
     /// Blade of the Exile / Wind Slash.
+    r_cast_s: f64,
     r_bonus_delay_s: f64,
     r_duration_s: f64,
     r_bonus_ad: f64,
@@ -56,6 +60,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     charges: i64,
     charge_until: f64,
     /// Broken Wings: sub-cast index (0..3) of the current combo, and the
@@ -75,6 +81,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// A Runic Blade Charge is generated or refreshed by an ability cast.
     fn add_charge(&mut self, t: f64) {
         self.s.charges = imin(self.s.charges + 1, self.p_max_stacks);
@@ -95,9 +114,11 @@ impl Driver for GenDriver {
         let q_coef = kit.at_rank("gen.Q.damage.bonusAdRatio", ranks.q)?;
 
         let w_cd = kit.at_rank("abilities.W.cooldownS", ranks.w)?;
+        let w_cast_s = kit.num("gen.W.castTimeS")?;
         let w_base = kit.at_rank("gen.W.damage.base", ranks.w)?;
         let w_coef = kit.at_rank("gen.W.damage.bonusAdRatio", ranks.w)?;
 
+        let r_cast_s = kit.num("gen.R.castTimeS")?;
         let r_bonus_delay_s = kit.num("gen.R.bonusDelayS")?;
         let r_duration_s = kit.num("gen.R.durationS")?;
         let r_ad_pct = kit.num("gen.R.bonusAdPct")?;
@@ -125,6 +146,7 @@ impl Driver for GenDriver {
         let q_burst_done_at0 = if ranks.q > 0 { INF } else { 0.0 };
 
         let state = State {
+            busy_until: 0.0,
             charges: 0,
             charge_until: 0.0,
             q_combo_n: 0,
@@ -154,8 +176,10 @@ impl Driver for GenDriver {
             q_dmg_base,
             q_dmg_with_r,
             w_cd,
+            w_cast_s,
             w_dmg_base,
             w_dmg_with_r,
+            r_cast_s,
             r_bonus_delay_s,
             r_duration_s,
             r_bonus_ad,
@@ -212,9 +236,9 @@ impl Driver for GenDriver {
             return INF;
         }
         if self.s.q_combo_n > 0 {
-            pymax(self.s.q_last_cast + self.q_intercast_s, e.st.t)
+            self.castable_at(e, self.s.q_last_cast + self.q_intercast_s)
         } else {
-            pymax(e.st.q_ready, e.st.t)
+            self.castable_at(e, e.st.q_ready)
         }
     }
 
@@ -242,22 +266,26 @@ impl Driver for GenDriver {
             }
             self.s.q_combo_n = 0;
         }
+        // Broken Wings has no cast time: no other cast waits for it, but the
+        // dash still holds the next attack back (already re-set above).
+        e.lockout();
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the 0.25s cast lockout
+        // the opening cast: its 0.25 s cast time keeps Riven busy before Q's
+        // combo (or anything else) can start
         let t = e.st.t;
         self.s.r_bonus_at = t + self.r_bonus_delay_s;
         self.s.r_end_at = t + self.r_duration_s;
         self.s.wind_slash_avail_at = t + self.r_bonus_delay_s;
         self.add_charge(t);
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
             n += 1;
         }
         if self.ranks.r > 0 {
@@ -271,7 +299,7 @@ impl Driver for GenDriver {
             }
             if !self.s.wind_slash_used {
                 let gate = pymax(self.s.wind_slash_avail_at, self.s.q_burst_done_at);
-                out[n] = (gate, Kind::Ev(EV_WINDSLASH));
+                out[n] = (self.castable_at(e, gate), Kind::Ev(EV_WINDSLASH));
                 n += 1;
             }
         }
@@ -293,7 +321,7 @@ impl Driver for GenDriver {
                 e.prime_spellblade();
                 self.add_charge(t);
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_R_BONUS) => {
                 self.s.r_active = true;

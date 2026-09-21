@@ -33,6 +33,7 @@ pub struct GenDriver {
     q_return_dmg: f64,
     q_cd: f64,
     q_expand_s: f64,
+    q_cast_s: f64,
     /// Parallel Convergence's passive: fraction of the target's missing
     /// health, and the max-health fraction it requires to trigger.
     w_frac: f64,
@@ -54,6 +55,7 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    busy_until: f64,
     p_stacks: i64,
     p_last_hit: f64,
     p_lockout_until: f64,
@@ -68,6 +70,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Applies a Resonance stack from a hit and, on the third, consumes
     /// them all for the bonus magic damage.
     fn resonance_hit(&mut self, e: &mut Engine) {
@@ -92,6 +107,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             p_last_hit: -INF,
             p_lockout_until: 0.0,
@@ -117,6 +133,7 @@ impl Driver for GenDriver {
             q_return_dmg: kit.hit("gen.Q.returnDamage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_expand_s: kit.num("gen.Q.expandDelayS")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             w_frac: (w_base_pct + w_ap_coef_pct * sheet.ap) / 100.0,
             w_threshold: kit.num("gen.W.belowHealthThresholdPct")? / 100.0,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
@@ -192,7 +209,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -203,7 +220,7 @@ impl Driver for GenDriver {
         e.eclipse_hit();
         e.prime_spellblade();
         self.s.q_return_at = e.st.t + self.q_expand_s;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -213,7 +230,7 @@ impl Driver for GenDriver {
         let t = e.st.t;
         self.s.r_explode_at = t + self.r_cast_s;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -227,7 +244,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.r_explode_at, Kind::Ev(EV_R_EXPLODE));
                 n += 1;
             } else if self.s.r_ready != INF {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
                 n += 1;
             }
         }
@@ -245,7 +262,7 @@ impl Driver for GenDriver {
             Kind::Ev(EV_R_CAST) => {
                 self.s.r_explode_at = t + self.r_cast_s;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
-                e.lockout();
+                self.busy_for(e, self.r_cast_s);
             }
             Kind::Ev(EV_R_EXPLODE) => {
                 self.s.r_explode_at = INF;

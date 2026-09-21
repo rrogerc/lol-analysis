@@ -1,9 +1,12 @@
 //! Janna. Howling Gale is a two-phase cast (charge to its full 3s, then a
-//! recast that launches the whirlwind and hits 1.25s later); Zephyr is cast
-//! on cooldown for direct magic damage plus Tailwind's movement-speed-derived
-//! bonus; Eye of the Storm is cast on herself on cooldown purely for its
-//! bonus attack damage while the shield holds; Tailwind also rides every
-//! basic attack as bonus magic damage; Monsoon is never cast.
+//! recast that launches the whirlwind and hits 1.25s later, neither with a
+//! cast time); Zephyr is cast on cooldown, its 0.245s cast time keeping
+//! Janna busy until its direct magic damage plus Tailwind's movement-speed-
+//! derived bonus lands; Eye of the Storm is cast on herself on cooldown
+//! purely for its bonus attack damage while the shield holds; Tailwind also
+//! rides every basic attack as bonus magic damage; Monsoon is never cast.
+//! Casts go one at a time: only Zephyr has a cast time, so it is the only
+//! one that can hold up another cast in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -29,9 +32,10 @@ pub struct GenDriver {
     q_cd: f64,
     q_max_charge: f64,
     q_travel_s: f64,
-    /// Zephyr: its damage (including Tailwind's bonus) and cooldown.
+    /// Zephyr: its damage (including Tailwind's bonus), cooldown and cast time.
     w_dmg: f64,
     w_cd: f64,
+    w_cast_s: f64,
     /// Eye of the Storm: the bonus AD it grants, its cooldown and shield duration.
     e_ad_bonus: f64,
     e_cd: f64,
@@ -46,6 +50,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     /// Howling Gale: when the pending charge matures into the recast, and
     /// when the recast's missile lands (INF: nothing pending).
     q_recast_at: f64,
@@ -54,6 +60,21 @@ struct State {
     e_ready: f64,
     /// Eye of the Storm's self bonus-AD buff runs until this time.
     e_buff_until: f64,
+}
+
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
 }
 
 impl Driver for GenDriver {
@@ -71,6 +92,7 @@ impl Driver for GenDriver {
         let w_base = kit.hit("gen.W.damage", ranks.w, sheet)?;
 
         let state = State {
+            busy_until: 0.0,
             q_recast_at: INF,
             q_hit_at: INF,
             w_ready: 0.0,
@@ -86,6 +108,7 @@ impl Driver for GenDriver {
             q_travel_s: kit.num("gen.Q.missileTravelS")?,
             w_dmg: w_base + tailwind_dmg,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_s: kit.num("gen.W.castTimeS")?,
             e_ad_bonus: kit.hit("gen.E.bonusAD", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_shield_dur: kit.num("gen.E.shieldDurationS")?,
@@ -130,7 +153,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -145,15 +168,15 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.w > 0 {
-            out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.q_recast_at != INF {
-            out[n] = (self.s.q_recast_at, Kind::Ev(EV_Q_RECAST));
+            out[n] = (self.castable_at(e, self.s.q_recast_at), Kind::Ev(EV_Q_RECAST));
             n += 1;
         }
         if self.s.q_hit_at != INF {
@@ -172,7 +195,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_s);
             }
             Kind::Ev(EV_E_CAST) => {
                 self.s.e_ready = t + e.basic_cd(self.e_cd);

@@ -2,7 +2,8 @@
 //! and lets Trial by Fire (P) automatically ride the next basic attack once
 //! it is off cooldown, ticking its true-damage burn over 2.5s. Powder Keg
 //! (E) and Remove Scurvy (W) are not part of the damage fight (see kit notes
-//! and the "unused" entry).
+//! and the "unused" entries). Both Q and R have a 0.25s cast time: each
+//! keeps Gangplank busy (no other cast, no attack) until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -28,6 +29,7 @@ pub struct GenDriver {
 
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
 
     r_dmg: f64,
     r_cast_s: f64,
@@ -42,6 +44,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_ready: f64,
     p_dot_active: bool,
     p_ticks_remaining: i64,
@@ -51,6 +55,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn wave_time(&self, idx: i64) -> f64 {
         self.r_cast_s
             + (idx / self.r_cluster_size) as f64 * self.r_cluster_interval
@@ -69,6 +86,7 @@ impl Driver for GenDriver {
         let p_tick_amount = p_total / p_ticks as f64;
 
         let state = State {
+            busy_until: 0.0,
             p_ready: 0.0,
             p_dot_active: false,
             p_ticks_remaining: 0,
@@ -93,6 +111,7 @@ impl Driver for GenDriver {
 
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
 
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cast_s: kit.num("gen.R.castTimeS")?,
@@ -137,7 +156,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -146,7 +165,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -154,7 +173,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, _e: &Engine, out: &mut Events) -> usize {

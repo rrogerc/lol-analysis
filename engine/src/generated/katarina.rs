@@ -1,9 +1,11 @@
 //! Katarina. A caster whose damage is almost entirely her abilities: Bouncing
-//! Blade and Shunpo go out on cooldown, Death Lotus is cast the moment it is
-//! available and channels through the whole fight blocking attacks and other
-//! casts, and Shunpo carries an attack-timer reset. Sinister Steel (walking
-//! over dropped daggers) and Preparation (pure movement) are not modeled: see
-//! the kit's notes.
+//! Blade and Shunpo go out on cooldown, each keeping her busy for its own
+//! cast time before anything else can start, and Death Lotus is cast the
+//! moment it is available and channels through the whole fight blocking
+//! attacks and other casts (modeled as a busy period like a cast time).
+//! Shunpo carries an attack-timer reset. Sinister Steel (walking over
+//! dropped daggers) and Preparation (pure movement) are not modeled: see the
+//! kit's notes.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -25,16 +27,19 @@ pub struct GenDriver {
     windup_fraction: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_s: f64,
     e_dmg: f64,
     e_cd: f64,
+    e_cast_s: f64,
     /// Death Lotus per-tick magic damage, per-tick physical damage (from
     /// static bonus AD and bonus attack speed), its cooldown, its tick
-    /// interval and total tick count.
+    /// interval, total tick count and total channel length (its busy time).
     r_magic_dmg: f64,
     r_phys_dmg: f64,
     r_cd: f64,
     r_tick_interval: f64,
     r_ticks_total: i64,
+    r_channel_s: f64,
     src_r_magic: SourceId,
     src_r_phys: SourceId,
     s: State,
@@ -44,6 +49,9 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast (or channel) in progress ends here: no other cast, no
+    /// attack before it.
+    busy_until: f64,
     e_ready: f64,
     r_ready: f64,
     r_active: bool,
@@ -52,6 +60,20 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time (or a channel) just started: no other cast
+    /// and no attack until it ends (an attack already due later keeps its
+    /// time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Starts (or restarts) the Death Lotus channel: its cooldown begins on
     /// cast, and attacks/other casts are held for its full duration.
     fn start_r_channel(&mut self, e: &mut Engine) {
@@ -60,10 +82,9 @@ impl GenDriver {
         self.s.r_active = true;
         self.s.r_ticks_done = 0;
         self.s.r_next_tick_at = t;
-        let channel_end = t + self.r_ticks_total as f64 * self.r_tick_interval;
-        e.st.next_attack = pymax(e.st.next_attack, channel_end);
         e.ability_cast_proc();
         e.prime_spellblade();
+        self.busy_for(e, self.r_channel_s);
     }
 }
 
@@ -76,7 +97,9 @@ impl Driver for GenDriver {
         let as_ratio_per_100 = kit.num("gen.R.asRatioPer100Pct")?;
         let r_tick_interval = kit.num("gen.R.tickIntervalS")?;
         let r_duration_s = kit.num("gen.R.durationS")?;
+        let r_ticks_total = (r_duration_s / r_tick_interval) as i64;
         let state = State {
+            busy_until: 0.0,
             e_ready: 0.0,
             r_ready: 0.0,
             r_active: false,
@@ -89,13 +112,16 @@ impl Driver for GenDriver {
             windup_fraction: kit.windup_fraction.ok_or("katarina kit needs attack.windupFraction")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
             r_magic_dmg: kit.hit("gen.R.magicDamage", ranks.r, sheet)?,
             r_phys_dmg: bonus_ad * (ad_ratio + as_ratio_per_100 * (bonus_as_pct / 100.0)),
             r_cd: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_tick_interval,
-            r_ticks_total: (r_duration_s / r_tick_interval) as i64,
+            r_ticks_total,
+            r_channel_s: r_ticks_total as f64 * r_tick_interval,
             src_r_magic: intern("R magic"),
             src_r_phys: intern("R physical"),
             s: state,
@@ -121,10 +147,10 @@ impl Driver for GenDriver {
     }
 
     fn q_at(&self, e: &Engine) -> f64 {
-        if self.ranks.q == 0 || self.s.r_active {
+        if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -133,7 +159,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -145,15 +171,15 @@ impl Driver for GenDriver {
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
-        if self.ranks.e > 0 && !self.s.r_active {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+        if self.ranks.e > 0 {
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.ranks.r > 0 {
             if self.s.r_active {
                 out[n] = (self.s.r_next_tick_at, Kind::Ev(EV_R_TICK));
             } else {
-                out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+                out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             }
             n += 1;
         }
@@ -169,7 +195,7 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
                 // Shunpo resets the basic attack timer on landing.
                 let b = self.bonus_as(t);
                 e.st.next_attack = pymax(e.st.next_attack, t + e.attack_windup(b, self.windup_fraction));

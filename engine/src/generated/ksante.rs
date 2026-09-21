@@ -4,7 +4,10 @@
 //! marks enemies hit by an ability; the next basic attack against a marked
 //! target consumes it for bonus physical damage. All Out additionally grants
 //! a flat bonus-physical-damage instance on every basic attack, ability cast
-//! and mark proc while it is active.
+//! and mark proc while it is active. Casts go one at a time: R's and Q's
+//! real cast times keep K'Sante busy (no other cast, no attack) until they
+//! end; Path Maker's charge has no cast time of its own but still waits for
+//! any cast already in progress.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -36,6 +39,7 @@ pub struct GenDriver {
     q_base_dmg: f64,
     q_bonus_armor_ratio: f64,
     q_bonus_mr_ratio: f64,
+    q_cast_s: f64,
     /// Base cooldown after the bonus-resistance formula, before ability haste.
     q_cd_base: f64,
     q_cd_allout_mult: f64,
@@ -71,6 +75,8 @@ pub struct GenDriver {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     w_charging: bool,
     w_charge_end: f64,
@@ -83,6 +89,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn apply_mark(&mut self, t: f64) {
         self.s.mark_active = true;
         self.s.mark_expiry = t + self.p_mark_dur;
@@ -119,6 +138,7 @@ impl Driver for GenDriver {
             + allout_resist_ratio * bonus_mr;
 
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_charging: false,
             w_charge_end: INF,
@@ -141,6 +161,7 @@ impl Driver for GenDriver {
             q_base_dmg: kit.at_rank("gen.Q.baseDamage", ranks.q)?,
             q_bonus_armor_ratio: kit.num("gen.Q.bonusArmorRatio")?,
             q_bonus_mr_ratio: kit.num("gen.Q.bonusMrRatio")?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_cd_base,
             q_cd_allout_mult: 1.0 - kit.num("gen.Q.allOutCdrPct")?,
 
@@ -218,7 +239,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -239,7 +260,7 @@ impl Driver for GenDriver {
         e.prime_spellblade();
         self.apply_allout_bonus(e, self.src_p_allout, t);
         self.apply_mark(t);
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -251,6 +272,7 @@ impl Driver for GenDriver {
         self.s.all_out_until = t + self.r_cast_s + self.r_allout_dur;
         // Path Maker's cooldown is refreshed upon entering All Out.
         self.s.w_ready = t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -263,7 +285,7 @@ impl Driver for GenDriver {
             if self.s.w_charging {
                 out[n] = (self.s.w_charge_end, Kind::Ev(EV_W_RECAST));
             } else {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W_CAST));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             }
             n += 1;
         }

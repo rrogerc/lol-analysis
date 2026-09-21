@@ -2,7 +2,8 @@
 //! stacks attack speed per attack, Empower is woven in after an attack for
 //! its reset and rides the next one, Grandmaster-at-Arms opens the fight and
 //! puts an on-hit on every third attack (every second while it runs), Leap
-//! Strike and Counter Strike go out on cooldown.
+//! Strike and Counter Strike go out on cooldown. Casts go one at a time: the
+//! ult's cast time keeps Jax busy, and every other cast waits for it.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -10,11 +11,9 @@ use crate::kit::Kit;
 use crate::num::*;
 use crate::sheet::Sheet;
 
-/// Grandmaster-at-Arms' swing lands (its cast time after the opening cast).
-const EV_R_SWING: u8 = 0;
 /// Counter Strike is cast; then its recast, which deals the damage.
-const EV_E_CAST: u8 = 1;
-const EV_E_RECAST: u8 = 2;
+const EV_E_CAST: u8 = 0;
+const EV_E_RECAST: u8 = 1;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GenDriver {
@@ -50,20 +49,33 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     p_stacks: i64,
     w_ready: f64,
     w_armed: bool,
     e_ready: f64,
     /// When the pending Counter Strike may be recast (INF: none pending).
     e_recast_at: f64,
-    /// Grandmaster-at-Arms: its swing still to land, how long it runs, and
-    /// the on-hit's stacks.
-    r_swing_at: f64,
+    /// Grandmaster-at-Arms: how long it runs, and the on-hit's stacks.
     r_until: f64,
     r_stacks: i64,
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Empower rides this hit (an attack or a Leap Strike): its own damage
     /// instance, and the cooldown starts now.
     fn spend_empower(&mut self, e: &mut Engine) {
@@ -77,12 +89,12 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             p_stacks: 0,
             w_ready: 0.0,
             w_armed: false,
             e_ready: 0.0,
             e_recast_at: INF,
-            r_swing_at: INF,
             r_until: -1.0,
             r_stacks: 0,
         };
@@ -177,10 +189,12 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
+        // a dash with no cast time: it lands with the cast and keeps nothing
+        // else waiting, but the leap holds the next attack back
         e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
         e.deal(self.q_dmg, DType::Physical, SRC_Q, false, true, 1.0);
         e.ability_cast_proc();
@@ -193,24 +207,24 @@ impl Driver for GenDriver {
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has primed Spellblade and held the
-        // first attack past the cast; the swing lands when the cast ends
-        let t = e.st.t;
-        self.s.r_swing_at = t + self.r_cast_s;
-        self.s.r_until = t + self.r_active_s;
+        // the opening cast (the engine has primed Spellblade): the swing
+        // lands with the cast, which then keeps Jax busy for its cast time
+        self.s.r_until = e.st.t + self.r_active_s;
+        e.deal(self.r_swing, DType::Magic, SRC_R, false, true, 1.0);
+        e.ability_cast_proc();
+        e.eclipse_hit();
+        e.ult_hatefog();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
-        if self.s.r_swing_at != INF {
-            out[n] = (self.s.r_swing_at, Kind::Ev(EV_R_SWING));
-            n += 1;
-        }
         if self.ranks.e > 0 {
+            // both halves are casts: neither starts inside another cast
             if self.s.e_recast_at != INF {
-                out[n] = (self.s.e_recast_at, Kind::Ev(EV_E_RECAST));
+                out[n] = (self.castable_at(e, self.s.e_recast_at), Kind::Ev(EV_E_RECAST));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -220,15 +234,8 @@ impl Driver for GenDriver {
     fn on_event(&mut self, e: &mut Engine, kind: Kind) {
         let t = e.st.t;
         match kind {
-            Kind::Ev(EV_R_SWING) => {
-                self.s.r_swing_at = INF;
-                e.deal(self.r_swing, DType::Magic, SRC_R, false, true, 1.0);
-                e.ability_cast_proc();
-                e.eclipse_hit();
-                e.ult_hatefog();
-            }
             Kind::Ev(EV_E_CAST) => {
-                // no cast time and no lockout: Jax keeps attacking through it;
+                // no cast time, so no `busy_for`: Jax keeps attacking through it;
                 // the cooldown waits for the recast, so park it until then
                 self.s.e_recast_at = t + self.e_recast_s;
                 self.s.e_ready = INF;

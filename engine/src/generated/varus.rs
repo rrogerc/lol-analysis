@@ -44,10 +44,12 @@ pub struct GenDriver {
     e_dmg: f64,
     e_cd_base: f64,
     e_land_delay: f64,
+    e_cast_s: f64,
 
     r_dmg: f64,
     r_cd_base: f64,
     r_stack_delay: f64,
+    r_cast_s: f64,
 
     src_w_onhit: SourceId,
     src_w_deton_q: SourceId,
@@ -63,6 +65,7 @@ pub struct GenDriver {
 struct State {
     blight_stacks: i64,
     blight_expire: f64,
+    busy_until: f64,
     w_active_ready: f64,
     e_ready: f64,
     e_land_at: f64,
@@ -71,6 +74,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Detonates all current Blight stacks on an ability hit: magic damage
     /// off the target's maximum health, and a cooldown refund on Q, W's
     /// active and E, all boosted if triggered via a (always fully-charged) Q.
@@ -103,9 +119,9 @@ impl GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
         self.s.r_stack_at = t + self.r_stack_delay;
         self.s.r_ready = t + e.ult_cd(self.r_cd_base);
+        self.busy_for(e, self.r_cast_s);
     }
 }
 
@@ -115,6 +131,7 @@ impl Driver for GenDriver {
         let state = State {
             blight_stacks: 0,
             blight_expire: 0.0,
+            busy_until: 0.0,
             w_active_ready: 0.0,
             e_ready: 0.0,
             e_land_at: INF,
@@ -143,10 +160,12 @@ impl Driver for GenDriver {
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd_base: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_land_delay: kit.num("gen.E.landDelayS")?,
+            e_cast_s: kit.num("gen.E.castTimeS")?,
 
             r_dmg: kit.hit("gen.R.damage", ranks.r, sheet)?,
             r_cd_base: kit.at_rank("abilities.R.cooldownS", ranks.r)?,
             r_stack_delay: kit.num("gen.R.stackDelayS")?,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
 
             src_w_onhit: intern("W onhit"),
             src_w_deton_q: intern("W deton Q"),
@@ -187,7 +206,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -195,7 +214,8 @@ impl Driver for GenDriver {
         // Piercing Arrow is always charged to the 1.25s effect cap: its
         // damage and detonation bonus are at maximum, its cooldown is
         // unaffected (the post-effect reduction cancels the charge time),
-        // and attacks are held back for the charge duration.
+        // and attacks are held back for the charge duration. It has no cast
+        // time of its own, so no other cast is blocked by it beyond that.
         e.deal(self.q_dmg, DType::Physical, SRC_Q, false, true, 1.0);
         self.detonate(e, true, self.src_w_deton_q);
         if self.ranks.w > 0 && t >= self.s.w_active_ready {
@@ -220,7 +240,7 @@ impl Driver for GenDriver {
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.r > 0 {
-            out[n] = (pymax(self.s.r_ready, e.st.t), Kind::Ev(EV_R_CAST));
+            out[n] = (self.castable_at(e, self.s.r_ready), Kind::Ev(EV_R_CAST));
             n += 1;
         }
         if self.s.r_stack_at != INF {
@@ -228,7 +248,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.e_land_at != INF {
@@ -253,7 +273,7 @@ impl Driver for GenDriver {
                 self.s.e_ready = t + e.basic_cd(self.e_cd_base);
                 self.s.e_land_at = t + self.e_land_delay;
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_LAND) => {
                 self.s.e_land_at = INF;

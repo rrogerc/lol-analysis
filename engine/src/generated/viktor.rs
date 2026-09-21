@@ -3,7 +3,9 @@
 //! into a separate modified-magic-damage hit instead of a normal attack;
 //! Hextech Ray is an instant plain-cast laser on cooldown; Arcane Storm opens
 //! the fight with an initial burst followed by a once-per-second DoT storm.
-//! Gravity Field deals no damage and is never cast.
+//! Siphon Power and Arcane Storm have a 0.25 s cast time and keep Viktor busy
+//! for it; Hextech Ray has none. Gravity Field deals no damage and is never
+//! cast.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -26,6 +28,7 @@ pub struct GenDriver {
     attack_range: f64,
     windup_fraction: f64,
     q_cd: f64,
+    q_cast_s: f64,
     q_missile_dmg: f64,
     q_onhit_dmg: f64,
     discharge_dur: f64,
@@ -46,6 +49,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     discharge_armed: bool,
     discharge_expire: f64,
     e_ready: f64,
@@ -55,10 +60,26 @@ struct State {
     r_ticks_done: i64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            busy_until: 0.0,
             discharge_armed: false,
             discharge_expire: 0.0,
             e_ready: 0.0,
@@ -71,6 +92,7 @@ impl Driver for GenDriver {
             attack_range: sheet.base_attack_range,
             windup_fraction: kit.windup_fraction.ok_or("viktor kit needs attack.windupFraction")?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_s: kit.num("gen.Q.castTimeS")?,
             q_missile_dmg: kit.hit("gen.Q.missile.damage", ranks.q, sheet)?,
             q_onhit_dmg: kit.hit("gen.Q.onhit.damage", ranks.q, sheet)?,
             discharge_dur: kit.num("gen.Q.dischargeDurationS")?,
@@ -126,7 +148,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -137,16 +159,17 @@ impl Driver for GenDriver {
         e.prime_spellblade();
         self.s.discharge_armed = true;
         self.s.discharge_expire = e.st.t + self.discharge_dur;
-        e.lockout();
+        self.busy_for(e, self.q_cast_s);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
-        // the opening cast: the engine has already primed Spellblade and
-        // held the first attack past the cast; the burst lands when it ends
+        // the opening cast: the engine has already primed Spellblade; the
+        // burst lands once the 0.25 s cast time ends
         if self.ranks.r == 0 {
             return;
         }
         self.s.r_burst_at = e.st.t + self.r_cast_s;
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -156,7 +179,7 @@ impl Driver for GenDriver {
             n += 1;
         }
         if self.ranks.e > 0 {
-            out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             n += 1;
         }
         if self.s.r_burst_at != INF {
@@ -178,6 +201,7 @@ impl Driver for GenDriver {
                 self.s.discharge_armed = false;
             }
             Kind::Ev(EV_E_CAST) => {
+                // no cast time: it does not touch busy_until
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();

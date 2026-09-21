@@ -2,7 +2,8 @@
 //! by Unleashed Power's passive ability haste), its delayed sphere is grabbed and
 //! immediately thrown by Force of Will the moment the latter is off cooldown,
 //! Scatter the Weak is cast on cooldown, and Unleashed Power opens the fight with
-//! the minimum three self-conjured spheres since none are banked yet.
+//! the minimum three self-conjured spheres since none are banked yet. Its effect
+//! lands at the start of the 0.25 s cast, which then keeps Syndra busy until it ends.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -34,6 +35,7 @@ pub struct GenDriver {
     e_cast_s: f64,
     /// Unleashed Power's total damage: per-sphere damage times the assumed spheres.
     r_dmg_total: f64,
+    r_cast_s: f64,
     /// The rotation state, and the pristine copy `reset` restores.
     s: State,
     s0: State,
@@ -42,6 +44,8 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     w_ready: f64,
     e_ready: f64,
     /// When a pending Dark Sphere lands (INF: none pending).
@@ -52,6 +56,21 @@ struct State {
     sphere_count: i64,
 }
 
+impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+}
+
 impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
@@ -59,6 +78,7 @@ impl Driver for GenDriver {
         let r_per_sphere = if ranks.r > 0 { kit.hit("gen.R.damagePerSphere", ranks.r, sheet)? } else { 0.0 };
         let r_spheres = kit.num("gen.R.assumedSpheres")?;
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             e_ready: 0.0,
             q_land_at: INF,
@@ -78,6 +98,7 @@ impl Driver for GenDriver {
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_cast_s: kit.num("gen.E.castTimeS")?,
             r_dmg_total: r_per_sphere * r_spheres,
+            r_cast_s: kit.num("gen.R.castTimeS")?,
             s: state,
             s0: state,
         })
@@ -105,7 +126,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -121,10 +142,12 @@ impl Driver for GenDriver {
     fn cast_r(&mut self, e: &mut Engine) {
         // the effect takes place at the start of the cast; the engine has
         // already primed Spellblade and delayed the first attack for this
-        // opening cast
+        // opening cast; the cast time then keeps Syndra busy
         e.deal(self.r_dmg_total, DType::Magic, SRC_R, false, true, 1.0);
         e.ability_cast_proc();
         e.eclipse_hit();
+        e.ult_hatefog();
+        self.busy_for(e, self.r_cast_s);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -138,12 +161,12 @@ impl Driver for GenDriver {
             if self.s.e_dmg_at != INF {
                 out[n] = (self.s.e_dmg_at, Kind::Ev(EV_E_DMG));
             } else {
-                out[n] = (pymax(self.s.e_ready, t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
         if self.ranks.w > 0 && self.s.sphere_count > 0 {
-            out[n] = (pymax(self.s.w_ready, t), Kind::Ev(EV_W_CAST));
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_CAST));
             n += 1;
         }
         n
@@ -163,7 +186,7 @@ impl Driver for GenDriver {
                 self.s.e_dmg_at = t + self.e_cast_s;
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.e_cast_s);
             }
             Kind::Ev(EV_E_DMG) => {
                 self.s.e_dmg_at = INF;

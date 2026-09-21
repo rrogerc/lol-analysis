@@ -11,8 +11,8 @@
  ],
  "notes": [
   "Opens with Apotheosis (R) at t=0 if learned: it channels for gen.R.channelDurationS, ticking gen.R.numTicks times before its burst, and blocks attacks and other casts for that whole window.",
-  "After the channel (or immediately if R is not learned), Formless Blade (Q) is cast on cooldown for its line damage and its 4 s empowerment, and Nilah attacks continuously, gaining a 100% AD on-hit cone during the empowered window.",
-  "Slipstream (E) is treated as a 2-charge system: whenever a charge is banked it is spent immediately for its dash damage and its basic-attack-timer reset.",
+  "After the channel (or immediately if R is not learned), Formless Blade (Q) is cast on cooldown for its line damage and its 4 s empowerment; its 0.28 s cast time keeps Nilah busy (no other cast, no attack start) until it ends, then Nilah attacks continuously, gaining a 100% AD on-hit cone during the empowered window.",
+  "Slipstream (E) has no cast time and is treated as a 2-charge system: whenever a charge is banked it is spent immediately (once no other cast's busy window is in effect) for its dash damage and its basic-attack-timer reset.",
   "Formless Blade's crit-chance-scaled damage multiplier and Slipstream's/Apotheosis's AD ratios are computed once per item build since crit chance, crit damage and bonus AD do not change during a fight.",
   "Formless Blade's passive (crit-chance-scaled armor penetration and crit-chance-scaled healing on hit) and Apotheosis's crit-chance-scaled healing/shield are not modeled: the engine gives a driver no way to reduce the target's effective armor for a self-granted stat, and healing/shielding never affects the damage fight.",
   "Slipstream's real cooldown is taken from the wiki's per-charge recharge (26 to 12 s across 5 ranks, interpolated for the missing middle ranks) rather than the numbers-sheet's 0.5 s figure, which the wiki itself identifies as only the cast-queue gate, not the true cooldown; she is assumed to start the fight with a full bank of 2 charges.",
@@ -29,6 +29,10 @@
   {
    "path": "gen.E.startingCharges",
    "why": "assumed she begins the fight with a full bank of 2 Slipstream charges, typical after any pre-fight idle time"
+  },
+  {
+   "path": "gen.Q.castTimeS",
+   "why": "Formless Blade's cast time varies from 0.35 s down to a 0.28 s floor (capped at 20% reduction) as bonus attack speed rises; the 0.28 s floor is used as a fixed value since a level-16 build with any attack speed investment reaches or exceeds the cap well within the fight"
   }
  ],
  "abilities": {
@@ -105,7 +109,8 @@
     57.058824,
     60.0
    ],
-   "buffDurationS": 4
+   "buffDurationS": 4,
+   "castTimeS": 0.28
   },
   "E": {
    "damage": {
@@ -148,6 +153,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nilah.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nilah.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nilah.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nilah.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

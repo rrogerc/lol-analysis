@@ -10,14 +10,20 @@
   "W"
  ],
  "notes": [
-  "Opening: at t=0 Q, W (self-cast Whimsy) and Help, Pix! are all off cooldown, so all three go out immediately (Q's 0.25s cast time is the only lockout among them); Lulu auto-attacks between casts and recasts Q, W and E on cooldown for the rest of the fight.",
+  "Casts go one at a time: Glitterlance has a real 0.25 s cast time (its damage lands at the cast, then Lulu is busy until the cast time ends); self-cast Whimsy is instant (its 0.2419 s cast time in the sources applies only to an enemy cast, which this driver never uses, so it is modeled with 0 cast time here).",
+  "Opening: at t=0 Q, W (self-cast Whimsy) and Help, Pix! are all off cooldown. Q is cast first since it has the only real cast time among them; W and E (both instant) then resolve, and Lulu auto-attacks and recasts Q, W and E on cooldown for the rest of the fight.",
   "Pix, Faerie Companion fires its 3 bolts once per landed basic attack (applied after the attack's own damage, not per on-hit application), matching that Pix does not double up when other on-hit effects also trigger.",
   "Glitterlance's two bolts (Lulu's full-value bolt and Pix's 50%-value bolt) are both assumed to connect with the stationary dummy: the open question about imperfect aim is settled toward ideal aim, the most common in-game reading against a single target.",
   "Casting Help, Pix! on the dummy is read as sending Pix away from Lulu for the full 4 second enemy-cast duration, during which Pix's on-attack bolts do not fire; this is the settled reading of the ambiguous 'Pix leaves Lulu' mechanic.",
   "Wild Growth deals no damage and only grants bonus health/slow, so it is never cast in this damage fight.",
   "Mana is not modeled: at level 16 the combined Q/W/E costs over a 15 s fight fit comfortably inside Lulu's mana pool."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.W.castTimeS",
+   "why": "Whimsy's 0.2419 s cast time in the sources applies only to an enemy cast; this driver only ever self-casts Whimsy, which the dossier states has no cast time, so 0 is used."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Glitterlance",
@@ -94,7 +100,8 @@
     ],
     "apRatio": 0.5
    },
-   "secondBoltMult": 0.5
+   "secondBoltMult": 0.5,
+   "castTimeS": 0.25
   },
   "W": {
    "asBonusPct": [
@@ -110,7 +117,8 @@
     3.5,
     3.75,
     4
-   ]
+   ],
+   "castTimeS": 0
   },
   "E": {
    "damage": {
@@ -131,6 +139,7 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lulu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lulu.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lulu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lulu.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }

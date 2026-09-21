@@ -197,3 +197,82 @@ maxing Q over E with Judgment worth 13% of his damage, and 91 kits carrying
 an `assumed` number. The kits say `"reviewed": false` for a reason: read a
 kit's `notes`, `assumed` and `unused` before trusting its rankings.
 
+### Cast times (2026-09-20)
+
+The first leaderboard had ten of these champions killing the squishy dummy at
+0.00 s: their drivers cast R, Q, W and E in the same instant. The engine has
+no cast time of its own (damage lands when the driver deals it, `e.lockout()`
+only delays the next attack), the guide never asked for one, and Jax, the
+reference, has no basic ability with a cast time. The hand-written kits
+sequence their casts themselves (`busy_until`), so their rule became the
+guide's: casts go one after another; a cast takes effect as it starts and then
+keeps the champion busy for its cast time (the dossier's `castTime`), no other
+cast and no attack inside it; an ability without a cast time costs nothing but
+waits for a cast in progress; a delay the sources state after the cast is an
+event. The guide carries the two helpers (`castable_at`, `busy_for`) and the
+reference driver uses them.
+
+The fight checks enforce it without a trace of the fight: `first_landings`
+reads when each ability with a cast time first shows damage off fights of
+growing length (0.01 s steps), and of the abilities landed by a time T all but
+the longest must have been cast and finished inside T. Damage can land long
+after its cast, so the order of the casts is unknown: counting the longest as
+the last makes it a condition no correct driver fails. The cast times are the
+dossier's (the shortest the wiki's template states for the first cast: a cast
+time that shrinks with attack speed binds at its floor, a recast's does not
+count); a kit that must differ lists `gen.<slot>.castTimeS` under `assumed`.
+A second check is the symptom itself: two burst builds (`BURST_SETS`) must not
+leave the squishy dead at t = 0.
+
+`check --all` found 54 of 172 admitted drivers failing (8 of them with the
+zero-time kill). `write --failing` (= `--repair` on each: the admitted kit and
+driver go back to the model with the checks they fail, instead of a rewrite
+from nothing) repaired all 54: 52 on the first round, Renata on the second,
+Nidalee (two forms sharing slots) on the fourth; $16 cost-equivalent, 45
+minutes with 5 workers, $0.26 the median champion. The diffs are small: the
+gate, the cast times read from the kit, here and there a delay the dossier
+states (Cho'Gath's Rupture now lands 0.625 s after its 0.5 s cast). With each
+champion's old top builds the squishy dies a median 0.25 s later and the
+bruiser and the tank at the same time in the median; attack-heavy kits got
+faster, because `e.lockout()` had pushed the next attack 0.25 s per cast even
+when it was due later and `busy_for` only holds it to the end of the cast.
+
+A second round (same day) closed the other half. The opening check only
+constrains casts that overlap each other, so a lone ability cast for free has
+nothing to overlap with and passes: Diana's Q has a 0.25 s cast time, her W
+and E genuinely have none, and her driver cast all three at t=0 with an
+auto-attack landing at 0.14 s, inside the Q cast. Measuring it properly, only
+234 of the 367 abilities with a stated cast time were carried by the kit and
+read by the driver; 133 across 83 champions cost nothing. `lint_cast_times`
+now requires every one of them: the number in the kit, read from there by the
+driver, or the slot declared `unused`. Riot's own `mCastTime` fills in where
+the wiki states nothing at all (the wiki's explicit "none" still wins, even
+for the 33 abilities Riot gives 0.25 s). All 83 repaired on the first round,
+$18 with 3 workers, plus the three blind comparison drivers `--failing`
+skips.
+
+One lesson from that round, learned expensively. `Bench.evaluate` runs the
+checks in a subprocess that located the driver by name under
+`engine/src/generated/`, which is the ADMITTED driver, not the candidate. A
+check that reads the Rust therefore judged the wrong file: the model rewrote
+its driver correctly five times and got the identical complaint back, because
+the only thing that could satisfy the check from the kit's side was declaring
+the ability `unused`. Eight champions burned every round that way, $12. The
+subprocess takes `--driver` now. Any future check that reads a candidate's
+files must be given them explicitly.
+
+Over the 127 repaired champions' original top builds the kill times barely
+move in aggregate: median +0.00 s against the squishy and the bruiser, -0.25 s
+against the tank, with more champions faster than slower (78 against 31 on the
+tank). Sequencing casts costs time, but `e.lockout()` had been spending a flat
+0.25 s of attack time on every cast where `busy_for` holds the attack only to
+the end of the real cast. The individual moves are larger: Jhin +2.00 s on the
+squishy, Urgot -3.10, Sylas -3.16 on the bruiser, Mel -2.45 on the tank.
+
+Left as it is: damage lands at the START of a cast, as in the hand-written
+kits and as the engine's attacks do, so kill times are early by about one cast
+time across the board. The stricter rule (damage when the cast ends) fails 71
+more drivers and would want the engine, the hand-written kits and their
+goldens moved with it. Missile and dash travel are not modeled. Rotations that
+open with a long ult now pay for it (Ezreal's 1 s Trueshot Barrage, Jhin's
+Curtain Call): legal, and worth a reviewer's look.

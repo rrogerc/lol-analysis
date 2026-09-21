@@ -3,7 +3,11 @@
 //! cooldown and recast at its earliest opportunity for the attack-speed
 //! buff; Electrical Surge's passive rides every fifth basic attack for a
 //! bonus on-hit and its active is cast whenever a marked/stormed target is
-//! available; Mark of the Storm is tracked only to gate the active.
+//! available; Mark of the Storm is tracked only to gate the active. Casts
+//! go one at a time: Q, W-active and R each have a cast time that keeps
+//! Kennen busy (tracked in one `busy_until`); E has none but still cannot
+//! start inside another cast, and its dash form blocks attacks for its own
+//! 0.5s window.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -27,10 +31,12 @@ pub struct GenDriver {
     mark_duration: f64,
     q_dmg: f64,
     q_cd: f64,
+    q_cast_time: f64,
     w_onhit_dmg: f64,
     w_active_dmg: f64,
     w_cd: f64,
     w_stack_cap: i64,
+    w_cast_time: f64,
     e_dmg: f64,
     e_cd: f64,
     e_recast_delay: f64,
@@ -50,6 +56,9 @@ pub struct GenDriver {
 /// Everything a fight moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct State {
+    /// The cast (or channel) in progress ends here: no other cast, no
+    /// attack before it.
+    busy_until: f64,
     w_ready: f64,
     /// Electrical Surge stacks (0..cap); at cap the next attack consumes them.
     w_stacks: i64,
@@ -66,6 +75,20 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time (or a channel) just started: no other cast
+    /// and no attack until it ends (an attack already due later keeps its
+    /// time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     /// Any ability hit refreshes the target's Mark of the Storm.
     fn apply_mark(&mut self, t: f64) {
         self.s.mark_until = t + self.mark_duration;
@@ -86,6 +109,7 @@ impl Driver for GenDriver {
         let r_max_ticks = (r_duration / r_tick_rate).round() as i64;
 
         let state = State {
+            busy_until: 0.0,
             w_ready: 0.0,
             w_stacks: 0,
             mark_until: 0.0,
@@ -103,10 +127,12 @@ impl Driver for GenDriver {
             mark_duration: kit.num("gen.P.markDurationS")?,
             q_dmg: kit.hit("gen.Q.damage", ranks.q, sheet)?,
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
+            q_cast_time: kit.num("gen.Q.castTimeS")?,
             w_onhit_dmg,
             w_active_dmg: kit.hit("gen.W.active.damage", ranks.w, sheet)?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
             w_stack_cap: kit.num("gen.W.stackCap")? as i64,
+            w_cast_time: kit.num("gen.W.castTimeS")?,
             e_dmg: kit.hit("gen.E.damage", ranks.e, sheet)?,
             e_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
             e_recast_delay: kit.num("gen.E.recastDelayS")?,
@@ -168,7 +194,7 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -178,7 +204,7 @@ impl Driver for GenDriver {
         e.ability_cast_proc();
         e.eclipse_hit();
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_time);
     }
 
     fn cast_r(&mut self, e: &mut Engine) {
@@ -188,7 +214,7 @@ impl Driver for GenDriver {
         self.s.r_next_tick = t + self.r_cast_time + self.r_tick_rate;
         self.s.r_tick_idx = 0;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.r_cast_time);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -196,15 +222,15 @@ impl Driver for GenDriver {
         if self.ranks.w > 0 {
             let castable = e.st.t < self.s.mark_until || e.st.t < self.s.r_until;
             if castable {
-                out[n] = (pymax(self.s.w_ready, e.st.t), Kind::Ev(EV_W));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W));
                 n += 1;
             }
         }
         if self.ranks.e > 0 {
             if self.s.e_recast_at != INF {
-                out[n] = (self.s.e_recast_at, Kind::Ev(EV_E_RECAST));
+                out[n] = (self.castable_at(e, self.s.e_recast_at), Kind::Ev(EV_E_RECAST));
             } else {
-                out[n] = (pymax(self.s.e_ready, e.st.t), Kind::Ev(EV_E_CAST));
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::Ev(EV_E_CAST));
             }
             n += 1;
         }
@@ -225,10 +251,11 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.lockout();
+                self.busy_for(e, self.w_cast_time);
             }
             Kind::Ev(EV_E_CAST) => {
-                // no cast time, but Kennen cannot attack until the recast
+                // no cast time, but the dash form cannot attack or be
+                // interrupted by another cast until its recast window opens
                 self.s.e_recast_at = t + self.e_recast_delay;
                 self.s.e_ready = INF;
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
@@ -236,10 +263,11 @@ impl Driver for GenDriver {
                 e.ability_cast_proc();
                 e.eclipse_hit();
                 e.prime_spellblade();
-                e.st.next_attack = pymax(e.st.next_attack, t + self.e_recast_delay);
+                self.busy_for(e, self.e_recast_delay);
             }
             Kind::Ev(EV_E_RECAST) => {
-                // cooldown starts post-effect, at the recast
+                // cooldown starts post-effect, at the recast; the recast
+                // itself is instant (no further busy time)
                 self.s.e_recast_at = INF;
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.as_buff_until = pymax(self.s.as_buff_until, t + self.e_as_dur);

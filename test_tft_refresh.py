@@ -170,6 +170,41 @@ class TestRefreshPublication(unittest.TestCase):
         self.assertEqual(tft.load_snapshot().patch, "18.1e")
         self.assertTrue(all(f["status"] == "current" for f in tft.check_patch_notes(result)[0]))
 
+    def test_communitydragon_only_change_reaches_the_reconciler(self):
+        # The lookup, the bins and the notes stand still; only the freshly downloaded export moves.
+        # check_audit binds none of it, so the fetch itself has to notice.
+        from tft_update import ReviewRequired
+        audit = json.loads((self.active / "audit.json").read_text())
+        known = tft.source_disagreements(self.snap)["disagreements"]
+        self.assertTrue(known)      # the archived 18.1d snapshot already differs from its export somewhere
+        audit["sourceCrossCheck"] = {"explained": [dict(d, disposition="fixture", reason="Known.", evidence=["fixture"])
+                                                   for d in known], "inherited": []}
+        (self.active / "audit.json").write_text(json.dumps(audit))
+        tft._SNAP.clear()
+        self.snap = tft.load_snapshot(18, "18.1d")
+        args = SimpleNamespace(set=18, patch="18.1d", force=True)
+        calls = []
+        self.mock_downloads()
+        tft.cmd_fetch(args, automatic=True, prepare=lambda candidate: calls.append(candidate.patch))
+        self.assertEqual(calls, ["18.1d"])          # everything explained: published without a review
+
+        tft._SNAP.clear()
+        self.snap = tft.load_snapshot(18, "18.1d")
+        moved = copy.deepcopy(self.snap.communitydragon)
+        soraka = next(c for c in moved["champions"] if c["apiName"] == "DA_18_Soraka")
+        soraka["stats"]["hp"] += 50
+        # Only the download moves. mock_downloads copies the export it is given, so the
+        # archived one is put back: the reconciler reads it as the previous snapshot's,
+        # and a disagreement that snapshot already had is inherited rather than raised.
+        archived, self.snap.communitydragon = self.snap.communitydragon, moved
+        self.mock_downloads()
+        self.snap.communitydragon = archived
+        before = (self.active / "audit.json").read_bytes()
+        with self.assertRaisesRegex(ReviewRequired, "unexplained lookup/CommunityDragon disagreement: Soraka hp"):
+            tft.cmd_fetch(args, automatic=True, prepare=lambda candidate: calls.append("published"))
+        self.assertEqual(calls, ["18.1d"])
+        self.assertEqual((self.active / "audit.json").read_bytes(), before)
+
     def test_staged_cell_keeps_previous_build_cache(self):
         unit = self.snap.unit("Akali")
         key = "s2-clump-bare"

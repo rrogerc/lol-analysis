@@ -3,6 +3,7 @@
 //! shields matter as much as the damage.
 
 use crate::driver::Driver;
+use crate::drivers::helpers::{shield_broke, track_shield};
 use crate::fight::{Deal, Fight, Sel, TICK_S};
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
@@ -68,7 +69,10 @@ impl Driver for Warwick {
 pub struct Brambleback {
     /// Conservative model policy: one live Frenzy, refreshed on recast.
     /// The pinned tooltip supplies its magnitude/duration, but no runtime
-    /// source establishes overlapping stacks or an eight-second mana lock.
+    /// source establishes overlapping stacks. Mana is locked for as long as
+    /// Frenzy runs (TFTraits: "The mana lock lasts the 8.00 s the effect
+    /// runs. Attacks continue." — third party, adopted like Azir's lock, not
+    /// verified in game), so only a proc that ignores the lock can recast it.
     frenzy_until: f64,
     frenzy_grant: f64,
     duration: RowId,
@@ -96,6 +100,7 @@ impl Driver for Brambleback {
         f.ad_extra += ad - f.drv.frenzy_grant;
         f.drv.frenzy_grant = ad;
         f.drv.frenzy_until = f.t + dur;
+        f.lock_until = pymax(f.lock_until, f.drv.frenzy_until);
         let ignore = f.calc(f.drv.ignore);
         // This driver's Frenzy is the only source of these personal buffs.
         f.armor_ignore_buffs.clear();
@@ -137,9 +142,16 @@ impl Driver for Brambleback {
 }
 
 /// Pale Barrier: a shield, and moonlight orbs spread evenly over the
-/// dummies in reach.
+/// dummies in reach when the cast lands. Mana stays locked while the
+/// barrier holds, for its duration at most (TFTraits: "The mana lock lasts
+/// as long as the shield holds, at most 2.00 s. Attacks continue." — third
+/// party, adopted like Azir's lock, not verified in game).
 #[derive(Clone)]
 pub struct Diana {
+    /// The barrier while it stands and holds the lock.
+    barrier: Option<usize>,
+    /// The cast's own lock, which a barrier broken sooner falls back to.
+    cast_lock: f64,
     shield_dur: RowId,
     n_orbs: RowId,
     shield: CalcId,
@@ -150,28 +162,43 @@ impl Driver for Diana {
     const NAME: &'static str = "Diana";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Diana { shield_dur: k.row("ShieldDuration"), n_orbs: k.row("NumOrbs"),
+        Diana { barrier: None, cast_lock: 0.0,
+                shield_dur: k.row("ShieldDuration"), n_orbs: k.row("NumOrbs"),
                 shield: k.calc("ShieldCalc1"), orb: k.calc("MagicDamageCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let amount = f.calc(f.drv.shield);
         let dur = f.row(f.drv.shield_dur);
-        f.shield(amount, dur, "barrier", false);
+        let cast_lock = f.lock_until;
+        f.drv.barrier = track_shield(f, amount, dur, "barrier");
+        if f.drv.barrier.is_some() {
+            f.drv.cast_lock = cast_lock;
+            f.lock_until = pymax(cast_lock, f.t + dur);
+        }
         let tg = f.aoe_all();
         let orbs = pyint(f.row(f.drv.n_orbs));
         for i in 0..orbs {
-            let mut al = f.alive_of(&tg);
-            if al.is_empty() {
-                // Orbs remain constrained to the modeled nearby area.
-                // Exhausting that group cannot grant board-wide reach.
-                al = f.aoe_all();
-            }
+            // "spread among enemies within 2 hexes": only the enemies in
+            // reach when the cast landed. Spread out that is the target
+            // alone — the next dummy was never within two hexes — so the
+            // orbs left when everyone in reach has died are lost.
+            let al = f.alive_of(&tg);
             if al.is_empty() {
                 break;
             }
             let d = al.get((i as usize) % al.len());
             f.hit_ability(f.drv.orb, Some(d), "orbs", 1.0);
+        }
+    }
+
+    fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
+        let (broke, keep) = shield_broke(f, f.drv.barrier);
+        f.drv.barrier = keep;
+        if broke {
+            // Spent before its time: mana comes in again, once the cast's
+            // own lock is over.
+            f.lock_until = pymax(f.t, f.drv.cast_lock);
         }
     }
 }
@@ -222,7 +249,10 @@ impl Driver for Morgana {
 
     fn cast(f: &mut Fight<Self>) {
         let dur = f.row(f.drv.spell_dur);
-        let cursed = f.aoe(Some(f.row(f.drv.n_cursed)), false);
+        // "Fire a dark blast at {NumEnemiesCursed} nearby enemies": the blast
+        // picks that many separate enemies, so it reaches them spread out
+        // too; only the zone that follows is an area.
+        let cursed = f.nearest(f.row(f.drv.n_cursed));
         for d in cursed.iter() {
             f.hit_ability(f.drv.blast, Some(d), "blast", 1.0);
             Self::curse_bonus(f, d);
@@ -374,9 +404,13 @@ impl Driver for ElderDragon {
 
 /// Rending Claws: leap onto the dummy with the least health left, then a
 /// couple of empowered attacks — far faster, each carrying bonus physical
-/// damage — with more granted by every kill. With the Riftbeast Alpha Mark
-/// (Grey Buff) he has Precision and crit chance that climbs as his own
-/// health falls.
+/// damage. Mana stays locked until they are spent (TFTraits: "it lasts 2
+/// empowered attacks" — third party, adopted like Azir's lock, not verified
+/// in game). The data also carries `NumEmpoweredAttacksGainedOnKill`, which
+/// neither the tooltip nor TFTraits' ability text mentions: a dormant row is
+/// not a mechanic, so it is not read. With the Riftbeast Alpha Mark (Grey
+/// Buff) he has Precision and crit chance that climbs as his own health
+/// falls.
 #[derive(Clone)]
 pub struct Murkwolf {
     /// The crit chance he started with, once the Alpha Mark is on him.
@@ -386,7 +420,6 @@ pub struct Murkwolf {
     bonus_crit: RowId,
     empower_aspd: RowId,
     n_empowered: RowId,
-    n_on_kill: RowId,
     leap: CalcId,
     empowered_hit: CalcId,
 }
@@ -406,7 +439,6 @@ impl Driver for Murkwolf {
         Murkwolf { crit: None, empowered: 0, base_crit: k.row("TraitBaseCrit"),
                    bonus_crit: k.row("TraitBonusCrit"), empower_aspd: k.row("EmpowerAspd"),
                    n_empowered: k.row("NumEmpoweredAttacks"),
-                   n_on_kill: k.row("NumEmpoweredAttacksGainedOnKill"),
                    leap: k.calc("PhysicalDamageCalc1"),
                    empowered_hit: k.calc("PhysicalDamageCalc2") }
     }
@@ -432,6 +464,11 @@ impl Driver for Murkwolf {
         f.hit_ability(f.drv.leap, d, "leap", 1.0);
         let n = f.drv.empowered + pyint(f.row(f.drv.n_empowered));
         Self::empower(f, n);
+        if n > 0 {
+            // Hold attack mana and regeneration for the empowered attacks;
+            // the cast's own lock already covers the animation before this.
+            f.lock_until = 1e9;
+        }
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -439,14 +476,14 @@ impl Driver for Murkwolf {
         f.hit_attack(target, 1.0, "auto");
         if n > 0 {
             f.hit_ability(f.drv.empowered_hit, Some(target), "empowered", 1.0);
-            let left = f.drv.empowered - 1;
+            let left = n - 1;
             Self::empower(f, left);
+            if left == 0 {
+                // Attack mana is processed before this hook, so the last
+                // empowered attack grants none; regen resumes from here.
+                f.lock_until = f.t;
+            }
         }
-    }
-
-    fn kill(f: &mut Fight<Self>, _target: usize) {
-        let n = f.drv.empowered + pyint(f.row(f.drv.n_on_kill));
-        Self::empower(f, n);
     }
 }
 

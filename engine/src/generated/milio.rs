@@ -3,7 +3,8 @@
 //! contact for a burst plus a burn DoT, and Ultra Mega Fire Kick goes out on
 //! cooldown for its own magic damage (and can consume Fired Up! itself if
 //! still armed when its delayed explosion lands). Breath of Life deals no
-//! damage and is never cast.
+//! damage and is never cast. Casts go one at a time: Q's pre-fire delay and
+//! W's cast time both keep Milio busy exactly like a cast time.
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
@@ -33,6 +34,7 @@ pub struct GenDriver {
     q_cd: f64,
     q_cast_delay: f64,
     w_cd: f64,
+    w_cast_time: f64,
     w_active_duration: f64,
     w_second_offset: f64,
     e_static_cd: f64,
@@ -55,8 +57,8 @@ struct State {
     fired_up_until: f64,
     /// Q's explosion, still pending (INF: none scheduled).
     q_explosion_at: f64,
-    /// Blocks E/W attempts during Q's pre-fire delay.
-    action_lock_until: f64,
+    /// The cast in progress ends here: no other cast, no attack before it.
+    busy_until: f64,
     e_charges: i64,
     /// Next charge to finish recharging (INF: charges are full).
     e_next_charge_at: f64,
@@ -73,6 +75,19 @@ struct State {
 }
 
 impl GenDriver {
+    /// The earliest a cast readied at `ready` can start: not before now, and
+    /// not inside another cast.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just started: no other cast and no attack
+    /// until it ends (an attack already due later keeps its time).
+    fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
+        self.s.busy_until = e.st.t + cast_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.busy_until);
+    }
+
     fn grant_fired_up(&mut self, t: f64) {
         self.s.fired_up_until = t + self.enchant_duration;
     }
@@ -114,7 +129,7 @@ impl Driver for GenDriver {
         let state = State {
             fired_up_until: -INF,
             q_explosion_at: INF,
-            action_lock_until: 0.0,
+            busy_until: 0.0,
             e_charges: e_max_charges,
             e_next_charge_at: INF,
             e_static_ready: 0.0,
@@ -135,6 +150,7 @@ impl Driver for GenDriver {
             q_cd: kit.at_rank("abilities.Q.cooldownS", ranks.q)?,
             q_cast_delay: kit.num("gen.Q.castDelayS")?,
             w_cd: kit.at_rank("abilities.W.cooldownS", ranks.w)?,
+            w_cast_time: kit.num("gen.W.castTimeS")?,
             w_active_duration: kit.num("gen.W.activeDurationS")?,
             w_second_offset: kit.num("gen.W.secondGrantOffsetS")?,
             e_static_cd: kit.at_rank("abilities.E.cooldownS", ranks.e)?,
@@ -182,16 +198,15 @@ impl Driver for GenDriver {
         if self.ranks.q == 0 {
             return INF;
         }
-        pymax(e.st.q_ready, e.st.t)
+        self.castable_at(e, e.st.q_ready)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
-        self.s.action_lock_until = t + self.q_cast_delay;
         self.s.q_explosion_at = t + self.q_cast_delay;
         e.prime_spellblade();
-        e.lockout();
+        self.busy_for(e, self.q_cast_delay);
     }
 
     fn events(&self, e: &Engine, out: &mut Events) -> usize {
@@ -202,8 +217,7 @@ impl Driver for GenDriver {
         }
         if self.ranks.e > 0 {
             if self.s.e_charges > 0 {
-                let ready = pymax(pymax(self.s.e_static_ready, self.s.action_lock_until), e.st.t);
-                out[n] = (ready, Kind::Ev(EV_E_ATTEMPT));
+                out[n] = (self.castable_at(e, self.s.e_static_ready), Kind::Ev(EV_E_ATTEMPT));
                 n += 1;
             }
             if self.s.e_next_charge_at != INF {
@@ -220,8 +234,7 @@ impl Driver for GenDriver {
                 out[n] = (self.s.w_end_at, Kind::Ev(EV_W_END));
                 n += 1;
             } else {
-                let ready = pymax(pymax(self.s.w_ready, self.s.action_lock_until), e.st.t);
-                out[n] = (ready, Kind::Ev(EV_W_ATTEMPT));
+                out[n] = (self.castable_at(e, self.s.w_ready), Kind::Ev(EV_W_ATTEMPT));
                 n += 1;
             }
         }
@@ -246,6 +259,8 @@ impl Driver for GenDriver {
                 self.maybe_consume_fired_up(e);
             }
             Kind::Ev(EV_E_ATTEMPT) => {
+                // Warm Hugs has no cast time: it costs nothing and locks
+                // nothing out, but still waits for another cast in progress
                 self.s.e_charges -= 1;
                 self.s.e_static_ready = t + self.e_static_cd;
                 if self.s.e_next_charge_at == INF {
@@ -263,11 +278,11 @@ impl Driver for GenDriver {
                 }
             }
             Kind::Ev(EV_W_ATTEMPT) => {
-                e.lockout();
                 e.prime_spellblade();
                 self.grant_fired_up(t);
                 self.s.w_grant2_at = t + self.w_second_offset;
                 self.s.w_end_at = t + self.w_active_duration;
+                self.busy_for(e, self.w_cast_time);
             }
             Kind::Ev(EV_W_GRANT2) => {
                 self.s.w_grant2_at = INF;

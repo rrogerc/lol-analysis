@@ -5,7 +5,9 @@
 //! attack, for 6 s, into an empowered flurry dealt as its own "Q" source
 //! (the attack's own damage instance is zeroed for that swing) and resets
 //! the attack timer. Volley (W) and Enchanted Crystal Arrow (R) are plain
-//! cast-then-land nukes on cooldown; R opens the fight.
+//! cast-then-land nukes on cooldown; R opens the fight. Hawkshot (E) deals
+//! no damage and only grants vision, which cannot matter in this fight, so
+//! it is never cast (its cast time is kept in the kit purely for the record).
 
 use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;

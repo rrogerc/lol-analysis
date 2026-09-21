@@ -13,14 +13,15 @@
   "Jayce opens already in Cannon Stance: the t=0 R cast (Transform) is read as the initial press that leaves default Hammer Stance for Cannon Stance, arming Cannon's on-attack armor/MR shred.",
   "Transform (R) is then recast every time its flat 6s cooldown is up, toggling stance for the rest of the fight, so both stances' kits (Shock Blast/Hyper Charge/Acceleration Gate in Cannon, To the Skies!/Lightning Field/Thundering Blow in Hammer) get real playtime; a swap is delayed until an active Hyper Charge window finishes so its 3 attacks are not wasted.",
   "The dossier leaves open whether switching stances applies or discards a still-pending Transform empowered attack (Cannon's shred / Hammer's bonus magic damage); this driver discards it unused on a swap, the simpler reading.",
-  "Shock Blast is read as landing on cast (its 0.2143 s cast time only drives the usual 0.25 s post-cast attack lockout, not a separate travel delay) and is always assumed to pass through a freshly-placed Acceleration Gate for the 1.4x supercharge, since Jayce stands on his own gate; Acceleration Gate itself deals no damage and is recast on cooldown purely to keep that window up.",
-  "Thundering Blow's damage lands 0.25 s after its cast (its stated cast time), and for 0.4 s after that Jayce cannot cast Shock Blast/To the Skies!, modeled as a shared lockout on the Q hook regardless of current stance.",
+  "Shock Blast is read as landing on cast (its 0.2143 s cast time only drives the usual 0.25 s post-cast attack lockout, not a separate travel delay) and is always assumed to pass through a freshly-placed Acceleration Gate for the 1.4x supercharge, since Jayce stands on his own gate; Acceleration Gate itself deals no damage, has no cast time, and is recast on cooldown purely to keep that window up.",
+  "Thundering Blow has a real 0.25 s cast time (gen.E.castTimeS): the cast keeps Jayce busy_for that duration (no other cast, no attack starts) and its damage lands exactly when the cast ends, then for 0.4 s more Jayce cannot cast Shock Blast/To the Skies!, modeled as a shared lockout on the Q hook regardless of current stance. Acceleration Gate uses the same E slot but has no cast time and does not consume busy time.",
   "Shock Blast's own flat 8 s cooldown (numbers sheet 'other JayceShockBlast') is used for the Cannon-Stance Q instead of the by-rank array shared with To the Skies! in ddragon; that by-rank array is used for To the Skies! itself. Likewise Acceleration Gate's own flat 16 s cooldown is used instead of the by-rank E array, which is kept for Thundering Blow.",
-  "Hyper Charge's empowered-attack window is taken as the bin's 3.6 s (JayceHyperCharge.Duration) rather than the wiki text's rounded 4 s; its total damage is explicitly stated to crit and is applied once per empowered attack landed, and it resets Jayce's attack timer on cast. Its cooldown starts post-effect (when the window/attacks end), matching the sheet.",
+  "Hyper Charge's empowered-attack window is taken as the bin's 3.6 s (JayceHyperCharge.Duration) rather than the wiki text's rounded 4 s; its total damage is explicitly stated to crit and is applied once per empowered attack landed, and it resets Jayce's attack timer on cast. Its cooldown starts post-effect (when the window/attacks end), matching the sheet. Hyper Charge and Lightning Field both have no cast time.",
   "Lightning Field's total base+AP damage is split evenly across its 4 one-second ticks; the field keeps ticking after a stance swap since it is already active in the world, independent of Jayce's current form.",
   "Jayce is treated as ranged with Cannon Stance's 500 attack range for the entire fight (even during Hammer-Stance windows), since the driver cannot vary attack range mid-fight; this slightly understates Hammer Stance's melee reality but keeps the model simple.",
   "The armor/MR shred and Hammer's bonus on-hit magic damage from Transform scale by champion level; the shred is a single static value read by the engine so it is fixed at the level-16 figure (35%), while the Hammer bonus damage is computed from the actual fight level.",
   "The dossier notes the last Hyper Charge attack is checked on-hit rather than on-attack (so a prior on-hit effect like Runaan's/Guinsoo's could suppress it); this driver applies all 3 empowered instances uniformly and does not model that edge case.",
+  "Every cast (Transform, Hyper Charge/Lightning Field, Acceleration Gate) that has no cast time still waits for any cast time in progress (Thundering Blow's busy window) before it can start, per the one-cast-at-a-time rule.",
   "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
  ],
  "assumed": [
@@ -158,6 +159,7 @@
    }
   },
   "E": {
+   "castTimeS": 0.25,
    "hammer": {
     "targetMaxHpRatio": [
      0.08,
@@ -168,7 +170,6 @@
      0.22
     ],
     "bonusAdRatio": 1.0,
-    "castTimeS": 0.25,
     "postLockoutS": 0.4
    },
    "cannon": {
@@ -206,6 +207,7 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jayce.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jayce.rs."
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jayce.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jayce.rs.",
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
  ]
 }
