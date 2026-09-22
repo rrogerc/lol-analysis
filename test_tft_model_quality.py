@@ -49,17 +49,21 @@ class TestFrontlineItemization(unittest.TestCase):
         position. Which position that is flipped on 2026-09-20: the cast
         timelines and the effect-long mana locks changed every unit on this
         board (Nidalee, Brambleback, Diana, Morgana) and its opponent's, so
-        the center is now the loss and the flanks the wins. The outcomes are
-        re-pinned like a golden; the phenomenon the fixture was frozen for is
-        unchanged."""
+        the center is now the loss and the flanks the wins. Flipped again on
+        2026-09-22: per-ability radii mean Malphite's wave and Morgana's zone
+        (both a stated 2 hexes) reach what each lane offset actually puts
+        inside them, so the position defense converts moved from the center
+        to the first flank, and the center now stays lost — a frontline too
+        thin to save by itemizing it. The outcomes are re-pinned like a
+        golden both times; the phenomenon the fixture was frozen for, that
+        where the enemy stands decides whether the failure shows and that
+        defense converts a losing position, is unchanged."""
         fights = {fight["key"]: fight for fight in self.before["matchups"]}
         better = {fight["key"]: fight for fight in self.after["matchups"]}
         for initiative in (0, 1):
-            center = f"aphelios-rapidfire-p0-i{initiative}"
-            flanks = [f"aphelios-rapidfire-p{position}-i{initiative}" for position in (2, 4)]
-            self.assertEqual(fights[center]["outcome"], "loss")
-            self.assertEqual([fights[flank]["outcome"] for flank in flanks], ["win", "win"])
-            self.assertEqual(better[center]["outcome"], "win")
+            keys = [f"aphelios-rapidfire-p{position}-i{initiative}" for position in (0, 2, 4)]
+            self.assertEqual([fights[key]["outcome"] for key in keys], ["loss", "loss", "win"])
+            self.assertEqual([better[key]["outcome"] for key in keys], ["loss", "win", "win"])
         self.assertEqual(self.before["opponentCount"], 12)
         self.assertEqual(self.before["metrics"]["benchmarkCount"], 72)
 

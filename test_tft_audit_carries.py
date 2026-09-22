@@ -125,8 +125,11 @@ class TestImpactIdentity(unittest.TestCase):
                     rows(spec, PoisonDurationAP=1)
                     sheet, res = ENGINE.simulate(spec, True)
                     self.assertEqual(sheet["form"], form)
-                    secondary = 10000 if geometry == "spread" else 9950
-                    self.assertEqual(res["left"], [0, secondary, secondary])
+                    # Both forms are a stated 1 hex (BubbleHexRadius), so the
+                    # explosion covers the target and the frontliner one lane
+                    # over when packed, and the target alone when spread.
+                    reached = [0, 10000, 10000] if geometry == "spread" else [0, 9950, 10000]
+                    self.assertEqual(res["left"], reached)
 
     def test_leblanc_and_yunara_select_secondaries_before_primary_dies(self):
         for name, main, splash, label, expected in (
@@ -169,7 +172,9 @@ class TestImpactIdentity(unittest.TestCase):
                 rows(spec, TetherDuration=1)
                 res = result(spec)
                 burst = events(res, "damage", "burst")
-                expected = [] if geometry == "spread" else [1, 2]
+                # The burst is a stated 1 hex (AoEHexRange), so packed it
+                # reaches the dead centre's neighbour and nothing further.
+                expected = [] if geometry == "spread" else [1]
                 self.assertEqual([hit[3] for hit in burst], expected)
                 self.assertTrue(all(hit[0] == 1.25 and hit[2] == 25 for hit in burst))
 

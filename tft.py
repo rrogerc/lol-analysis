@@ -1753,15 +1753,16 @@ def ability_radius_rows(unit, kit_hand):
 def board_positions(slots, geometry):
     """Place the schematic board's slots in lanes and rows, in place.
 
-    Only the standard FRONTLINERS + BACKLINERS board is placed, and only
-    when the caller supplied no positions of its own. Any other board — a
-    mechanics fixture, the theoretical probes, the symmetric placeholder —
-    keeps no position at all, so every selection there follows the older
-    nearby rule exactly as before.
+    Two shapes are placed, and only when the caller supplied no positions of
+    its own: the standard FRONTLINERS + BACKLINERS board, and a board of
+    FRONTLINERS alone, which is what the theoretical composition probes are —
+    a frontline with nothing behind it. Any other board (a mechanics fixture,
+    the symmetric placeholder) keeps no position at all, so every selection
+    there follows the older nearby rule exactly as before.
     """
-    if geometry not in FRONT_LANES or len(slots) != FRONTLINERS + BACKLINERS:
+    if geometry not in FRONT_LANES or any("lane" in slot for slot in slots):
         return slots
-    if any("lane" in slot for slot in slots):
+    if len(slots) not in (FRONTLINERS, FRONTLINERS + BACKLINERS):
         return slots
     front, back = FRONT_LANES[geometry], BACK_LANES[geometry]
     for index, slot in enumerate(slots):

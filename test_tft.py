@@ -380,14 +380,28 @@ class TestAbilityRadii(unittest.TestCase):
         self.assertEqual(len({e[3] for e in events(res, "damage", "tantrum")}), 2)
         self.assertEqual(len({e[3] for e in events(res, "damage", "ability")}), 4)
 
-    def test_a_board_without_positions_keeps_the_old_rule(self):
-        # Mechanics fixtures and the theoretical probes supply their own
-        # slots and no lanes, so every selection there is unchanged.
+    def test_a_three_slot_board_is_the_frontline(self):
+        # What the theoretical composition probes are: a frontline with
+        # nothing behind it, in the geometry's own lanes.
         slots = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:3]]
+        placed = tft.board_positions([dict(s) for s in slots], "clump")
+        self.assertEqual([(s["lane"], s["row"]) for s in placed],
+                         [(lane, 0) for lane in tft.FRONT_LANES["clump"]])
         board = dict(DUMMY, slots=slots, count=3, board=[1, 1, 1])
-        self.assertNotIn("lane", tft.board_positions(list(slots), "clump")[0])
+        _, res = run("Gromp", geometry="clump", dummy=board)
+        self.assertEqual(len({e[3] for e in events(res, "damage", "cloud")}), 2)
+
+    def test_a_board_without_positions_keeps_the_old_rule(self):
+        # A null lane is the explicit opt-out, and a board that is neither
+        # shape gets no positions at all; both keep every selection as it was.
+        slots = [dict(s, hp=10 ** 6, lane=None) for s in DUMMY["slots"][:3]]
+        self.assertIsNone(tft.board_positions([dict(s) for s in slots], "clump")[0]["lane"])
+        board = dict(DUMMY, slots=slots, count=3, board=[1, 1, 1])
         _, res = run("Gromp", geometry="clump", dummy=board)
         self.assertEqual(len({e[3] for e in events(res, "damage", "cloud")}), 3)
+
+        four = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:4]]
+        self.assertNotIn("lane", tft.board_positions([dict(s) for s in four], "clump")[0])
 
 
 class TestManaCycle(unittest.TestCase):

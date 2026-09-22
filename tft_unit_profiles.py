@@ -152,6 +152,10 @@ class UnitProfiles:
         if type(item_burn) is not bool or type(inferno_burn) is not bool:
             raise ValueError("burn channel flags must be booleans")
         dummy = generic_targets(**conditions)
+        # The probes stand in the geometry's frontline lanes, so an ability
+        # with a stated radius measures this board the way it measures the
+        # damage board instead of covering every target that counts.
+        tft.board_positions(dummy["slots"], self.geometry)
         signature = api, star, tft.json_hash(effects), bool(alpha)
         if signature not in self.templates:
             unit = self.snap.units[api]

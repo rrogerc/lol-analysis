@@ -582,10 +582,16 @@ impl TheoryScorer {
         spec.crit_ev = 1.0;
         spec.enemy_debuffs = EnemyDebuffs { wound: scenario.wound, sunder: 0.0, shred: 0.0 };
         spec.target_debuffs = TargetDebuffs { sunder: f64::from_bits(key.sunder), shred: f64::from_bits(key.shred) };
+        // The probes keep the positions the cell spec gave them, so an
+        // ability with a stated radius measures this board too instead of
+        // covering every target that counts toward the score.
+        let positions: Vec<Option<(i64, i64)>> =
+            spec.dummies.iter().map(|dummy| dummy.position).collect();
         spec.dummies = (0..scenario.target_count).map(|index| {
             let start = 1.0 * (index + 1) as f64 / scenario.target_count as f64;
             DummySpec { hp: scenario.target_hp, armor: scenario.armor, mr: scenario.mr,
-                is_tank: true, nearby: true, position: None, ad: pulse * scenario.physical_share, as_: 1.0,
+                is_tank: true, nearby: true,
+                position: positions.get(index).copied().flatten(), ad: pulse * scenario.physical_share, as_: 1.0,
                 ability: pulse * (1.0 - scenario.physical_share), phys_share: 0.0,
                 mana_max: 0.0, mana_start: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
                 attack_start: Some(start), cast_start: Some(start), streams: 1,

@@ -656,6 +656,117 @@
   sinks AND the incoming pressure sources (`pulse = incoming / target_count`,
   `initial_source_targets: [Option<usize>; 3]`, `incomingSourceCount` 3, the
   48 profiles), so adding a backline means separating those two roles first.
+  FIXED (2026-09-22), and not the way that paragraph expected: the three
+  roles never had to be separated, because a backline was the wrong fix.
+  Adding one changes nothing — a 1-hex cloud already reaches every target
+  the score counts. The lever is how many of the three are `nearby`, and an
+  area unit's credited damage is LINEAR in it. Measured on the theory probes
+  (Gromp 3★, Guinsoo's/Rabadon's/Shojin, immortal 3,000 HP 100/100, 30%
+  shared Sunder and Shred, 41 s): 3 nearby 31,173 damage, 5 nearby 43,477
+  (+39%), 8 nearby 61,933 (+99%), spread 18,869 (0.61x); single-target
+  Warwick and Murkwolf read 14,794 and 13,961 at EVERY one of those
+  settings. So the area multiplier the composition board handed an ability
+  was `TARGET_COUNT` itself, a constant picked for the incoming pressure
+  model. The per-ability radii below make the probes carry the geometry's
+  frontline lanes (`board_positions` also places a board of FRONTLINERS
+  alone, which is what they are, and `theory.rs` keeps those positions when
+  it rebuilds the dummies), so a stated radius measures them the way it
+  measures the damage board. Gromp's clumped probe DPS falls 760 -> 610
+  (-20%) and his area credit 1.65x -> 1.33x; Kayle (a line) and Warwick
+  (single target) are unchanged at 436 and 361. The pressure sources are
+  untouched: only `position` was added.
+  What that does NOT fix is the deeper half — the targets are immortal and
+  the incoming pressure is a fixed external budget, so the model still
+  cannot prefer removing an enemy over chipping three, and there is still
+  no overkill and no target priority. That is what `tft_removal.py` is for,
+  two bullets below. A composition warm is needed before any of this shows
+  on the dashboard: the artifacts re-key on every change here.
+- Per-ability radii (2026-09-22): an area effect with a stated radius now
+  measures the board instead of the `nearby` boolean, which is what the two
+  bullets above ask for. Every slot carries a lane and a row
+  (`tft.FRONT_LANES` / `BACK_LANES` / `BACK_ROW`, placed by `board_positions`
+  inside `cell_spec`) and two slots are |dlane| + |drow| apart: clumped the
+  frontline stands at lanes 2/3/4 and the backline at lanes 2/4 two rows
+  behind, spread the frontline is at 0/3/6 and the backline at 1/5.
+  `Fight::within(radius, center, exclude)` selects by that distance and 19 of
+  the 34 area call sites use it; the other 15 are lines, cones and
+  fixed-count spells, which keep the old rule exactly, because a packed
+  frontline really is collinear. Each radius is a kit row: `kits.json` gains
+  a `radii` block per unit recording the row, the number and where it came
+  from — 9 from Riot's own curve rows (`HexRadius`, `BigHexRadius`,
+  `FirestormHexRadius`, `AoEHexRange`, `HexRangeAOE`, `DamageHexRange`,
+  `PassiveHexRadius`, `TransformHexRadius`) and 9 transcribed from tooltip
+  prose Riot publishes with no row behind it, which `ability_radius_rows`
+  adds to the kit under a name of its own. A row the data starts publishing
+  always wins over a transcription, and `TestAbilityRadii` fails if a
+  transcribed row ever appears in the data. Two of the data rows scale with
+  the star and are used at the star: Gnar's transform is 2/2/10 (a 3-star
+  Mega Gnar covers the board) and Malphite's wave 2/2/3.
+  What moved: a 1-hex area centred on the near frontliner covers two of the
+  three instead of all three, a 2-hex one adds the backliner two rows behind
+  the target, and Ahri's 3-hex bomb reaches four of five clumped and three
+  spread instead of three and one. Gromp's cloud falls from 42.9% to 35.6% of
+  his damage on the clumped damage board; his kill time goes DOWN (24.25s ->
+  23.50s) because focused damage clears the first tank sooner and the later
+  casts then land on the softer dummies. `lane: null` opts a board out and
+  back to the nearby rule, which is how the fixtures that test the flag
+  itself still test it; a board that is neither the 3+2 formation nor a bare
+  frontline (the symmetric placeholder, mechanics fixtures) gets no positions
+  at all and is bit-identical. `tft.set_geometry` moves a built spec's
+  formation and its positions together — changing `spec["geometry"]` alone
+  now leaves an area measuring a formation the spec no longer claims, and
+  four tests did exactly that. The symmetric match measures real lanes too
+  (`TargetProjection.position`), so this reaches the two-sided path as well.
+  Deliberate model change: both golden sets were regenerated (946 of 7,670
+  fights moved). Tests: `test_tft.TestAbilityRadii`, the updated
+  `test_aoe_geometry`, `test_tft_tanks.TestTankFormation`,
+  `test_tft_driver_fixes`, `test_tft_nine_units`.
+- Removal-aware composition scoring, NOT yet the published model
+  (2026-09-22): `tft_removal.py` is the answer to the deeper half of the
+  Gromp bullets — that `ehp-damage-capacity-v3` scores raw summed damage
+  against immortal probes, so chipping three enemies is worth exactly as
+  much as removing one. It fights a candidate board against synthetic
+  opponents through the EXISTING two-sided engine (`symmetric.rs`, driven by
+  `tft_team.Evaluator`), where enemies have finite health, hit back and stop
+  doing either when they die. Measured cost: one 8v8 fight is 1.3 ms pinned
+  to a P-core (2.26 ms end to end including preparation), against 8-12 ms per
+  allocation for the model it would replace, so the four opponents from both
+  initiatives are about twice today's price — the redesign is CHEAPER per
+  fight than what it replaces.
+  The opponents are derived, never authored (authoring is what demoted the
+  symmetric path to a diagnostic): `opponent_boards` fills the eight slots
+  with the units closest to their group's median stats — tanks in front,
+  attackers of the declared damage type behind — and hands its main carry and
+  main tank the best three-item build the CHAMPION LEADERBOARD already found
+  for them, which the refresh warms first anyway. Four boards: frontline 3 or
+  4 x physical or magic backline. Cold cells are an error, not an itemless
+  opponent. Score: `effective_clear_time` per encounter (the fight's own
+  duration, or the whole window plus the health still standing over the
+  damage actually dealt — the survival tier's rule), geometric mean across
+  encounters, reported as `removalClearTime` with `removalScore` its
+  reciprocal. Win rate is deliberately NOT the score: it saturates, which is
+  the documented reason this path was dropped before.
+  What it says about Gromp, and the honest caveat. Comparing each carry's
+  published-best 2-cost clumped board like for like, the order is Kayle
+  11.88s, Caitlyn 12.97s, Warwick 13.52s, Gromp 14.22s — Gromp LAST, and the
+  same order holds with the opponents raised to 3-star (18.87 / 22.49 /
+  21.65 / 22.52). Across the whole searched set he still wins, because 27 of
+  the 32 boards at that budget ARE Gromp boards: the published search built
+  them under the old objective, so re-scoring bounds the movement and cannot
+  find a carry the search never tried. The published #1 falls to #26 under
+  removal, so it reorders his builds hard. A real verdict needs the search
+  re-run under this objective.
+  NOT wired into the published pipeline. `tft_comps.Search` still ranks on
+  `theoryScore` and the artifact/UI schema still carries `frontlineEhp`,
+  `damageDps`, `damageCapacity`, `protectionTime` and
+  `tft_theory.capacity_metrics`' consistency checks; switching over rewrites
+  all of that plus `tft_caps`, `tft_site` and the composition tab, and costs
+  a full ~2.5 h rebuild. The evaluator is a drop-in for
+  `evaluate_many(..., split="theory")` when that migration happens. Read-only
+  comparison tool: `python3 jobs/tft_removal_compare.py <artifact>
+  [--budget N]`. Tests: `python3 -m unittest test_tft_removal` (the fixtures
+  inject an explicit build map, because the archived snapshot the tests pin
+  has no warm cells).
 - Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
   time for him, so the engine lands his bubble at the bin's `mCastTime`,
   which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s
