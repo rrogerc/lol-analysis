@@ -3292,14 +3292,17 @@ def cmd_sim(args):
               "the defenses above include this reduction; repeated effects do not stack")
     if unit["objective"] in PRESSURED:
         board = unit["objective"] == "tank"
-        streams = dummy["board"] if board else [1] * dummy["count"]
+        # the same counts the spec carries: a tank's whole board, otherwise
+        # each slot's own, which is 0 for the backline of a damage fight
+        streams = (dummy["board"] if board
+                   else [int(s.get("streams", 1)) for s in dummy["slots"]])
         print("  they hit back: " + "; ".join(
             f"{k}× {s['ad']:.1f} AD at {s['as']:.2f}/s, {s['ability']:.1f} per cast "
             + (f"every {s['castInterval']:g}s" if board else
                f"at {s['manaStart']:.0f}/{s['manaMax']:.0f} mana +{s['manaPerAttack']:.0f}/attack"
                f"{' + damage taken' if s['manaFromDamage'] else ''}")
             + f" ({s['physicalShare']*100:.0f}% physical)"
-            for s, k in zip(dummy["slots"], streams))
+            for s, k in zip(dummy["slots"], streams) if k)
             + f" — about {dummy['boardPressureDps'] if board else dummy['pressureDps']:.0f} pre-mitigation DPS"
             + (f" ({dummy['threat']['label']}, {dummy['boardSize']} attackers)" if board else ""))
         if board:

@@ -578,6 +578,15 @@
   rules alone. Prose, the dashboard's fight diagram and the CLI's dummy line
   all show the two lines. Details: `data/tft/README.md` "One formation for
   every fight".
+  Cost: 1,770 champion cells re-warm in 2 m 24 s, but the COMPOSITION warm
+  went from the 47-84 min the older bullets record to 2 h 28 m (8,877 s,
+  measured 2026-09-22, 8 workers), because `tft_comps.Search` seeds its item
+  allocations with standalone loadout fights built from `dummies_for(snap)`
+  at `objective="carry"` (`tft_comps.py:252`) — that stage now fights five
+  dummies for up to 30 s instead of three for 20, about 2.4x the per-fight
+  work. Budget a full `tft refresh` accordingly. Published as
+  `g-22ff07edbcab`; the 8-worker warm is memory-hungry enough that this box
+  went short while it ran.
 - Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
   time for him, so the engine lands his bubble at the bin's `mCastTime`,
   which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s
