@@ -578,15 +578,29 @@
   rules alone. Prose, the dashboard's fight diagram and the CLI's dummy line
   all show the two lines. Details: `data/tft/README.md` "One formation for
   every fight".
-  Cost: 1,770 champion cells re-warm in 2 m 24 s, but the COMPOSITION warm
-  went from the 47-84 min the older bullets record to 2 h 28 m (8,877 s,
-  measured 2026-09-22, 8 workers), because `tft_comps.Search` seeds its item
-  allocations with standalone loadout fights built from `dummies_for(snap)`
-  at `objective="carry"` (`tft_comps.py:252`) — that stage now fights five
-  dummies for up to 30 s instead of three for 20, about 2.4x the per-fight
-  work. Budget a full `tft refresh` accordingly. Published as
+  Cost: 1,770 champion cells re-warm in 2 m 24 s; the composition warm
+  measured 2 h 28 m (8,877 s, 2026-09-22, 8 workers) against the 47-84 min
+  the older bullets record. Do NOT read that as this change's price: those
+  figures are from 2026-09-06..08 and several model changes ago, and
+  `FIGHT_DURATION` never reaches the composition path — `tft_comps.Evaluator`
+  passes `DAMAGE_WINDOW` (20 s) explicitly (`tft_comps.py:257-264`). What
+  this change does add there is two more immortal screening targets per
+  fight (`dummies_for(snap)` at `tft_comps.py:252`). Budget a full
+  `tft refresh` at ~2.5 h until someone measures the parts. Published as
   `g-22ff07edbcab`; the 8-worker warm is memory-hungry enough that this box
   went short while it ran.
+  THE COMPOSITION BOARD STILL HAS THE OLD PROBLEM. `dummies_for` reaches
+  `tft_comps` only through `Evaluator`, whose docstring says its scores
+  "never rank final boards" — it is roster screening and loadout seeding.
+  Boards are ranked by `tft_theory.Evaluator` -> `TheoryScorer`, which builds
+  its own targets in Rust (`theory.rs:585-591`): `TARGET_COUNT` 3, every one
+  `nearby: true`, so in a clumped context a 1-hex effect still covers every
+  enemy the score is measured against. Gromp 3★ is the carry in 10 of the 12
+  top 2-cost boards of `c2-clump-mixed` after the rebuild. Fixing it is NOT
+  the same one-line change: those three targets do double duty as the damage
+  sinks AND the incoming pressure sources (`pulse = incoming / target_count`,
+  `initial_source_targets: [Option<usize>; 3]`, `incomingSourceCount` 3, the
+  48 profiles), so adding a backline means separating those two roles first.
 - Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
   time for him, so the engine lands his bubble at the bin's `mCastTime`,
   which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s
