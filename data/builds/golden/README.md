@@ -53,3 +53,22 @@ the defender's report and the tank's sheet included), and one
 `jobs/gen_golden.py --only survival` after a deliberate change to the
 Survival model. The damage fixtures above did not move when it was added:
 the defender only exists in a Survival fight.
+
+Regenerated on 2026-09-22 for two deliberate changes in one commit: Actualizer
+left the damage pool and mana stopped being spent by every champion, so
+every bar stays at its maximum (Roger's call both times). Before regenerating, the
+old fixtures were replayed against the new engine to see how far the change
+reached: of `engine-fights.json`'s 5,249 cases, **449 of Kassadin's 1,379
+moved and all 3,870 Kayle, Twitch and Vladimir cases came out byte for byte
+the same** — he is the only one of the four whose kit ever spent mana. In
+`survival.json`, 143 of the 157 `survive-kassadin` cases moved and all 157
+`survive-kayle` cases were identical, for the same reason. The new
+`engine-fights.json` holds 5,220 cases rather than 5,249: four hand-picked
+builds (`shred-mana` for Kayle, Twitch and Kassadin, and Kassadin's
+`mana-pool`) name Actualizer, which `champion_pool` no longer offers, so the
+generator skips them and the item's effect key is no longer exercised here —
+`test_builds.TestKassadinEngine.test_actualizer_cost_increase_is_inert` still
+pins it. `enumerate.json`'s five runs are regenerated over the 75-item pool.
+`survival.json`'s attackers stay pinned at the 2026-09-19 winners, Actualizer
+and all: the fixture is meant to stand alone, not to track the dashboard.
+

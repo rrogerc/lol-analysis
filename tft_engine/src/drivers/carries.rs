@@ -165,6 +165,8 @@ impl Driver for Ezreal {
 /// ability power — or attack damage in the other form — every five seconds.
 #[derive(Clone)]
 pub struct Gromp {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     buff_at: Option<f64>,
     poison_dur: RowId,
     timer: RowId,
@@ -180,7 +182,7 @@ impl Driver for Gromp {
     const NAME: &'static str = "Gromp";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Gromp { buff_at: None, poison_dur: k.row("PoisonDurationAP"), timer: k.row("TraitTimer"),
+        Gromp { radius: k.row("BubbleHexRadius"), buff_at: None, poison_dur: k.row("PoisonDurationAP"), timer: k.row("TraitTimer"),
                 timed_ad: k.row("TraitTimedAD"), timed_ap: k.row("TraitTimedAP"),
                 phys1: k.calc("PhysicalDamageCalc1"), phys2: k.calc("PhysicalDamageCalc2"),
                 magic1: k.calc("MagicDamageCalc1"), magic2: k.calc("MagicDamageCalc2") }
@@ -189,14 +191,14 @@ impl Driver for Gromp {
     fn cast(f: &mut Fight<Self>) {
         if f.sheet.form == Some(Form::AD) {
             // "within a 1 hex radius": the target too, as the poison cloud does
-            let tg = f.adjacent(None);
+            let tg = f.within(f.row(f.drv.radius), None, false);
             f.hit_ability(f.drv.phys1, f.target(), "ability", 1.0);
             for d in tg.iter() {
                 f.hit_ability(f.drv.phys2, Some(d), "splash", 1.0);
             }
             return;
         }
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         f.hit_ability(f.drv.magic1, f.target(), "ability", 1.0);
         for d in tg.iter() {
             let dur = f.row(f.drv.poison_dur);
@@ -227,6 +229,8 @@ impl Driver for Gromp {
 /// Karmic Bond: damage over a short tether, then a burst around the target.
 #[derive(Clone)]
 pub struct Karma {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     bursts: Vec<(f64, usize)>,
     tether_dur: RowId,
     tether: CalcId,
@@ -237,7 +241,7 @@ impl Driver for Karma {
     const NAME: &'static str = "Karma";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Karma { bursts: Vec::new(), tether_dur: k.row("TetherDuration"),
+        Karma { radius: k.row("AoEHexRange"), bursts: Vec::new(), tether_dur: k.row("TetherDuration"),
                 tether: k.calc("MagicDamageCalc1"), burst: k.calc("MagicDamageCalc2") }
     }
 
@@ -266,7 +270,7 @@ impl Driver for Karma {
             // enemy becomes the current attack target. Whether the game
             // cancels the burst after early death remains unresolved; keep
             // the existing delayed burst in the retained abstract geometry.
-            let tg = f.aoe_around(center, None, false);
+            let tg = f.within(f.row(f.drv.radius), Some(center), false);
             for d in tg.iter() {
                 f.hit_ability(f.drv.burst, Some(d), "burst", 1.0);
             }
@@ -309,6 +313,8 @@ impl Driver for KhaZix {
 /// Mirror Image: a hit, and less to the adjacent dummies.
 #[derive(Clone)]
 pub struct LeBlanc {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     main: CalcId,
     splash: CalcId,
 }
@@ -317,11 +323,11 @@ impl Driver for LeBlanc {
     const NAME: &'static str = "LeBlanc";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        LeBlanc { main: k.calc("MagicDamageCalc1"), splash: k.calc("MagicDamageCalc2") }
+        LeBlanc { radius: k.row("MirrorHexRadius"), main: k.calc("MagicDamageCalc1"), splash: k.calc("MagicDamageCalc2") }
     }
 
     fn cast(f: &mut Fight<Self>) {
-        let tg = f.aoe(None, true);
+        let tg = f.within(f.row(f.drv.radius), None, true);
         f.hit_ability(f.drv.main, f.target(), "ability", 1.0);
         for d in tg.iter() {
             f.hit_ability(f.drv.splash, Some(d), "splash", 1.0);
@@ -617,6 +623,8 @@ impl Driver for Soraka {
 /// keeps attacking through the cast.
 #[derive(Clone)]
 pub struct Tristana {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     /// (when the charge blows, the attacks made under it) while it runs.
     charge: Option<(f64, i64)>,
     duration: RowId,
@@ -629,7 +637,7 @@ impl Driver for Tristana {
     const NAME: &'static str = "Tristana";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Tristana { charge: None, duration: k.row("Duration"), speed: k.calc("AttackSpeedCalc1"),
+        Tristana { radius: k.row("ChargeHexRadius"), charge: None, duration: k.row("Duration"), speed: k.calc("AttackSpeedCalc1"),
                    blast: k.calc("PhysicalDamageCalc1"), per_attack: k.calc("PhysicalDamageCalc2") }
     }
 
@@ -666,7 +674,7 @@ impl Driver for Tristana {
         };
         if f.t >= ch.0 - 1e-9 {
             f.drv.charge = None;
-            let tg = f.aoe_all();
+            let tg = f.within(f.row(f.drv.radius), None, false);
             let n = tg.len() as f64;
             for d in tg.iter() {
                 f.hit_ability(f.drv.blast, Some(d), "explosion", 1.0 / n);

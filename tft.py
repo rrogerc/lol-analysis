@@ -180,6 +180,18 @@ CORE_CANDIDATES = 6
 # the three tank presets vary backline damage type/timing at one DPS budget.
 FRONTLINERS = 3
 BACKLINERS = 2
+# Where those slots stand, so an ability with a stated radius measures a
+# formation instead of a boolean. Lanes run across the board and rows back
+# from the frontline; the distance between two slots is |dlane| + |drow|.
+# Clumped frontliners stand shoulder to shoulder, spread ones three hexes
+# apart, and the backline sits BACK_ROW rows behind either way. Real hex
+# movement is not simulated and the epicenter is always the current target,
+# never the placement that would catch the most enemies: this is the same
+# fixed-lane approximation the symmetric match already makes, one step less
+# coarse than the nearby flag it replaces for those abilities.
+FRONT_LANES = {"clump": (2, 3, 4), "spread": (0, 3, 6)}
+BACK_LANES = {"clump": (2, 4), "spread": (1, 5)}
+BACK_ROW = 2
 TANK_REFERENCE_DURATION = 20.0
 TANK_REFERENCE_CARRIES = (
     ("Aphelios", ("DA_GuinsoosRageblade", "DA_KrakensFury", "DA_InfinityEdge")),
@@ -215,9 +227,9 @@ TANK_DEBUFF_ROWS = {
 OBJECTIVE_BY_KIND = {"Tank": "tank", "Fighter": "fighter", "Assassin": "fighter",
                      "Marksman": "carry", "Caster": "carry", "Specialist": "carry"}
 OBJECTIVES = {
-    "carry": "three frontliners screen two backliners and none of them hit back; nearby effects reach the frontline, whole-board and nearest-N spells reach all five; ranked by time to kill all five, then damage dealt",
+    "carry": "three frontliners screen two backliners and none of them hit back; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone still reaches the whole packed frontline, and whole-board and nearest-N spells reach all five; ranked by time to kill all five, then damage dealt",
     "fighter": "three frontliners screen two backliners; only the frontline hits back and the unit can die; ranked by kill time, then damage dealt before dying",
-    "tank": "three frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; nearby effects reach the frontline while the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
+    "tank": "three frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone still reaches the whole packed frontline, and whole-board and nearest-N spells reach all five, and the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
 }
 PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies attacking
 
@@ -1460,12 +1472,18 @@ _KNOWN_SCALINGS = ("AttackDamage", "AbilityPower", "HealthMax", "Armor", "MagicR
                    "BasicAttackDamage", "Stack")
 
 
-def kit_spec(unit, star, form=None):
+def kit_spec(unit, star, form=None, extra_rows=None):
     """A unit's kit for the engine at one star level and form (the merge
     tft.Sheet did): the stats with health and attack damage already
     star-scaled, every curve row at the star, and each calc's terms with
     the star's coefficient — so the engine folds calcs exactly as
-    calc_value did without touching a curve or a power."""
+    calc_value did without touching a curve or a power.
+
+    `extra_rows` are rows the data does not publish but a hand file states
+    with its evidence, currently only the area radii Riot prints in tooltip
+    prose with no curve row behind it (`ability_radius_rows`). A row the
+    data does publish always wins, so a later patch that adds one takes
+    over from the transcription."""
     calcs, curve, s = unit["calcs"], unit["curve"], unit.get("stats") or {}
     if form is not None and form in (unit.get("forms") or {}):
         fm = unit["forms"][form]
@@ -1480,6 +1498,8 @@ def kit_spec(unit, star, form=None):
     base_ad = base_ad * AD_PER_STAR ** (star - 1)
     hp_star = (s.get("hp") or 0.0) * HP_PER_STAR ** (star - 1)
     rows = {}
+    for name, value in (extra_rows or {}).items():
+        rows[name] = float(value)
     for name, r in curve.items():
         v = curve_at(r, star) if r else None
         if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -1714,6 +1734,64 @@ def has_driver(unit):
     return unit["api"] in engine().DRIVERS
 
 
+def ability_radius_rows(unit, kit_hand):
+    """The area radii kits.json states for one unit, as extra kit rows.
+
+    Riot publishes some of them as curve rows (`HexRadius`, `BigHexRadius`,
+    `FirestormHexRadius`, …) and the engine already reads those; the rest
+    appear only in the ability's own tooltip prose with no row behind them,
+    so the hand file transcribes the number together with the sentence it
+    came from. Only those are returned — a radius the data publishes stays
+    the data's, so a later patch that changes it takes effect on its own.
+    """
+    entry = ((kit_hand.get("units") or {}).get(unit["api"])) or {}
+    return {name: float(radius["hexes"])
+            for name, radius in (entry.get("radii") or {}).items()
+            if radius.get("source") == "tooltip"}
+
+
+def board_positions(slots, geometry):
+    """Place the schematic board's slots in lanes and rows, in place.
+
+    Only the standard FRONTLINERS + BACKLINERS board is placed, and only
+    when the caller supplied no positions of its own. Any other board — a
+    mechanics fixture, the theoretical probes, the symmetric placeholder —
+    keeps no position at all, so every selection there follows the older
+    nearby rule exactly as before.
+    """
+    if geometry not in FRONT_LANES or len(slots) != FRONTLINERS + BACKLINERS:
+        return slots
+    if any("lane" in slot for slot in slots):
+        return slots
+    front, back = FRONT_LANES[geometry], BACK_LANES[geometry]
+    for index, slot in enumerate(slots):
+        if index < FRONTLINERS:
+            slot["lane"], slot["row"] = front[index], 0
+        else:
+            slot["lane"], slot["row"] = back[index - FRONTLINERS], BACK_ROW
+    return slots
+
+
+def set_geometry(spec, geometry):
+    """Change a built spec's formation, its slot positions included.
+
+    A spec carries both the flag the engine reads and the lanes and rows
+    `board_positions` gave its slots, so moving one without the other would
+    leave an area with a radius measuring the formation the spec no longer
+    claims. A board that opted out of positions stays opted out.
+    """
+    if geometry not in GEOMETRIES:
+        raise ValueError(f"unknown target geometry {geometry!r}")
+    spec["geometry"] = geometry
+    slots = spec["dummies"]["slots"]
+    if all(slot.get("lane") is not None for slot in slots):
+        for slot in slots:
+            slot.pop("lane", None)
+            slot.pop("row", None)
+        board_positions(slots, geometry)
+    return spec
+
+
 def calc_value(unit, name, star, ad, ap, max_hp, armor, mr, runtime=None, base_ad=None):
     """Fold one of the unit's ability calculations at the given stats: the
     engine's calc_value on the unit's kit at `star`. Term conventions (from
@@ -1738,7 +1816,8 @@ def trait_notes(snap, ctx_traits, trait_fx):
 
 
 def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None, pressure=None,
-              item_fx=None, trait_fx=None, pool=(), items=(), driver=None, cast_timing=None):
+              item_fx=None, trait_fx=None, pool=(), items=(), driver=None, cast_timing=None,
+              kit_hand=None):
     """Everything the engine needs for one unit's fights: kits per form,
     dummies (armed and standing for the board per the objective), the
     role's and the traits' contributions, the item pool for an
@@ -1747,6 +1826,7 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     item_fx = item_fx if item_fx is not None else load_item_effects(snap.set_no)
     trait_fx = trait_fx if trait_fx is not None else load_trait_effects(snap.set_no)
     cast_timing = cast_timing if cast_timing is not None else load_cast_timing(snap.set_no)
+    kit_hand = kit_hand if kit_hand is not None else load_kits(snap.set_no)
     objective = unit.get("objective", "carry")
     auto_pressure = pressure is None
     if pressure is None:
@@ -1758,12 +1838,14 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     # fight takes each slot's own count, which is 0 for the backline (a
     # damage target that never attacks).
     streams = dummy_spec.get("board") if board else None
-    slots = [dict(s, streams=int(streams[i]) if streams else int(s.get("streams", 1)))
-             for i, s in enumerate(dummy_spec["slots"])]
-    kits = {"base": kit_spec(unit, star, None)}
+    slots = board_positions(
+        [dict(s, streams=int(streams[i]) if streams else int(s.get("streams", 1)))
+         for i, s in enumerate(dummy_spec["slots"])], geometry)
+    radii = ability_radius_rows(unit, kit_hand)
+    kits = {"base": kit_spec(unit, star, None, radii)}
     if unit.get("forms"):
-        kits["AD"] = kit_spec(unit, star, "AD")
-        kits["AP"] = kit_spec(unit, star, "AP")
+        kits["AD"] = kit_spec(unit, star, "AD", radii)
+        kits["AP"] = kit_spec(unit, star, "AP", radii)
     kind = unit_role_kind(unit)
     role = {"manaRegen": CASTER_MANA_REGEN if kind == "Caster" else 0.0,
             "asPct": FIGHTER_AS_BY_STAGE[STAGE] if kind == "Fighter" else 0.0}
@@ -3285,7 +3367,11 @@ def cmd_sim(args):
                                     + (", backline" if s.get("nearby") is False else "") + ")"
                                     for s in dummy["slots"])
           + f" — median {dummy['star']}★ of {dummy['tanks']} tanks and {dummy['others']} others"
-          + f"; nearby effects reach the {FRONTLINERS} in front")
+          + "; at " + "/".join(
+              f"lane {s['lane']} row {s['row']}" if "lane" in s else "no position"
+              for s in spec["dummies"]["slots"])
+          + " — an ability with a radius reaches what |dlane| + |drow| from the"
+            " target covers, the rest keep the frontline rule")
     if target_fx:
         print(f"  all targets: {target_fx.get('sunder', 0):.0%} Sunder and "
               f"{target_fx.get('shred', 0):.0%} Shred active from combat start; "

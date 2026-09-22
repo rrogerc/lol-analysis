@@ -585,7 +585,7 @@ impl TheoryScorer {
         spec.dummies = (0..scenario.target_count).map(|index| {
             let start = 1.0 * (index + 1) as f64 / scenario.target_count as f64;
             DummySpec { hp: scenario.target_hp, armor: scenario.armor, mr: scenario.mr,
-                is_tank: true, nearby: true, ad: pulse * scenario.physical_share, as_: 1.0,
+                is_tank: true, nearby: true, position: None, ad: pulse * scenario.physical_share, as_: 1.0,
                 ability: pulse * (1.0 - scenario.physical_share), phys_share: 0.0,
                 mana_max: 0.0, mana_start: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
                 attack_start: Some(start), cast_start: Some(start), streams: 1,

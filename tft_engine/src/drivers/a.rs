@@ -17,6 +17,8 @@ use crate::spec::UnitSpec;
 /// from the epicenter. In the clump the other dummies sit one hex out.
 #[derive(Clone)]
 pub struct Ahri {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     channel: RowId,
     fall: RowId,
     dmg: CalcId,
@@ -26,7 +28,7 @@ impl Driver for Ahri {
     const NAME: &'static str = "Ahri";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Ahri { channel: k.row("ChannelTime"), fall: k.row("HexPercentDamageFalloffTooltip"),
+        Ahri { radius: k.row("HexRadius"), channel: k.row("ChannelTime"), fall: k.row("HexPercentDamageFalloffTooltip"),
                dmg: k.calc("MagicDamageCalc1") }
     }
 
@@ -36,7 +38,7 @@ impl Driver for Ahri {
 
     fn cast(f: &mut Fight<Self>) {
         let fall = f.row(f.drv.fall);
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for (i, d) in tg.iter().enumerate() {
             let mult = if i == 0 { 1.0 } else { 1.0 - fall };
             f.hit_ability(f.drv.dmg, Some(d), "ability", mult);
@@ -232,6 +234,8 @@ impl Driver for Alune {
 /// split among the dummies in reach.
 #[derive(Clone)]
 pub struct Aphelios {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     /// (start, end, swipes, done) while an onslaught runs.
     onslaught: Option<(f64, f64, i64, i64)>,
     duration: RowId,
@@ -280,7 +284,7 @@ impl Aphelios {
             Self::pay_swipes(f);
         }
         f.drv.onslaught = None;
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         let mult = 1.0 / (tg.len() as f64);
         for d in tg.iter() {
             f.hit_ability(f.drv.blast, Some(d), "blast", mult);
@@ -293,7 +297,7 @@ impl Driver for Aphelios {
     const LANDS_AT_START: bool = true;
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Aphelios { onslaught: None, duration: k.row("Duration"), base_swipes: k.row("NumAttacksBase"),
+        Aphelios { radius: k.row("BlastHexRadius"), onslaught: None, duration: k.row("Duration"), base_swipes: k.row("NumAttacksBase"),
                    as_per_swipe: k.row("AS_NeededForExtraSwipe"),
                    per_auto: k.row("NumSwipesTriggerSimulatedAutos"),
                    swipe: k.calc("PhysicalDamageCalc1"), blast: k.calc("PhysicalDamageCalc2") }
@@ -456,6 +460,8 @@ impl Driver for Yorick {
 /// while the ball is still up.
 #[derive(Clone)]
 pub struct Rammus {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     lock: ShieldLock,
     duration: RowId,
     armor_mr: RowId,
@@ -473,7 +479,7 @@ impl Driver for Rammus {
     const NAME: &'static str = "Rammus";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Rammus { lock: ShieldLock::default(), duration: k.row("Duration"),
+        Rammus { radius: k.row("DamageHexRange"), lock: ShieldLock::default(), duration: k.row("Duration"),
                  armor_mr: k.row("ArmorMR"),
                  shield: k.calc("ShieldCalc1"), burst: k.calc("PhysicalDamageCalc1") }
     }
@@ -488,7 +494,7 @@ impl Driver for Rammus {
 
     fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
         if shield_lock_broke(f) {
-            let tg = f.aoe_all();
+            let tg = f.within(f.row(f.drv.radius), None, false);
             for d in tg.iter() {
                 f.hit_ability(f.drv.burst, Some(d), "shield break", 1.0);
             }

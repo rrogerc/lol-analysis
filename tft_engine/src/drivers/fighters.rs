@@ -148,6 +148,8 @@ impl Driver for Brambleback {
 /// party, adopted like Azir's lock, not verified in game).
 #[derive(Clone)]
 pub struct Diana {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     /// The barrier while it stands and holds the lock.
     barrier: Option<usize>,
     /// The cast's own lock, which a barrier broken sooner falls back to.
@@ -162,7 +164,7 @@ impl Driver for Diana {
     const NAME: &'static str = "Diana";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Diana { barrier: None, cast_lock: 0.0,
+        Diana { radius: k.row("OrbHexRadius"), barrier: None, cast_lock: 0.0,
                 shield_dur: k.row("ShieldDuration"), n_orbs: k.row("NumOrbs"),
                 shield: k.calc("ShieldCalc1"), orb: k.calc("MagicDamageCalc1") }
     }
@@ -176,7 +178,7 @@ impl Driver for Diana {
             f.drv.cast_lock = cast_lock;
             f.lock_until = pymax(cast_lock, f.t + dur);
         }
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         let orbs = pyint(f.row(f.drv.n_orbs));
         for i in 0..orbs {
             // "spread among enemies within 2 hexes": only the enemies in
@@ -209,6 +211,8 @@ impl Driver for Diana {
 /// it, and curses stack with repeat casts.
 #[derive(Clone)]
 pub struct Morgana {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     omnivamp: RowId,
     spell_dur: RowId,
     n_cursed: RowId,
@@ -233,7 +237,7 @@ impl Driver for Morgana {
     const NAME: &'static str = "Morgana";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Morgana { omnivamp: k.row("Omnivamp"), spell_dur: k.row("SpellDuration"),
+        Morgana { radius: k.row("HexRangeAOE"), omnivamp: k.row("Omnivamp"), spell_dur: k.row("SpellDuration"),
                   n_cursed: k.row("NumEnemiesCursed"), blast: k.calc("MagicDamageCalc1"),
                   zone: k.calc("MagicDamageCalc2"), curse: k.calc("MagicDamageCalc3") }
     }
@@ -259,7 +263,7 @@ impl Driver for Morgana {
             let t = f.t;
             f.dm(d).mark_times.push(t + dur);
         }
-        let zone = f.aoe_all();
+        let zone = f.within(f.row(f.drv.radius), None, false);
         for d in zone.iter() {
             f.dot_ability(f.drv.zone, Some(d), dur, "withering zone", dur);
         }
@@ -307,6 +311,8 @@ impl Driver for Rengar {
 /// threshold is finished off.
 #[derive(Clone)]
 pub struct ElderDragon {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     landed: bool,
     aoe_ratio: RowId,
     stun_dur: RowId,
@@ -347,7 +353,7 @@ impl Driver for ElderDragon {
     const NAME: &'static str = "ElderDragon";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        ElderDragon { landed: false, aoe_ratio: k.row("AttackAoERatio"),
+        ElderDragon { radius: k.row("AttackAoEHexRadius"), landed: false, aoe_ratio: k.row("AttackAoERatio"),
                       stun_dur: k.row("StunDuration"), omnivamp: k.row("Omnivamp"),
                       fall: k.row("DamageReductionPerHit"),
                       floor: k.row("MinimumDamageThreshold"),
@@ -358,7 +364,7 @@ impl Driver for ElderDragon {
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
-        let adj = f.adjacent(Some(target));
+        let adj = f.within(f.row(f.drv.radius), Some(target), false);
         f.hit_attack(target, 1.0, "auto");
         let ratio = f.row(f.drv.aoe_ratio);
         for d in adj.iter() {
@@ -493,6 +499,8 @@ impl Driver for Murkwolf {
 /// seconds.
 #[derive(Clone)]
 pub struct Kennen {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     ap_per_burning: RowId,
     shield_dur: RowId,
     storm_dur: RowId,
@@ -505,7 +513,7 @@ impl Driver for Kennen {
     const NAME: &'static str = "Kennen";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Kennen { ap_per_burning: k.row("APPerBurningEnemy"), shield_dur: k.row("ShieldDuration"),
+        Kennen { radius: k.row("FirestormHexRadius"), ap_per_burning: k.row("APPerBurningEnemy"), shield_dur: k.row("ShieldDuration"),
                  storm_dur: k.row("FirestormDuration"), shield: k.calc("ShieldCalc1"),
                  rush: k.calc("MagicDamageCalc1"), storm: k.calc("MagicDamageCalc2") }
     }
@@ -524,7 +532,7 @@ impl Driver for Kennen {
         let amount = f.calc(f.drv.shield);
         let shield_dur = f.row(f.drv.shield_dur);
         f.shield(amount, shield_dur, "firestorm", false);
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
             f.hit_ability(f.drv.rush, Some(d), "rush", 1.0);
         }
@@ -613,6 +621,8 @@ impl Driver for MasterYi {
 /// standing is thrown off the board.
 #[derive(Clone)]
 pub struct Gnar {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     rage: f64,
     mega: bool,
     per_attack: RowId,
@@ -642,7 +652,7 @@ impl Gnar {
         let health = f.calc(f.drv.health);
         f.gain_max_hp(health);
         let strip = f.calc(f.drv.strip);
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
             f.hit_ability(f.drv.transform, Some(d), "transform", 1.0);
             let dummy = f.dm(d);
@@ -660,7 +670,7 @@ impl Driver for Gnar {
     const NAME: &'static str = "Gnar";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Gnar { rage: 0.0, mega: false, per_attack: k.row("RagePerAttack"),
+        Gnar { radius: k.row("TransformHexRadius"), rage: 0.0, mega: false, per_attack: k.row("RagePerAttack"),
                per_second: k.row("RagePerSecond"), rage_max: k.row("TransformRageMax"),
                stun_dur: k.row("StunDuration"), health: k.calc("HealthCalc1"),
                strip: k.calc("GenericCalc1"), transform: k.calc("PhysicalDamageCalc3"),

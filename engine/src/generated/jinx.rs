@@ -112,6 +112,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let fishbones_ad_ratio = kit.num("gen.Q.fishbonesAdRatio")?;
+        // mana is not modelled: nothing spends, so the pool stays here
         let mana_max = sheet.mana;
         let state = State {
             mana: mana_max,
@@ -215,7 +216,6 @@ impl Driver for GenDriver {
 
     fn attack_riders(&mut self, e: &mut Engine) {
         if self.s.use_fishbones && self.s.mana >= self.q_mana_cost {
-            self.s.mana -= self.q_mana_cost;
             e.deal(self.fishbones_extra_dmg, DType::Physical, self.src_q_onhit, true, false, 1.0);
         }
     }
@@ -235,7 +235,6 @@ impl Driver for GenDriver {
             self.s.r_ready = INF;
             return;
         }
-        self.s.mana -= self.r_mana_cost;
         self.s.r_land_at = t + self.r_cast_s + self.r_travel_s;
         self.s.r_ready = t + e.ult_cd(self.r_cd);
         self.busy_for(e, self.r_cast_s);
@@ -281,7 +280,6 @@ impl Driver for GenDriver {
                     self.s.w_ready = INF;
                     return;
                 }
-                self.s.mana -= self.w_mana_cost;
                 let ct = self.w_cast_time(t);
                 self.s.w_land_at = t + ct;
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
@@ -299,7 +297,6 @@ impl Driver for GenDriver {
                     self.s.e_ready = INF;
                     return;
                 }
-                self.s.mana -= self.e_mana_cost;
                 self.s.e_land_at = t + self.e_delay_s;
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
             }
@@ -315,7 +312,6 @@ impl Driver for GenDriver {
                     self.s.r_ready = INF;
                     return;
                 }
-                self.s.mana -= self.r_mana_cost;
                 self.s.r_land_at = t + self.r_cast_s + self.r_travel_s;
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
                 self.busy_for(e, self.r_cast_s);

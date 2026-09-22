@@ -842,7 +842,7 @@ class TestBlueBuff(unittest.TestCase):
             spec["kits"]["base"]["calcs"]["MagicDamageCalc1"]["terms"] = [
                 {"type": "scaled", "coef": 1.0, "scaling": "AbilityPower", "op": "add"}]
             spec["kits"]["base"]["stats"].update(initialMana=spec["kits"]["base"]["stats"]["mana"])
-            spec["geometry"] = "spread"
+            tft.set_geometry(spec, "spread")
             _, res = ENGINE.simulate(spec, True)
             return events(res, "damage", "ability")
         staff = SNAP.item("Archangel's Staff")

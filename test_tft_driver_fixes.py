@@ -232,11 +232,13 @@ class TestBramblebackFrenzyLock(unittest.TestCase):
 
 class TestDianaBarrier(unittest.TestCase):
     def test_orbs_stay_with_the_enemies_in_reach_when_the_cast_landed(self):
-        # Spread out, only the target is "within 2 hexes": when it dies the
-        # orbs left over are lost, they do not fly on to the next dummy.
+        # "within 2 hexes" is measured against the board: packed, that is the
+        # whole frontline plus the backliner two rows behind the target;
+        # spread, only the target, and when it dies the orbs left over are
+        # lost rather than flying on to the next dummy.
         dummy = copy.deepcopy(DUMMY)
         dummy["slots"][0]["hp"] = 60.0
-        for geometry, recipients in (("spread", {0}), ("clump", {0, 1, 2})):
+        for geometry, recipients in (("spread", {0}), ("clump", {0, 1, 2, 3})):
             with self.subTest(geometry=geometry):
                 spec = timing_spec("Diana", geometry=geometry, duration=20.0, dummy=dummy)
                 spec["kits"]["base"]["stats"].update(initialMana=spec["kits"]["base"]["stats"]["mana"])
@@ -546,8 +548,11 @@ class TestMorganaBlastTargets(unittest.TestCase):
                     end = casts[index + 1][0]
                     blast = [e[3] for e in events(res, "damage", "blast") if start <= e[0] < end]
                     self.assertEqual(blast, [0, 1, 2])
+                    # The blast still picks three separate enemies whatever the
+                    # geometry; the zone is a stated 2 hexes (HexRangeAOE), so
+                    # packed it also covers the backliner behind the target.
                     zone = {e[3] for e in events(res, "damage", "withering zone") if start <= e[0] < end}
-                    self.assertEqual(zone, {0} if geometry == "spread" else {0, 1, 2})
+                    self.assertEqual(zone, {0} if geometry == "spread" else {0, 1, 2, 3})
 
 
 TANK_PER_ATTACK = 5.0                                   # Kind::Tank

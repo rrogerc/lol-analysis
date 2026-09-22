@@ -129,6 +129,8 @@ impl Driver for Zyra {
 /// casts are ally buffs: not simulated.
 #[derive(Clone)]
 pub struct Ivern {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     amount: RowId,
     n_allies: RowId,
     shield_dur: RowId,
@@ -139,7 +141,7 @@ impl Driver for Ivern {
     const NAME: &'static str = "Ivern";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Ivern { amount: k.row("ShieldAmount"), n_allies: k.row("NumAlliesToShield"),
+        Ivern { radius: k.row("ShieldBurstHexRadius"), amount: k.row("ShieldAmount"), n_allies: k.row("NumAlliesToShield"),
                 shield_dur: k.row("ShieldDuration"),
                 burst: k.calc("MagicDamageCalc1") }
     }
@@ -153,7 +155,7 @@ impl Driver for Ivern {
         for _ in 0..pyint(f.row(f.drv.n_allies)) {
             f.shield_ally_for(shield, dur);
         }
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
             f.hit_ability(f.drv.burst, Some(d), "ability", 1.0);
         }

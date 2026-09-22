@@ -34,17 +34,23 @@
     "if both ride the same attack); no mana regeneration is modeled.",
     "Base stats are NOT duplicated here - the stat layer reads them from",
     "data/builds/champions/<patch>/kassadin/. This file is only what no",
-    "structured source has: the kit's damage logic and its rotation rules."
+    "structured source has: the kit's damage logic and its rotation rules.",
+    "Mana spending switched off by hand on 2026-09-22 (Claude Opus 5, at",
+    "Roger's request): the driver keeps its pool and reads every cost below,",
+    "but never subtracts, so the bar stays at the sheet's maximum for the",
+    "whole fight. Nothing else about the rotation changed; the costs are",
+    "kept because Riftwalk's stack count drives its damage as well as its",
+    "cost, and because a cost a full bar could not pay is still refused."
   ],
   "champion": "kassadin",
   "name": "Kassadin",
   "patch": "16.18",
   "maxOrder": ["E", "W", "Q"],
   "notes": [
-    "Riftwalk is the rotation: cast at the opening and then on cooldown for as long as the mana holds out. Each cast inside 15 s doubles the next one's cost (40 x 2^stacks, capped at four stacks, so 40/80/160/320/640) and adds a stack's damage to it, so the fight ends when the mana does.",
-    "Mana is a real resource here, unlike every other kit in this tab: the sheet's maximum is the budget, every cast pays, and a spell whose cost is not there waits. Regeneration is NOT modeled (base mp5 is worth about 3.5 mana a second at 16), so this is a hair conservative.",
-    "Null Sphere and Force Pulse go out on cooldown whenever the mana is there; every other ability cast shaves 0.75 s off Force Pulse's remaining cooldown.",
-    "Nether Blade is cast the moment it is up (1 mana): it resets the attack timer - modeled so the reset only ever pulls the next attack in, never pushes one back - and the attack it empowers carries the passive on-hit AND the active's magic damage, and pays back 20-30% of the missing mana (the stat dummy stands in for a champion). Its cooldown starts when that attack lands.",
+    "Riftwalk is the rotation: cast at the opening and then on cooldown, every 2 s at rank 3. Each cast inside 15 s doubles the next one's cost (40 x 2^stacks, capped at four stacks, so 40/80/160/320/640) and adds a stack's damage to it; the cost is read and never binds, so what the doubling buys here is the damage.",
+    "Mana is not modeled (Roger's call, 2026-09-22): the bar never falls below its maximum, because nothing spends from it. This kit still carries each ability's real cost and the driver still reads it, so a cast a full bar could not pay is still refused - Riftwalk at the four-stack cap is 640 against 1659 naked, well inside it - but no cast is ever delayed because earlier ones drained the pool.",
+    "Null Sphere and Force Pulse go out on cooldown; every other ability cast shaves 0.75 s off Force Pulse's remaining cooldown.",
+    "Nether Blade is cast the moment it is up (1 mana): it resets the attack timer - modeled so the reset only ever pulls the next attack in, never pushes one back - and the attack it empowers carries the passive on-hit AND the active's magic damage, and pays back a share of the missing mana, which with a bar that never falls is nothing. Its cooldown starts when that attack lands.",
     "Void Stone (10% magic damage reduction, ghosted), Null Sphere's shield, Force Pulse's slow and Riftwalk's blink are defensive or utility: nothing in a damage-only fight against a dummy reads them."
   ],
   "attack": {

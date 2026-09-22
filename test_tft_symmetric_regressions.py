@@ -109,8 +109,11 @@ class TestDeferredDamageOrdering(unittest.TestCase):
                 flat_calc(malphite, "ShieldCalc1", 50.0)
                 flat_calc(malphite, "MagicDamageCalc1", 100.0)
                 malphite["spec"]["kits"]["base"]["rows"]["ShieldDuration"] = 5.0
+                # Both allies stand inside the wave: it is a stated 2 hexes
+                # (AoEHexRange), so the second one has to be within two lanes
+                # of Malphite's own for this to be about damage ordering.
                 result = match([ally(lane=1), ally(ad=100, attack_speed=1,
-                                                lane=5, mr=100)],
+                                                lane=3, mr=100)],
                                [malphite], duration=1.1)
                 wave = events(result, "damage", "enemy", name="shield break")
                 self.assertEqual([(hit["time"], hit["target"]) for hit in wave],

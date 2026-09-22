@@ -185,6 +185,8 @@ impl Driver for Rakan {
 /// and knocking up the adjacent dummies.
 #[derive(Clone)]
 pub struct RekSai {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     /// `f.state["regen_at"]`; None until the first tick sets it (the default
     /// Python reads is the tick rate itself).
     regen_at: Option<f64>,
@@ -201,7 +203,7 @@ impl Driver for RekSai {
     const NAME: &'static str = "RekSai";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        RekSai { regen_at: None, boost: 0.0, tick_rate: k.row("PassiveTickRate"),
+        RekSai { radius: k.row("LungeHexRadius"), regen_at: None, boost: 0.0, tick_rate: k.row("PassiveTickRate"),
                  regen_mult: k.row("SpellHealthRegenMultiplier"),
                  boost_dur: k.row("SpellMultiplierDuration"), knockup: k.row("KnockupDuration"),
                  regen: k.calc("HealthCalc2"), dmg: k.calc("MagicDamageCalc1") }
@@ -224,7 +226,7 @@ impl Driver for RekSai {
 
     fn cast(f: &mut Fight<Self>) {
         f.drv.boost = f.t + f.row(f.drv.boost_dur);
-        let tg = f.adjacent(None);
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
             f.hit_ability(f.drv.dmg, Some(d), "uproot", 1.0);
         }
@@ -324,6 +326,8 @@ impl Driver for Elise {
 /// the coins are gold.
 #[derive(Clone)]
 pub struct Scuttlecrab {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     hot: Option<Hot>,
     burrow_dur: RowId,
     up: RowId,
@@ -342,7 +346,7 @@ impl Driver for Scuttlecrab {
     const NAME: &'static str = "Scuttlecrab";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Scuttlecrab { hot: None, burrow_dur: k.row("BurrowDuration"),
+        Scuttlecrab { radius: k.row("DanceHexRadius"), hot: None, burrow_dur: k.row("BurrowDuration"),
                       up: k.row("HealPercentInitial"), durability: k.row("BurrowDurability"),
                       dance: k.calc("PhysicalDamageCalc1"), heal: k.calc("HealthCalc1") }
     }
@@ -350,7 +354,7 @@ impl Driver for Scuttlecrab {
     fn attack(f: &mut Fight<Self>, target: usize) {
         // ability damage in the attack's place: on-hit effects on the target,
         // crit only with Precision (the convention for every attack replacement)
-        let tg = f.adjacent(None);
+        let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
             if d == target {
                 f.hit_ability(f.drv.dance, Some(d), "dance", 1.0);

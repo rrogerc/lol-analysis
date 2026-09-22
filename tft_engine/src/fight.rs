@@ -218,6 +218,9 @@ pub struct Dummy {
     pub died_at: Option<f64>,
     pub is_tank: bool,
     pub nearby: bool,
+    /// Schematic board position; see `DummySpec::position`. `None` keeps the
+    /// old nearby-only rule for every selection.
+    pub position: Option<(i64, i64)>,
     pub immortal: bool,
     pub ad: f64,
     pub as_: f64,
@@ -250,7 +253,7 @@ impl Dummy {
     pub fn new(hp: f64, armor: f64, mr: f64, is_tank: bool) -> Dummy {
         Dummy {
             generation: 0,
-            hp, max_hp: hp, armor, mr, is_tank, nearby: true,
+            hp, max_hp: hp, armor, mr, is_tank, nearby: true, position: None,
             baseline_sunder: 0.0, baseline_shred: 0.0,
             sunder: 0.0, sunder_until: 0.0, shred: 0.0, shred_until: 0.0,
             armor_flat: 0.0, mr_flat: 0.0, burn_pct: 0.0, burn_until: 0.0, burn_stack: 0.0,
@@ -364,6 +367,7 @@ pub(crate) fn make_dummies_for(spec: &CellSpec, form: Option<crate::fx::Form>) -
         d.baseline_sunder = spec.target_debuffs.sunder;
         d.baseline_shred = spec.target_debuffs.shred;
         d.nearby = s.nearby;
+        d.position = s.position;
         d.immortal = spec.immortal;
         if spec.pressure_for(form) {
             d.arm(s, spec.crit_ev, s.streams);
@@ -1110,6 +1114,40 @@ impl<'a, D: Driver> Fight<'a, D> {
             Some(i) if self.targets[i].nearby => Sel::one(i),
             _ => Sel::default(),
         }
+    }
+
+    /// Fight.within: the standing slots at most `radius` hexes from the
+    /// epicentre, which is the current target unless `center` names one.
+    ///
+    /// The board's own positions decide this, so a formation rather than a
+    /// boolean limits an area effect: a 1-hex cloud aimed at the near
+    /// frontliner no longer covers the whole enemy line, and a 3-hex bomb is
+    /// no longer capped at it. Distance is |dlane| + |drow|, the same
+    /// approximation the symmetric match makes with fixed rows and lanes.
+    ///
+    /// A board whose slots carry no position keeps the old rule exactly, so
+    /// synthetic fixtures and the symmetric placeholder are unchanged. An
+    /// epicentre that has already died still anchors the area, as
+    /// `aoe_around` does.
+    pub fn within(&self, radius: f64, center: Option<usize>, exclude_center: bool) -> Sel {
+        let center = match center.or_else(|| self.target()) {
+            Some(i) if i < self.targets.len() => i,
+            _ => return Sel::default(),
+        };
+        let origin = match self.targets[center].position {
+            Some(position) => position,
+            None => return self.aoe_around(center, None, exclude_center),
+        };
+        let radius = crate::pyf::pyint(radius).max(0);
+        let mut selected = Sel::default();
+        for (index, target) in self.targets.iter().enumerate() {
+            if !target.alive || (exclude_center && index == center) { continue; }
+            let Some(position) = target.position else { continue };
+            if (position.0 - origin.0).abs() + (position.1 - origin.1).abs() <= radius {
+                selected.push(index);
+            }
+        }
+        selected
     }
 
     /// Python `min(sel, key=...)`: the first minimal.

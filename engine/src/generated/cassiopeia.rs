@@ -103,6 +103,7 @@ impl Driver for GenDriver {
         let e_basic_dmg = if ranks.e > 0 { e_basic_by_level + e_basic_ap_ratio * sheet.ap } else { 0.0 };
 
         let state = State {
+            // mana is not modelled: nothing spends, so this never falls
             mana: sheet.mana,
             busy_until: 0.0,
             q_explode_at: INF,
@@ -187,7 +188,6 @@ impl Driver for GenDriver {
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        self.s.mana -= self.q_cost;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         self.s.busy_until = t + self.q_cast_s;
         e.prime_spellblade();
@@ -202,7 +202,6 @@ impl Driver for GenDriver {
             return;
         }
         let t = e.st.t;
-        self.s.mana -= self.r_cost;
         self.s.busy_until = t + self.r_cast_s;
         self.s.r_damage_at = t + self.r_cast_s;
     }
@@ -264,7 +263,6 @@ impl Driver for GenDriver {
                 }
             }
             Kind::Ev(EV_W_CAST) => {
-                self.s.mana -= self.w_cost;
                 self.s.w_ready = t + e.basic_cd(self.w_cd);
                 self.s.busy_until = t + self.w_cast_s;
                 e.prime_spellblade();
@@ -286,7 +284,6 @@ impl Driver for GenDriver {
                 }
             }
             Kind::Ev(EV_E_CAST) => {
-                self.s.mana -= self.e_cost;
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 self.s.busy_until = t + self.e_cast_s;
                 let poisoned = t < self.s.poisoned_until;

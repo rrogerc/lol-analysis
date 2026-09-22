@@ -211,7 +211,14 @@ pub struct DummySpec {
     pub mr: f64,
     pub is_tank: bool,
     /// Whether local area effects can reach this slot; legacy slots are nearby.
+    /// Only abilities with no stated radius (lines, cones) still use it.
     pub nearby: bool,
+    /// Schematic board position: `lane` across the board, `row` 0 for the
+    /// frontline. Distance is |dlane| + |drow|, the same approximation the
+    /// symmetric match already makes with fixed rows and lanes; real hex
+    /// movement is not simulated. `None` keeps the old nearby-only rule, so
+    /// synthetic fixtures and the symmetric placeholder are unchanged.
+    pub position: Option<(i64, i64)>,
     pub ad: f64,
     pub as_: f64,
     pub ability: f64,
@@ -252,6 +259,18 @@ impl DummySpec {
             nearby: match get(d, "nearby")? {
                 Some(v) => v.extract()?,
                 None => true,
+            },
+            // An explicit null lane opts a board out of the formation and
+            // back to the nearby rule, the way a null `nearby` keeps its
+            // default: fixtures that exercise the flag itself need that.
+            position: match get(d, "lane")? {
+                Some(lane) if !lane.is_none() => Some((
+                    lane.extract()?,
+                    match get(d, "row")? {
+                        Some(row) if !row.is_none() => row.extract()?,
+                        _ => 0,
+                    })),
+                _ => None,
             },
             ad: getf(d, "ad", 0.0)?,
             as_: getf(d, "as", 0.0)?,

@@ -840,8 +840,6 @@ impl KassadinDriver {
     fn riftwalk(&mut self, e: &mut Engine) {
         let t = e.st.t;
         let stacks = self.stacks_at(t);
-        self.s.mana -= self.r_cost(stacks) * e.mana_cost_mult();
-        debug_assert!(self.s.mana >= 0.0, "Riftwalk overspent: {}", self.s.mana);
         self.s.r_ready = t + e.ult_cd(self.r_cd);
         e.deal(self.r_dmg + stacks as f64 * self.r_stack_dmg, DType::Magic, SRC_R, false, true,
                1.0);
@@ -893,6 +891,8 @@ impl Driver for KassadinDriver {
                 (0.0, 0.0, INF, 1.0, INF, 0, 0.0)
             };
         let state = KassState {
+            // mana is not modelled: the pool sits at the sheet's maximum and
+            // nothing ever spends from it, so no cast can be short
             mana: sheet.mana,
             busy_until: 0.0,
             w_ready: 0.0,
@@ -989,7 +989,6 @@ impl Driver for KassadinDriver {
 
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        self.s.mana -= self.q_cost * e.mana_cost_mult();
         e.st.q_ready = t + e.basic_cd(self.q_cd);
         e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
         e.ability_cast_proc();
@@ -1043,7 +1042,6 @@ impl Driver for KassadinDriver {
                     || self.s.mana < self.w_cost * m {
                     return; // a cast at this instant took the time or the mana
                 }
-                self.s.mana -= self.w_cost * m;
                 self.s.w_armed = true;
                 self.s.w_until = t + self.w_window;
                 // the reset: the empowered attack lands one windup from now,
@@ -1060,7 +1058,6 @@ impl Driver for KassadinDriver {
                 if self.castable_at(e, self.s.e_ready) > t || self.s.mana < self.e_cost * m {
                     return;
                 }
-                self.s.mana -= self.e_cost * m;
                 self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();

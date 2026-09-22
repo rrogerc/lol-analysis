@@ -116,6 +116,7 @@ impl Driver for GenDriver {
             q_det_at: INF,
             w_ready: 0.0,
             e_ready: 0.0,
+            // mana is not modelled: nothing spends, so this never falls
             mana: sheet.mana,
             busy_until: 0.0,
         };
@@ -215,7 +216,6 @@ impl Driver for GenDriver {
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        self.s.mana -= self.q_cost;
         e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
         e.deal(self.q_init_dmg, DType::Physical, SRC_Q, false, true, 1.0);
         self.s.q_det_at = e.st.t + self.q_det_delay;
@@ -232,7 +232,6 @@ impl Driver for GenDriver {
         // the opening cast (the engine has primed Spellblade): both the
         // shell hit and the cone explosion land with the cast, which then
         // keeps Graves busy for its cast time
-        self.s.mana -= self.r_cost;
         e.deal(self.r_dmg, DType::Physical, SRC_R, false, true, 1.0);
         e.deal(self.r_falloff, DType::Physical, self.src_r_falloff, false, true, 1.0);
         e.ability_cast_proc();
@@ -268,7 +267,6 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_W_CAST) => {
                 if self.s.mana >= self.w_cost {
-                    self.s.mana -= self.w_cost;
                     e.deal(self.w_dmg, DType::Magic, self.src_w, false, true, 1.0);
                     e.ability_cast_proc();
                     e.eclipse_hit();
@@ -283,7 +281,6 @@ impl Driver for GenDriver {
                 // no cast time, so no `busy_for`: it just cannot start
                 // inside another cast (already enforced by castable_at)
                 if self.s.mana >= self.e_cost {
-                    self.s.mana -= self.e_cost;
                     if self.s.reloading {
                         self.s.reloading = false;
                         self.s.shells = 1;

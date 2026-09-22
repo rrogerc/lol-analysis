@@ -78,6 +78,7 @@ impl Driver for GenDriver {
     fn new(kit: &Kit, sheet: &Sheet, _level: i64, ranks: Ranks, _prestacked: bool)
         -> Result<Self, String> {
         let state = State {
+            // mana is not modelled: nothing spends, so this never falls
             mana: sheet.mana,
             busy_until: 0.0,
             w_ready: if ranks.w > 0 { 0.0 } else { INF },
@@ -139,7 +140,6 @@ impl Driver for GenDriver {
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
-        self.s.mana -= self.q_cost;
         e.st.q_ready = e.st.t + e.basic_cd(self.q_cd);
         e.ability_cast_proc();
         e.eclipse_hit();
@@ -156,7 +156,6 @@ impl Driver for GenDriver {
         if self.s.mana < self.r_cost {
             return;
         }
-        self.s.mana -= self.r_cost;
         let t = e.st.t;
         self.s.r_channel_until = t + self.r_cast_s + self.r_channel_s;
         self.s.r_landed = false;
@@ -192,7 +191,6 @@ impl Driver for GenDriver {
                 // toggle does not proc on-cast effects
                 let cost = self.e_cost_per_s * self.e_tick_s;
                 if self.s.mana >= cost {
-                    self.s.mana -= cost;
                     let dmg = self.e_dps * self.e_tick_s;
                     e.deal(dmg, DType::Magic, SRC_E, false, true, 1.0);
                     self.s.e_next_tick = t + self.e_tick_s;
@@ -213,7 +211,6 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_W_CAST) => {
                 if self.s.mana >= self.w_cost {
-                    self.s.mana -= self.w_cost;
                     e.st.shred_until = t + self.w_shred_dur;
                     e.prime_spellblade();
                     self.s.w_ready = t + e.basic_cd(self.w_cd);

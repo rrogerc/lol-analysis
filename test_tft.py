@@ -318,10 +318,76 @@ class TestDamage(unittest.TestCase):
         self.assertEqual(res["left"], [0.0] * len(DUMMY["slots"]))
 
     def test_aoe_geometry(self):
-        for geo, hits in (("clump", 3), ("spread", 1)):
+        # Ahri's bomb has a 3-hex radius (HexRadius), so the formation decides
+        # what it covers rather than a nearby flag. Clumped the frontline sits
+        # at lanes 2/3/4 and the backline at lanes 2/4 two rows behind, so the
+        # bomb centred on the first frontliner reaches all three of them and
+        # the backliner directly behind it; spread it reaches the target, the
+        # middle frontliner and the near backliner, all three hexes away.
+        for geo, hits in (("clump", 4), ("spread", 3)):
             _, res = run("Ahri", geometry=geo, dummy=immortal(DUMMY))
             land = events(res, "land")[0][0]
             self.assertEqual(len([e for e in events(res, "damage", "ability") if e[0] == land]), hits, geo)
+
+
+class TestAbilityRadii(unittest.TestCase):
+    """Areas with a stated radius measure the board, not the nearby flag.
+
+    Each radius is a kit row: one Riot publishes, or one kits.json
+    transcribes from the ability's tooltip because the data has none. The
+    coverage below follows from tft.FRONT_LANES / BACK_LANES and the
+    |dlane| + |drow| rule, with the epicentre on the first frontliner.
+    """
+
+    HAND = tft.load_kits(SNAP.set_no)
+
+    def radius_rows(self, api):
+        return ((self.HAND.get("units") or {}).get(api) or {}).get("radii") or {}
+
+    def test_every_declared_radius_resolves(self):
+        for api, rows in ((api, self.radius_rows(api)) for api in SNAP.units):
+            for row, meta in rows.items():
+                unit = SNAP.units[api]
+                extra = tft.ability_radius_rows(unit, self.HAND)
+                for star in tft.unit_stars(unit):
+                    kit = tft.kit_spec(unit, star, None, extra)
+                    self.assertIn(row, kit["rows"], f"{api}/{row} at {star}star")
+                    self.assertGreater(kit["rows"][row], 0.0, f"{api}/{row} at {star}star")
+                    if "byStar" not in meta and meta["source"] == "tooltip":
+                        self.assertEqual(kit["rows"][row], float(meta["hexes"]), f"{api}/{row}")
+
+    def test_transcribed_radii_are_not_in_the_data(self):
+        # A row Riot starts publishing must take over from the transcription,
+        # so a tooltip entry is only legitimate while the data has none.
+        for api in SNAP.units:
+            for row, meta in self.radius_rows(api).items():
+                published = row in (SNAP.units[api]["curve"] or {})
+                self.assertEqual(published, meta["source"] == "row", f"{api}/{row}")
+
+    def test_small_radius_no_longer_covers_the_whole_frontline(self):
+        # Gromp's 1-hex cloud: the target and the frontliner one lane over
+        # when packed, the target alone when the frontline is spread.
+        for geo, hits in (("clump", 2), ("spread", 1)):
+            _, res = run("Gromp", geometry=geo, dummy=immortal(DUMMY))
+            clouds = {e[3] for e in events(res, "damage", "cloud")}
+            self.assertEqual(len(clouds), hits, geo)
+
+    def test_radius_two_reaches_the_near_backliner(self):
+        # Amumu's passive is 1 hex and his cast 2 (PassiveHexRadius,
+        # BigHexRadius): the cast adds the far frontliner and the backliner
+        # standing two rows behind the target.
+        _, res = run("Amumu", geometry="clump", dummy=immortal(DUMMY))
+        self.assertEqual(len({e[3] for e in events(res, "damage", "tantrum")}), 2)
+        self.assertEqual(len({e[3] for e in events(res, "damage", "ability")}), 4)
+
+    def test_a_board_without_positions_keeps_the_old_rule(self):
+        # Mechanics fixtures and the theoretical probes supply their own
+        # slots and no lanes, so every selection there is unchanged.
+        slots = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:3]]
+        board = dict(DUMMY, slots=slots, count=3, board=[1, 1, 1])
+        self.assertNotIn("lane", tft.board_positions(list(slots), "clump")[0])
+        _, res = run("Gromp", geometry="clump", dummy=board)
+        self.assertEqual(len({e[3] for e in events(res, "damage", "cloud")}), 3)
 
 
 class TestManaCycle(unittest.TestCase):

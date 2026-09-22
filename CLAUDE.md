@@ -517,6 +517,61 @@
   items rather than three. `TestSurvivalSearch` still feeds Kassadin an
   Actualizer build as a fixed input: a mechanics fixture, not the live best
   build.
+- Mana is not modelled, for anyone (2026-09-22): Roger's call. The rule is
+  that a champion's bar NEVER FALLS BELOW ITS MAXIMUM — the five drivers that
+  tracked spending (Kassadin's hand-written one, and the generated
+  Cassiopeia, Graves, Jinx and Karthus) keep their pool, still start it at
+  `sheet.mana` and still read every cost from their kit, but the 21 lines
+  that subtracted are gone. So a cost can still refuse a cast a FULL bar
+  could not pay (Riftwalk at the four-stack cap is 640 against Kassadin's
+  1,659 naked, well inside it), and nothing else. Restoring the budget means
+  putting those subtractions back; `git log -p engine/src` has them.
+  A first cut instead gave everyone a 1e9 pool. It was wrong in principle
+  (it makes an unpayable cast payable) and Roger caught it; the two agree on
+  every real fight, though — all 5,220 damage and 314 survival golden cases
+  replay bit-identical between them, which is what says the difference is
+  only in what the code claims.
+  `engine/src/generated/kassadin_blind.rs` still spends: it is the frozen
+  blind-vs-hand comparison driver (`kit_driver.py compare`), not a roster
+  champion, and changing it would move a measurement already recorded above.
+  What the evidence was. Only 5 of 172 kits kept a budget at all, and the
+  boundary was an accident rather than a design: one deliberate hand-written
+  kit plus four unreviewed machine-written drivers that chose to, while Ryze,
+  Anivia, Lux, Xerath and Swain — mana-bound in game — paid nothing. In the
+  fights the dashboard actually ranks it never bound: with every cost scaled
+  to zero, all five keep their kill times to the cent on all three targets,
+  and a full re-enumeration of each gives back the SAME #1 build and the same
+  mean (Kassadin 2.20, Cassiopeia 2.68, Jinx 2.74, Karthus 5.16, Graves 1.43).
+  In longer fights it bound hard — damage lost to mana over a fight nothing
+  can end early: Cassiopeia -60% at 15 s and -200% at 30 s, Karthus -33% /
+  -164%, Kassadin -30% / -49%, Graves -8.9% at 30 s, Jinx never (her driver
+  toggles back to the free Pow-Pow; she is in fact WORSE with free mana at
+  30 s, 26,270 vs 28,260, because she then never downgrades). The unmodelled
+  base regeneration would not have saved them: Kassadin's is 17.6 per 5 s at
+  16, about 105 mana over a 30 s fight against a 1,659 base pool.
+  So the Builds tab does not move and the Survival tier does: against the
+  same Dr. Mundo build, 200 of his 200 best tank builds used to survive the
+  30 s fight against the damage tier's Kassadin and now 0 of 200 do. That
+  cell had collapsed into the `30 s + health left / DPS taken` extrapolation
+  when Actualizer left the pool (186 of 200 died before that); it measures
+  observed deaths again. It does NOT fix the seam underneath, which is not
+  about mana: the survival attacker is whatever tops a cell ranked on 8-15 s
+  kills, and Kayle — who never had a budget — is still only 205th of her own
+  500 kept builds as a 30 s attacker (Kassadin was 191st).
+  `jobs/kit-driver-guide.md` now forbids a driver keeping a pool that can
+  empty, so a future generated driver cannot reintroduce one; the five kits'
+  dashboard notes were rewritten, since they described a model that no longer
+  exists. Goldens regenerated in the same commit, with the blast radius
+  measured first: 449 of Kassadin's 1,379 fight cases moved and all 3,870
+  Kayle, Twitch and Vladimir cases stayed byte for byte, 143 of 157
+  `survive-kassadin` cases moved and all 157 `survive-kayle` ones did not
+  (see `data/builds/golden/README.md`). Tests: the four Kassadin mana tests
+  became `test_riftwalk_every_cooldown` (R every 2 s to the end of the fight,
+  eight casts by 15 s), `test_force_pulse_cooldown_shaved_by_casts` (back at
+  exactly 12.25 s: 17.5 - 7 x 0.75), `test_mana_never_falls_below_its_maximum` (a
+  2.5x dearer Riftwalk and no refund leave the fight's total unchanged, while
+  a 13x one — 8,320 at the cap, more than the bar holds — still gets refused)
+  and `test_actualizer_cost_increase_is_inert`.
 
 ## The One-tricks tab (onetricks.py)
 

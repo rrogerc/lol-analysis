@@ -107,7 +107,7 @@ impl Entry {
         spec.pressure = true; spec.auto_pressure = false; spec.immortal = false;
         spec.enemy_debuffs = EnemyDebuffs::default(); spec.target_debuffs = Default::default();
         spec.dummies = vec![DummySpec {
-            hp: 1.0, armor: 0.0, mr: 0.0, is_tank: false, nearby: true,
+            hp: 1.0, armor: 0.0, mr: 0.0, is_tank: false, nearby: true, position: None,
             ad: 0.0, as_: 0.0, ability: 0.0, phys_share: 1.0,
             mana_max: 0.0, mana_start: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
             attack_start: None, cast_interval: 0.0, cast_start: None, streams: 1,
@@ -182,6 +182,9 @@ struct TargetProjection {
     stunned_until: f64, burn_pct: f64, burn_until: f64,
     burn_stack: f64, burn_stack_until: f64,
     alive: bool, tank: bool, nearby: bool, focused: bool,
+    /// The enemy's own lane and row, so an ability with a stated radius
+    /// measures the real formation rather than the nearby boolean.
+    position: (i64, i64),
 }
 impl TargetProjection {
     fn apply(&self, target: &mut Dummy) {
@@ -201,6 +204,7 @@ impl TargetProjection {
         target.burn_stack = self.burn_stack; target.burn_stack_until = self.burn_stack_until;
         target.alive = self.alive; target.died_at = None;
         target.is_tank = self.tank; target.nearby = self.nearby; target.immortal = false;
+        target.position = Some(self.position);
         target.ad = 0.0; target.as_ = 0.0; target.crit_ev = 1.0;
         target.next_attacks.fill(0.0); target.n_streams = 0;
         target.targeting_streams = usize::from(self.focused);
@@ -571,6 +575,8 @@ impl<'a> World<'a> {
                 hp: state.hp, max_hp: state.max_hp, armor: state.armor, mr: state.mr,
                 tank: state.tank, alive: state.holding, mana_max: state.mana_max,
                 nearby: self.nearby(side, source, index), stunned_until: state.stunned_until,
+                position: { let p = &self.spec.sides[1-side][index].position;
+                            (p.lane, i64::from(!p.front)) },
                 focused: state.alive && self.primary[1-side][index].get() == Some(source),
                 ..TargetProjection::default() };
             for burn in &self.ledgers[1-side][index].borrow().burns {

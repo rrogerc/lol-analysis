@@ -2,7 +2,15 @@
  "_comment": "Per-unit model notes for the dashboard; ability drivers and heavy combat computation are in tft_engine/src/drivers and the shared Rust engine.",
  "units": {
   "TFT18_Ahri": {
-   "note": "The bomb's channel time is taken from the unit data (ChannelTime); dummies in the clump sit one hex from the epicenter."
+   "note": "The bomb's channel time is taken from the unit data (ChannelTime). Its 3-hex radius (HexRadius) is measured against the board's own lanes and rows, so it reaches four of the five dummies when the frontline is packed and three when it is spread; the epicenter is always the current target, never the placement with the most enemies around it, and the per-hex damage falloff is not modeled.",
+   "radii": {
+    "HexRadius": {
+     "shape": "radius",
+     "hexes": 3,
+     "source": "row",
+     "evidence": "curve row HexRadius: \"magic damage to enemies in a 3 hex radius, reduced by 21% per hex away from the epicenter\""
+    }
+   }
   },
   "TFT18_Akali": {
    "note": "Both Adaptor forms are modeled. AP gets its tank multiplier, but kill chaining remains an instantaneous approximation with a four-hit guard. The Android ability code contains kill-conditioned mana gain; its complete recast scheduling is not decoded, so this approximation is not a verified live timing model."
@@ -14,10 +22,32 @@
    "note": "Attuned \"cycles to a new phase of the moon after each cast\", and the data lists five phases: New Moon, Waxing Crescent, Half Moon, Waxing Gibbous, Full Moon (the trait's tooltip entries DA_AluneUniqueTrait18_Tooltip_Phase1-5 in the MetaTFT lookup; no curve row carries the count, so the driver spells out the five). Every combat is assumed to start at New Moon, which makes the fifth cast, and every fifth after it, the full-moon crash. The phases' durability and damage amp are not modeled."
   },
   "TFT18_Amumu": {
-   "note": "The passive beats every PassiveTickRate second, healing HealthCalc1 and dealing MagicDamageCalc1 to the dummies within a hex; the cast deals MagicDamageCalc3 to everyone in reach and stuns for StunDuration, or for GenericCalc1 when the dummy he is on is Burning (Inferno or a burn item). The burn's own damage is the engine's, not his."
+   "note": "The passive beats every PassiveTickRate second, healing HealthCalc1 and dealing MagicDamageCalc1 to the dummies within a hex; the cast deals MagicDamageCalc3 to everyone in reach and stuns for StunDuration, or for GenericCalc1 when the dummy he is on is Burning (Inferno or a burn item). The burn's own damage is the engine's, not his.",
+   "radii": {
+    "PassiveHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "row",
+     "evidence": "curve row PassiveHexRadius: \"Every second, restore Health and deal ... magic damage to enemies within 1 hex\""
+    },
+    "BigHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row BigHexRadius: \"Deal ... magic damage to enemies within 2 hexes and Stun them\""
+    }
+   }
   },
   "TFT18_Aphelios": {
-   "note": "The swipes are spread evenly over the two-second onslaught and the blast lands when it ends; every third swipe counts as an attack for on-hit effects. He swipes NumAttacksBase times plus once per whole AS_NeededForExtraSwipe of bonus attack speed at the cast; an exact multiple (Giant Slayer + Red Buff's +60%) counts in full."
+   "note": "The swipes are spread evenly over the two-second onslaught and the blast lands when it ends; every third swipe counts as an attack for on-hit effects. He swipes NumAttacksBase times plus once per whole AS_NeededForExtraSwipe of bonus attack speed at the cast; an exact multiple (Giant Slayer + Red Buff's +60%) counts in full.",
+   "radii": {
+    "BlastHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "tooltip",
+     "evidence": "\"fire a blast that deals ... physical damage split among all enemies in a 2 Hex radius\""
+    }
+   }
   },
   "TFT18_Ashe": {
    "note": "The arrow weakens per enemy it passes, down to its floor; the trail is damage over time on everyone the arrow hit for RiftDuration seconds. Its flat share and its max-Health share are one ability's damage, so both crit with Precision. The slow does nothing against stat dummies."
@@ -38,13 +68,29 @@
    "note": "The five leaves converge as one total hit, followed by the burn; Wound does nothing here because the dummies never heal. With the Riftbeast Alpha Mark the Scarlet Buff adds attack damage on every cast."
   },
   "TFT18_Diana": {
-   "note": "A shield and six orbs distributed across the enemies in reach when the cast lands: every nearby dummy in the clump, the target alone spread out. Orbs left once all of those have died are lost; they never fly on to a dummy that was out of reach, nearby or distant. Mana stays locked while the barrier holds, for ShieldDuration at most, and comes in again once it is broken; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 2.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game. Orb movement, exact two-hex coverage and shield refresh behavior remain approximate."
+   "note": "A shield and six orbs distributed across the enemies in reach when the cast lands: every nearby dummy in the clump, the target alone spread out. Orbs left once all of those have died are lost; they never fly on to a dummy that was out of reach, nearby or distant. Mana stays locked while the barrier holds, for ShieldDuration at most, and comes in again once it is broken; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 2.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game. Orb movement, exact two-hex coverage and shield refresh behavior remain approximate.",
+   "radii": {
+    "OrbHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "tooltip",
+     "evidence": "\"send out 6 moonlight orbs spread among enemies within 2 hexes\""
+    }
+   }
   },
   "TFT18_Draven": {
    "note": "The spinning-axe chance is an expected value; the Bounty Seeker trait is not modeled. The giant axes consume a bleed by dealing what is left of it at once, as the same ability damage its ticks would have been: both crit with Precision."
   },
   "TFT18_ElderDragon": {
-   "note": "Attack splash retains the original target area after lethal hits. Protection starts with the first cast and ends at landing; the landing then stuns all enemies, grants omnivamp, applies Ignite and Flame Breath. The supplied cast duration and treating flight as untargetability remain approximations; the tooltip says invulnerable. Later casts use Flame Breath alone. Alpha executes below the threshold after own actions and each tick; immortal probes grant no removal damage."
+   "note": "Attack splash retains the original target area after lethal hits. Protection starts with the first cast and ends at landing; the landing then stuns all enemies, grants omnivamp, applies Ignite and Flame Breath. The supplied cast duration and treating flight as untargetability remain approximations; the tooltip says invulnerable. Later casts use Flame Breath alone. Alpha executes below the threshold after own actions and each tick; immortal probes grant no removal damage.",
+   "radii": {
+    "AttackAoEHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"Attacks deal 75% damage to enemies adjacent to the target\"; adjacent is one hex. Flame Breath keeps the line rule."
+    }
+   }
   },
   "TFT18_Elise": {
    "note": "The first cast transforms: bonus max health, and from then on every attack carries bonus magic damage and heals her. Later casts' decaying Attack Speed row is a multiplier (2.75 = +175%) that falls to zero over the buff, so half of it is applied flat for the duration as the average. Mana is locked for the ASBuffDuration seconds that buff runs; this is TFTraits' statement (\"The mana lock lasts the 4.00 s the effect runs. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game. It publishes one lock for the spell, so the transforming first cast, which grants no attack speed, is held for the same four seconds."
@@ -53,22 +99,59 @@
    "note": "Chooses the nearest living enemies independently of clumping, strips their flat Magic Resist, and channels the source-defined drain and healing over the cast duration. The flat reduction is shared with teammates when applied, including theoretical composition measurements. Its permanence follows the existing interpretation because the tooltip specifies no duration."
   },
   "TFT18_Gnar": {
-   "note": "Rage triggers Mega Gnar, granting health, damaging and stunning the same original area, and applying flat resistance reductions that are shared with teammates. Throws preserve their original primary and secondary recipients after kills. Last-enemy removal only works against finite targets. Mega mana gain, exact transformation/cast hooks, movement and unused rage rows remain explicit gaps."
+   "note": "Rage triggers Mega Gnar, granting health, damaging and stunning the same original area, and applying flat resistance reductions that are shared with teammates. Throws preserve their original primary and secondary recipients after kills. Last-enemy removal only works against finite targets. Mega mana gain, exact transformation/cast hooks, movement and unused rage rows remain explicit gaps.",
+   "radii": {
+    "TransformHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row TransformHexRadius: \"deal ... physical damage to enemies within 2 hexes\". Grab n' Throw keeps the line rule. The row scales with the star (2/2/10), so 3-star Mega Gnar's leap covers the board.",
+     "byStar": [
+      2,
+      2,
+      10
+     ]
+    }
+   }
   },
   "TFT18_Gromp": {
-   "note": "Both Adaptor forms keep the original impact area when a primary hit is lethal. AP poison clouds and AD splash retain their existing damage formulas; Purple Buff grants AP or AD every five seconds by form. The stated AD Slow is not yet modeled."
+   "note": "Both Adaptor forms keep the original impact area when a primary hit is lethal. AP poison clouds and AD splash retain their existing damage formulas; Purple Buff grants AP or AD every five seconds by form. The stated AD Slow is not yet modeled.",
+   "radii": {
+    "BubbleHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"Enemies within a 1 hex radius of the explosion take ... magic damage over 3 seconds\"; the AD form reads \"Enemies within a 1 hex radius take ... physical damage\""
+    }
+   }
   },
   "TFT18_Hecarim": {
    "note": "Each cast gives Resists armour and magic resist for three seconds, heals HealthCalc1 evenly across the window, and sends riders at the NumEnemies nearest enemies for MagicDamageCalc1 and a StunDuration stun. Riders choose distinct nearest enemies in both formations. In the tank benchmark, three frontline blockers take the riders while two backline carries keep attacking."
   },
   "TFT18_Ivern": {
-   "note": "ShieldCalc1 resolves to nothing, so the shield is the ShieldAmount row per 100 ability power, multiplied by the crit expectation with Precision; each of the NumAlliesToShield allies is counted through shield_ally and the damage lands on the dummies in reach. He is a Magic Caster, so he is ranked as a carry on damage — the allies' damage amp and the attack speed after six casts are ally buffs and are not simulated."
+   "note": "ShieldCalc1 resolves to nothing, so the shield is the ShieldAmount row per 100 ability power, multiplied by the crit expectation with Precision; each of the NumAlliesToShield allies is counted through shield_ally and the damage lands on the dummies in reach. He is a Magic Caster, so he is ranked as a carry on damage — the allies' damage amp and the attack speed after six casts are ally buffs and are not simulated.",
+   "radii": {
+    "ShieldBurstHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"Then deal ... magic damage to enemies adjacent to them\"; adjacent is one hex. Modeled around the current target, not around the shielded allies."
+    }
+   }
   },
   "TFT18_Kayle": {
    "note": "Manaless: her attacks carry the ascension passives; wave damage needs other dummies in reach."
   },
   "TFT18_Kennen": {
-   "note": "The charge-up counts the dummies burning at the moment of the cast and its ability power applies to that cast only; then the shield, the rush damage, and the firestorm's total split evenly over the dummies the rush covered and spread over its duration."
+   "note": "The charge-up counts the dummies burning at the moment of the cast and its ability power applies to that cast only; then the shield, the rush damage, and the firestorm's total split evenly over the dummies the rush covered and spread over its duration.",
+   "radii": {
+    "FirestormHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row FirestormHexRadius: \"unleash a 2 Hex firestorm that deals ... magic damage split among all enemies hit\""
+    }
+   }
   },
   "TFT18_KhaZix": {
    "note": "Spread targets are treated as isolated for the stronger hit. The isolation refund bypasses the cast mana lock while still receiving all-source mana multipliers such as Adaptive Helm. Exact jump access and Rival evolutions remain unmodeled."
@@ -89,7 +172,20 @@
    "note": "Heals and damages the nearby butterfly recipients, then applies Sleep. Subsequent credited damage from attacks, spells, items, DoTs and allies counts toward DamageNeededToAwaken; reaching the threshold wakes that target once and triggers WakeupDamage times its maximum Health as Lillia magic damage. Expiry alone grants no wake damage, and waking preserves other stuns. Initial butterfly damage is excluded; reapplication refreshes one sleep and threshold. Those ordering and refresh choices remain explicit assumptions."
   },
   "TFT18_Malphite": {
-   "note": "Shields ShieldCalc1 for ShieldDuration; the wave (MagicDamageCalc1, scaling with his armour and magic resist) fires only when the shield is fully absorbed, which against these dummies never happens inside the four seconds, so his damage is all basic attacks. 'Petrified' carries no numbers in the data and is left out. Mana is locked for as long as the shield stands, ShieldDuration at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game."
+   "note": "Shields ShieldCalc1 for ShieldDuration; the wave (MagicDamageCalc1, scaling with his armour and magic resist) fires only when the shield is fully absorbed, which against these dummies never happens inside the four seconds, so his damage is all basic attacks. 'Petrified' carries no numbers in the data and is left out. Mana is locked for as long as the shield stands, ShieldDuration at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game.",
+   "radii": {
+    "AoEHexRange": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row AoEHexRange: \"unleash a wave of dark energy, dealing ... magic damage to enemies within 2 hexes\" The row scales with the star (2/2/3).",
+     "byStar": [
+      2,
+      2,
+      3
+     ]
+    }
+   }
   },
   "TFT18_MamaBeak": {
    "note": "The beaks stand for GenericCalc1 seconds — a duration that scales with ability power in the data — and while they do, each attack of hers also lands all four beaks' damage on the same target as one hit, multiplied by Summoner's damageMult. Mana is locked for as long as the beaks stand; this is TFTraits' statement (\"The mana lock lasts the 5.00 s the effect runs. Attacks continue. The effect's duration scales with Ability Power\"), a third-party rule adopted like Azir's and not verified in game. The Orange Buff strips flat armor once per physical hit, hers plus each of the beaks'."
@@ -101,7 +197,15 @@
    "note": "Manaless: every third attack is a Double Strike that hits twice (\"every third\" is Riot's own text and has no curve row). The AD form banks stacking attack speed per Double Strike; the AP form adds bonus magic damage and heals for APForm_HealPercent of it. Note the engine gives an Adaptor's AP form the AutoAttackDamageAP row as base attack damage, which is 15 against the AD form's 65, so AP Yi's autos are small."
   },
   "TFT18_Morgana": {
-   "note": "Omnivamp from the first second; the blast picks the nearest three enemies and curses them, in the clump and spread out alike (the text names a count of enemies, not an area), and the withering zone is a damage-over-time on everyone in reach for the same duration (its hex radius is not modeled — area abilities reach the clump, and the target alone spread out). Each live curse adds flat magic damage to her attacks and to the blast, not to the zone's ticks, and curses stack across casts."
+   "note": "Omnivamp from the first second; the blast picks the nearest three enemies and curses them, in the clump and spread out alike (the text names a count of enemies, not an area), and the withering zone is a damage-over-time on everyone in reach for the same duration (its hex radius is not modeled — area abilities reach the clump, and the target alone spread out). Each live curse adds flat magic damage to her attacks and to the blast, not to the zone's ticks, and curses stack across casts.",
+   "radii": {
+    "HexRangeAOE": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row HexRangeAOE: \"spawn a 2 Hex withering zone ... that deals ... magic damage per second\""
+    }
+   }
   },
   "TFT18_Murkwolf": {
    "note": "Leaps to the lowest-health enemy for physical damage; the next two attacks are faster and carry bonus physical damage, which is lost if the regular attack already kills the target. Mana is locked until both are spent; this is TFTraits' statement (\"it lasts 2 empowered attacks\"), a third-party rule adopted like Azir's and not verified in game. The data's NumEmpoweredAttacksGainedOnKill row is not read: neither the tooltip nor TFTraits' ability text mentions empowered attacks for a kill, and a dormant row is not a mechanic. Leap damage uses one attack-damage contribution and one ability-power contribution, following the ability tooltip. With Riftbeast active, he is assumed to have the Alpha Mark: Grey Buff lets abilities crit and increases crit chance as he loses health, capped at 100%."
@@ -119,16 +223,40 @@
    "note": "Only the self shield is simulated. The decaying Attack Speed he hands the ally who has dealt the most damage has no ally to land on in this model, so it is dropped rather than counted — his cell is a pure shield-and-body tank. Mana is locked for as long as the shield stands, ShieldDuration at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game."
   },
   "TFT18_Rammus": {
-   "note": "The taunt needs no modelling (the dummies have nobody else to attack); the cast shields ShieldCalc1 and buffs ArmorMR armour and magic resist for Duration, and PhysicalDamageCalc1 (scaling with the resists he holds at that instant) goes off only when the shield is fully absorbed, not when it expires. Against these dummies that almost never happens inside the four seconds, so his ability reads as mitigation rather than damage. Mana is locked for as long as the shield stands, the kit's Duration row at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game."
+   "note": "The taunt needs no modelling (the dummies have nobody else to attack); the cast shields ShieldCalc1 and buffs ArmorMR armour and magic resist for Duration, and PhysicalDamageCalc1 (scaling with the resists he holds at that instant) goes off only when the shield is fully absorbed, not when it expires. Against these dummies that almost never happens inside the four seconds, so his ability reads as mitigation rather than damage. Mana is locked for as long as the shield stands, the kit's Duration row at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game.",
+   "radii": {
+    "DamageHexRange": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "row",
+     "evidence": "curve row DamageHexRange: \"When the Shield breaks, deal ... physical damage to enemies in 2 Hexes\""
+    }
+   }
   },
   "TFT18_RekSai": {
-   "note": "The passive regenerates its health every tick of its own tick rate, tripled for the spell window after each cast; the active damages and stuns the adjacent dummies (all three clumped, only the target when spread) for the knock-up duration."
+   "note": "The passive regenerates its health every tick of its own tick rate, tripled for the spell window after each cast; the active damages and stuns the adjacent dummies (all three clumped, only the target when spread) for the knock-up duration.",
+   "radii": {
+    "LungeHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"Lunge out of the ground, Stunning adjacent enemies for 1 second and dealing ... magic damage to them\""
+    }
+   }
   },
   "TFT18_Rengar": {
    "note": "Jumps to the dummy with the lowest health share, stabs, then heals on a straight line from the minimum to the maximum by that dummy's missing health measured after the stab. His Rival trait is not modeled."
   },
   "TFT18_Scuttlecrab": {
-   "note": "Attacks are the dance: full damage to every adjacent dummy, with on-hit item effects landing only on the one she is facing. When the cast animation lands, the burrow prevents attacks and recasts for BurrowDuration while granting Durability and healing: the initial share immediately, the rest over the burrow. The adopted attack lock follows Roger's in-game correction; the existing one-second mana lock is unchanged, so regeneration and damage-taken mana can resume during the burrow. The Riftbeast Green Buff heals allies below a health threshold and is not simulated; the burrow's gold is ignored."
+   "note": "Attacks are the dance: full damage to every adjacent dummy, with on-hit item effects landing only on the one she is facing. When the cast animation lands, the burrow prevents attacks and recasts for BurrowDuration while granting Durability and healing: the initial share immediately, the rest over the burrow. The adopted attack lock follows Roger's in-game correction; the existing one-second mana lock is unchanged, so regeneration and damage-taken mana can resume during the burrow. The Riftbeast Green Buff heals allies below a health threshold and is not simulated; the burrow's gold is ignored.",
+   "radii": {
+    "DanceHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"Attacks are replaced by a dance that deals ... physical damage to all adjacent enemies\""
+    }
+   }
   },
   "TFT18_Sejuani": {
    "note": "Shield for its duration, then the cone and the line, each over every dummy in reach (all three in the clump, only the target when spread). Neither shape has a falloff row in the data, so both are applied at full value to everyone hit. Mana is locked for as long as the shield stands, ShieldDuration at most, and comes in again the moment it is fully absorbed — attack mana, the regeneration ticks and the mana a tank takes off damage alike; this is TFTraits' statement (\"The mana lock lasts as long as the shield holds, at most 4.00 s. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game."
@@ -152,7 +280,15 @@
    "note": "Two clusters over the nearest three, then the giant mushroom on the target; the \"2\" is Riot's own text and has no row of its own. Foraging (rerolls, tactician health, XP) is economy and is ignored."
   },
   "TFT18_Tristana": {
-   "note": "She keeps attacking through the cast; the explosion is split over the dummies in reach. Mana is locked for the seconds the charge runs and no longer; this is TFTraits' statement (\"The mana lock lasts the 4.00 s the effect runs. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game."
+   "note": "She keeps attacking through the cast; the explosion is split over the dummies in reach. Mana is locked for the seconds the charge runs and no longer; this is TFTraits' statement (\"The mana lock lasts the 4.00 s the effect runs. Attacks continue.\"), a third-party rule adopted like Azir's and not verified in game.",
+   "radii": {
+    "ChargeHexRadius": {
+     "shape": "radius",
+     "hexes": 2,
+     "source": "tooltip",
+     "evidence": "\"the charge explodes and splits damage between all enemies within 2 hexes\""
+    }
+   }
   },
   "TFT18_Varus": {
    "note": "The two-second wind-up is taken from the unit data (SpellDuration)."
@@ -179,13 +315,30 @@
    "note": "Poisons the current target and an independently selected nearest enemy without an active poison. A target becomes eligible again when its last poison expires. Poisons can stack; attack and cast animation timing remains approximate."
   },
   "TFT18_Karma": {
-   "note": "The delayed burst retains the original tether victim as its center, including when the victim dies; it cannot move to the next isolated target. Whether death should cancel the tether early is unverified. Slow and exact area geometry remain unmodeled."
+   "note": "The delayed burst retains the original tether victim as its center, including when the victim dies; it cannot move to the next isolated target. Whether death should cancel the tether early is unverified. Slow and exact area geometry remain unmodeled.",
+   "radii": {
+    "AoEHexRange": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "row",
+     "evidence": "curve row AoEHexRange: \"dealing ... magic damage to all enemies in a 1 Hex radius\""
+    }
+   }
   },
   "TFT18_LeBlanc": {
-   "note": "Primary damage and adjacent secondary damage share the original impact target. Killing that primary does not exclude a different surviving enemy from the splash. Exact projectile timing and hex geometry remain approximate."
+   "note": "Primary damage and adjacent secondary damage share the original impact target. Killing that primary does not exclude a different surviving enemy from the splash. Exact projectile timing and hex geometry remain approximate.",
+   "radii": {
+    "MirrorHexRadius": {
+     "shape": "radius",
+     "hexes": 1,
+     "source": "tooltip",
+     "evidence": "\"dealing ... magic damage and ... to adjacent enemies\"; adjacent is one hex"
+    }
+   }
   },
   "TFT18_Yunara": {
    "note": "Secondary hits retain the original primary target identity, so a lethal primary hit cannot suppress a different splash recipient. Exact movement, line shape and impact timing remain approximate."
   }
- }
+ },
+ "_radiiComment": "radii: the area radius each driver uses, in hexes, with where the number comes from. source 'row' names a curve row the data publishes and the engine reads it from there; source 'tooltip' is transcribed from the ability's own text because Riot publishes no row, and tft.ability_radius_rows adds it to the kit under that name. A slot's distance is |dlane| + |drow| on the schematic board (tft.FRONT_LANES / BACK_LANES). Abilities whose text describes a line, a cone or a fixed number of enemies carry no radius: they keep the older rule, where the packed frontline is collinear and a spread one is not."
 }

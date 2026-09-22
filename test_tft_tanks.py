@@ -412,7 +412,7 @@ class TestTankFormation(unittest.TestCase):
                 spec = opening_cast(body_spec(unit="Hecarim", driver="Hecarim",
                                               hp=10 ** 6, duration=1.6,
                                               dummy=formation_sources()))
-                spec["geometry"] = geometry
+                tft.set_geometry(spec, geometry)
                 _, res = ENGINE.simulate(spec, True)
                 self.assertEqual(res["casts"], 1)
                 self.assertEqual([e[3] for e in events(res, "damage", "riders")], [0, 1, 2])
@@ -432,7 +432,7 @@ class TestTankFormation(unittest.TestCase):
                 spec = opening_cast(body_spec(unit="Hecarim", driver="Hecarim",
                                               hp=10 ** 6, duration=1.0,
                                               dummy=formation_sources()))
-                spec["geometry"] = geometry
+                tft.set_geometry(spec, geometry)
                 spec["immortal"] = False
                 # The opening auto removes the first tank before riders select
                 # targets; the fourth slot is now one of the nearest three.
@@ -443,20 +443,34 @@ class TestTankFormation(unittest.TestCase):
                 self.assertEqual(res["dummyCasts"], [0, 0, 0, 0, 1])
                 self.assertEqual({e[3] for e in events(res, "take")}, {4})
 
-    def test_local_aoe_and_adjacency_leave_protected_backliners_in_range_to_fire(self):
-        for unit, driver, source in (("Amumu", "Amumu", "ability"),
-                                      ("RekSai", "RekSai", "uproot")):
-            for geometry, targets in (("clump", [0, 1, 2]), ("spread", [0])):
+    def test_an_area_reaches_what_its_own_radius_covers(self):
+        """The formation, not a flag, decides what a local area reaches.
+
+        Rek'Sai's lunge is one hex (LungeHexRadius) and Amumu's cast two
+        (BigHexRadius). Clumped the frontline stands at lanes 2/3/4 and the
+        backline at lanes 2/4 two rows behind, so one hex covers the target
+        and its neighbour while two also reach the far frontliner and the
+        backliner directly behind the target. Spread the frontline is three
+        hexes apart and neither radius leaves the target. Every source the
+        area does not reach keeps firing.
+        """
+        for unit, driver, source, reach in (("Amumu", "Amumu", "ability",
+                                             {"clump": [0, 1, 2, 3], "spread": [0]}),
+                                            ("RekSai", "RekSai", "uproot",
+                                             {"clump": [0, 1], "spread": [0]})):
+            for geometry, targets in reach.items():
                 with self.subTest(unit=unit, geometry=geometry):
                     spec = opening_cast(body_spec(unit=unit, driver=driver, hp=10 ** 6,
                                                   duration=1.1,
                                                   dummy=formation_sources(start=0.75)))
-                    spec["geometry"] = geometry
+                    tft.set_geometry(spec, geometry)
                     _, res = ENGINE.simulate(spec, True)
                     self.assertEqual([e[3] for e in events(res, "damage", source)], targets)
                     self.assertEqual(res["dummyCasts"], [0 if i in targets else 1
                                                          for i in range(5)])
                     for backliner in (3, 4):
+                        if backliner in targets:
+                            continue
                         self.assertEqual(len(events(res, "take", "physical", backliner)), 1)
                         self.assertEqual(len(events(res, "take", "magic", backliner)), 1)
 
@@ -516,7 +530,7 @@ class TestTankFormation(unittest.TestCase):
             with self.subTest(geometry=geometry):
                 spec = body_spec(hp=10 ** 6, duration=0.6,
                                  dummy=formation_sources(pre=0.0), fx=[{"ionicSpark": 2.0}])
-                spec["geometry"] = geometry
+                tft.set_geometry(spec, geometry)
                 for slot in spec["dummies"]["slots"]:
                     slot.update(manaMax=50.0, mr=0.0)
                 _, res = ENGINE.simulate(spec, True)
@@ -543,10 +557,14 @@ class TestTankFormation(unittest.TestCase):
                     self.assertEqual(burns, [])
 
     def test_optional_nearby_defaults_to_legacy_all_nearby(self):
+        # A null lane opts the board out of the formation, so this exercises
+        # the nearby flag alone: without positions a local area still covers
+        # every nearby slot, exactly as before.
         spec = opening_cast(body_spec(unit="Amumu", driver="Amumu", hp=10 ** 6,
                                       duration=1.1, dummy=formation_sources(start=0.75)))
         for slot in spec["dummies"]["slots"]:
             slot["nearby"] = True
+            slot["lane"] = None
         expected = ENGINE.simulate(spec, True)
         self.assertEqual([e[3] for e in events(expected[1], "damage", "ability")], list(range(5)))
         for unset in ("missing", "none"):

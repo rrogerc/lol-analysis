@@ -15,9 +15,9 @@
   "Requiem has a 0.25s cast time followed by its stated 3s channel before the nuke lands; both are modeled as one continuous 3.25s busy period from the cast (no other cast or attack can start during it, matching the channel blocking all spells), with the damage (and Spellblade/Eclipse/Malignance procs) landing at the end of that period.",
   "Defile is toggled on for the whole fight and ticks every 0.25s, matching the wiki's stated tick rate and the sheet's TotalDPS*0.25 per-tick formula; toggled abilities do not proc on-cast effects (Spellblade, Muramana), so only Q and R do.",
   "Requiem is cast at t=0, right after Defile toggles on and before Wall of Pain and Lay Waste (both wait behind its busy period since only one cast can be in progress at a time); Defile keeps ticking through the channel per the wiki's note that it survives Karthus's zombie state.",
-  "Mana is modeled as a simple pool starting at the fight's sheet mana. Requiem, Wall of Pain and Lay Waste spend it on cast and Defile drains it every tick, in whatever order events occur; Lay Waste stops forever once the pool can't pay its cost, and Defile switches off for good the first time it can't pay a tick.",
   "Death Defied is a defensive-only passive (untargetable zombie state triggered by Karthus's own death) and has no effect on a stationary dummy that never fights back, so it is omitted from the kit.",
-  "Karthus attacks normally between casts using the engine's default basic-attack handling; nothing in his kit modifies attacks, on-hit damage or attack speed."
+  "Karthus attacks normally between casts using the engine's default basic-attack handling; nothing in his kit modifies attacks, on-hit damage or attack speed.",
+  "Mana is not modeled (Roger's call, 2026-09-22): a champion's bar never falls below its maximum, because nothing spends from it. The kit still carries each ability's real cost and the driver still reads it, so a cast a full bar could not pay is still refused — but no cast is ever delayed or skipped because earlier ones drained the pool."
  ],
  "assumed": [
   {
@@ -148,6 +148,7 @@
  },
  "_provenance": [
   "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/karthus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/karthus.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Mana spending switched off by hand 2026-09-22 (Claude Opus 5, at Roger's request): the driver keeps its pool and reads its costs, but never subtracts, so the bar stays at the sheet's maximum for the whole fight. Nothing else about the rotation changed."
  ]
 }

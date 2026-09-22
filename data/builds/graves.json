@@ -18,8 +18,8 @@
   "Quickdraw (E) is cast the instant it is off cooldown (and not blocked by a cast in progress) purely for its attack-reset and reload-1-shell effect (it deals no damage): if cast while reloading it cancels the reload and leaves 1 shell instead of 2, otherwise it tops the clip up by 1; either way it resets the attack timer. Its own cooldown ticks down 0.5 s per expected pellet landed (4 normal / 6 on crit, blended the same way as the passive) while it is on cooldown.",
   "Q (End of the Line) is cast on cooldown: the initial pass deals its damage as the cast starts (then a 0.25 s busy window), and the powder trail is assumed to detonate on the same stationary dummy 2 seconds later for its separate damage instance (a delayed hit, not a new cast, so it does not itself wait on other casts).",
   "W (Smoke Screen) is cast on cooldown for its impact damage, which lands as the cast starts, followed by its own 0.25 s busy window.",
-  "Mana is modeled as a single pool starting at the level-16 sheet's mana value with no regeneration (the fight is short); once a cast's cost cannot be paid, that ability stops being cast for the rest of the fight instead of looping. This is because Graves' four costed abilities can plausibly drain a level-16 mana pool inside 15 s.",
-  "True Grit's bonus armor/MR from Quickdraw only affects damage taken, not dealt, and is omitted."
+  "True Grit's bonus armor/MR from Quickdraw only affects damage taken, not dealt, and is omitted.",
+  "Mana is not modeled (Roger's call, 2026-09-22): a champion's bar never falls below its maximum, because nothing spends from it. The kit still carries each ability's real cost and the driver still reads it, so a cast a full bar could not pay is still refused — but no cast is ever delayed or skipped because earlier ones drained the pool."
  ],
  "assumed": [
   {
@@ -187,6 +187,7 @@
  },
  "_provenance": [
   "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/graves.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/graves.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Mana spending switched off by hand 2026-09-22 (Claude Opus 5, at Roger's request): the driver keeps its pool and reads its costs, but never subtracts, so the bar stays at the sheet's maximum for the whole fight. Nothing else about the rotation changed."
  ]
 }

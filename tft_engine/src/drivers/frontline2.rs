@@ -159,6 +159,10 @@ impl Driver for Vi {
 /// longer duration when the target is already Burning.
 #[derive(Clone)]
 pub struct Amumu {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    burst_radius: RowId,
+    /// Area radius in hexes; kits.json records where the number comes from.
+    passive_radius: RowId,
     beat: Option<f64>,
     tick_rate: RowId,
     heal_pct: RowId,
@@ -173,7 +177,7 @@ impl Driver for Amumu {
     const NAME: &'static str = "Amumu";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Amumu { beat: None, tick_rate: k.row("PassiveTickRate"),
+        Amumu { burst_radius: k.row("BigHexRadius"), passive_radius: k.row("PassiveHexRadius"), beat: None, tick_rate: k.row("PassiveTickRate"),
                 heal_pct: k.row("PassiveHealPercent"), stun: k.row("StunDuration"),
                 heal: k.calc("HealthCalc2"), tantrum: k.calc("MagicDamageCalc1"),
                 burst: k.calc("MagicDamageCalc3"), burning_stun: k.calc("GenericCalc1") }
@@ -196,7 +200,7 @@ impl Driver for Amumu {
         // health; the footer says it is the percentage plus HealthCalc2
         let amount = f.row(f.drv.heal_pct) * f.max_hp() + f.calc(f.drv.heal);
         f.heal(amount, "tantrum");
-        let tg = f.adjacent(None);
+        let tg = f.within(f.row(f.drv.passive_radius), None, false);
         for d in tg.iter() {
             f.hit_ability(f.drv.tantrum, Some(d), "tantrum", 1.0);
         }
@@ -207,7 +211,7 @@ impl Driver for Amumu {
             Some(d) => f.d(d).burning(f.t),
             None => false,
         };
-        let tg = f.aoe_all();
+        let tg = f.within(f.row(f.drv.burst_radius), None, false);
         for x in tg.iter() {
             f.hit_ability(f.drv.burst, Some(x), "ability", 1.0);
         }
@@ -261,6 +265,8 @@ impl Driver for Lillia {
 /// it. "Petrified" carries no numbers in the data, so it is left out.
 #[derive(Clone)]
 pub struct Malphite {
+    /// Area radius in hexes; kits.json records where the number comes from.
+    radius: RowId,
     lock: ShieldLock,
     duration: RowId,
     shield: CalcId,
@@ -277,7 +283,7 @@ impl Driver for Malphite {
     const NAME: &'static str = "Malphite";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Malphite { lock: ShieldLock::default(), duration: k.row("ShieldDuration"),
+        Malphite { radius: k.row("AoEHexRange"), lock: ShieldLock::default(), duration: k.row("ShieldDuration"),
                    shield: k.calc("ShieldCalc1"), wave: k.calc("MagicDamageCalc1") }
     }
 
@@ -289,7 +295,7 @@ impl Driver for Malphite {
 
     fn hit(f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {
         if shield_lock_broke(f) {
-            let tg = f.aoe_all();
+            let tg = f.within(f.row(f.drv.radius), None, false);
             for d in tg.iter() {
                 f.hit_ability(f.drv.wave, Some(d), "shield break", 1.0);
             }

@@ -125,8 +125,11 @@ class TestNineChampionMatches(unittest.TestCase):
         # Gnar's transform selects all nine and publishes its flat cuts.
         # A different source attacking later must see target 8's shared cut.
         attacker = ally(ad=100, attack_speed=1, lane=6)
+        # Gnar's transform is a stated 2 hexes (TransformHexRadius), so the
+        # ninth enemy has to stand inside it for this to be about the shared
+        # cut rather than about the radius.
         enemies = [ally(hp=10000, armor=100, mr=100, lane=0) for _ in range(8)]
-        enemies.append(ally(hp=10000, armor=100, mr=100, lane=6))
+        enemies.append(ally(hp=10000, armor=100, mr=100, lane=2))
         result = match([gnar, attacker], enemies, duration=0.1)
         hits = events(result, "damage", source=1, name="auto")
         self.assertEqual([hit["target"] for hit in hits], [8])

@@ -1,6 +1,7 @@
 """Enemy population is independent of adjacency in theoretical scoring."""
 import unittest
 
+import tft
 import tft_theory
 from test_tft import ENGINE
 from test_tft_audit_frontline import harvest_spec
@@ -22,9 +23,9 @@ class TestTheoryPopulation(unittest.TestCase):
                         physicalShare=1, wound=0, armor=0, mr=0)
         scorer = ENGINE.TheoryScorer([scenario])
         front = actor("population-front", hp=3000, targets=3)
-        front["geometry"] = geometry
+        tft.set_geometry(front, geometry)
         front["pool"] = []
-        carry["geometry"] = geometry
+        tft.set_geometry(carry, geometry)
         carry["pool"] = []
         tank_id = scorer.register(front)
         carry_id = scorer.register(carry)

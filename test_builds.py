@@ -1463,12 +1463,11 @@ class TestKassadinEngine(unittest.TestCase):
         self.assertAlmostEqual(r["breakdown"]["W onhit"], 50.0)
         self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
 
-    def test_riftwalk_until_the_mana_runs_out(self):
-        # R every 2 s, each counting the stacks before it and costing 40 x
-        # 2^stacks: casts at 0/2/4/6/8 cost 40+80+160+320+640. Between them
-        # Null Sphere, Force Pulse and two Nether Blades, whose refunds (30%
-        # of the missing mana) leave 533 after the fifth: the sixth (640)
-        # waits, off cooldown since 10 s, for the third refund at 14.995 s
+    def test_riftwalk_every_cooldown(self):
+        # R every 2 s, each counting the stacks standing before it, capped at
+        # four: casts at 0/2/4/6/8 and on to 14 inside a 15 s fight. Nothing
+        # holds them back — mana is not modelled, so the 40 x 2^stacks cost
+        # is read and never binds (test_mana_costs_never_gate_a_cast)
         r = self.sim(16, [], duration=8.0)
         self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5))
         self.assertAlmostEqual(r["breakdown"]["Q"], 125.0)  # the next at 8.25
@@ -1476,34 +1475,44 @@ class TestKassadinEngine(unittest.TestCase):
         self.assertEqual(r["attacks"], 9)
         self.assertAlmostEqual(r["breakdown"]["auto"], 9 * self.ad16)
         self.assertAlmostEqual(r["breakdown"]["W onhit"], 9 * 25.0)
+        # 0/2/4/6/8/10/12/14: eight casts, the last four at the stack cap
         r = self.sim(16, [], duration=14.9)
-        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5))
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(8))
         self.assertAlmostEqual(r["breakdown"]["Q"], 2 * 125.0)
         r = self.sim(16, [], duration=15.0)
-        self.assertAlmostEqual(r["breakdown"]["W"], 3 * 150.0)
-        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(6))
+        self.assertAlmostEqual(r["breakdown"]["W"], 3 * 150.0)  # 0.5/7.5/14.5
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(8))
         # the squishy preset: 60 MR, all five by its 8 s
         r = self.sim(16, [], hp=2800, armor=110, mr=60, duration=8.0)
         self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5) * 100 / 160)
 
     def test_force_pulse_cooldown_shaved_by_casts(self):
-        # cast at 0.5, back at 17.5 on its own; the R casts at 2, 4, 6 and 8,
-        # Nether Blade at 7.75 and Null Sphere at 8.25 take 0.75 s each
-        self.assertAlmostEqual(self.sim(16, [], duration=12.99)["breakdown"]["E"], 190.0)
-        self.assertAlmostEqual(self.sim(16, [], duration=13.0)["breakdown"]["E"], 380.0)
+        # cast at 0.5, back at 17.5 on its own; every cast after it takes
+        # 0.75 s off — R at 2/4/6/8/10, Nether Blade at 7.5 and Null Sphere
+        # at 8.25, seven of them, so 17.5 - 5.25 = 12.25 exactly
+        self.assertAlmostEqual(self.sim(16, [], duration=12.24)["breakdown"]["E"], 190.0)
+        self.assertAlmostEqual(self.sim(16, [], duration=12.25)["breakdown"]["E"], 380.0)
 
-    def test_nether_blade_refund_pays_for_riftwalk(self):
-        # R made to cost 520 (1040 at a stack): after R, Q, W and E the pool
-        # holds 988.3 — short of the second Riftwalk at 2.0 — until the
-        # empowered attack at 0.75 refunds 30% of the 671 missing
+    def test_mana_never_falls_below_its_maximum(self):
+        # mana is not modelled: the pool sits at the sheet's maximum and
+        # nothing ever spends from it, so a cast the champion can pay for on
+        # a full bar is payable for ever. Riftwalk at 100 costs 1600 at the
+        # four-stack cap, inside the naked 1659.325 pool, and the fight comes
+        # out exactly as it does with the real 40
+        base = self.sim(16, [], duration=15.0)
         dear = copy.deepcopy(self.kit)
-        dear["abilities"]["R"]["mana"] = [520, 520, 520]
-        r = self.sim(16, [], duration=2.0, kit=dear)
-        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(2))
+        dear["abilities"]["R"]["mana"] = [100, 100, 100]
+        self.assertEqual(self.sim(16, [], duration=15.0, kit=dear)["total"], base["total"])
+        # the refund has nothing to give back, so taking it away changes
+        # nothing either
         dry = copy.deepcopy(dear)
         dry["abilities"]["W"]["empowered"]["missingManaPct"] = [0] * 5
-        r = self.sim(16, [], duration=2.0, kit=dry)
-        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(1))
+        self.assertEqual(self.sim(16, [], duration=15.0, kit=dry)["total"], base["total"])
+        # but the maximum is still a ceiling: 520 x 2^4 = 8320 is more than
+        # the bar has ever held, and a full bar cannot pay it either
+        over = copy.deepcopy(self.kit)
+        over["abilities"]["R"]["mana"] = [520, 520, 520]
+        self.assertLess(self.sim(16, [], duration=15.0, kit=over)["total"], base["total"])
 
     def test_no_ult_no_riftwalk(self):
         # Null Sphere opens at 0 and is back at 8.0
@@ -1553,14 +1562,17 @@ class TestKassadinEngine(unittest.TestCase):
         self.assertAlmostEqual(r["breakdown"]["R"],
                                r0 * 100 / 160 + (2 * r0 + 3 * rs) * 100 / 150)
 
-    def test_actualizer_doubles_what_casts_cost(self):
-        # 8 s of doubled costs empty the pool sooner: fewer Riftwalks than
-        # the same build with the cost increase taken out
+    def test_actualizer_cost_increase_is_inert(self):
+        # Mana Made Real doubles what casts cost for 8 s. With no budget to
+        # empty that changes nothing, and the item is out of the pool anyway
+        # (item-effects.json "excluded"); its amp and faster basic cooldowns
+        # are still modelled, which is why the two fights are not trivial
         free = copy.deepcopy(self.effects)
         free[2522]["manaActive"]["costIncreasePct"] = 0
         paid = self.sim(16, ["actualizer"], duration=15.0)
         unpaid = self.sim(16, ["actualizer"], duration=15.0, effects=free)
-        self.assertLess(paid["breakdown"]["R"], unpaid["breakdown"]["R"])
+        self.assertEqual(paid["breakdown"]["R"], unpaid["breakdown"]["R"])
+        self.assertEqual(paid["total"], unpaid["total"])
 
     def test_recasts_do_not_reopen_the_on_ult_windows(self):
         # Opening Barrage has a 45 s cooldown: the opening Riftwalk empowers

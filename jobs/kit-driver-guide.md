@@ -177,9 +177,13 @@ path under `assumed` with the reason, and the check uses your number.
   as `"abilities": {"Q": {"shred": {"pct": 15, "appliesTo": ["armor", "mr"], "durationS": 4}}}`
   (the one slot the engine reads, whichever ability applies it) and switch it
   on with `e.st.shred_until = t + dur`.
-- Mana and energy are NOT modeled by the engine. Ignore costs unless they
-  would really stop casts inside 15 s at level 16 (energy, a cost that
-  doubles); then keep a pool in your state, as any other counter.
+- Mana and energy are NOT modeled: a champion's bar never falls below its
+  maximum, because nothing spends from it (Roger's call 2026-09-22). A driver
+  may keep the pool and read its costs — Kassadin's Riftwalk damage grows
+  with the same stack count that doubles its cost — but it must never
+  SUBTRACT, so no cast is delayed, no rotation ends and no stance flips for
+  want of resource. The one thing a cost can still do is be unpayable on a
+  full bar, which is as true here as in game.
 
 `Sheet` fields: `ad`, `ad_base`, `ad_bonus`, `ap`, `hp`, `hp_bonus`, `mana`,
 `mana_bonus`, `armor`, `mr`, `attack_speed`, `bonus_as_pct`, `crit_chance`
