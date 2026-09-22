@@ -818,7 +818,7 @@
     <details class="tft-details" id="tft-board-methodology">
       <summary>How this comparison works</summary>
       <p class="hint">Each champion uses its best full three-item build from every legal combination in the selected fight. Best available uses 3★ for 1–3 costs and 2★ for 4–5 costs. The 3★ board only includes 1–3 costs. Formation and trait settings stay the same across the board; active trait bonuses still depend on each champion.</p>
-      <p class="hint">Damage ranks by time to clear all three targets, then damage for champions that cannot clear. Carries are protected; fighters and assassins also take attacks and casts from their targets. Use the role filter to compare the same pressure conditions. DPS is averaged over the simulated fight. All damage targets start with team-supplied Sunder and Shred.</p>
+      <p class="hint">Damage ranks by time to clear all five targets, then damage for champions that cannot clear. Carries are protected; fighters and assassins also take attacks and casts from their targets. Use the role filter to compare the same pressure conditions. DPS is averaged over the simulated fight. All damage targets start with team-supplied Sunder and Shred.</p>
       <p class="hint">Tanks rank by how long they hold five attackers, including on-death bodies. 60s+ means the fight limit was reached. Those champions are compared again with twice the incoming damage; reaching both limits remains a tie. Effective healing, shields and stuns contribute to survival. Team utility does not change these ranks.</p>
       <p class="hint">These are theoretical fights, not match win rates. Equal performance shares a rank, and filters keep the full board’s ranks. Ranks use unrounded results; displayed times and damage are rounded. Select a champion for its exact fight, alternatives and ability assumptions.</p>
     </details>
@@ -998,9 +998,9 @@
     <details class="tft-details">
       <summary>How builds are ranked</summary>
       <p class="hint">Every three-item combination is simulated. Carries and fighters face three stat dummies: a heavy tank first, a typical tank second, and a non-tank behind them. Tanks face three frontline tanks and two protected backline carries. The first enemy tank has fixed benchmark defenses, shown in the test fight; the other defenses use this set's median 2★ stats. Fighters face attacks and casts drawn from those median stats. Tank pressure combines the median frontline damage with damage calibrated from 2★, three-item carry builds. The selected preset sets the backline damage mix and timing. Damage accounts for armor, magic resist, sunder, shred, expected-value crit, Precision and damage amplification.</p>
-      <p class="hint">Carries are ranked by time to kill all three dummies, then damage. Fighters and assassins face dummies that hit back, and are ranked by kill time, then damage before dying. Tanks face five attackers that cannot die for up to a minute, with enemy heal cut, sunder and shred active throughout. The backline keeps attacking through frontline stuns; abilities with explicit long-range or global targeting can still reach it. Enemy casts are delayed by stuns and resume afterward. Tanks rank by how long they hold the enemies, including on-death bodies. Builds that reach 60s are shown as 60s+ and compared in another fight with twice the incoming damage; builds that reach both limits remain tied. Shields, effective healing, durability and stuns contribute to survival.</p>
+      <p class="hint">Every fight uses one formation: three frontline dummies screening two in the backline, so an area ability that reaches "enemies within N hexes" covers the frontline and nothing behind it, while whole-board and nearest-N abilities still reach all five. Carries are ranked by time to kill all five dummies, then damage. Fighters and assassins are attacked by the three frontliners, which is the pressure the old three-dummy board applied, and are ranked by kill time, then damage before dying; their backline is a damage target only. Tanks face five attackers that cannot die for up to a minute, with enemy heal cut, sunder and shred active throughout. The backline keeps attacking through frontline stuns; abilities with explicit long-range or global targeting can still reach it. Enemy casts are delayed by stuns and resume afterward. Tanks rank by how long they hold the enemies, including on-death bodies. Builds that reach 60s are shown as 60s+ and compared in another fight with twice the incoming damage; builds that reach both limits remain tied. Shields, effective healing, durability and stuns contribute to survival.</p>
       <p class="hint">Tank effective HP (EHP) shows the opening capacity to take physical or magic ability damage after enemy sunder and shred. It excludes healing, shields and protection that applies only to attacks. Team healing, shields and damage are shown separately; survival rankings do not measure how quickly allied carries win the fight.</p>
-      <p class="hint">Spread keeps enemies apart, so most local area effects reach only the current target; clumped enemies can take splash damage together, subject to each ability's target limit. In tank tests, this setting changes the frontline formation; the backline stays outside nearby effects in both formations. Abilities that select several nearest enemies can still reach multiple frontliners when spread. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
+      <p class="hint">Spread keeps the frontliners apart, so most local area effects reach only the current target; clumped frontliners can take splash damage together, subject to each ability's target limit. The setting changes the frontline formation only: in every test the backline stays outside nearby effects in both formations. Abilities that select several nearest enemies can still reach multiple frontliners when spread. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
     </details>
   </div>
   </div>
@@ -2746,7 +2746,7 @@ function renderTftFight(unit, scenario = null, build = null) {
   document.getElementById("tft-formation-label").textContent =
     `${clump ? "Clumped" : "Spread"}${tank ? " frontline" : ""}${threat ? ` · ${threat.label}` : ""} · up to ${duration}s`;
   const svg = document.getElementById("tft-formation-diagram");
-  svg.setAttribute("viewBox", tank ? "0 0 340 295" : "0 0 340 195");
+  svg.setAttribute("viewBox", "0 0 340 295");
   svg.replaceChildren();
   const node = (tag, attrs = {}, text) => {
     const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -2791,21 +2791,28 @@ function renderTftFight(unit, scenario = null, build = null) {
     node("text", { x: 170, y: 291, class: "tft-diagram-number" }, unit.name);
   } else {
     node("title", { id: "tft-diagram-title" }, `${clump ? "Clumped" : "Spread"} enemy formation`);
-    node("desc", { id: "tft-diagram-desc" }, "Two tank dummies in front and a non-tank dummy behind. Normal attacks start at dummy 1. The shaded area illustrates nearby ability coverage, not an exact ability radius.");
-    const positions = clump ? [[142, 82], [202, 82], [172, 32]] : [[48, 83], [292, 83], [172, 26]];
-    node("ellipse", { cx: clump ? 172 : 48, cy: clump ? 65 : 83,
-      rx: clump ? 67 : 29, ry: clump ? 57 : 31,
-      fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)", "stroke-dasharray": "4 4" });
+    node("desc", { id: "tft-diagram-desc" }, `Three tank dummies in front and two non-tank dummies behind, the same formation the tank test uses. Normal attacks start at dummy 1 and work back. The shaded area illustrates nearby ability coverage on the frontline${clump ? "" : ", which reaches only the current target when the frontline is spread"}; the backline is outside it, so only whole-board and nearest-N abilities reach dummies 4 and 5. It is not an exact ability radius.`);
+    node("text", { x: 170, y: 18 }, "Backline · outside nearby effects");
+    node("text", { x: 170, y: 103 }, "Frontline · nearby coverage");
+    const positions = (clump ? [110, 170, 230] : [45, 170, 295]).map(x => [x, 137]);
+    node("ellipse", { cx: clump ? 170 : 45, cy: 137, rx: clump ? 94 : 29, ry: 29,
+      fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)",
+      "stroke-dasharray": "4 4", "data-targeting": "nearby" });
     const [tx, ty] = positions[0];
-    arrow(172, 148, tx, ty + 23, "var(--baseline)", "outgoing");
+    arrow(170, 214, tx, ty + 20, "var(--baseline)", "outgoing");
     positions.forEach(([x, y], i) => {
-      node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: i === 2 ? "var(--s3)" : "var(--s1)", "stroke-width": 2 });
+      node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: "var(--s1)", "stroke-width": 2, "data-line": "frontline" });
       node("text", { x, y: y + 4, class: "tft-diagram-number" }, String(i + 1));
-      node("text", { x, y: y + 33 }, dm.slots[i]?.fixedDefenses ? "Heavy tank" : i === 2 ? "Non-tank" : "Tank");
+      node("text", { x, y: y + 33 }, dm.slots[i]?.fixedDefenses ? "Heavy tank" : "Tank");
     });
-    node("circle", { cx: 172, cy: 161, r: 18, fill: "var(--s1)" });
-    node("text", { x: 172, y: 165, class: "tft-diagram-you" }, "You");
-    node("text", { x: 172, y: 193 }, unit.name);
+    [80, 260].forEach((x, i) => {
+      node("circle", { cx: x, cy: 48, r: 18, fill: "var(--surface-1)", stroke: "var(--s3)", "stroke-width": 2, "data-line": "backline" });
+      node("text", { x, y: 52, class: "tft-diagram-number" }, String(i + 1 + positions.length));
+      node("text", { x, y: 81 }, "Non-tank");
+    });
+    node("circle", { cx: 170, cy: 232, r: 18, fill: "var(--s1)" });
+    node("text", { x: 170, y: 236, class: "tft-diagram-you" }, "You");
+    node("text", { x: 170, y: 264 }, unit.name);
   }
   const movementDelay = !tank && Number.isFinite(dm.meleeRepositionSeconds) && dm.meleeRepositionSeconds > 0
     ? dm.meleeRepositionSeconds : null;
@@ -2822,8 +2829,8 @@ function renderTftFight(unit, scenario = null, build = null) {
   document.getElementById("tft-dummy-intro").textContent = tank
     ? `${threat?.attackers || 5} attackers focus ${unit.name}: ${threat?.frontlineAttackers || 3} frontline tanks and ${threat?.backlineAttackers || 2} protected backline carries. Most damage comes from the carries. Enemies stay alive while your tank and any on-death body hold them.`
     : dm.slots[0].fixedDefenses
-    ? `${dm.count} test targets: a heavy tank first, a typical tank second, and a non-tank behind. The first tank has fixed defenses; the other defenses and all attacks and casts use this set's median ${dm.star}★ stats.`
-    : `${dm.count} test targets: two tanks in front, one non-tank behind. Each uses the median stats of this set's ${dm.star}★ champions in its group.`;
+    ? `${dm.count} test targets in the tank test's own formation: a heavy tank first, two more tanks beside it, and two non-tanks behind. Only the frontline is within reach of a nearby area effect; the backline is reached only by whole-board or nearest-N abilities. The first tank has fixed defenses; the other defenses and all attacks and casts use this set's median ${dm.star}★ stats.`
+    : `${dm.count} test targets: three tanks in front, two non-tanks behind. Only the frontline is within reach of a nearby area effect. Each uses the median stats of this set's ${dm.star}★ champions in its group.`;
   const number = n => Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
   const statRow = (label, value) => {
     const row = document.createElement("div");
@@ -2832,7 +2839,7 @@ function renderTftFight(unit, scenario = null, build = null) {
     return row;
   };
   const slotLabel = slot => slot.fixedDefenses ? "Heavy front tank" : slot.label
-    || (slot.kind === "tank" ? "Front tank" : tank ? "Backline carry" : "Rear non-tank");
+    || (slot.kind === "tank" ? "Front tank" : tank ? "Backline carry" : "Backline non-tank");
   const defenseRows = () => dm.slots.map((slot, i) => statRow(
     `${i + 1} · ${slotLabel(slot)}`,
     `${number(slot.hp)} HP · ${number(slot.armor * (1 - (targetDebuffs.sunder || 0)))} armor · ${number(slot.mr * (1 - (targetDebuffs.shred || 0)))} MR`));
@@ -2852,7 +2859,7 @@ function renderTftFight(unit, scenario = null, build = null) {
   document.getElementById("tft-target-defense-stats").replaceChildren(...(tank ? defenseRows() : []));
   document.getElementById("tft-pressure-note").textContent = tank
     ? tftTankDebuffNote(debuffs)
-    : (pressured ? `All three dummies attack and cast (~${number(dm.pressureDps)} damage/s before defenses). Defeating one removes its pressure.`
+    : (pressured ? `The ${dm.slots.filter(s => s.nearby !== false).length} frontline dummies attack and cast (~${number(dm.pressureDps)} damage/s before defenses); the backline is a damage target only. Defeating a frontliner removes its pressure.`
       : "The dummies do not attack this protected build. Clear-test builds rank by how quickly they defeat the targets, then damage dealt.")
       + " " + tftTargetDebuffNote(targetDebuffs);
   document.getElementById("tft-pressure-details").hidden = !pressured;
@@ -5526,8 +5533,8 @@ async function loadTftScenario({ preserve = false } = {}) {
   document.getElementById("tft-geo-hint").textContent = unit.objective === "tank"
     ? (tstate.geo === "clump" ? "Frontline tanks group up for nearby effects; backline carries stay farther away."
       : "Frontline tanks spread out; backline carries stay farther away. Nearest-target abilities keep their target count.")
-    : tstate.geo === "clump" ? "Enemies grouped; splash and nearby effects can reach multiple targets."
-    : "Enemies separated; most area effects reach the current target.";
+    : tstate.geo === "clump" ? "Frontliners grouped; splash and nearby effects can reach all three. The backline stays outside them."
+    : "Frontliners separated; most area effects reach the current target. The backline stays outside them either way.";
   document.getElementById("tft-trait-hint").textContent = {
     bare: "No trait bonuses applied.", low: "Each modeled trait at its first active breakpoint.",
     high: "Each modeled trait at its highest non-prismatic breakpoint."
@@ -5659,7 +5666,7 @@ function tftColumns() {
     if (r.form) td.append(` ${r.form} form`);
     return td;
   } };
-  const kill = { th: "Kill time", title: "Time until all three dummies are dead; the rest are ranked by damage dealt",
+  const kill = { th: "Kill time", title: "Time until all five dummies are dead; the rest are ranked by damage dealt",
     td: r => {
       const td = cell(r.killTime != null ? r.killTime.toFixed(2) + "s" : (r.died ? "died" : "survive"));
       if (r.killTime == null) td.title = `${r.left.map(fmtInt).join(" / ")} HP left on the dummies`;
@@ -5765,7 +5772,7 @@ function renderTftBreakdown(r) {
   }
   document.getElementById("tbd-title").textContent =
     `${tank ? "Build details" : "Damage breakdown"} — #${r.rank}: ${r.items.join(", ")}`;
-  const fight = r.killTime != null ? `all three dead at ${r.killTime.toFixed(2)}s`
+  const fight = r.killTime != null ? `all five dead at ${r.killTime.toFixed(2)}s`
                                    : `the dummies survive with ${r.left.map(fmtInt).join(" / ")} HP left`;
   const body = r.aliveTime == null ? "" :
     ` · ${r.died ? `died at ${r.diedAt}s` : `alive with ${fmtInt(r.hpLeft)} of ${fmtInt(r.hp)} HP`}` +

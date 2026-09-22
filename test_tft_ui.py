@@ -72,8 +72,10 @@ class TestTftUiMetadata(unittest.TestCase):
                 self.assertEqual(spec["targetDebuffs"], expected)
                 # All slots retain base defenses; the engine applies the
                 # shared status once, including the rear non-tank target.
-                self.assertEqual([s["armor"] for s in spec["dummies"]["slots"]], [110, 45, 40])
-                self.assertEqual([s["mr"] for s in spec["dummies"]["slots"]], [110, 45, 40])
+                self.assertEqual([s["armor"] for s in spec["dummies"]["slots"]],
+                                 [110, 45, 45, 40, 40])
+                self.assertEqual([s["mr"] for s in spec["dummies"]["slots"]],
+                                 [110, 45, 45, 40, 40])
         for threat, dummy in self.meta["tankDummies"].items():
             with self.subTest(threat=threat):
                 self.assertEqual(dummy["targetDebuffs"], {})

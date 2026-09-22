@@ -21,9 +21,10 @@ class TestCoreCache(unittest.TestCase):
         key = "s2-clump-bare"
         # Three items whose builds stay within a few percent of each other for
         # Ashe, so a flexible core exists (with the cast timelines Red Buff's
-        # builds no longer are: Giant Slayer x2 + Red Buff leads by 9%).
+        # builds no longer are: Giant Slayer x2 + Red Buff leads by 9%; with
+        # the five-slot formation Deathblade's no longer are either).
         pool = [self.snap.item(name)["api"] for name in
-                ("Blue Buff", "Giant Slayer", "Deathblade")]
+                ("Blue Buff", "Giant Slayer", "Infinity Edge")]
         full, count = tft.enumerate_builds(self.snap, unit, 2, "clump", [],
                                           tft.dummies_for(self.snap), pool, top=100, workers=1)
         with tempfile.TemporaryDirectory() as directory, patch.object(tft, "CACHED_ROWS", 1), \
@@ -76,7 +77,7 @@ class TestCoreCache(unittest.TestCase):
 
     def test_cached_spikes_are_actual_two_item_fights(self):
         unit = self.snap.unit("Ashe")
-        pool = [self.snap.item(name)["api"] for name in ("Blue Buff", "Giant Slayer", "Deathblade")]
+        pool = [self.snap.item(name)["api"] for name in ("Blue Buff", "Giant Slayer", "Infinity Edge")]
         key = "s2-clump-bare"
         dummy = tft.dummies_for(self.snap)
         with tempfile.TemporaryDirectory() as directory, patch.object(tft, "pool_items", return_value=pool):

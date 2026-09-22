@@ -733,16 +733,52 @@ consistent benchmark. `test_tft_murkwolf` checks independent hand values,
 AD/AP scaling, actual leap and empowered hits, source preservation, numeric
 updates and refresh behavior.
 
+## One formation for every fight (2026-09-21)
+
+The damage board used to be three dummies, all of them inside every
+"enemies within N hexes" effect. That paid an area unit for covering every
+enemy that had to die: the ranking is time to kill the whole board, so a
+1-hex cloud landing on 3 of 3 was worth three times its face value.
+Roger's call after noticing it on Gromp, whose whole ability is such a
+cloud.
+
+Damage tests now use the formation the tank test already had —
+`FRONTLINERS` (3) median tanks, the heaviest first, screening `BACKLINERS`
+(2) median non-tanks — and only the frontline is flagged `nearby`. So
+`f.aoe*` and `f.adjacent` reach at most the three in front (only the
+current target when the frontline is spread), while `f.alive()` and
+`f.nearest(n)`, which never depended on adjacency, still reach all five.
+The boards differ in who attacks, not in who is standing there.
+
+Consequences, all deliberate:
+
+- Total dummy health is 9,480 rather than 6,240, so `FIGHT_DURATION` is
+  **30 s** rather than 20. At 20 s, 27 of the 42 damage-board units stopped
+  clearing and the ranking collapsed into its damage tiebreak; at 30 s five
+  do, against three before.
+- On the damage board the backline is a target only (`streams` 0): a
+  fighter still eats the three attackers in front of it. Its incoming
+  pressure moves from 200 to 172 pre-mitigation DPS, because those three
+  attackers are now three frontliners rather than two tanks and a carry.
+  A tank `threat` arms all five as before.
+- `nearby` is a boolean, the only notion of distance the engine has, so a
+  1-hex cloud and a 3-hex bomb are still treated alike — both now capped at
+  the frontline rather than both reaching everything. That is right for the
+  many small-radius abilities and wrong for the few large ones (Ahri's
+  `HexRadius` 3 bomb, Kennen's 2-hex firestorm). Giving each ability its own
+  radius needs a hand file: only 9 of the 30 drivers that use a
+  nearby-limited helper have a radius row in Riot's data.
+
 ## Carry and fighter target defenses
 
 Every target in damage tests starts with team-supplied Sunder and Shred,
 active for the whole fight. The percentages come from the corrected Last
 Whisper and Void Staff rows: **30% armor reduction and 30% MR reduction**
-on 18.1d. This includes both frontline tanks and the rear non-tank.
-The fixed first tank has 3,000 HP and base 110 armor / 110 MR; its effective
-defenses are **77 armor / 77 MR**. The next tank's 45/45 becomes 31.5/31.5,
-and the rear target's 40/40 becomes 28/28. The dashboard and CLI show
-defenses after these reductions.
+on 18.1d. This includes the three frontline tanks and the two rear
+non-tanks. The fixed first tank has 3,000 HP and base 110 armor / 110 MR;
+its effective defenses are **77 armor / 77 MR**. The other tanks' 45/45
+becomes 31.5/31.5, and the rear targets' 40/40 becomes 28/28. The dashboard
+and CLI show defenses after these reductions.
 
 The engine applies the strongest active percentage once. Last Whisper,
 Void Staff and matching auras do not stack another reduction, while their

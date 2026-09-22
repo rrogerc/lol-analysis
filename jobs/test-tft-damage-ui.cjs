@@ -189,14 +189,16 @@ function checkFiniteEquippedPressure() {
   const unit = h.champion.meta.units.find(unit => unit.slug === 'alpha');
   Object.assign(unit, { name: 'Nidalee', role: 'Magic Marksman', objective: 'carry', ability: 'Pounce', duration: 20 });
   const common = { items: ['One', 'Two', 'Three'], rank: 1, ad: 200, ap: 100, attackSpeed: 1, crit: 25,
-    killTime: 12, total: 3000, dps: 250, casts: 3, attacks: 12, breakdown: {}, left: [0, 0, 0] };
+    killTime: 12, total: 3000, dps: 250, casts: 3, attacks: 12, breakdown: {}, left: [0, 0, 0, 0, 0] };
   const ad = { ...common, form: 'AD', objective: 'fighter', pressure: true, role: 'Attack Assassin', range: 1,
     hp: 2000, hpLeft: 400, armor: 50, mr: 50, aliveTime: 12, died: false, taken: 1600, absorbed: 2400,
     shielded: 0, healed: 0, denied: 0 };
   const ap = { ...common, form: 'AP', objective: 'carry', pressure: false, role: 'Magic Marksman', range: 4 };
   h.champion.data = { unit: 'alpha', objective: 'carry', pressureByBuild: true, rows: [ad, ap],
-    scenario: { geometry: 'clump', duration: 20, dummy: { count: 3, star: 2, pressureDps: 100,
-      slots: Array.from({ length: 3 }, () => ({ hp: 1000, armor: 100, mr: 100, ad: 50, as: 1, ability: 100,
+    scenario: { geometry: 'clump', duration: 30, dummy: { count: 5, star: 2, pressureDps: 100,
+      // three frontliners within reach of nearby effects, two backline targets
+      slots: Array.from({ length: 5 }, (_, i) => ({ hp: 1000, armor: 100, mr: 100, ad: 50, as: 1,
+        ability: 100, nearby: i < 3, kind: i < 3 ? 'tank' : 'non-tank',
         manaStart: 0, manaMax: 100, manaPerAttack: 10 })) } } };
   c.fmtInt = value => Number.isFinite(value) ? String(Math.round(value)) : '—';
   c.cell = text => Object.assign(h.create('td'), { textContent: text });
@@ -211,7 +213,8 @@ function checkFiniteEquippedPressure() {
   assert.equal(columns.find(column => column.th === 'Alive').td(ap).textContent, 'Protected');
   assert.equal(columns.find(column => column.th === 'HP').td(ap).textContent, '—');
   c.renderTftBreakdown(ad);
-  assert(h.element('tft-pressure-note').textContent.includes('All three dummies attack and cast'));
+  assert(h.element('tft-pressure-note').textContent.includes('The 3 frontline dummies attack and cast'));
+  assert(h.element('tft-pressure-note').textContent.includes('backline is a damage target only'));
   assert.equal(h.element('tft-pressure-details').hidden, false);
   assert(h.element('tft-selected-meta').textContent.includes('Attack Assassin · AD form · 1 range'));
   assert(h.element('tbd-hint').textContent.includes('takes incoming damage'));

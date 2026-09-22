@@ -43,8 +43,12 @@ mana, the ability casts when the bar fills — for the length of its cast
 animation (and channel) the unit neither attacks nor gains mana, then a
 fresh attack starts — damage goes through the
 armor/MR formula with sunder, shred, crit, Precision and post-mitigation
-damage amp. "spread" puts the dummies out of each other's reach (area
-abilities hit one), "clump" puts them together (area abilities hit all).
+damage amp. Every fight uses one formation: three frontliners screen two
+backliners, and only the frontline is within reach of a nearby area effect.
+"spread" puts the frontliners out of each other's reach (area abilities hit
+one), "clump" puts them together (area abilities hit all three); the
+backline stays outside such effects either way, so an ability reaches it
+only by naming the whole board or its own count of nearest enemies.
 Carry and fighter targets start with permanent Sunder and Shred supplied
 by the rest of the team. Reapplying the same effect does not reduce their
 resistances again; the strongest active percentage applies.
@@ -53,13 +57,14 @@ What a unit is scored on follows Riot's role label for it (the second word
 of "Attack Caster", "Magic Tank", …):
 
 - Marksman, Caster, Specialist — a carry: the dummies never hit back and
-  the build is ranked by the time to kill all three, then by damage.
-- Fighter, Assassin — a frontliner: the dummies hit back with the set's
-  median attacks and abilities, the unit can die, and the build is ranked
-  by kill time, then by damage dealt before dying.
-- Tank — three frontliners screen two backline damage dealers. Nearby
-  effects reach the frontline; the backline applies physical, mixed, or
-  magic-burst pressure, with continuous Wound, Sunder and Shred. Builds rank by hold
+  the build is ranked by the time to kill all five, then by damage.
+- Fighter, Assassin — a frontliner: the three frontliners hit back with the
+  set's median attacks and abilities and the unit can die; the backline is
+  a damage target only. Ranked by kill time, then by damage dealt before
+  dying.
+- Tank — the same three frontliners screen two backline damage dealers.
+  Nearby effects reach the frontline; here the backline applies physical,
+  mixed, or magic-burst pressure, with continuous Wound, Sunder and Shred. Builds rank by hold
   time, including on-death bodies. Survivors of the 60-second benchmark
   are compared again at twice the damage; surviving both is a tie.
 
@@ -149,9 +154,8 @@ ASSASSIN_OFFTARGET_REDUCTION = 0.15
 TANK_ROLE_TAG = "Role.Tank"
 PRISMATIC_STYLE = 5    # trait breakpoint styles at or above this are chase tiers
 
-FIGHT_DURATION = 20.0  # carries and frontliners
+FIGHT_DURATION = 30.0  # carries and frontliners: five dummies take longer
 TANK_DURATION = 60.0   # tanks are scored on how long they last, so longer
-N_DUMMIES = 3
 # User-selected shared approximation, not a decoded champion animation.
 # Applies to the first engagement and each current-target death, at equipped
 # range <= 2. Cooldowns overlap; immortal composition probes stay stationary.
@@ -166,11 +170,16 @@ CACHED_ROWS = 250
 CORE_TOLERANCE_PCT = 5.0
 CORE_CANDIDATES = 6
 
-# Synthetic comparisons: three nearest frontliners screen two damage dealers.
+# One formation for every fight: three nearest frontliners screen two damage
+# dealers. Only the frontline is within reach of a nearby area effect, so an
+# ability's own radius is what a clump can and cannot cover; whole-board and
+# nearest-N spells still reach the backline (Roger's call, 2026-09-21 — the
+# damage board used to be three dummies all inside every 1-hex effect, which
+# paid an area unit for covering every enemy that had to die).
 # Carry pressure is calibrated with itemized references in the Rust engine;
-# the three presets vary backline damage type/timing at the same DPS budget.
-TANK_FRONTLINERS = 3
-TANK_BACKLINERS = 2
+# the three tank presets vary backline damage type/timing at one DPS budget.
+FRONTLINERS = 3
+BACKLINERS = 2
 TANK_REFERENCE_DURATION = 20.0
 TANK_REFERENCE_CARRIES = (
     ("Aphelios", ("DA_GuinsoosRageblade", "DA_KrakensFury", "DA_InfinityEdge")),
@@ -206,8 +215,8 @@ TANK_DEBUFF_ROWS = {
 OBJECTIVE_BY_KIND = {"Tank": "tank", "Fighter": "fighter", "Assassin": "fighter",
                      "Marksman": "carry", "Caster": "carry", "Specialist": "carry"}
 OBJECTIVES = {
-    "carry": "the dummies never hit back; ranked by time to kill all three, then damage dealt",
-    "fighter": "the dummies hit back and the unit can die; ranked by kill time, then damage dealt before dying",
+    "carry": "three frontliners screen two backliners and none of them hit back; nearby effects reach the frontline, whole-board and nearest-N spells reach all five; ranked by time to kill all five, then damage dealt",
+    "fighter": "three frontliners screen two backliners; only the frontline hits back and the unit can die; ranked by kill time, then damage dealt before dying",
     "tank": "three frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; nearby effects reach the frontline while the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
 }
 PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies attacking
@@ -218,8 +227,8 @@ PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies att
 STARS = (1, 2, 3)
 STARS_BY_COST = {1: (1, 2, 3), 2: (1, 2, 3), 3: (1, 2, 3), 4: (1, 2), 5: (1, 2)}
 GEOMETRIES = {
-    "spread": "targets out of each other's reach: area abilities hit one",
-    "clump": "targets together: area abilities hit every one still standing",
+    "spread": "frontliners out of each other's reach: area abilities hit one",
+    "clump": "frontliners together: area abilities hit all three still standing",
 }
 TRAIT_CONTEXTS = {
     "bare": "no traits active",
@@ -1253,8 +1262,8 @@ def tank_threats(snap, star=DUMMY_STAR):
     tank = dummy["tank"]
     mana_rate = tank["manaPerAttack"] * tank["as"]
     cast_interval = tank["manaMax"] / mana_rate + MANA_LOCK_S
-    front_attacks = TANK_FRONTLINERS * tank["ad"] * dummy["critEv"] * tank["as"]
-    front_spells = TANK_FRONTLINERS * tank["ability"] / cast_interval
+    front_attacks = FRONTLINERS * tank["ad"] * dummy["critEv"] * tank["as"]
+    front_spells = FRONTLINERS * tank["ability"] / cast_interval
     frontline_dps = front_attacks + front_spells
     backline_dps = sum(reference["dps"] for reference in references)
     total_dps = frontline_dps + backline_dps
@@ -1264,8 +1273,8 @@ def tank_threats(snap, star=DUMMY_STAR):
         back_spells = backline_dps - back_attacks
         physical_spells = front_spells * tank["physicalShare"] + back_spells * profile["spellPhysicalShare"]
         profiles.append(dict(profile, key=key,
-                             attackers=TANK_FRONTLINERS + TANK_BACKLINERS,
-                             frontlineAttackers=TANK_FRONTLINERS, backlineAttackers=TANK_BACKLINERS,
+                             attackers=FRONTLINERS + BACKLINERS,
+                             frontlineAttackers=FRONTLINERS, backlineAttackers=BACKLINERS,
                              dps=total_dps, frontlineDps=frontline_dps, backlineDps=backline_dps,
                              frontlineAttackInterval=1.0 / tank["as"], frontlineCastInterval=cast_interval,
                              backlineAttackShare=profile["attackShare"],
@@ -1277,20 +1286,24 @@ def tank_threats(snap, star=DUMMY_STAR):
     return profiles
 
 
-def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
-    """A heavy first tank, median tanks after it, then a median non-tank.
-    The first tank uses fixed benchmark health/armor/MR; other defenses
-    come from the set's units at `star`. Tank-only effects (Giant Slayer's
-    amp) apply to the frontline, not to everything. Each carries its group's median
-    offense too, for the fights where the dummies hit back: attack damage
-    and speed, the ability's biggest number on its mana cadence, split
-    physical/magic by the group's share of Attack-type roles. A tank
-    `threat` uses three frontline targets and two protected backline sources
-    calibrated against itemized carry damage. `n` controls legacy fights."""
+def dummies_for(snap, star=DUMMY_STAR, threat=None):
+    """FRONTLINERS median tanks, the heaviest first, screening BACKLINERS
+    median non-tanks. The first tank uses fixed benchmark health/armor/MR;
+    other defenses come from the set's units at `star`. Tank-only effects
+    (Giant Slayer's amp) apply to the frontline, not to everything. Each
+    carries its group's median offense too, for the fights where the dummies
+    hit back: attack damage and speed, the ability's biggest number on its
+    mana cadence, split physical/magic by the group's share of Attack-type
+    roles.
+
+    Only the frontline is `nearby`, so an area effect that reaches "enemies
+    within N hexes" covers three of the five; whole-board and nearest-N
+    spells reach all five. On the damage board the backline is a target
+    only (`streams` 0): a fighter still eats the three attackers in front
+    of it, exactly as before. A tank `threat` arms the backline instead,
+    with two protected sources calibrated against itemized carry damage."""
     if threat is not None and threat not in TANK_THREATS:
         raise ValueError(f"unknown tank threat {threat!r}")
-    if n < 2:
-        raise ValueError("the benchmark requires at least two dummy slots")
     tanks = [u for u in snap.units.values() if u["kind"] == "Tank"]
     others = [u for u in snap.units.values() if u["kind"] != "Tank"]
     if not tanks or not others:
@@ -1312,18 +1325,24 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
                 "manaPerAttack": med(ROLE_MANA[u["kind"]] for u in casters),
                 "manaFromDamage": kind == "tank"}
     tank, other = median_of(tanks, "tank"), median_of(others, "non-tank")
-    slots = [dict(tank) for _ in range(n - 1)] + [dict(other)]
-    if n > 1:
-        slots[0].update(FRONT_TANK_DEFENSES)
-        slots[0]["fixedDefenses"] = True
+    # The damage board's own formation. A tank `threat` replaces these slots
+    # below with armed ones; everything before that point is shared.
+    slots = ([dict(tank, nearby=True, line="frontline", streams=1)
+              for _ in range(FRONTLINERS)]
+             + [dict(other, nearby=False, line="backline", streams=0)
+                for _ in range(BACKLINERS)])
+    slots[0].update(FRONT_TANK_DEFENSES)
+    slots[0]["fixedDefenses"] = True
+    n = len(slots)
     crit_ev = 1.0 + 0.25 * 0.4    # every unit's base crit
     # a tank is hit by the whole enemy board: BOARD_SIZE units split by the
-    # set's tank share, the tanks over the tank slots, the rest behind
+    # set's tank share, the tanks over the frontline, the rest behind
     n_tanks = round(BOARD_SIZE * len(tanks) / (len(tanks) + len(others)))
     board = [0] * n
     for i in range(n_tanks):
-        board[i % (n - 1)] += 1
-    board[-1] = BOARD_SIZE - n_tanks
+        board[i % FRONTLINERS] += 1
+    for i in range(BOARD_SIZE - n_tanks):
+        board[FRONTLINERS + i % BACKLINERS] += 1
 
     def dps(streams):   # pre-mitigation damage per second, casting on attacks alone
         out = 0.0
@@ -1336,36 +1355,36 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
            "targetDebuffs": target_debuffs(snap) if threat is None else {},
            "tanks": len(tanks), "others": len(others),
            "totalHp": sum(s["hp"] for s in slots),
-           "critEv": crit_ev, "pressureDps": dps([1] * n),
+           "critEv": crit_ev, "pressureDps": dps([s["streams"] for s in slots]),
            "board": board, "boardSize": BOARD_SIZE, "boardPressureDps": dps(board)}
     if threat is None:
         out["meleeRepositionSeconds"] = MELEE_REPOSITION_SECONDS
     if threat is not None:
         profile = next(p for p in tank_threats(snap, star) if p["key"] == threat)
         front = [dict(tank, nearby=True, line="frontline", label=f"Frontliner {i + 1}")
-                 for i in range(TANK_FRONTLINERS)]
+                 for i in range(FRONTLINERS)]
         front[0].update(FRONT_TANK_DEFENSES, fixedDefenses=True)
         for i, slot in enumerate(front):
             slot.update({
-                "attackStart": (i + 1) * profile["frontlineAttackInterval"] / TANK_FRONTLINERS,
+                "attackStart": (i + 1) * profile["frontlineAttackInterval"] / FRONTLINERS,
                 "castInterval": profile["frontlineCastInterval"],
                 "castStart": (slot["manaMax"] - slot["manaStart"]) / (slot["manaPerAttack"] * slot["as"])
-                             + i * profile["frontlineAttackInterval"] / TANK_FRONTLINERS,
+                             + i * profile["frontlineAttackInterval"] / FRONTLINERS,
                 "manaStart": 0.0, "manaPerAttack": 0.0, "manaFromDamage": False,
             })
         back = [dict(other, nearby=False, line="backline", label=f"Backline carry {i + 1}")
-                for i in range(TANK_BACKLINERS)]
-        per_attacker = profile["backlineDps"] / TANK_BACKLINERS
+                for i in range(BACKLINERS)]
+        per_attacker = profile["backlineDps"] / BACKLINERS
         for i, slot in enumerate(back):
             slot.update({
                 "ad": per_attacker * profile["backlineAttackShare"] * profile["attackInterval"] / crit_ev,
                 "as": 1.0 / profile["attackInterval"],
-                "attackStart": (i + 1) * profile["attackInterval"] / TANK_BACKLINERS,
+                "attackStart": (i + 1) * profile["attackInterval"] / BACKLINERS,
                 "ability": per_attacker * (1.0 - profile["backlineAttackShare"]) * profile["castInterval"],
                 "physicalShare": profile["backlineSpellPhysicalShare"],
                 "castInterval": profile["castInterval"],
                 "castStart": profile["castInterval"] if profile["burst"]
-                             else (i + 1) * profile["castInterval"] / TANK_BACKLINERS,
+                             else (i + 1) * profile["castInterval"] / BACKLINERS,
                 "manaStart": 0.0, "manaPerAttack": 0.0, "manaFromDamage": False,
             })
         slots = front + back
@@ -1735,8 +1754,11 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     if duration is None:
         duration = fight_duration(unit)
     board = objective == "tank"
+    # A tank fight maps the whole enemy board onto the slots; every other
+    # fight takes each slot's own count, which is 0 for the backline (a
+    # damage target that never attacks).
     streams = dummy_spec.get("board") if board else None
-    slots = [dict(s, streams=int(streams[i]) if streams else 1)
+    slots = [dict(s, streams=int(streams[i]) if streams else int(s.get("streams", 1)))
              for i, s in enumerate(dummy_spec["slots"])]
     kits = {"base": kit_spec(unit, star, None)}
     if unit.get("forms"):
@@ -2104,8 +2126,8 @@ def cell_paths(snap=None):
         if os.path.exists(p):
             with open(p, "rb") as f:
                 base.update(f.read())
-    base.update(json.dumps([FIGHT_DURATION, TANK_DURATION, N_DUMMIES, DUMMY_STAR, STAGE,
-                            CACHED_ROWS, sorted(SCENARIOS)]).encode())
+    base.update(json.dumps([FIGHT_DURATION, TANK_DURATION, FRONTLINERS, BACKLINERS,
+                            DUMMY_STAR, STAGE, CACHED_ROWS, sorted(SCENARIOS)]).encode())
     paths = {}
     for u in modeled_units(snap):
         slug = unit_slug(u)
@@ -3259,9 +3281,11 @@ def cmd_sim(args):
               + " — TFTraits' timeline, adopted, not verified in game")
     target_fx = spec["targetDebuffs"]
     print("  dummies: " + "; ".join(f"{s['hp']} HP / {s['armor'] * (1 - target_fx.get('sunder', 0)):g} armor / "
-                                    f"{s['mr'] * (1 - target_fx.get('shred', 0)):g} MR ({s['kind']})"
+                                    f"{s['mr'] * (1 - target_fx.get('shred', 0)):g} MR ({s['kind']}"
+                                    + (", backline" if s.get("nearby") is False else "") + ")"
                                     for s in dummy["slots"])
-          + f" — median {dummy['star']}★ of {dummy['tanks']} tanks and {dummy['others']} others")
+          + f" — median {dummy['star']}★ of {dummy['tanks']} tanks and {dummy['others']} others"
+          + f"; nearby effects reach the {FRONTLINERS} in front")
     if target_fx:
         print(f"  all targets: {target_fx.get('sunder', 0):.0%} Sunder and "
               f"{target_fx.get('shred', 0):.0%} Shred active from combat start; "

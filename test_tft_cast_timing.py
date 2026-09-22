@@ -739,10 +739,27 @@ class TestNoTimeline(unittest.TestCase):
     }
 
     @staticmethod
+    def legacy_board():
+        """The three-slot damage board and eight-unit split these numbers were
+        frozen against, before the formation put two dummies in a backline.
+        Pinned here so the fixture keeps testing the cast rules alone."""
+        base = tft.dummies_for(SNAP)
+        slots = [dict(base["tank"]), dict(base["tank"]), dict(base["other"])]
+        slots[0].update(tft.FRONT_TANK_DEFENSES, fixedDefenses=True)
+        n_tanks = round(tft.BOARD_SIZE * base["tanks"] / (base["tanks"] + base["others"]))
+        board = [0, 0, 0]
+        for i in range(n_tanks):
+            board[i % 2] += 1
+        board[-1] = tft.BOARD_SIZE - n_tanks
+        return dict(base, slots=slots, count=len(slots), board=board,
+                    totalHp=sum(s["hp"] for s in slots),
+                    targetDebuffs={}, meleeRepositionSeconds=0.0)
+
+    @staticmethod
     def fight(case, cast_timing):
         name, star, items, geometry = case
-        dummy = dict(tft.dummies_for(SNAP), targetDebuffs={}, meleeRepositionSeconds=0.0)
-        spec = tft.cell_spec(SNAP, SNAP.unit(name), star, geometry, [], dummy, None, None, ITEM_FX,
+        dummy = TestNoTimeline.legacy_board()
+        spec = tft.cell_spec(SNAP, SNAP.unit(name), star, geometry, [], dummy, 20.0, None, ITEM_FX,
                              TRAIT_FX, items=[item(i) for i in items], cast_timing=cast_timing)
         _, res = ENGINE.simulate(spec, True)
         return spec, {"killTime": res["killTime"], "total": res["total"], "attacks": res["attacks"],

@@ -539,6 +539,56 @@
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 
+- One formation for every fight (2026-09-21): the damage board was three
+  dummies, ALL of them flagged `nearby`, so every "enemies within N hexes"
+  effect covered every enemy that had to die — and the ranking is time to
+  clear the board, so a 1-hex cloud on 3 of 3 was paid three times its face
+  value. Roger spotted it on Gromp (his whole ability is such a cloud: 61%
+  of his damage, 5th of 42 clumped against 22nd spread) and asked for the
+  tank board's shape. Damage tests now use it: `FRONTLINERS` (3) median
+  tanks, the heaviest first, screening `BACKLINERS` (2) median non-tanks,
+  and ONLY the frontline is `nearby`. Nothing in the engine was added — the
+  distinction already existed and was inert: `f.aoe*`/`f.adjacent` respect
+  the flag (so they reach the three in front, or only the current target
+  when the frontline is spread) while `f.alive()` and `f.nearest(n)` never
+  did and still reach all five. `TANK_FRONTLINERS`/`TANK_BACKLINERS` were
+  renamed `FRONTLINERS`/`BACKLINERS` because both boards use them; the two
+  boards now differ in who ATTACKS, not in who is standing there. Knock-ons,
+  all deliberate: dummy health 6,240 -> 9,480, so `FIGHT_DURATION` is 30 s
+  (at 20 s, 27 of 42 units stopped clearing and the board collapsed into its
+  damage tiebreak; at 30 s five do, against three before); on the damage
+  board the backline is a target only (slot `streams` 0, read by `cell_spec`
+  when the objective is not tank), so a fighter still eats the three
+  attackers in front of it, though its pressure moves 200 -> 172 because
+  those three are now three frontliners rather than two tanks and a carry;
+  a tank `threat` arms all five as before. What moved on the clumped bare
+  board: Gromp 5 -> 18, and the large-radius kits fall hardest — Kennen
+  12 -> 38, Diana 9 -> 31, Lux 27 -> 42, Ahri 29 -> 40 — while whole-board
+  and nearest-N kits rise (Alune 33 -> 13, Mama Beak 28 -> 12). THAT IS THE
+  KNOWN LIMIT: `nearby` is a boolean, the engine's only notion of distance,
+  so a 1-hex cloud and a 3-hex bomb are still treated alike — both capped at
+  the frontline now instead of both reaching everything. Right for the many
+  small-radius abilities, wrong for the few large ones (Ahri `HexRadius` 3
+  aimed at the densest cluster within 4, Kennen's 2-hex firestorm). The fix
+  is per-ability radii, which needs a hand file: only 9 of the 30 drivers
+  using a nearby-limited helper have a radius row in Riot's data, the other
+  21 (Gromp included) state it in tooltip prose. Both golden sets were
+  regenerated. `TestNoTimeline`'s frozen flat-cast numbers now build the old
+  three-slot board and 20 s fight themselves, so they keep pinning the cast
+  rules alone. Prose, the dashboard's fight diagram and the CLI's dummy line
+  all show the two lines. Details: `data/tft/README.md` "One formation for
+  every fight".
+- Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
+  time for him, so the engine lands his bubble at the bin's `mCastTime`,
+  which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s
+  animation. Landing it at the end of the window, or at 0.25 s plus his own
+  missile flight (`missileSpeed` 1800 over `rangeWorld` 890 = 0.49 s), both
+  give the same cell and cost him about 1 s of kill time. 24 form timelines
+  have no effect time; re-ranking the old board under the late-landing rule
+  moved Gromp most of anyone near the top (5 -> 11), then Karma and LeBlanc.
+  NOT changed: it is a systemic default, not a Gromp fact, and the formation
+  above was the larger half of his number. Missile flight is not modeled for
+  any unit (40 have a `missileSpeed`).
 - Leaderboard audit (2026-09-20). Roger asked whether the unit-damage board
   was off; it was, for three independent reasons, and all three are fixed
   here. Read the three bullets below together — they were one change, and

@@ -376,8 +376,9 @@ class TestScheduledTankPressure(unittest.TestCase):
         sheet, res = ENGINE.simulate(spec, True)
         self.assertEqual(sheet["armor"], 110.0)
         self.assertEqual(sheet["mr"], 220.0)
-        self.assertEqual(res["dummyAttacks"], [0, 0, 0])
-        self.assertEqual(res["dummyCasts"], [3, 0, 0])
+        rest = [0] * (tft.FRONTLINERS + tft.BACKLINERS - 1)
+        self.assertEqual(res["dummyAttacks"], [0] + rest)
+        self.assertEqual(res["dummyCasts"], [3] + rest)
         hits = events(res, "take", "magic")
         self.assertEqual([e[0] for e in hits], [0.25, 1.25, 2.25])
         for hit in hits:
@@ -398,7 +399,8 @@ class TestScheduledTankPressure(unittest.TestCase):
                 _, res = ENGINE.simulate(spec, True)
                 self.assertEqual(res["casts"], 1)
                 self.assertEqual([e[0] for e in events(res, "take", "magic")], expected)
-                self.assertEqual(res["dummyCasts"], [len(expected), 0, 0])
+                self.assertEqual(res["dummyCasts"], [len(expected)]
+                                 + [0] * (tft.FRONTLINERS + tft.BACKLINERS - 1))
                 self.assertEqual(res["denied"], 0.0)
                 self.assertEqual(res["taken"], 100.0 * len(expected))
 
