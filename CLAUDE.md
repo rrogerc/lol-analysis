@@ -674,7 +674,10 @@
   measures the damage board. Gromp's clumped probe DPS falls 760 -> 610
   (-20%) and his area credit 1.65x -> 1.33x; Kayle (a line) and Warwick
   (single target) are unchanged at 436 and 361. The pressure sources are
-  untouched: only `position` was added.
+  untouched: only `position` was added. CORRECTION (2026-09-23): those were
+  standalone probes. The team measurement that scores boards rebuilt its
+  targets without the positions until "Positions reach the composition
+  team measurement" below, so this did not reach the board then.
   What that does NOT fix is the deeper half — the targets are immortal and
   the incoming pressure is a fixed external budget, so the model still
   cannot prefer removing an enemy over chipping three, and there is still
@@ -811,17 +814,33 @@
   optional `azirDamageMult` that `trait_spec` drops on a patch without the
   row, and his driver falls back to `DamageMult` there, as 18.1d's text says.
   Both golden sets were regenerated: 12 cells and 48 of 7,670 fights moved,
-  all Azir's low/high contexts. Found here and NOT fixed (Roger's call):
-  `theory_fight::Prepared::new` never copies a probe's `position`, so the
-  per-ability radii above do not reach the composition TEAM measurement (Gromp
-  3★ deals 17,510 there with or without lanes; the standalone probe falls to
-  14,059 with them). One line. Tests: `test_tft_trait_team` (only auras are
-  standing; the reduction reaches only targets Kog'Maw hits and runs out after
-  he dies; 18.2b Azir vs Mama Beak),
+  all Azir's low/high contexts. Found here and fixed in the next entry: the
+  per-ability radii never reached the composition team measurement. Tests:
+  `test_tft_trait_team` (only auras are standing; the reduction reaches only
+  targets Kog'Maw hits and runs out after he dies; 18.2b Azir vs Mama Beak),
   `test_tft_comp_traits.test_solar_true_damage_share_is_the_patch_row_not_a_half`,
   `test_tft_theory`, and the Rust `theory_fight::tests`. Not published: a
   composition warm (~2.5 h) is needed, and the scheduled refresh stops at
   review since Riot's 18.3 notes ("Blossom Charms Animate Shop Duration").
+- Positions reach the composition team measurement (2026-09-23): the radii
+  entry above says the theory probes carry the geometry's frontline lanes, and
+  `conditioned_spec` kept them, but `theory_fight::Prepared::new` rebuilt
+  every actor's targets with `Dummy::new` and never copied `position`, so in
+  the team measurement that actually scores boards a stated radius fell back
+  to the `nearby` rule (Gromp 3★ with Guinsoo's, Rabadon's and Shojin,
+  clumped: 17,510 team damage with or without lanes, 14,059 in his standalone
+  fight with them). One line copies it now. Effect on the 1,664 published
+  boards, same code otherwise: Gromp-carried boards -12.8% median (to -16.0%),
+  Nidalee -5.5%, Mama Beak -2.4%, 898 boards unchanged; 19 of 208 groups
+  change their best kept board, and in c2-clump-mixed Gromp carries 12 of the
+  26 best boards instead of all 26 (Kayle 13, Warwick 1). That is among the
+  boards the old search kept; the warm searches again. Cost: none measurable
+  (2.36-2.40 s either way on c2-clump-mixed's 208 boards, pinned and
+  interleaved). Standalone fights and both golden sets are untouched:
+  `make_dummies_for` always copied it. Test:
+  `test_tft.TestAbilityRadii.test_the_composition_team_measurement_keeps_the_positions`
+  (team damage equals the standalone fight with lanes and without; the old
+  engine is 24% over).
 - Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
   time for him, so the engine lands his bubble at the bin's `mCastTime`,
   which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s

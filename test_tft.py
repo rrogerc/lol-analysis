@@ -403,6 +403,38 @@ class TestAbilityRadii(unittest.TestCase):
         four = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:4]]
         self.assertNotIn("lane", tft.board_positions([dict(s) for s in four], "clump")[0])
 
+    def test_the_composition_team_measurement_keeps_the_positions(self):
+        # The composition score's shared measurement rebuilds its targets
+        # (theory_fight::Prepared) and used to drop their positions, so a
+        # stated radius fell back to the nearby rule there. A backliner under
+        # no pressure fights its standalone fight, so the two must agree with
+        # the lanes and without them.
+        from copy import deepcopy
+        from tft_unit_profiles import UnitProfiles
+        profiles = UnitProfiles(SNAP, "clump")
+        probe = dict(target_hp=3000.0, target_armor=100.0, target_mr=100.0, target_count=3)
+        specs = [profiles.spec(SNAP.unit("Gromp")["api"], 3, [], ["DA_GuinsoosRageblade",
+                               "DA_RabadonsDeathcap", "DA_SpearOfShojin"], **probe),
+                 profiles.spec(SNAP.unit("Leona")["api"], 2, [], ["DA_WarmogsArmor"] * 3, **probe)]
+
+        def damage(lanes):
+            board = deepcopy(specs)
+            for spec in board:
+                for slot in spec["dummies"]["slots"]:
+                    self.assertIsNotNone(slot["lane"])
+                    if not lanes:
+                        slot["lane"] = None
+            team = tft.engine().measure_theory_team(board, [False, True], 30.0, 50.0, 0.5)
+            _, alone = tft.engine().simulate(dict(board[0], duration=30.0), True)
+            return (team["samples"][0]["damage"],
+                    sum(event[2] for event in alone["trace"] if event[1] == "damage"))
+
+        placed, unplaced = damage(True), damage(False)
+        self.assertAlmostEqual(placed[0] / placed[1], 1.0, places=9)
+        self.assertAlmostEqual(unplaced[0] / unplaced[1], 1.0, places=9)
+        # Gromp's 1-hex cloud reaches two of the three packed frontliners.
+        self.assertLess(placed[0], unplaced[0] * 0.95)
+
 
 class TestManaCycle(unittest.TestCase):
     """Ashe with nothing: 7 mana per attack at 0.8 attacks/s, 2 regen/s,

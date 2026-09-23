@@ -774,6 +774,16 @@ Consequences, all deliberate:
   radius needs a hand file: only 9 of the 30 drivers that use a
   nearby-limited helper have a radius row in Riot's data.
 
+Since 2026-09-22 each ability has that radius: every slot carries a lane and
+a row (`tft.board_positions`), and an area with a stated radius (`kits.json`
+`radii`: 9 of Riot's rows, 9 transcribed from tooltips) selects the slots
+within |dlane| + |drow| of its epicentre (`Fight::within`); lines, cones and
+fixed-count spells keep the `nearby` rule. The composition score's team
+measurement uses the same positions only since 2026-09-23: it rebuilt its
+targets without them (`theory_fight::Prepared::new`), so a stated radius
+fell back to the `nearby` rule there. Restoring them took a median 12.8% off
+the published boards Gromp carries.
+
 ## Carry and fighter target defenses
 
 Every target in damage tests starts with team-supplied Sunder and Shred,

@@ -282,6 +282,9 @@ impl Prepared {
         let targets = spec.dummies.iter().map(|source| {
             let mut target = Dummy::new(source.hp, source.armor, source.mr, source.is_tank);
             target.nearby = source.nearby;
+            // Without it a stated radius fell back to the `nearby` rule here,
+            // so the per-ability radii never reached the composition score.
+            target.position = source.position;
             target.immortal = true;
             target.baseline_sunder = spec.target_debuffs.sunder;
             target.baseline_shred = spec.target_debuffs.shred;
