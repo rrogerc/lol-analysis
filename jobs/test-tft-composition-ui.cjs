@@ -498,9 +498,9 @@ function checkTeamCodes() {
   const members = apis => ({ units: apis.map(api => ({ api })) });
   const board = members(['TFT18_Ivern', 'TFT18_Lux_Base', 'TFT18_ElderDragon']);
   const code = context.tftCompositionTeamCode(board, planner);
-  assert.equal(code, '024054133fc000000000000000000000TFTSet18');
+  assert.equal(code, '024044053fc000000000000000000000TFTSet18');
   assert.equal(code.length, 40);
-  assert.deepEqual(code.slice(2, 32).match(/.{3}/g), ['405', '413', '3fc', ...Array(7).fill('000')]);
+  assert.deepEqual(code.slice(2, 32).match(/.{3}/g), ['404', '405', '3fc', ...Array(7).fill('000')]);
   const equipped = structuredClone(board);
   equipped.units.forEach(unit => Object.assign(unit, { star: 2, items: ['Warmogs Armor'], form: 'AD' }));
   equipped.units[2].slotCost = 2;
@@ -512,7 +512,7 @@ function checkTeamCodes() {
   for (const units of [[], [null], [{ api: 'missing' }], [board.units[0], board.units[0]], members(apis.slice(0, 11)).units]) {
     assert.throws(() => context.tftCompositionTeamCode({ units }, planner), undefined, 'Never export an incomplete or truncated roster');
   }
-  for (const bad of ['000', '1234', 'not-code', '405', null, 1043]) {
+  for (const bad of ['000', '1234', 'not-code', '404', null, 1043]) {
     const wrong = structuredClone(planner);
     wrong.unitCodes.TFT18_Lux_Base = bad;
     assert.throws(() => context.tftCompositionTeamCode(board, wrong));

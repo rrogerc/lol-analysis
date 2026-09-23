@@ -1105,7 +1105,11 @@
 - Composition clipboard export: each core and expanded level-nine upgrade has
   `Copy to TFT`, using the version-two Team Planner roster format. Import IDs
   come from `data/tft/set18/team-planner.json` (Riot client data with source and
-  asset joins); MetaTFT's combat lookup has stale IDs for Ivern and Lux. Codes
+  asset joins, pinned to 16.19 since 2026-09-23). Riot renumbered Ivern
+  (405 -> 404) and Lux (413 -> 405) in 16.18, so the 16.17 catalog exported
+  both wrongly through 18.2; re-check it against CommunityDragon's `latest`
+  `tftchampions-teamplanner.json` when a patch lands (nothing does this
+  automatically). MetaTFT's `code` already had the new IDs, but stays unused. Codes
   carry champions only, with Elder counted once; no items, stars, positions,
   Alpha or Lux origin. `tft_site._team_planner` adds `teamPlanner` to saved
   composition metadata and its presentation hash, preserving calculation

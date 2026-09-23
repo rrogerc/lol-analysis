@@ -203,9 +203,12 @@ browser blocks clipboard access, the page exposes a selected code for manual
 copying.
 
 [team-planner.json](set18/team-planner.json) pins all 65 champion IDs from
-[Riot's client planner export](https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json).
-The combat lookup's `code` fields are stale for Ivern and Lux and must not be
-used as a fallback. The [version-two encoder](https://github.com/nkhoit/tftkit/blob/1c0025d6883ae96d842e5fadaa9d3f28bc543899/web/traits/team-code.js)
+[Riot's client planner export](https://raw.communitydragon.org/16.19/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json)
+(16.19, live 18.3). Riot renumbered Ivern (405 → 404) and Lux (413 → 405) in the
+16.18 client; the catalog, first pinned from 16.17, exported both wrongly from
+18.2 until it was refreshed on September 23. Re-check it against the `latest`
+export when a patch lands. The combat lookup's `code` fields, a PBE build,
+already had the new IDs, but they are still not a fallback. The [version-two encoder](https://github.com/nkhoit/tftkit/blob/1c0025d6883ae96d842e5fadaa9d3f28bc543899/web/traits/team-code.js)
 uses `02`, ten three-digit hexadecimal champion IDs (empty entries `000`), and
 `TFTSet18`. Elder Dragon appears once. `tft_site.py` includes this catalog in
 composition presentation metadata, so copying needs no new simulations and

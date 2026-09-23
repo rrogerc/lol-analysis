@@ -461,11 +461,11 @@ class TestTeamPlannerCatalog(unittest.TestCase):
                 self.assertEqual(source["displayName"], snap.units[api]["name"])
                 self.assertEqual(source["tier"], snap.units[api]["cost"])
                 self.assertEqual(int(code, 16), source["teamPlannerCode"])
-        # The combat lookup's IDs would import the wrong units in these cases.
-        self.assertEqual(planner["unitCodes"]["TFT18_Ivern"], "405")
-        self.assertEqual(planner["unitCodes"]["TFT18_Lux_Base"], "413")
-        self.assertNotEqual(raw["TFT18_Ivern"]["code"], planner["unitCodes"]["TFT18_Ivern"])
-        self.assertNotEqual(raw["TFT18_Lux_Base"]["code"], planner["unitCodes"]["TFT18_Lux_Base"])
+        # Riot renumbered these two in the 16.18 client (live 18.2). The 16.17 IDs the
+        # catalog first pinned (405, 413) now import Lux for Ivern and nobody for Lux.
+        self.assertEqual(planner["unitCodes"]["TFT18_Ivern"], "404")
+        self.assertEqual(planner["unitCodes"]["TFT18_Lux_Base"], "405")
+        self.assertNotIn("413", planner["unitCodes"].values())
 
 
 if __name__ == "__main__":
