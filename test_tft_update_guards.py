@@ -215,6 +215,80 @@ class TestPublished18_2Review(unittest.TestCase):
         self.assertEqual(snap.audit['automatic']['reviewManifestHash'], tft.json_hash(self.manifest))
 
 
+class TestPublished18_3Review(unittest.TestCase):
+    """The real 18.2b -> 18.3 review, replayed on the archived inputs (patch-reviews/18.3-review.md)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.previous = tft.load_snapshot(18, '18.2b')
+        cls.published = tft.load_snapshot(18, '18.3')
+        active = Path(cls.published.dir)
+        cls.manifest = json.loads((active.parent / 'patch-reviews' / '18.3.json').read_text())
+        cls.tmp = tempfile.TemporaryDirectory()
+        staging = Path(cls.tmp.name) / '18.3'
+        staging.mkdir()
+        for name in ('metatft.json', 'bins.json', 'patchnotes.json', 'meta.json', 'communitydragon.json'):
+            shutil.copyfile(active / name, staging / name)
+        shutil.copyfile(Path(cls.previous.dir) / 'overrides.json', staging / 'overrides.json')
+        cls.candidate = tft.Snapshot(18, '18.3', directory=str(staging))
+        cls.notes = json.loads((staging / 'patchnotes.json').read_text())
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def reconcile(self, manifest):
+        with contextlib.redirect_stderr(io.StringIO()):   # Ivern's unmodeled-scaling warning
+            return tft_update.reconcile(self.candidate, self.previous, self.notes, review=manifest)
+
+    def test_the_manifest_reproduces_the_published_overrides_and_checks(self):
+        overrides, audit = self.reconcile(self.manifest)
+        self.assertEqual(overrides, self.published.overrides)
+        self.assertEqual(audit['checks'], self.published.audit['checks'])
+        self.assertEqual(len(audit['checks']), 147)
+        self.assertEqual(len(audit['automatic']['appliedChanges']), 29)
+        self.assertEqual(audit['sourceCrossCheck'], self.published.audit['sourceCrossCheck'])
+
+    def test_without_its_records_the_patch_stops_where_the_scheduled_runs_did(self):
+        bare = {**self.manifest, 'mappings': [], 'dispositions': [], 'sourceDisagreements': []}
+        with self.assertRaisesRegex(tft_update.ReviewRequired,
+                                    'Blossom Charms Animate Shop Duration: trait change needs an explicit reviewed field mapping'):
+            self.reconcile(bare)
+
+    def test_the_gromp_base_ad_row_needs_its_acknowledgement(self):
+        # A single base value spread over four stars sits 70% from the per-star
+        # AutoAttackDamage row, and the 30%-slow rows look closer to the guard.
+        stripped = deepcopy(self.manifest)
+        mapping = next(m for m in stripped['mappings'] if m['target'].get('row') == 'AutoAttackDamage')
+        self.assertEqual(mapping['siblingRowAcknowledgement']['rows'], ['SlowAmountAD', 'SlowAmountAd'])
+        del mapping['siblingRowAcknowledgement']
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'AutoAttackDamage may be the wrong row'):
+            tft_update._BoundReview(self.candidate, self.previous, self.notes, stripped)
+
+    def test_the_published_decisions(self):
+        snap = self.published
+        at = lambda curve, positions: [tft.curve_at(curve, p) for p in positions]
+        # Riot's note (and TFTraits), not the live client's 2/3/5/8
+        self.assertEqual(at(snap.traits['DA_18_Invoker']['curve']['InvokerManaBonus'], (1, 2, 3, 4)), [3, 4, 6, 8])
+        # 18.2 applied 60% while the row said 40%; 18.3 states the 60%
+        nidalee = snap.unit('Nidalee')
+        self.assertEqual(at(nidalee['forms']['AD']['curve']['ArmorIgnoreRatio'], (1, 2, 3)), [0.6, 0.6, 0.8])
+        # The AD form's attack damage comes from its own row, so the stat alone would not reach a fight
+        gromp = snap.unit('Gromp')
+        self.assertEqual(tft.kit_spec(gromp, 1, 'AD')['baseAd'], 50)
+        self.assertEqual(tft.kit_spec(gromp, 1, 'AD')['stats']['as'], 0.75)
+        self.assertEqual(tft.kit_spec(gromp, 1, 'AP')['baseAd'], 30)
+        findings, _ = tft.check_patch_notes(snap)
+        self.assertEqual([f for f in findings if f['status'] != 'current'], [])
+        explained = {(d['api'], d['stat']): (d['effective'], d['communitydragon'], d['disposition'])
+                     for d in snap.audit['sourceCrossCheck']['explained']}
+        self.assertEqual(explained[('TFT18_MasterYi', 'ad')], (60.0, 62.0, 'unresolved-riot-note-kept'))
+        self.assertEqual(len(explained), 7)
+        self.assertEqual([r['patch'] for r in snap.audit['reviews']], ['18.2', '18.2b', '18.3'])
+        self.assertEqual(snap.audit['reviews'][-1], self.manifest)
+        self.assertEqual(snap.audit['automatic']['reviewManifestHash'], tft.json_hash(self.manifest))
+
+
 class TestLookupChanges(Base):
     def record(self, target, lookup, decision='accept-lookup', **extra):
         before = tft_update._values(self.previous, target)

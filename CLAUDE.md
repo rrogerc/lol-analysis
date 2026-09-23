@@ -986,6 +986,50 @@
   numeric mappings. See `18.2-review.md` for source conflicts and retained
   geometry, terrain and summon-timing limitations. Regressions:
   `test_tft_{http,patch_parser,patch_review,update,refresh}.py`.
+- Patch 18.3 (2026-09-23): reviewed in `patch-reviews/18.3.json` and
+  `18.3-review.md`, published as `g-b8bcc8a7600a` (2 h 23 min, run through
+  `systemctl --user start lol-tft-refresh.service`). The scheduled refresh
+  had stopped on every run since Riot posted the notes, at the Blossom Charms
+  lines: Riot files the Blossom-empowered Wisps under TRAITS, and `_discover`
+  finds the Blossom trait by name and refuses to guess a row. That is the
+  updater working: every new trait line needs a mapping or a disposition.
+  The lookup is still MetaTFT's 2026-09-11 PBE build (byte-identical to
+  18.2b's), so all 29 combat lines are overrides (31 mappings), and 59
+  dispositions cover the Wisp, augment, bench, PvE and client lines. How far
+  to trust the sources on this patch: CommunityDragon's `latest` is now the
+  live 16.19 client, but it has no Set 18 ability values (the curve tables
+  are in neither the en_us export nor map22.bin) and its trait constants lag
+  the server (18.3's Defender, Hunter, Inferno and Coven values are absent).
+  Yet it moved Invoker's InvokerManaBonus to 2/3/5/8 where Riot's note says
+  3/4/6/8 (the note is applied) and AD Master Yi's attack damage to 62 where
+  Riot's 18.2 note says 60 (60 is kept); both are recorded as open. TFTraits
+  shows the 18.3 numbers but has also put Ashe, Camille, LeBlanc and Teemo
+  back at their pre-September 14 values, so it now looks derived from Riot's
+  notes and confirms our reading of them, not the game. Its starting mana
+  reads 0 for most units; do not use it for that. Two traps from Gromp's AD
+  form: an Adaptor form's base AD must be mapped on the form's own
+  AutoAttackDamage row as well as the stat, because `kit_spec` reads the
+  form's base AD from that row; and that mapping trips the wrong-row guard
+  (one base value spread over four stars against a per-star row), so it
+  carries a `siblingRowAcknowledgement`. Nidalee's AD form now ignores 60%
+  armor, which the game already did on 18.2 while the row said 40%. Do not
+  edit a manifest after a refresh has consumed it: the audit embeds it and
+  binds its hash. Same-code comparison (18.2b cells warmed on the current
+  engine): on the default damage board Cassiopeia #20 -> #16, Nidalee
+  #11 -> #9; Gromp, Azir and Veigar faster (Karma only with traits); Rammus
+  34 -> 44 s held at high traits; Hunters and Defenders down in trait
+  contexts. The publication
+  also carried the unpublished model changes of 2026-09-22/23 (radii in fights
+  and on the composition board, timed Sunder/Shred, Solar, Azir's Summoner
+  row, positions in the team measurement), which drive most of the composition
+  movement: Gromp carries 27 of c2-clump-mixed's 208 kept boards (163 before),
+  Warwick 123. `test_tft_update_guards.TestPublished18_3Review` replays the
+  review on the archived inputs. Seen and left alone: AP Kog'Maw attacks
+  with his unit record's 40 AD (no AP-form stats or AutoAttackDamageAP row)
+  where TFTraits says 30; `test_tft_core_cache`'s export test fails because
+  it mocks `builds.cell_paths` to `{}`, which the Builds leaderboard export
+  cannot index; `jobs/test-tft-damage-ui.cjs --cell` needs a Nidalee cell
+  with AP rows, and every current Nidalee cell keeps only AD builds.
 
 - Melee movement estimate (2026-09-09): the finite damage benchmark declares
   `MELEE_REPOSITION_SECONDS = 0.5` in `tft.py`. Equipped ranges 1–2 wait that

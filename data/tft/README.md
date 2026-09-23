@@ -1,25 +1,32 @@
 # TFT snapshots and live patches
 
 The active snapshot is the newest archived TFT patch, including hotfix
-suffixes (`18.1 < 18.1b < 18.1d < 18.2`). Patch 18.2 was reviewed against
-Riot's September 9 article, rebuilt and published on September 10. The
-[18.2 review](set18/patch-reviews/18.2-review.md) records the source mappings,
-remaining modeling limitations and publication verification. The archived
-18.1d snapshot retains its earlier review through the August 31 balance
-changes and September 1 bug-fix update.
+suffixes (`18.1 < 18.1b < 18.1d < 18.2 < 18.2b < 18.3`). Patch 18.3 was
+reviewed against Riot's September 22 article and published on September 23.
+The [18.3 review](set18/patch-reviews/18.3-review.md) records its mappings,
+the evidence behind them and the two source conflicts it leaves open: the live
+16.19 client disagrees with Riot's notes on Invoker's mana regeneration and on
+Master Yi's AD-form attack damage. The [18.2b review](set18/patch-reviews/18.2b-review.md)
+covers Riot's September 14 update of 18.2 and MetaTFT's regenerated lookup,
+the [18.2 review](set18/patch-reviews/18.2-review.md) the September 9 article.
+The archived 18.1d snapshot retains its earlier review through the August 31
+balance changes and September 1 bug-fix update.
 
 ## Sources
 
 - `metatft.json` contains structured unit stats, roles, ability formulas,
   item curves and trait curves. The currently available Set 18 lookup is
-  still marked PBE, generated August 16. It needs the documented live
-  corrections in `overrides.json`.
+  still marked PBE, generated September 11 and unchanged through 18.3, so
+  every 18.2b and 18.3 balance change is an audited correction in
+  `overrides.json`.
 - `communitydragon.json` archives the Set 18 portion of CommunityDragon's
-  export for asset references and comparisons. The export fetched on
-  September 5 was last modified August 29. It maps all 65 shop champions
-  and 36 traits, but lacks usable ability calculations and alternate
-  Adaptor forms, and retains several pre-hotfix stats. It cannot safely
-  replace the full simulation input.
+  export for asset references and comparisons. The export archived with 18.3
+  is the live 16.19 client (last modified September 23). It maps all 65 shop
+  champions and 36 traits with base stats and trait constants, but carries no
+  Set 18 ability values (the curve tables are not exported) and no alternate
+  Adaptor forms. Its constants also lag the server: on 18.3 it still has the
+  18.2 values of four trait rows the patch changes, and it disagrees with
+  Riot's note on Invoker. It cannot safely replace the full simulation input.
 - `bins.json` contains CommunityDragon's per-unit timings. Missing bins
   are recorded as stable 404 entries; exhausted transport/server errors stop
   a refresh without being mistaken for missing timing data.
