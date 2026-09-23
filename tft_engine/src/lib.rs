@@ -185,7 +185,7 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("manaOnTakedown", fx.mana_on_takedown)?;
     d.set_item("faeHeal", fx.fae_heal)?;
     d.set_item("summoner", fx.summoner.map(|s| {
-        (s.damage_mult, s.health_mult, s.extra_summons, s.extra_attacks, s.summon_power)
+        (s.damage_mult, s.health_mult, s.extra_summons, s.extra_attacks, s.summon_power, s.azir_damage_mult)
     }))?;
     d.set_item("caustic", fx.caustic)?;
     d.set_item("notes", fx.notes.clone())?;

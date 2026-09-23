@@ -247,6 +247,26 @@ class TestCompositionTraits(unittest.TestCase):
         self.assertAlmostEqual(effect["bonusMagicPct"], 0.095)
         self.assertAlmostEqual(effect["bonusTruePct"], 0.095)
 
+    def test_solar_true_damage_share_is_the_patch_row_not_a_half(self):
+        # 18.2b converts 40% of the bonus at five 3★ (Threshold2TrueDamage
+        # Conversion); 18.1d's row was 0.5, which the test above pins.
+        snap = tft.load_snapshot(18, "18.2b")
+        self.assertEqual(tft.curve_at(snap.traits["DA_18_Solar"]["curve"]["Threshold2TrueDamageConversion"], 1), 0.4)
+        names = ("Kayle", "Leona", "Sejuani", "Karma", "Kobuko")
+        for upgrades in (4, 5):
+            members = [{"api": snap.unit(name)["api"], "star": 3 if index < upgrades else 2}
+                       for index, name in enumerate(names)]
+            board = resolve_board_traits(snap, members)
+            effect = next(effect for effect in board["effects"][snap.unit("Karma")["api"]]
+                          if effect["name"] == "Solar")
+            bonus = 0.08 + 0.01 * upgrades
+            if upgrades < 5:
+                self.assertAlmostEqual(effect["bonusMagicPct"], bonus)
+                self.assertNotIn("bonusTruePct", effect)
+            else:
+                self.assertAlmostEqual(effect["bonusMagicPct"], bonus * 0.6)
+                self.assertAlmostEqual(effect["bonusTruePct"], bonus * 0.4)
+
     def test_lux_does_not_infer_an_avatar_variant_or_duplicate_traits(self):
         board = self.board("Lux", "Kayle", "Leona")
         self.assertEqual(self.trait(board, "Solar")["count"], 2)

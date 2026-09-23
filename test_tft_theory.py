@@ -353,11 +353,13 @@ class TestAggregateResponses(unittest.TestCase):
         evaluator = theory.Evaluator(SNAP, "spread", profiles=profiles)
         evaluator.scenarios = [scenario()]
         result = evaluator.evaluate(members, effects, selected, CARRY, TANK)
-        self.assertEqual(result["sharedUtility"], {"sunder": 0.3, "shred": 0.4,
+        # The on-hit Sunder is timed, applied per target inside the shared
+        # measurement; only the Shred aura is standing coverage.
+        self.assertEqual(result["sharedUtility"], {"sunder": 0.0, "shred": 0.4,
                                                    "itemBurnHolder": CARRY, "infernoBurnHolder": TANK})
         self.assertEqual(result["scenarios"][0]["damageDps"], 200)
         for api, _, conditions in profiles.calls:
-            self.assertEqual(conditions["target_sunder"], 0.3)
+            self.assertEqual(conditions["target_sunder"], 0.0)
             self.assertEqual(conditions["target_shred"], 0.4)
             self.assertEqual(conditions["item_burn"], api == CARRY)
             self.assertEqual(conditions["inferno_burn"], api == TANK)

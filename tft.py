@@ -1719,7 +1719,10 @@ def trait_spec(snap, api, col, trait_fx, unit):
         n = cnt[col - 1] if col - 1 < len(cnt) else cnt[-1]
         out["faeHeal"] = [rv(spec["faeHeal"]["threshold"]), rv(spec["faeHeal"]["healPerPixie"]) * n]
     if "summoner" in spec:
-        out["summoner"] = {k: rv(s) for k, s in spec["summoner"].items()}
+        # An optional row a patch lacks is left out, so the drivers fall
+        # back exactly as that patch's trait text does (AzirDamageMult).
+        out["summoner"] = {k: rv(s) for k, s in spec["summoner"].items()
+                           if not (isinstance(s, dict) and s.get("optional") and s["row"] not in c)}
     if spec.get("note"):
         out["note"] = spec["note"]
     return out
@@ -2971,7 +2974,8 @@ def trait_bonus_notes(snap, unit, api, column, trait_fx):
     if "summoner" in fx:
         bonuses = fx["summoner"]
         own = {"TFT18_Yorick": ("healthMult", "spirit Health"),
-               "TFT18_Azir": ("damageMult", "soldier damage"),
+               "TFT18_Azir": ("azirDamageMult" if "azirDamageMult" in bonuses else "damageMult",
+                             "soldier damage"),
                "TFT18_MamaBeak": ("damageMult", "summon damage")}.get(unit["api"])
         if own:
             notes.append(f"+{percent(bonuses[own[0]] - 1)} {own[1]}.")

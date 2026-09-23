@@ -320,8 +320,13 @@ beyond the native implementation limit fail explicitly rather than receiving
 a cutoff score.
 
 Ally healing and shields receive no team-EHP credit until a recipient-utilization
-model exists. Actual providers share the strongest Sunder/Shred as an opening
-uptime approximation. One provider owns each nonstacking ordinary/Inferno burn
+model exists. A timed Sunder/Shred (Caustic, Last Whisper, Void Staff, an
+ability's own) lands on the target its holder hits and lasts its duration
+there; allies hitting that same generic target share it while it runs, so
+nothing is reduced before the first hit or after the provider stops hitting
+(until 2026-09-22 the strongest provider covered every target from the first
+second). Only an aura (Evenshroud, Ionic Spark) is standing coverage of the
+frontline. One provider owns each nonstacking ordinary/Inferno burn
 channel; provider timing and replacement after death remain approximate. Target
 healing, target deaths, takedowns and executes are not modeled. Incoming
 antiheal tests the board's self sustain. Critical strikes use expected values.

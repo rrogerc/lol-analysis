@@ -261,21 +261,14 @@ impl Registered {
         }
         for value in getlist(input, "items")?.into_iter().chain(getlist(input, "traits")?) {
             let effect = dict_of(&value)?;
-            // Caustic reduces the shared target's armor and MR, just like
-            // item-provided on-hit reductions. Its local driver still keeps
-            // the hit timing; board coverage uses the same opening-uptime
-            // approximation as the other shared reduction providers.
-            if let Some(values) = getvecf(&effect, "caustic")? {
-                if let Some(&rate) = values.first() {
-                    providers.sunder = providers.sunder.max(rate);
-                    providers.shred = providers.shred.max(rate);
-                }
-            }
+            // Only an aura is standing coverage. A timed on-hit reduction
+            // (Caustic, Last Whisper, Void Staff, a driver's own) lands on
+            // the target its holder hits, for its duration, and the shared
+            // measurement hands that target's live state to every ally
+            // (theory_fight::Reductions) instead of crediting it everywhere
+            // from the first second.
             for (name, target) in [("sunder", &mut providers.sunder), ("shred", &mut providers.shred)] {
                 *target = target.max(getf(&effect, &format!("{name}Aura"), 0.0)?);
-                if let Some(values) = getvecf(&effect, &format!("{name}OnHit"))? {
-                    if let Some(&rate) = values.first() { *target = target.max(rate); }
-                }
             }
         }
         let items = spec.items.iter().collect::<Vec<_>>();

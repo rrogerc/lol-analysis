@@ -263,6 +263,9 @@ pub struct Summoner {
     pub extra_summons: Option<f64>,
     pub extra_attacks: Option<f64>,
     pub summon_power: Option<f64>,
+    /// Azir's own row from 18.2b on; absent before, when his soldiers read
+    /// `damage_mult` like Mama Beak's summons.
+    pub azir_damage_mult: Option<f64>,
 }
 
 /// One trait at one breakpoint, resolved (tft.trait_spec).
@@ -369,6 +372,7 @@ impl TraitFx {
                 extra_summons: getopt(&s, "extraSummons")?,
                 extra_attacks: getopt(&s, "extraAttacks")?,
                 summon_power: getopt(&s, "summonPower")?,
+                azir_damage_mult: getopt(&s, "azirDamageMult")?,
             }),
             None => None,
         };

@@ -137,7 +137,6 @@ _UNMODELED_NOTES = {
 _THEORY_COVERAGE_NOTES = {
     "DA_18_Adaptor": ["form is fixed from equipped bonus AD/AP before other traits; live tie rules and trait-driven form changes are not verified"],
     "DA_18_Battlemage": ["attacker count follows assigned generic pressure sources independently of outgoing area coverage; actual enemy targeting is not represented"],
-    "DA_18_Caustic": ["shared Sunder and Shred use an opening-uptime approximation; actual hit coverage, expiry and provider death are not tracked"],
     "DA_18_Executioner": ["bleed excludes true/raw damage and stops being measured after the holder dies; exact live proc eligibility is not verified"],
     "DA_18_Hunter": ["immortal targets usually keep the primary target fixed, so actual retargeting and damage-amp uptime are not represented"],
     "DA_18_Inferno": ["Wound has no value against generic targets that never heal; the nonstacking trait burn uses one provider"],
@@ -154,7 +153,8 @@ def _solar_effect(trait, column, three_stars):
     """The archived Solar effect applies to every champion, not just Solars.
 
     Its curve rows describe additive percentage points for each unique 3-star
-    champion. At five, half of that same bonus becomes true damage. In-combat
+    champion. At five, the Threshold2TrueDamageConversion share of that same
+    bonus becomes true damage (half through 18.2, 40% from 18.2b). In-combat
     four-star ascension remains outside the supported actor state.
     """
     curve = trait["curve"]
@@ -170,7 +170,8 @@ def _solar_effect(trait, column, three_stars):
               "bonusMagicPct": bonus,
               "shieldAtStart": [value("ShieldRatio") + per_star, value("ShieldDuration")]}
     if three_stars >= value("NumThreeStarThreshold2"):
-        effect.update(bonusMagicPct=bonus / 2, bonusTruePct=bonus / 2)
+        converted = value("Threshold2TrueDamageConversion")
+        effect.update(bonusMagicPct=bonus * (1.0 - converted), bonusTruePct=bonus * converted)
     return effect
 
 

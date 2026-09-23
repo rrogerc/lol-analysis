@@ -767,6 +767,61 @@
   [--budget N]`. Tests: `python3 -m unittest test_tft_removal` (the fixtures
   inject an explicit build map, because the archived snapshot the tests pin
   has no warm cells).
+- Timed reductions, Solar's true share and Azir's Summoner row (2026-09-22):
+  three fixes from Roger's trait review; nothing published yet (below). (1)
+  Composition scoring turned every timed Sunder/Shred into standing coverage:
+  `theory.rs` (and the reference `_providers`) folded Caustic, Last Whisper
+  and Void Staff into the `providers` baseline, so one of them took 30% off
+  every target's armor and MR, for every ally, from t=0. Kog'Maw sat on 1,540
+  of the 1,664 published boards, and the 124 without him carried Last Whisper,
+  Void Staff, Evenshroud or Ionic Spark instead, so the items had to move with
+  Caustic or the search would just swap him for them. Now only an aura
+  (`sunderAura`/`shredAura`) is standing coverage. A timed reduction lands on
+  the ally's own copy of the target it hits (the ordinary
+  `Fight::sunder`/`shred`, which set `Fight::reductions_changed`), and right
+  after that action `theory_fight::share_reductions` hands each target's
+  (strength, expiry) to every ally, before anyone else acts at that instant.
+  So nothing is reduced before the first hit, on targets the holder never hits
+  (Sivir's ricochets), or 4 s after he dies; Kayle's own 2★ Shred (`a.rs`,
+  which writes the target directly and so sets the flag itself) now reaches
+  allies the same way. Cost, pinned to CPU 2 and interleaved with the
+  pre-change engine on c2-clump-mixed's 208 boards: +1% (2.37 s against
+  2.33-2.37 s). Two slower first cuts gave bit-identical scores on all 1,664
+  boards: a full `synchronize` on every change (+22%) and comparing every
+  ally's targets at every synchronization (+10%, the scheduler visits every
+  ally at every step, most with nothing due); a debug build keeps that
+  comparison as a `debug_assert` against a driver that writes a reduction
+  without the flag. The merge keeps the strongest running strength to the
+  latest expiry, exact while every Set 18 timed reduction is 30% (Caustic 4 s,
+  Last Whisper 3 s, Void Staff 5 s). `sharedUtility.sunder/shred` now reports
+  aura coverage only. Measured against the pre-change engine (which reproduces
+  all 1,664 published scores exactly): Kog'Maw boards -0.63% median (-0.18 to
+  -4.62%), Last Whisper/Void Staff boards -1.85% median, aura boards
+  unchanged, Kayle boards +0.29%; Caustic's share of a rank-1 board's score
+  falls from a median 11.6% to 10.6%, and only 3 of 208 groups change their
+  best kept board. The shortcut cost little because the model has every
+  single-target ally focus the same generic target, which Kog'Maw re-shreds on
+  every hit (every 1.25 s even itemless at 2★): his dominance comes from that
+  abstraction and from 30% of 100/100 resists with no competing source, not
+  from the uptime shortcut. (2) Solar: `_solar_effect` split the five-3★ bonus
+  in half; it reads `Threshold2TrueDamageConversion` (0.4 on 18.2b, 0.5 on
+  18.1d, where the result is bit-identical). No published board has more than
+  two 3★ units. (3) Summoner: 18.2b gave Azir `AzirDamageMult` (+20%/+30%)
+  while Mama Beak keeps `DamageMult` (+45%/+67.5%); the mapping has an
+  optional `azirDamageMult` that `trait_spec` drops on a patch without the
+  row, and his driver falls back to `DamageMult` there, as 18.1d's text says.
+  Both golden sets were regenerated: 12 cells and 48 of 7,670 fights moved,
+  all Azir's low/high contexts. Found here and NOT fixed (Roger's call):
+  `theory_fight::Prepared::new` never copies a probe's `position`, so the
+  per-ability radii above do not reach the composition TEAM measurement (Gromp
+  3★ deals 17,510 there with or without lanes; the standalone probe falls to
+  14,059 with them). One line. Tests: `test_tft_trait_team` (only auras are
+  standing; the reduction reaches only targets Kog'Maw hits and runs out after
+  he dies; 18.2b Azir vs Mama Beak),
+  `test_tft_comp_traits.test_solar_true_damage_share_is_the_patch_row_not_a_half`,
+  `test_tft_theory`, and the Rust `theory_fight::tests`. Not published: a
+  composition warm (~2.5 h) is needed, and the scheduled refresh stops at
+  review since Riot's 18.3 notes ("Blossom Charms Animate Shop Duration").
 - Gromp's cast animation, still open (2026-09-21): TFTraits states no effect
   time for him, so the engine lands his bubble at the bin's `mCastTime`,
   which is a flat 0.25 for all 63 units in `bins.json` — inside a 1.02 s
@@ -1106,8 +1161,10 @@
   `pressureAllocation=persistent-source-targets`. UI rollout accepts saved
   v1/v2 generations using their original schemas and explanations.
   No item-duplicate penalty is added. Ally healing
-  and shields remain potential output with no team-EHP credit. Provider
-  Sunder/Shred use opening uptime; each nonstacking burn channel has one owner.
+  and shields remain potential output with no team-EHP credit. A timed
+  Sunder/Shred reaches only the target its holder hits, while it runs; only
+  auras are standing coverage (2026-09-22, "Timed reductions" above); each
+  nonstacking burn channel has one owner.
   Targets do not die/heal; executes, takedowns, hex movement and real lobby
   frequencies are outside this model. Do not tune assumptions to force an
   item category to win. See `data/tft/README.md` for the current methodology.

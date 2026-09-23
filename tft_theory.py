@@ -37,7 +37,7 @@ LIMITATIONS = [
     "Adjusted EHP is observed raw pressure spent (excluding overkill), observed denied damage, and remaining health/shield/body EHP. Effective self healing and consumed shields are already included and are not added twice.",
     "If the frontline survives the workload, estimated protection and damage capacity extend measured average throughput using remaining EHP. Temporary defenses and future ramping remain approximate. All protected damage stops at observed frontline collapse.",
     "Ally healing and shielding are reported as potential output and are not credited as team EHP without a recipient-utilization model.",
-    "Actual item and trait providers share their strongest Sunder/Shred as an opening uptime approximation. Only one provider per nonstacking burn channel is credited; provider timing and replacement after death remain approximations.",
+    "A timed Sunder/Shred (Caustic, Last Whisper, Void Staff, an ability's own) lands on the target its holder hits and lasts its duration there; allies hitting that same generic target share it while it runs. Only an aura (Evenshroud, Ionic Spark) is standing coverage. Only one provider per nonstacking burn channel is credited; burn provider timing and replacement after death remain approximations.",
     "Both layouts contain three immortal generic targets with fixed health and base defenses. Spread/clump changes adjacency coverage, not enemy population; spells selecting independent nearest enemies can reach multiple targets in either layout. Takedown/execute bonuses and hex movement are not modeled.",
     "The displayed pressure, damage mixes, target defenses and antiheal are explicit sensitivity assumptions, not estimated opponent frequencies.",
 ]
@@ -213,11 +213,11 @@ class ReferenceEvaluator:
                     regular = max(regular, spec["kits"]["base"]["rows"].get("BurnAmount", 0.0) / 100.0)
                 inferno = max([0.0] + [effect["burnOnHit"][0] for effect in spec["traits"]
                                       if effect.get("api") == "DA_18_Inferno" and effect.get("burnOnHit")])
-                reductions = {}
-                for name in ("sunder", "shred"):
-                    reductions[name] = max([0.0] + [effect.get(name + "Aura", 0.0) for effect in all_effects]
-                        + [effect[name + "OnHit"][0] for effect in all_effects if effect.get(name + "OnHit")]
-                        + [effect["caustic"][0] for effect in all_effects if effect.get("caustic")])
+                # Only an aura is standing coverage. Timed on-hit reductions
+                # (Caustic, Last Whisper, Void Staff) are applied per target
+                # inside the shared native measurement, as in theory.rs.
+                reductions = {name: max([0.0] + [effect.get(name + "Aura", 0.0) for effect in all_effects])
+                              for name in ("sunder", "shred")}
                 self.provider_inputs[key] = regular, inferno, reductions
             regular, inferno, reductions = self.provider_inputs[key]
             providers[api] = regular, inferno

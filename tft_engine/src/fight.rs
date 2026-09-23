@@ -730,6 +730,10 @@ pub struct Fight<'a, D: Driver> {
     pub trace: Option<Vec<Ev>>,
     pub(crate) team_mode: bool,
     pub(crate) team_effects: Vec<TeamEffect>,
+    /// Set by every timed Sunder/Shred this unit applies (`sunder`, `shred`,
+    /// a driver's own), so a theory actor can share it without comparing
+    /// every target's state after every action.
+    pub(crate) reductions_changed: bool,
     /// Theory actors keep local target damage while sharing real cast events.
     pub(crate) shared_casts: bool,
     pub(crate) sleeps: Option<SharedSleep>,
@@ -849,6 +853,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             trace: None,
             team_mode: false,
             team_effects: Vec::new(),
+            reductions_changed: false,
             shared_casts: false,
             sleeps: None,
             sleep_source: 0,
@@ -1897,6 +1902,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     pub fn sunder(&mut self, target: usize, pct: f64, dur: f64) {
+        self.reductions_changed = true;
         let t = self.t;
         let d = &mut self.targets[target];
         if self.team_mode {
@@ -1917,6 +1923,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     pub fn shred(&mut self, target: usize, pct: f64, dur: f64) {
+        self.reductions_changed = true;
         let t = self.t;
         let d = &mut self.targets[target];
         if self.team_mode {

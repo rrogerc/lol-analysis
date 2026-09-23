@@ -32,6 +32,37 @@ const EPS: f64 = 1e-9;
 
 fn invalid(message: impl Into<String>) -> PyErr { PyValueError::new_err(message.into()) }
 
+/// One target's timed percentage Sunder and Shred as a `Dummy` holds them,
+/// (strength, expiry) each. A reduction is applied by the ally whose hit
+/// carries it (Caustic, Last Whisper, Void Staff, a driver's own) to its own
+/// copy of the target; `share_reductions` hands the change to every ally
+/// before anyone else acts at that instant, so a reduction helps exactly the
+/// damage that lands on that target while it lasts. Auras stay standing
+/// coverage (`baseline_*`).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+struct Reductions {
+    sunder: (f64, f64),
+    shred: (f64, f64),
+}
+
+impl Reductions {
+    fn of(target: &Dummy) -> Self {
+        Self { sunder: (target.sunder, target.sunder_until), shred: (target.shred, target.shred_until) }
+    }
+
+    /// Fold one ally's view in the way `Fight::sunder` folds a second
+    /// application on one target: the strongest strength still running,
+    /// lasting to the latest expiry. An expired view adds nothing.
+    fn merge(&mut self, view: Reductions, time: f64) {
+        for (shared, local) in [(&mut self.sunder, view.sunder), (&mut self.shred, view.shred)] {
+            if local.1 > time {
+                shared.0 = shared.0.max(local.0);
+                shared.1 = shared.1.max(local.1);
+            }
+        }
+    }
+}
+
 pub(crate) struct Measurement {
     pub samples: Vec<ResponseSample>,
     pub elapsed: f64,
@@ -61,6 +92,9 @@ trait Actor {
     fn collect_flat(&self, flat: &mut [(f64, f64)]);
     fn sync_flat(&mut self, flat: &[(f64, f64)]);
     fn changed_flat(&self) -> bool;
+    fn collect_reductions(&self, shared: &mut [Reductions], time: f64);
+    fn sync_reductions(&mut self, shared: &[Reductions]);
+    fn changed_reductions(&self) -> bool;
     fn observe(&mut self, time: f64) -> ResponseSample;
 }
 
@@ -101,12 +135,14 @@ impl<D: Driver + 'static> Seed for TypedSeed<D> {
         D::init(&mut fight);
         let clock = TeamClock::new(&fight.fx);
         let flat_baseline = vec![(0.0, 0.0); fight.targets.len()];
-        Box::new(Champion { fight, clock, flat_baseline, source_mask })
+        let reduction_baseline = vec![Reductions::default(); fight.targets.len()];
+        Box::new(Champion { fight, clock, flat_baseline, reduction_baseline, source_mask })
     }
 }
 
 struct Champion<'a, D: Driver> {
-    fight: Fight<'a, D>, clock: TeamClock, flat_baseline: Vec<(f64, f64)>, source_mask: u8,
+    fight: Fight<'a, D>, clock: TeamClock, flat_baseline: Vec<(f64, f64)>,
+    reduction_baseline: Vec<Reductions>, source_mask: u8,
 }
 impl<D: Driver> Actor for Champion<'_, D> {
     fn sleep_tracker(&mut self, tracker: SharedSleep, source: usize) {
@@ -171,12 +207,34 @@ impl<D: Driver> Actor for Champion<'_, D> {
         self.fight.targets.iter().zip(&self.flat_baseline).any(|(target, baseline)|
             target.armor_flat != baseline.0 || target.mr_flat != baseline.1)
     }
+    fn changed_reductions(&self) -> bool {
+        // The flag is what runs; comparing every target is the slow truth it
+        // stands for (a driver writing a reduction without it would show here).
+        debug_assert!(self.fight.reductions_changed
+            || self.fight.targets.iter().zip(&self.reduction_baseline).all(|(target, baseline)|
+                Reductions::of(target) == *baseline),
+            "a timed Sunder/Shred changed without setting Fight::reductions_changed");
+        self.fight.reductions_changed
+    }
     fn sync_flat(&mut self, flat: &[(f64, f64)]) {
         for ((target, baseline), shared) in self.fight.targets.iter_mut().zip(&mut self.flat_baseline).zip(flat) {
             target.armor_flat = shared.0;
             target.mr_flat = shared.1;
             *baseline = *shared;
         }
+    }
+    fn collect_reductions(&self, shared: &mut [Reductions], time: f64) {
+        for (shared, target) in shared.iter_mut().zip(&self.fight.targets) {
+            shared.merge(Reductions::of(target), time);
+        }
+    }
+    fn sync_reductions(&mut self, shared: &[Reductions]) {
+        for ((target, baseline), shared) in self.fight.targets.iter_mut().zip(&mut self.reduction_baseline).zip(shared) {
+            (target.sunder, target.sunder_until) = shared.sunder;
+            (target.shred, target.shred_until) = shared.shred;
+            *baseline = *shared;
+        }
+        self.fight.reductions_changed = false;
     }
     fn observe(&mut self, time: f64) -> ResponseSample { self.fight.response_sample(time) }
 }
@@ -325,6 +383,7 @@ impl Targeting {
 struct SharedTargets {
     stuns: [f64; INCOMING_SOURCE_COUNT],
     flat: Vec<(f64, f64)>,
+    reductions: Vec<Reductions>,
     sleeps: Option<SharedSleep>,
 }
 impl SharedTargets {
@@ -343,6 +402,20 @@ fn synchronize(actors: &mut [Box<dyn Actor + '_>], shared: &mut SharedTargets, t
         actor.sync_flat(&shared.flat);
     }
     targeting.refresh(actors, time);
+}
+
+/// Hand every target's live timed Sunder/Shred to all allies. Each ally
+/// leaves holding the same merged view, so the copies stay identical (and
+/// run out together) until one of them changes its own. Only an actor's own
+/// hits do that (its events, attacks and reactions to incoming damage; an
+/// allied Spellweaver cast adds AP and a wake-up is a plain `deal`), and the
+/// scheduler shares each change right after that action, before anyone else
+/// acts at the same instant. Scanning every ally at every synchronization
+/// instead cost a fifth of the whole measurement.
+fn share_reductions(actors: &mut [Box<dyn Actor + '_>], shared: &mut SharedTargets, time: f64) {
+    shared.reductions.fill(Reductions::default());
+    for actor in actors.iter() { actor.collect_reductions(&mut shared.reductions, time); }
+    for actor in actors.iter_mut() { actor.sync_reductions(&shared.reductions); }
 }
 
 fn settle_wakes(actors: &mut [Box<dyn Actor + '_>], shared: &mut SharedTargets,
@@ -396,6 +469,7 @@ fn distribute(actors: &mut [Box<dyn Actor + '_>], fronts: &[bool], time: f64,
         share_casts(actors, owner, time);
         settle_wakes(actors, shared, targeting, time);
         if actors[owner].changed_flat() { synchronize(actors, shared, targeting, time); }
+        if actors[owner].changed_reductions() { share_reductions(actors, shared, time); }
         targeting.refresh(actors, time);
     }
     Err(invalid("theoretical pressure could not make progress through finite health pools"))
@@ -462,7 +536,8 @@ pub(crate) fn measure(specs: &[Arc<CellSpec>], fronts: &[bool], window: f64, pre
         for (source, actor) in actors.iter_mut().enumerate() { actor.sleep_tracker(Rc::clone(tracker), source); }
     }
     let mut shared = SharedTargets { stuns: [0.0; INCOMING_SOURCE_COUNT],
-                                    flat: vec![(0.0, 0.0); count], sleeps };
+                                    flat: vec![(0.0, 0.0); count],
+                                    reductions: vec![Reductions::default(); count], sleeps };
     let mut source = 0;
     let mut elapsed = 0.0;
     let mut last_pressure = 0.0;
@@ -470,6 +545,9 @@ pub(crate) fn measure(specs: &[Arc<CellSpec>], fronts: &[bool], window: f64, pre
     let mut pulse = 1usize;
     let mut control = 1usize;
     synchronize(&mut actors, &mut shared, &mut targeting, 0.0);
+    if actors.iter().any(|actor| actor.changed_reductions()) {
+        share_reductions(&mut actors, &mut shared, 0.0);
+    }
     while elapsed < window && any_front(&actors, &front_order) {
         let next_pressure = (pulse as f64 * PRESSURE_INTERVAL).min(window);
         let next_control = if control_duration > 0.0 { control as f64 * control_interval } else { FAR };
@@ -493,6 +571,9 @@ pub(crate) fn measure(specs: &[Arc<CellSpec>], fronts: &[bool], window: f64, pre
             settle_wakes(&mut actors, &mut shared, &mut targeting, elapsed);
             if actors[index].changed_flat() {
                 synchronize(&mut actors, &mut shared, &mut targeting, elapsed);
+            }
+            if actors[index].changed_reductions() {
+                share_reductions(&mut actors, &mut shared, elapsed);
             }
             targeting.refresh(&mut actors, elapsed);
             if !any_front(&actors, &front_order) { break; }
@@ -521,6 +602,9 @@ pub(crate) fn measure(specs: &[Arc<CellSpec>], fronts: &[bool], window: f64, pre
             settle_wakes(&mut actors, &mut shared, &mut targeting, elapsed);
             if actors[index].changed_flat() {
                 synchronize(&mut actors, &mut shared, &mut targeting, elapsed);
+            }
+            if actors[index].changed_reductions() {
+                share_reductions(&mut actors, &mut shared, elapsed);
             }
             targeting.refresh(&mut actors, elapsed);
             if !any_front(&actors, &front_order) { break; }
@@ -554,6 +638,27 @@ pub(crate) fn theory_opening<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, fr
     }
     let sample = py.detach(|| opening(&spec, front))?;
     crate::response_to_py(py, &sample)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shared_reductions_keep_the_strongest_running_view_and_drop_expired_ones() {
+        let mut shared = Reductions::default();
+        // One ally's Caustic runs to 5 s; another's Void Staff Shred to 7 s.
+        shared.merge(Reductions { sunder: (0.3, 5.0), shred: (0.3, 5.0) }, 2.0);
+        shared.merge(Reductions { sunder: (0.0, 0.0), shred: (0.3, 7.0) }, 2.0);
+        assert_eq!(shared, Reductions { sunder: (0.3, 5.0), shred: (0.3, 7.0) });
+        // A view that has run out adds nothing, however strong it was.
+        shared.merge(Reductions { sunder: (0.9, 2.0), shred: (0.9, 1.0) }, 2.0);
+        assert_eq!(shared, Reductions { sunder: (0.3, 5.0), shred: (0.3, 7.0) });
+        // Once no ally's view is running, nothing carries forward.
+        let mut later = Reductions::default();
+        later.merge(Reductions { sunder: (0.3, 5.0), shred: (0.3, 7.0) }, 7.0);
+        assert_eq!(later, Reductions::default());
+    }
 }
 
 #[pyfunction]

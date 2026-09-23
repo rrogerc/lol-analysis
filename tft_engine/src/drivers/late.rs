@@ -335,7 +335,11 @@ impl Driver for Azir {
             return;
         }
         f.drv.commands = n - 1;
-        let mult = (f.drv.soldiers as f64) * f.fx.summoner_get(|s| s.damage_mult, 1.0);
+        // Summoner gives Azir his own multiplier from 18.2b on (+20%/+30%
+        // against the +45%/+67.5% Mama Beak keeps); earlier patches' trait
+        // text sends his soldiers through the shared row.
+        let mult = (f.drv.soldiers as f64)
+            * f.fx.summoner_get(|s| s.azir_damage_mult.or(s.damage_mult), 1.0);
         f.hit_ability(f.drv.strike, Some(target), "soldiers", mult);
         if n == 1 {
             f.as_extra_until = f.t;

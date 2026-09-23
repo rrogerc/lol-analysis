@@ -399,6 +399,7 @@ impl Driver for Kayle {
             if f.team_mode {
                 f.shred(target, pct, dur);
             } else {
+                f.reductions_changed = true;
                 let t = f.t;
                 let d = f.dm(target);
                 if d.baseline_shred == 0.0 || pct > d.baseline_shred {
