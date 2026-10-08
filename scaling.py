@@ -245,9 +245,191 @@ SOLOQ_ROLE_MAP = {"TOP": "top", "JUNGLE": "jungle", "MIDDLE": "middle",
 SOLOQ_SLUG_FIXES = {"monkeyking": "wukong"}
 
 
-def cmd_import_soloq(args):
+# A chunk of the crawl is at most this much parquet, and this many files
+# (each file's footer stays in memory while its chunk is read); the crawl's
+# shards run from 20 KB to 900 KB. See crawl_snapshot.
+CRAWL_CHUNK_BYTES = 256 << 20
+CRAWL_CHUNK_FILES = 1000
+
+
+def crawl_snapshot(quant_dir):
+    """The crawl's participants parquet as it is now: (part_dir, chunks,
+    schema), `chunks` being its file list cut into consecutive groups of at
+    most CRAWL_CHUNK_BYTES and CRAWL_CHUNK_FILES.
+
+    Read it through crawl_chunks, never as one dataset over every file: a
+    dataset keeps the parquet footer of each file it has scanned, and over
+    the crawl's ~53k uncompacted files a one-column scan alone outgrew 6 GB
+    (2026-10-07). The file list is fixed here, so every pass of a sync reads
+    the same rows while the crawler keeps adding files."""
+    import pyarrow.dataset as pads
+
+    part_dir = os.path.join(quant_dir, "data", "parquet", "participants")
+    if not os.path.isdir(part_dir):
+        sys.exit(f"No participants parquet at {part_dir} — check --quant-dir.")
+    dataset = pads.dataset(part_dir, format="parquet")
+    if not dataset.files:
+        sys.exit(f"No participants parquet files under {part_dir}.")
+    chunks, size = [[]], 0
+    for path in dataset.files:
+        n = os.path.getsize(path)
+        if chunks[-1] and (size + n > CRAWL_CHUNK_BYTES
+                           or len(chunks[-1]) >= CRAWL_CHUNK_FILES):
+            chunks.append([])
+            size = 0
+        chunks[-1].append(path)
+        size += n
+    return part_dir, chunks, dataset.schema
+
+
+def crawl_chunks(snapshot):
+    """A dataset over each chunk of a snapshot's files, with the whole
+    crawl's schema. A count or sum taken per chunk is the crawl's once added
+    up across chunks."""
+    import pyarrow.dataset as pads
+
+    _, chunks, schema = snapshot
+    for files in chunks:
+        yield pads.dataset(files, schema=schema, format="parquet")
+
+
+class _Codes:
+    """Strings (None included) to dense integer codes, in first-seen order."""
+
+    def __init__(self):
+        self.code, self.names = {}, []
+
+    def _get(self, name):
+        code = self.code.get(name)
+        if code is None:
+            code = self.code[name] = len(self.names)
+            self.names.append(name)
+        return code
+
+    def encode(self, column):
+        import numpy as np
+        import pyarrow.compute as pc
+
+        enc = pc.dictionary_encode(column.combine_chunks(), null_encoding="encode")
+        lut = np.fromiter(map(self._get, enc.dictionary.to_pylist()), np.int64,
+                          len(enc.dictionary))
+        return lut[enc.indices.to_numpy()]
+
+
+def _sum_by_key(keys, counts):
+    """Sorted unique `keys` and the summed `counts` of each."""
+    import numpy as np
+
+    if not len(keys):
+        return keys, counts
+    order = np.argsort(keys, kind="stable")  # merges the already-sorted runs
+    keys, counts = keys[order], counts[order]
+    del order
+    starts = np.flatnonzero(np.r_[True, keys[1:] != keys[:-1]])
+    return keys[starts], np.add.reduceat(counts, starts)
+
+
+def _player_games(snapshot, filt):
+    """Games per (puuid, role, champion) over a snapshot's rows: the counts a
+    group_by over every row would give, taken a chunk at a time on integer
+    codes, since the crawl's tens of millions of distinct player keys don't
+    fit in memory as 78-character puuid strings.
+
+    Returns {"keys": sorted puuid << 24 | role << 16 | champion codes,
+    "games": their counts, "names": {column: the strings the codes index},
+    "rows": rows read}. The mastery and one-trick tiers both filter on it."""
+    import numpy as np
+    import pyarrow as pa
+
+    puuids, roles, champs = _Codes(), _Codes(), _Codes()
+    keys, counts = np.empty(0, np.int64), np.empty(0, np.int32)
+    pending, rows = [], 0
+
+    def merge():
+        nonlocal keys, counts, pending
+        merged = (np.concatenate([keys, *(k for k, _ in pending)]),
+                  np.concatenate([counts, *(n for _, n in pending)]))
+        keys = counts = pending = None  # free the inputs before sorting
+        keys, counts = _sum_by_key(*merged)
+        pending = []
+        _release_memory()
+
+    for chunk in crawl_chunks(snapshot):
+        table = chunk.to_table(columns=["puuid", "role", "champion"], filter=filt)
+        rows += table.num_rows
+        # key = puuid << 24 | role << 16 | champion
+        key = (puuids.encode(table["puuid"]) << 24 | roles.encode(table["role"]) << 16
+               | champs.encode(table["champion"]))
+        if len(roles.names) > 0xFF or len(champs.names) > 0xFFFF:
+            sys.exit("Too many distinct roles or champions to pack into a key.")
+        unique, n = np.unique(key, return_counts=True)
+        pending.append((unique, n.astype(np.int32)))
+        if sum(len(k) for k, _ in pending) > 16_000_000:
+            merge()
+    merge()
+    return {"keys": keys, "games": counts, "rows": rows,
+            "names": {"puuid": pa.array(puuids.names, pa.string()),
+                      "role": pa.array(roles.names, pa.string()),
+                      "champion": pa.array(champs.names, pa.string())}}
+
+
+def _player_filter(players, args):
+    """The keys a mastery or one-trick tier keeps — (puuid, champion) or
+    (puuid, role, champion) — as a table to inner-join the rows with, from
+    the counts of _player_games."""
+    import numpy as np
+    import pyarrow as pa
+
+    keys, games = players["keys"], players["games"]
+    if args.otp_share:
+        # One-tricks: the champion makes up >= X% of the player's games in the
+        # role, with a floor on champion games so tiny samples don't qualify.
+        floor = args.min_champ_games or 20
+        # keys are sorted, so each (puuid, role) is one run of them
+        player_role = keys >> 16
+        starts = np.flatnonzero(np.r_[True, player_role[1:] != player_role[:-1]])
+        del player_role
+        role_games = (np.repeat(np.add.reduceat(games, starts), np.diff(np.r_[starts, len(keys)]))
+                      if len(keys) else games)
+        share = games.astype(np.float64) / role_games.astype(np.float64)
+        kept = keys[(share >= args.otp_share / 100) & (games >= floor)]
+        del starts, role_games, share
+        cols = {"puuid": kept >> 24, "role": kept >> 16 & 0xFF, "champion": kept & 0xFFFF}
+    else:
+        # Keep only games where the pilot has >= N season games on that champion.
+        pairs, pair_games = _sum_by_key(keys >> 24 << 16 | keys & 0xFFFF, games)
+        kept = pairs[pair_games >= args.min_champ_games]
+        del pairs, pair_games
+        cols = {"puuid": kept >> 16, "champion": kept & 0xFFFF}
+    return pa.table({name: players["names"][name].take(pa.array(c))
+                     for name, c in cols.items()})
+
+
+def _release_memory():
+    """Hand memory freed so far back to the OS. Arrow's allocator and glibc's
+    heap otherwise keep what one step of a sync freed, and the next step's
+    peak lands on top of it; called after each merge of the player counts
+    and after each tier."""
+    import ctypes
+
+    import pyarrow as pa
+
+    pa.default_memory_pool().release_unused()
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        pass  # not glibc
+
+
+def cmd_import_soloq(args, crawl=None):
     """Aggregate lol-quant's Riot-API soloq parquet into stats rows
-    (patch/tier/champion/lane/bucket games+wins)."""
+    (patch/tier/champion/lane/bucket games+wins).
+
+    The ~130M participant rows don't fit in memory, so the crawl is read a
+    chunk of files at a time (crawl_chunks) and every count is added up
+    across chunks: memory follows the distinct keys, not the rows. `crawl`,
+    a dict, lets cmd_sync's tiers share one snapshot and one count of the
+    players' games."""
     try:
         import pyarrow as pa
         import pyarrow.compute as pc
@@ -258,74 +440,73 @@ def cmd_import_soloq(args):
     if not args.tier:
         args.tier = ("soloq_otp" if args.otp_share else
                      "soloq_mastery" if args.min_champ_games else "soloq_masters_plus")
-    part_dir = os.path.join(args.quant_dir, "data", "parquet", "participants")
-    if not os.path.isdir(part_dir):
-        sys.exit(f"No participants parquet at {part_dir} — check --quant-dir.")
+    crawl = {} if crawl is None else crawl
+    if "snapshot" not in crawl:
+        crawl["snapshot"] = crawl_snapshot(args.quant_dir)
+    snapshot = crawl["snapshot"]
+    part_dir = snapshot[0]
 
     filt = pads.field("role").isin(list(SOLOQ_ROLE_MAP))
     if args.platforms:
         filt = filt & pads.field("platform").isin(args.platforms)
     columns = ["patch", "champion", "role", "win", "game_duration", "match_id"]
+    keep = None
     if args.min_champ_games or args.otp_share:
         columns.append("puuid")
-    table = pads.dataset(part_dir, format="parquet").to_table(
-        columns=columns, filter=filt)
-    print(f"Read {table.num_rows:,} participant rows from {part_dir}")
+        if "players" not in crawl:
+            crawl["players"] = _player_games(snapshot, filt)
+            _release_memory()
+        keep = _player_filter(crawl["players"], args)
+        print(f"Read {crawl['players']['rows']:,} participant rows from {part_dir}")
+
+    stat_keys = ["patch", "champion", "role", "bucket"]
+    stats, matches, read, kept = [], [], 0, 0
+    for chunk in crawl_chunks(snapshot):
+        table = chunk.to_table(columns=columns, filter=filt)
+        read += table.num_rows
+        if keep is not None:
+            table = table.join(keep, keys=keep.column_names, join_type="inner")
+        kept += table.num_rows
+
+        # Distinct matches per patch, counted after the tier filters so filtered
+        # tiers (mastery/otp) report only matches that contributed rows. A
+        # match can recur across chunks, so only the pairs are kept here.
+        matches.append(table.group_by(["patch", "match_id"]).aggregate([]))
+
+        # game_duration is seconds; buckets 1-7 are 0-15, 15-20, ... 40+ minutes.
+        # Integer division is load-bearing here — force an integer type rather
+        # than trusting the parquet schema (a float column would yield float
+        # buckets, which blow up as dict keys downstream).
+        dur = table["game_duration"]
+        if not pa.types.is_integer(dur.type):
+            dur = pc.cast(pc.floor(pc.cast(dur, pa.float64())), pa.int64())
+        bucket = pc.min_element_wise(
+            pc.max_element_wise(pc.subtract(pc.divide(dur, 300), 1), 1), 7)
+        stats.append(pa.table({
+            "patch": table["patch"], "champion": table["champion"],
+            "role": table["role"], "bucket": bucket,
+            "win": pc.cast(table["win"], pa.int32()),
+        }).group_by(stat_keys).aggregate([("win", "sum"), ("win", "count")]))
 
     if args.otp_share:
-        # One-tricks: the champion makes up >= X% of the player's games in the
-        # role, with a floor on champion games so tiny samples don't qualify.
-        floor = args.min_champ_games or 20
-        champ_ct = table.select(["puuid", "role", "champion"]).group_by(
-            ["puuid", "role", "champion"]).aggregate([([], "count_all")])
-        role_tot = table.select(["puuid", "role"]).group_by(
-            ["puuid", "role"]).aggregate([([], "count_all")])
-        joined = champ_ct.join(role_tot, keys=["puuid", "role"],
-                               join_type="inner", right_suffix="_role")
-        share = pc.divide(pc.cast(joined["count_all"], pa.float64()),
-                          pc.cast(joined["count_all_role"], pa.float64()))
-        mask = pc.and_(pc.greater_equal(share, args.otp_share / 100),
-                       pc.greater_equal(joined["count_all"], floor))
-        keep = joined.filter(mask).select(["puuid", "role", "champion"])
-        before = table.num_rows
-        table = table.join(keep, keys=["puuid", "role", "champion"], join_type="inner")
         print(f"One-trick filter (>= {args.otp_share:g}% of role games, "
-              f">= {floor} champion games): kept {table.num_rows:,} of {before:,} rows "
-              f"({len(keep):,} player-champion-roles)")
+              f">= {args.min_champ_games or 20} champion games): kept {kept:,} of "
+              f"{read:,} rows ({keep.num_rows:,} player-champion-roles)")
     elif args.min_champ_games:
-        # Keep only games where the pilot has >= N season games on that champion.
-        counts = table.select(["puuid", "champion"]).group_by(
-            ["puuid", "champion"]).aggregate([([], "count_all")])
-        counts = counts.filter(
-            pc.field("count_all") >= args.min_champ_games).drop_columns(["count_all"])
-        before = table.num_rows
-        table = table.join(counts, keys=["puuid", "champion"], join_type="inner")
         print(f"Mastery filter (>= {args.min_champ_games} games on champion): "
-              f"kept {table.num_rows:,} of {before:,} rows")
+              f"kept {kept:,} of {read:,} rows")
+    else:
+        print(f"Read {read:,} participant rows from {part_dir}")
 
-    # Distinct matches per patch, counted after the tier filters so filtered
-    # tiers (mastery/otp) report only matches that contributed rows.
-    counted = table.select(["patch", "match_id"]).group_by("patch").aggregate(
+    # One thread: a hash table per thread over millions of match ids is what
+    # the distinct count would otherwise cost.
+    counted = pa.concat_tables(matches).group_by("patch", use_threads=False).aggregate(
         [("match_id", "count_distinct")])
     matches_by_patch = {r["patch"]: r["match_id_count_distinct"]
                         for r in counted.to_pylist()}
-    table = table.drop_columns(["match_id"])
-
-    # game_duration is seconds; buckets 1-7 are 0-15, 15-20, ... 40+ minutes.
-    # Integer division is load-bearing here — force an integer type rather
-    # than trusting the parquet schema (a float column would yield float
-    # buckets, which blow up as dict keys downstream).
-    dur = table["game_duration"]
-    if not pa.types.is_integer(dur.type):
-        dur = pc.cast(pc.floor(pc.cast(dur, pa.float64())), pa.int64())
-    bucket = pc.min_element_wise(
-        pc.max_element_wise(pc.subtract(pc.divide(dur, 300), 1), 1), 7)
-    grouped = pa.table({
-        "patch": table["patch"], "champion": table["champion"],
-        "role": table["role"], "bucket": bucket,
-        "win": pc.cast(table["win"], pa.int32()),
-    }).group_by(["patch", "champion", "role", "bucket"]).aggregate(
-        [("win", "sum"), ("win", "count")])
+    grouped = pa.concat_tables(stats).group_by(stat_keys).aggregate(
+        [("win_sum", "sum"), ("win_count", "sum")]).rename_columns(
+        {"win_sum_sum": "win_sum", "win_count_sum": "win_count"})
 
     per_patch = {}
     for row in grouped.to_pylist():
@@ -384,12 +565,14 @@ def cmd_sync(args):
         ("soloq_mastery", args.min_champ_games, 0),
         ("soloq_otp", 0, args.otp_share),
     ]
+    crawl = {}  # one snapshot, and one count of players' games, for every tier
     for tier, min_champ_games, otp_share in presets:
         print(f"=== {tier} ===")
         cmd_import_soloq(argparse.Namespace(
             quant_dir=args.quant_dir, tier=tier, platforms=args.platforms,
             min_lane_rate=10, min_champ_games=min_champ_games,
-            otp_share=otp_share, db_only=args.db_only))
+            otp_share=otp_share, db_only=args.db_only), crawl)
+        _release_memory()
         print()
     # Record which regions the crawl covers; the UI shows this next to the
     # tier description. The platform partitions are directories under the

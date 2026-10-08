@@ -9,6 +9,8 @@
 # Logs: journalctl --user -u lol-scaling-sync
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Unbuffered, so the journal keeps each step's progress even when a step dies.
+export PYTHONUNBUFFERED=1
 
 # Heartbeat for the dashboard's health indicator: record when this job last
 # finished and how, whatever the outcome. jobs/.state/ is gitignored.

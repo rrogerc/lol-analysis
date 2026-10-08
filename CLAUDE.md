@@ -587,9 +587,23 @@
 - `lol.py onetricks sync` replaces the `onetricks` and `onetrick_sync`
   tables; `jobs/sync-scaling.sh` runs it after the scaling sync, so it
   rides the existing six-hourly timer. It streams the parquet through a
-  pyarrow grouped count: ~18 s, ~8 GB peak, most of it the metadata of the
-  crawl's ~28k uncompacted parquet files (a one-column scan alone peaks
-  near 5 GB). Serve only reads the tables (`/api/onetricks.json`).
+  pyarrow grouped count a chunk of files at a time (below). Serve only
+  reads the tables (`/api/onetricks.json`).
+- Reading the crawl (2026-10-07): both syncs read lol-quant's participants
+  parquet through `scaling.crawl_snapshot`/`crawl_chunks`, never one
+  dataset over every file. A dataset keeps each scanned file's parquet
+  footer in memory, and at ~53k files a one-column scan alone passed 6 GB;
+  the old whole-table scaling import (130M rows, every tier) peaked at
+  ~28 GB and was OOM-killed from 2026-09-22 (otp) and 2026-09-25 (mastery)
+  on, which also kept the onetricks sync from running. The snapshot fixes
+  the file list once per sync and cuts it into chunks of at most 256 MB of
+  parquet / 1,000 files; every count is added up across chunks. The
+  mastery and one-trick tiers share one count of each player's games per
+  (role, champion), kept as integer codes (`_player_games`: ~28M keys over
+  3.3M puuids). Full crawl, 2026-10-07: scaling sync ~2 min, ~4.4 GB peak;
+  onetricks sync ~80 s, ~2.6 GB. Output checked table for table against
+  the old code on a frozen eun1 subset (13.5M rows, all three tiers and
+  the one-tricks).
 - Tests: `python3 -m unittest test_onetricks`, `node jobs/test-onetricks-ui.cjs`.
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)

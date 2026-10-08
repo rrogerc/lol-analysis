@@ -18,7 +18,7 @@ import zlib
 from datetime import datetime, timezone
 
 from common import db_connect, patch_key
-from scaling import SOLOQ_ROLE_MAP, SOLOQ_SLUG_FIXES
+from scaling import SOLOQ_ROLE_MAP, SOLOQ_SLUG_FIXES, crawl_chunks, crawl_snapshot
 
 MIN_SHARE_PCT = 85  # strictly more than this share of the role's games
 MIN_GAMES = 20      # games on the champion in the role, as soloq_otp requires
@@ -101,30 +101,36 @@ def ladder_players(quant_dir, platforms=None):
 def count(quant_dir, players):
     """One-trick counts per champion among `players` this season.
 
-    Streams the participants parquet through a grouped count, so the tens of
-    millions of matching rows never sit in memory at once. The season is the
-    crawl's patches of the newest major version: the crawl keeps earlier
-    seasons' games, which would otherwise mix in after a rollover."""
+    Streams the participants parquet through a grouped count a chunk of
+    files at a time (scaling.crawl_chunks), so neither the tens of millions
+    of matching rows nor every file's parquet footer sit in memory at once.
+    The season is the crawl's patches of the newest major version: the crawl
+    keeps earlier seasons' games, which would otherwise mix in after a
+    rollover."""
     try:
         import pyarrow as pa
         import pyarrow.acero as ac
         import pyarrow.compute as pc
-        import pyarrow.dataset as pads
     except ModuleNotFoundError:
         sys.exit("pyarrow is required for onetricks sync: .venv/bin/pip install pyarrow")
 
-    part_dir = os.path.join(quant_dir, "data", "parquet", "participants")
-    if not os.path.isdir(part_dir):
-        sys.exit(f"No participants parquet at {part_dir} — check --quant-dir.")
-    dataset = pads.dataset(part_dir, format="parquet")
+    snapshot = crawl_snapshot(quant_dir)
 
     def grouped(keys, filt=None):
-        nodes = [ac.Declaration("scan", ac.ScanNodeOptions(dataset, columns=keys, filter=filt))]
-        if filt is not None:  # the scan only uses its filter for pushdown
-            nodes.append(ac.Declaration("filter", ac.FilterNodeOptions(filt)))
-        nodes.append(ac.Declaration("aggregate", ac.AggregateNodeOptions(
-            [([], "hash_count_all", None, "games")], keys=keys)))
-        return ac.Declaration.from_sequence(nodes).to_table()
+        total = None
+        for dataset in crawl_chunks(snapshot):
+            nodes = [ac.Declaration("scan", ac.ScanNodeOptions(dataset, columns=keys, filter=filt))]
+            if filt is not None:  # the scan only uses its filter for pushdown
+                nodes.append(ac.Declaration("filter", ac.FilterNodeOptions(filt)))
+            nodes.append(ac.Declaration("aggregate", ac.AggregateNodeOptions(
+                [([], "hash_count_all", None, "games")], keys=keys)))
+            part = ac.Declaration.from_sequence(nodes).to_table()
+            # A key can recur across chunks: add its counts up as we go.
+            if total is not None:
+                part = pa.concat_tables([total, part.select(total.column_names)]).group_by(
+                    keys).aggregate([("games", "sum")]).rename_columns({"games_sum": "games"})
+            total = part
+        return total
 
     patches = [p for p in grouped(["patch"])["patch"].to_pylist() if p]
     season_major = max((patch_key(p)[0] for p in patches), default=None)
