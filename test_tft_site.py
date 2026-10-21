@@ -15,6 +15,9 @@ from unittest.mock import patch
 
 import tft
 import tft_comps
+import tft_early
+import tft_flex
+import tft_lobby
 import tft_site
 
 
@@ -46,6 +49,7 @@ class TestTftSite(unittest.TestCase):
             self.paths[slug, key] = str(path)
             self.payloads[f"/api/tft/{slug}/{key}.json"] = payload
         self.comp_paths = {}
+        self.comp_payloads = {}
         for key in ("c1-clump-mixed", "c4-spread-mixed"):
             path = self.directory / f"{key}.json"
             payload = {"key": key, "revision": "composition", "baselineRevision": "baseline",
@@ -53,7 +57,7 @@ class TestTftSite(unittest.TestCase):
                        "results": [{"score": 100 / 3, "items": ["C", "B", "A"]}]}
             path.write_text(json.dumps(payload) + "\n")
             self.comp_paths[key] = str(path)
-            self.payloads[f"/api/tft/compositions/{key}.json"] = payload
+            self.comp_payloads[f"/api/tft/compositions/{key}.json"] = payload
         self.leaderboards = {"best-clump-bare-mixed": {}, "s2-clump-bare-mixed": {}}
         self.meta = {"revision": "baseline", "patch": self.snap.patch, "units": [],
                      "tankDummies": {"mixed": [{"hp": 3000, "armor": 110}]},
@@ -64,17 +68,24 @@ class TestTftSite(unittest.TestCase):
         for owner, name, value in (
                 (tft, "source_stale", False), (tft, "snapshot_revision", "baseline"),
                 (tft, "cell_paths", self.paths), (tft, "leaderboard_scenarios", self.leaderboards),
-                (tft_comps, "source_stale", False), (tft_comps, "revision", "composition"),
-                (tft_comps, "cell_paths", self.comp_paths)):
+                (tft_early, "source_stale", False)):
             self.stack.enter_context(patch.object(owner, name, return_value=value))
+        self.comp_models = {}
+        for name in ("source_stale", "revision", "cell_paths", "api_meta", "warm", "cached_scenario"):
+            self.comp_models[name] = self.stack.enter_context(patch.object(tft_comps, name,
+                side_effect=AssertionError("archived composition model used: " + name)))
+        self.early_supported = self.stack.enter_context(patch.object(tft_early, "supports", return_value=False))
+        self.early_warm = self.stack.enter_context(patch.object(tft_early, "warm",
+            side_effect=AssertionError("unsupported fixture must not warm early boards")))
+        self.early_read = self.stack.enter_context(patch.object(tft_early, "cached_catalog",
+            side_effect=AssertionError("unsupported fixture must not read early boards")))
+        self.early_revision = self.stack.enter_context(patch.object(tft_early, "revision",
+            side_effect=AssertionError("unsupported fixture has no early revision")))
         self.metadata = self.stack.enter_context(patch.object(tft, "api_meta", return_value=self.meta))
-        self.comp_metadata = self.stack.enter_context(
-            patch.object(tft_comps, "api_meta", return_value=self.comp_meta))
         self.leaderboard = self.stack.enter_context(
             patch.object(tft, "cached_leaderboard", side_effect=self.board))
         self.stack.enter_context(patch.object(tft, "load_snapshot", side_effect=AssertionError("snapshot reloaded")))
         self.stack.enter_context(patch.object(tft, "warm", side_effect=AssertionError("baseline warm")))
-        self.stack.enter_context(patch.object(tft_comps, "warm", side_effect=AssertionError("composition warm")))
 
     def board(self, key, paths, *, snap):
         self.assertIs(snap, self.snap)
@@ -107,12 +118,15 @@ class TestTftSite(unittest.TestCase):
         descriptor, bundle = self.prepare()
         self.assertEqual(set(descriptor), {"siteGeneration", "baselineRevision",
                                           "compositionRevision", "manifestHash"})
+        self.assertEqual(descriptor["compositionRevision"], tft_site.ARCHIVED_COMPOSITION_REVISION)
+        self.assertIs(bundle.manifest["inventory"]["compositionArchived"], True)
+        self.assertEqual(bundle.manifest["inventory"]["compositionContexts"], [])
         expected = set(self.payloads) | {
             "/api/tft/meta.json", "/api/tft/status.json", "/api/tft/ahri/cores.json",
-            "/api/tft/leona/cores.json", "/api/tft/compositions/meta.json",
-            "/api/tft/compositions/status.json", *(
+            "/api/tft/leona/cores.json", *(
                 f"/api/tft/leaderboard/{key}.json" for key in self.leaderboards)}
         self.assertEqual(set(bundle.entries), expected)
+        self.assertFalse(any(url.startswith("/api/tft/compositions/") for url in bundle.entries))
         for url in expected:
             identity, compressed = bundle.asset(url), bundle.asset(url, compressed=True)
             raw, zipped = identity["path"].read_bytes(), compressed["path"].read_bytes()
@@ -129,23 +143,20 @@ class TestTftSite(unittest.TestCase):
             self.assertEqual(linked.read_bytes(), Path(path).read_bytes())
             self.assertEqual(linked.stat().st_ino, Path(path).stat().st_ino)
         self.assertEqual(bundle.json("/api/tft/meta.json"), dict(self.meta, publicationRevision=descriptor["siteGeneration"]))
-        self.assertEqual(bundle.json("/api/tft/compositions/meta.json"),
-                         dict(self.comp_meta, publicationRevision=descriptor["siteGeneration"]))
         status = bundle.json("/api/tft/status.json")
         self.assertEqual(status, {"warmer": "idle", "patch": self.snap.patch,
                          "revision": "baseline", "refresh": {},
                          "publicationRevision": descriptor["siteGeneration"],
                          "ready": {f"{slug}/{key}": True for slug, key in self.paths}})
-        self.assertEqual(bundle.json("/api/tft/compositions/status.json"), {
-            "revision": "composition", "ready": {key: True for key in self.comp_paths},
-            "publicationRevision": descriptor["siteGeneration"],
-            "warmer": "idle", "progress": {}})
         self.assertNotIn("publicationRevision", self.meta)
         self.assertNotIn("publicationRevision", self.comp_meta)
         self.metadata.assert_called_once_with(self.snap)
-        self.comp_metadata.assert_called_once_with(self.snap)
+        for model in self.comp_models.values():
+            model.assert_not_called()
         self.assertEqual(self.leaderboard.call_count, len(self.leaderboards))
         self.assertEqual(list(self.site.glob(".stage-*")), [])
+        self.early_warm.assert_not_called()
+        self.early_read.assert_not_called()
 
     def test_loaded_publication_never_uses_models_or_current_publisher_hash(self):
         descriptor, _ = self.prepare()
@@ -162,6 +173,45 @@ class TestTftSite(unittest.TestCase):
             self.assertIsNone(bundle.asset("/api/tft/missing.json"))
             with self.assertRaises(KeyError):
                 bundle.json("/api/tft/missing.json")
+
+    def test_metadata_formations_match_combat_positions_without_mutating_source(self):
+        self.meta["dummy"] = {"slots": [{"hp": 3000, "nearby": True},
+            *({"hp": 1800, "nearby": True} for _ in range(3)),
+            *({"hp": 1440, "nearby": False} for _ in range(2))]}
+        original = deepcopy(self.meta)
+        with patch.object(tft, "engine", side_effect=AssertionError("formation catalog simulated")):
+            descriptor, bundle = self.prepare()
+        formations = bundle.json("/api/tft/meta.json")["formations"]
+        self.assertEqual(formations, {
+            "clump": [{"lane": 2, "row": 0}, {"lane": 3, "row": 0},
+                      {"lane": 4, "row": 0}, {"lane": 5, "row": 0},
+                      {"lane": 2, "row": 2}, {"lane": 4, "row": 2}],
+            "spread": [{"lane": 0, "row": 0}, {"lane": 2, "row": 0},
+                       {"lane": 4, "row": 0}, {"lane": 6, "row": 0},
+                       {"lane": 1, "row": 2}, {"lane": 5, "row": 2}],
+        })
+        self.assertEqual(self.meta, original)
+        self.assertEqual(bundle.json("/api/tft/meta.json")["dummy"], original["dummy"])
+        with patch.object(tft, "board_positions", side_effect=AssertionError("request-time formation")):
+            self.assertEqual(tft_site.load(descriptor).json("/api/tft/meta.json")["formations"], formations)
+
+    def test_missing_or_unpositioned_dummies_have_no_invented_formation(self):
+        for dummy in (None, {}, {"slots": []}, {"slots": [{"hp": 3000}, {"hp": 1800}]}):
+            with self.subTest(dummy=dummy):
+                meta = dict(self.meta, dummy=dummy)
+                original = deepcopy(meta)
+                self.assertIsNone(tft_site._formations(meta))
+                self.assertEqual(meta, original)
+        descriptor, bundle = self.prepare()
+        self.assertNotIn("formations", bundle.json("/api/tft/meta.json"))
+
+    def test_formation_catalog_respects_explicit_source_positions(self):
+        meta = dict(self.meta, dummy={"slots": [{"lane": 6, "row": 1, "hp": 3000},
+                                               {"lane": 1, "row": 3, "hp": 1440}]})
+        original = deepcopy(meta)
+        expected = [{"lane": 6, "row": 1}, {"lane": 1, "row": 3}]
+        self.assertEqual(tft_site._formations(meta), {geometry: expected for geometry in tft.GEOMETRIES})
+        self.assertEqual(meta, original)
 
     def test_same_generation_reuse_does_not_rebuild_or_recompress(self):
         descriptor, bundle = self.prepare()
@@ -203,9 +253,7 @@ class TestTftSite(unittest.TestCase):
                 self.assertEqual({path: Path(path).read_bytes() for path in artifacts}, artifacts)
                 self.assertEqual(bundle.json("/api/tft/meta.json"),
                                  dict(self.meta, publicationRevision=descriptor["siteGeneration"]))
-                self.assertEqual(bundle.json("/api/tft/compositions/meta.json"),
-                                 dict(self.comp_meta, publicationRevision=descriptor["siteGeneration"]))
-                for url in ("/api/tft/status.json", "/api/tft/compositions/status.json"):
+                for url in ("/api/tft/status.json",):
                     self.assertEqual(bundle.json(url)["publicationRevision"], descriptor["siteGeneration"])
                     self.assertNotEqual(bundle.json(url)["publicationRevision"],
                                         tft_site.load(previous).json(url)["publicationRevision"])
@@ -229,15 +277,199 @@ class TestTftSite(unittest.TestCase):
         self.assertEqual(bundle.json("/api/tft/meta.json"), saved_meta)
         self.assertEqual(len(list(self.site.glob("g-*"))), 1)
 
+    def add_trait_catalog(self):
+        snapshot = tft.Snapshot(18, "18.3")
+        self.snap.patch = snapshot.patch
+        self.meta["patch"] = snapshot.patch
+        self.snap.units = deepcopy(snapshot.units)
+        self.snap.traits = deepcopy(snapshot.traits)
+        self.snap.raw = deepcopy(snapshot.raw)
+        self.snap.dir = self.directory / self.snap.patch
+        tft_lobby.write_document(self.snap, deepcopy(tft_lobby.catalog_profiles(snapshot)))
+
+    def test_trait_catalog_is_prepared_and_pinned_without_combat(self):
+        self.add_trait_catalog()
+        with patch.object(tft, "engine", side_effect=AssertionError("trait catalog simulated")):
+            descriptor, bundle = self.prepare()
+        url = "/api/tft/traits.json"
+        self.assertTrue(bundle.manifest["inventory"]["traitFlex"])
+        self.assertIn(url, bundle.entries)
+        result = bundle.json(url)
+        self.assertEqual(result["publicationRevision"], descriptor["siteGeneration"])
+        self.assertEqual({unit["api"] for unit in result["units"]}, set(self.snap.units))
+        self.assertEqual(result["revision"], tft_flex.catalog(self.snap)["revision"])
+        self.assertIn("teamPlanner", result)
+        self.assertEqual(result["lobbyStats"]["schema"], "tft-lobby-stats-v1")
+        self.assertEqual(len(result["lobbyStats"]["profiles"]), 2)
+        identity = bundle.asset(url)["path"].read_bytes()
+        self.assertEqual(gzip.decompress(bundle.asset(url, compressed=True)["path"].read_bytes()), identity)
+        with patch.object(tft_flex, "catalog", side_effect=AssertionError("request-time catalog")):
+            self.assertEqual(tft_site.load(descriptor).json(url), result)
+        self.snap.traits["DA_18_Spellweaver"]["levels"] = [2, 5, 6]
+        current, changed = self.prepare()
+        self.assertNotEqual(current["siteGeneration"], descriptor["siteGeneration"])
+        self.assertNotEqual(changed.json(url)["revision"], result["revision"])
+        for key in ("baselineRevision", "compositionRevision"):
+            self.assertEqual(current[key], descriptor[key])
+        for source in self.payloads:
+            self.assertEqual(changed.entries[source], bundle.entries[source])
+        self.assertEqual(bundle.json(url), result)
+
+    def test_trait_inventory_requires_its_complete_saved_endpoint(self):
+        self.add_trait_catalog()
+        descriptor, bundle = self.prepare()
+        bad = self.rewrite_manifest(descriptor, lambda manifest: manifest["entries"].pop("/api/tft/traits.json"))
+        with self.assertRaisesRegex(ValueError, "every expected endpoint"):
+            tft_site.load(bad)
+
+    def test_stale_trait_catalog_source_prevents_publication(self):
+        with patch.object(tft_flex, "source_stale", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "source changed"):
+                self.prepare()
+        self.assert_no_publication()
+
+    def add_early_catalog(self):
+        self.add_trait_catalog()
+        self.early = {"schema": "tft-early-comps-v1", "set": self.snap.set_no,
+                      "patch": self.snap.patch, "revision": "early-a", "baselineRevision": "baseline",
+                      "complete": True, "variants": [{"key": "level4", "results": [{"score": 51.25}]}]}
+        self.early_supported.return_value = True
+        self.early_warm.side_effect = None
+        self.early_warm.return_value = 0
+        self.early_read.side_effect = None
+        self.early_read.return_value = self.early
+        self.early_revision.side_effect = None
+        self.early_revision.return_value = self.early["revision"]
+
+    def test_early_catalog_is_warmed_saved_and_read_without_live_calculations(self):
+        self.add_early_catalog()
+        descriptor, bundle = self.prepare()
+        self.early_warm.assert_called_once_with(snap=self.snap)
+        url = "/api/tft/early.json"
+        self.assertTrue(bundle.manifest["inventory"]["earlyComps"])
+        result = bundle.json(url)
+        self.assertEqual(result["publicationRevision"], descriptor["siteGeneration"])
+        self.assertEqual(result["revision"], self.early["revision"])
+        self.assertEqual(result["baselineRevision"], descriptor["baselineRevision"])
+        self.assertIn("teamPlanner", result)
+        self.assertNotIn("publicationRevision", self.early)
+        self.assertNotIn("teamPlanner", self.early)
+        self.assertEqual(gzip.decompress(bundle.asset(url, compressed=True)["path"].read_bytes()),
+                         bundle.asset(url)["path"].read_bytes())
+        with ExitStack() as stack:
+            for name in ("supports", "revision", "cached_catalog", "warm", "source_stale"):
+                stack.enter_context(patch.object(tft_early, name, side_effect=AssertionError(name)))
+            self.assertEqual(tft_site.load(descriptor).json(url), result)
+
+    def test_early_evidence_changes_republish_without_recomputing_other_artifacts(self):
+        self.add_early_catalog()
+        descriptor, before = self.prepare()
+        saved = before.json("/api/tft/early.json")
+        # Even corrected evidence with the same model revision gets its own
+        # immutable response; serving the previous generation remains valid.
+        self.early["variants"][0]["results"][0]["score"] = 57.5
+        current, after = self.prepare()
+        self.assertNotEqual(descriptor["siteGeneration"], current["siteGeneration"])
+        for key in ("baselineRevision", "compositionRevision"):
+            self.assertEqual(descriptor[key], current[key])
+        for source in self.payloads:
+            self.assertEqual(before.entries[source], after.entries[source])
+        self.assertEqual(before.json("/api/tft/early.json"), saved)
+        self.assertEqual(after.json("/api/tft/early.json")["variants"], self.early["variants"])
+        self.early["revision"] = self.early_revision.return_value = "early-b"
+        updated, _ = self.prepare()
+        self.assertNotEqual(current["siteGeneration"], updated["siteGeneration"])
+
+    def test_early_inventory_requires_complete_endpoint_and_accepts_older_flags(self):
+        legacy = {"baselineCells": [["ahri", "s1-clump-bare"]],
+                  "compositionContexts": ["c1-clump-mixed"], "leaderboardSelections": ["best-clump-bare"]}
+        archived = legacy | {"compositionContexts": [], "compositionArchived": True}
+        for inventory in (legacy, archived):
+            for flags in ({}, {"traitFlex": True}, {"earlyComps": True}, {"traitFlex": True, "earlyComps": True}):
+                with self.subTest(inventory=inventory, flags=flags):
+                    urls = tft_site._endpoints(inventory | flags)
+                    self.assertEqual("/api/tft/traits.json" in urls, bool(flags.get("traitFlex")))
+                    self.assertEqual("/api/tft/early.json" in urls, bool(flags.get("earlyComps")))
+                    self.assertEqual("/api/tft/compositions/status.json" in urls, inventory is legacy)
+        for flags in ({"earlyComps": False}, {"earlyComps": 1}, {"other": True}):
+            with self.subTest(flags=flags), self.assertRaisesRegex(ValueError, "invalid TFT site inventory"):
+                tft_site._endpoints(legacy | flags)
+        self.add_early_catalog()
+        descriptor, _ = self.prepare()
+        bad = self.rewrite_manifest(descriptor, lambda manifest: manifest["entries"].pop("/api/tft/early.json"))
+        with self.assertRaisesRegex(ValueError, "every expected endpoint"):
+            tft_site.load(bad)
+
+    def test_archived_inventory_rejects_inconsistent_or_nonboolean_flags(self):
+        inventory = {"baselineCells": [["ahri", "s1-clump-bare"]], "compositionContexts": [],
+                     "compositionArchived": True, "leaderboardSelections": ["best-clump-bare"]}
+        self.assertFalse(any(url.startswith("/api/tft/compositions/")
+                             for url in tft_site._endpoints(inventory)))
+        invalid = (
+            inventory | {"compositionArchived": False},
+            inventory | {"compositionArchived": 1},
+            inventory | {"compositionArchived": "true"},
+            inventory | {"compositionContexts": ["c1-clump-mixed"]},
+            {key: value for key, value in inventory.items() if key != "compositionArchived"},
+            inventory | {"baselineCells": []},
+            inventory | {"leaderboardSelections": []},
+        )
+        for value in invalid:
+            with self.subTest(inventory=value), self.assertRaises(ValueError):
+                tft_site._endpoints(value)
+
+    def test_unready_stale_or_mismatched_early_results_prevent_publication(self):
+        self.add_early_catalog()
+        self.early_warm.return_value = None
+        with self.assertRaisesRegex(RuntimeError, "warm is running"):
+            self.prepare()
+        self.early_warm.return_value = 0
+        self.early_read.side_effect = ValueError("early cache incomplete")
+        with self.assertRaisesRegex(ValueError, "early cache incomplete"):
+            self.prepare()
+        self.early_read.side_effect = None
+        for key, value in (("complete", False), ("revision", "wrong"), ("baselineRevision", "wrong"),
+                           ("patch", "wrong"), ("set", 17)):
+            with self.subTest(key=key):
+                original = self.early[key]
+                self.early[key] = value
+                with self.assertRaisesRegex(ValueError, "early compositions do not match"):
+                    self.prepare()
+                self.early[key] = original
+        with patch.object(tft_early, "source_stale", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "source changed"):
+                self.prepare()
+        self.assert_no_publication()
+
+    def test_changing_early_evidence_during_preparation_does_not_publish(self):
+        self.add_early_catalog()
+        link = tft_site._link
+        def changed(source, destination):
+            link(source, destination)
+            self.early["variants"][0]["results"][0]["score"] += 1
+        with patch.object(tft_site, "_link", side_effect=changed):
+            with self.assertRaisesRegex(RuntimeError, "inputs changed"):
+                self.prepare()
+        self.assert_no_publication()
+
+    def test_early_payload_is_hashed_from_the_same_read_that_will_be_published(self):
+        self.add_early_catalog()
+        changed = deepcopy(self.early)
+        changed["variants"][0]["results"][0]["score"] += 1
+        self.early_read.side_effect = [self.early, changed]
+        with self.assertRaisesRegex(RuntimeError, "inputs changed"):
+            self.prepare()
+        self.assert_no_publication()
+
     def test_planner_catalog_republishes_without_recalculating_boards(self):
-        self.snap.units = {"TFT18_Ahri": {}, "TFT18_Leona": {}}
+        self.add_early_catalog()
         catalog = {"schemaVersion": 1, "set": 18, "format": "tft-team-planner-v2", "slots": 10,
                    "unitCodes": {"TFT18_Ahri": "3e9", "TFT18_Leona": "411"}}
         path = self.directory / "team-planner.json"
         path.write_text(json.dumps(catalog))
         with patch.object(tft, "set_dir", return_value=str(self.directory)):
             previous, old = self.prepare()
-            exposed = old.json("/api/tft/compositions/meta.json")["teamPlanner"]
+            exposed = old.json("/api/tft/early.json")["teamPlanner"]
             self.assertEqual(exposed["unitCodes"], catalog["unitCodes"])
             self.assertEqual((exposed["set"], exposed["slots"], exposed["format"]),
                              (18, 10, "tft-team-planner-v2"))
@@ -250,9 +482,9 @@ class TestTftSite(unittest.TestCase):
                 self.assertEqual(current[key], previous[key])
             for url in self.payloads:
                 self.assertEqual(bundle.entries[url], old.entries[url])
-            self.assertEqual(bundle.json("/api/tft/compositions/meta.json")["teamPlanner"]["unitCodes"],
+            self.assertEqual(bundle.json("/api/tft/early.json")["teamPlanner"]["unitCodes"],
                              catalog["unitCodes"])
-            self.assertEqual(old.json("/api/tft/compositions/meta.json")["teamPlanner"], exposed)
+            self.assertEqual(old.json("/api/tft/early.json")["teamPlanner"], exposed)
 
     def test_invalid_or_ambiguous_planner_ids_cannot_be_published(self):
         self.snap.units = {"TFT18_Ahri": {}, "TFT18_Leona": {}}
@@ -270,12 +502,23 @@ class TestTftSite(unittest.TestCase):
         descriptor, bundle = self.prepare()
         manifest = deepcopy(bundle.manifest)
         manifest.pop("presentationHash")
+        manifest["compositionRevision"] = "composition"
+        manifest["inventory"].pop("compositionArchived")
+        manifest["inventory"]["compositionContexts"] = sorted(self.comp_paths)
         manifest["siteGeneration"] = tft_site._generation(
             manifest["baselineRevision"], manifest["compositionRevision"], manifest["publisherHash"])
-        for url in ("/api/tft/meta.json", "/api/tft/compositions/meta.json",
-                    "/api/tft/status.json", "/api/tft/compositions/status.json"):
+        for url in ("/api/tft/meta.json", "/api/tft/status.json"):
             payload = bundle.json(url)
             payload.pop("publicationRevision")
+            tft_site._write(bundle.directory, url, payload)
+            manifest["entries"][url] = tft_site._compress(bundle.directory, url)
+        legacy_payloads = self.comp_payloads | {
+            "/api/tft/compositions/meta.json": self.comp_meta,
+            "/api/tft/compositions/status.json": {
+                "revision": "composition", "ready": {key: True for key in self.comp_paths},
+                "warmer": "idle", "progress": {}},
+        }
+        for url, payload in legacy_payloads.items():
             tft_site._write(bundle.directory, url, payload)
             manifest["entries"][url] = tft_site._compress(bundle.directory, url)
         raw = tft_site._json_bytes(manifest)
@@ -286,6 +529,9 @@ class TestTftSite(unittest.TestCase):
         self.assertNotIn("presentationHash", loaded.manifest)
         self.assertEqual(loaded.json("/api/tft/meta.json"), self.meta)
         self.assertNotIn("publicationRevision", loaded.json("/api/tft/status.json"))
+        self.assertNotIn("compositionArchived", loaded.manifest["inventory"])
+        for url, payload in legacy_payloads.items():
+            self.assertEqual(loaded.json(url), payload)
         next_descriptor, _ = self.prepare()
         self.assertNotEqual(next_descriptor["siteGeneration"], legacy["siteGeneration"])
         self.assertEqual(tft_site.load(legacy).json("/api/tft/meta.json"), self.meta)
@@ -313,8 +559,8 @@ class TestTftSite(unittest.TestCase):
                 tft_site.prepare(self.snap)
         self.assert_no_publication()
 
-    def test_missing_champion_or_composition_blocks_preparation(self):
-        for path in (next(iter(self.paths.values())), next(iter(self.comp_paths.values()))):
+    def test_missing_champion_blocks_preparation(self):
+        for path in self.paths.values():
             with self.subTest(path=path):
                 source = Path(path)
                 raw = source.read_bytes()
@@ -324,7 +570,27 @@ class TestTftSite(unittest.TestCase):
                 source.write_bytes(raw)
                 self.assert_no_publication()
 
-    def test_incomplete_cores_leaderboard_and_wrong_composition_are_rejected(self):
+    def test_missing_invalid_or_stale_archived_compositions_do_not_invalidate_results(self):
+        descriptor, _ = self.prepare()
+        for model, value in (("source_stale", True), ("revision", "changed-composition"),
+                             ("cell_paths", {})):
+            self.comp_models[model].side_effect = None
+            self.comp_models[model].return_value = value
+        for path in self.comp_paths.values():
+            Path(path).write_text("invalid archived result")
+        self.assertEqual(tft_site.prepare(self.snap), descriptor)
+        for path in self.comp_paths.values():
+            Path(path).unlink()
+        self.assertEqual(tft_site.prepare(self.snap), descriptor)
+        self.snap.meta["sources"]["metatft"]["url"] = "https://example.test/revised-source"
+        self.meta["sources"] = deepcopy(self.snap.meta["sources"])
+        updated, bundle = self.prepare()
+        self.assertNotEqual(updated["siteGeneration"], descriptor["siteGeneration"])
+        self.assertFalse(any(url.startswith("/api/tft/compositions/") for url in bundle.entries))
+        for model in self.comp_models.values():
+            model.assert_not_called()
+
+    def test_incomplete_cores_and_leaderboard_are_rejected(self):
         with patch.object(tft, "cached_core_contexts", return_value={}):
             with self.assertRaisesRegex(ValueError, "core comparisons are incomplete"):
                 tft_site.prepare(self.snap)
@@ -333,11 +599,8 @@ class TestTftSite(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "leaderboard is incomplete"):
                 tft_site.prepare(self.snap)
         self.assert_no_publication()
-        path = Path(next(iter(self.comp_paths.values())))
-        payload = json.loads(path.read_bytes())
-        payload["revision"] = "wrong"
-        path.write_text(json.dumps(payload))
-        with self.assertRaisesRegex(ValueError, "composition does not match"):
+        with patch.object(tft, "api_meta", return_value=dict(self.meta, revision="wrong")), \
+                self.assertRaisesRegex(ValueError, "metadata does not match"):
             tft_site.prepare(self.snap)
         self.assert_no_publication()
 
@@ -346,7 +609,6 @@ class TestTftSite(unittest.TestCase):
         previous = {path: path.read_bytes() for path in old.directory.rglob("*") if path.is_file()}
         with patch.object(tft, "snapshot_revision", return_value="next-baseline"), \
                 patch.object(tft, "api_meta", return_value=dict(self.meta, revision="next-baseline")), \
-                patch.object(tft_comps, "api_meta", return_value=dict(self.comp_meta, baselineRevision="next-baseline")), \
                 patch.object(tft_site, "_link", side_effect=RuntimeError("interrupted")):
             with self.assertRaisesRegex(RuntimeError, "interrupted"):
                 tft_site.prepare(self.snap)

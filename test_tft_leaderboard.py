@@ -1,4 +1,5 @@
-"""Optimal champion comparisons: precision, eligibility and cache-only reads."""
+"""Optimal champion comparisons: precision, runner-up gaps and cache-only reads."""
+import copy
 import json
 from pathlib import Path
 import tempfile
@@ -45,6 +46,37 @@ class TestLeaderboard(unittest.TestCase):
     def board(self, key="s2-clump-bare-mixed"):
         with patch.object(tft, "engine", side_effect=AssertionError("request-time simulation")):
             return tft.cached_leaderboard(key, self.paths, snap=self.snap)
+
+    def ranked_payload(self, name="Azir", **metrics):
+        """Two distinct builds whose display outcomes deliberately round equal."""
+        payload = self.write(name, **metrics)
+        payload["objective"] = self.snap.unit(name)["objective"]
+        payload["rows"] = [{"items": self.item_names(self.items), "killTime": 5.0, "total": 100},
+                           {"items": self.item_names(self.second_items()), "killTime": 5.0, "total": 100}]
+        return payload
+
+    def item_names(self, apis):
+        return [self.snap.items[api]["name"] for api in apis]
+
+    def second_items(self):
+        return [self.items[0], self.items[0], self.items[1]]
+
+    def exact_build(self, payload, apis=None, **metrics):
+        apis = self.second_items() if apis is None else apis
+        return {"items": self.item_names(apis), "itemApis": list(apis),
+                "performance": {**payload["best"]["performance"], **metrics}}
+
+    def legacy_runner(self, payload, **metrics):
+        optimal = self.exact_build(payload, self.items)
+        runner = self.exact_build(payload, **metrics)
+        # Exact completions can be arbitrarily deep inside an old core record.
+        payload["coreAnalysis"] = {"optimal": optimal,
+                                   "candidates": [{"completions": [runner]}]}
+        return runner
+
+    def save_payload(self, payload, name="Azir"):
+        path = self.paths[(tft.unit_slug(self.snap.unit(name)), "s2-clump-bare")]
+        Path(path).write_text(json.dumps(payload))
 
     def test_highest_allowed_star_gives_one_winner_per_champion(self):
         for unit in self.units:
@@ -182,6 +214,143 @@ class TestLeaderboard(unittest.TestCase):
         self.write("Azir", killTime=9.12345)
         self.assertEqual(self.board()["damage"][0]["performance"]["killTime"], 9.12345)
 
+    def test_second_build_gap_uses_full_precision_and_prefers_new_exact_record(self):
+        payload = self.ranked_payload(killTime=5.003, total=6240)
+        self.legacy_runner(payload, killTime=5.9)
+        payload["runnerUp"] = self.exact_build(payload, killTime=5.004)
+        # Newly computed records need APIs and metrics, not redundant names.
+        del payload["runnerUp"]["items"]
+        result = tft.leaderboard_runner_up(payload)
+        self.assertEqual(result["itemApis"], self.second_items())
+        self.assertEqual(result["items"], self.item_names(self.second_items()))
+        self.assertEqual(result["performance"]["killTime"], 5.004)
+        self.assertEqual(result["performance"]["metric"], "killTime")
+        self.assertEqual(result["performance"]["status"], "comparable")
+        self.assertAlmostEqual(result["performance"]["lossPct"], 100 * (5.004 - 5.003) / 5.003)
+        self.assertGreater(result["performance"]["lossPct"], 0)
+
+    def test_legacy_second_build_preserves_duplicates_and_ignores_item_order(self):
+        payload = self.ranked_payload(killTime=5.003, total=6240)
+        runner = self.legacy_runner(payload, killTime=5.004)
+        runner["items"].reverse()
+        runner["itemApis"].reverse()
+        # Same set of names, wrong multiplicity: it must not become the runner-up.
+        decoy = self.exact_build(payload, self.items, killTime=10)
+        payload["coreAnalysis"]["requiredItems"] = [{"without": decoy}]
+        payload["coreAnalysis"]["optimal"]["itemApis"].reverse()
+        result = tft.leaderboard_runner_up(payload)
+        self.assertEqual(sorted(result["itemApis"]), sorted(self.second_items()))
+        self.assertEqual(result["performance"]["killTime"], 5.004)
+        self.assertAlmostEqual(result["performance"]["lossPct"], 100 * (5.004 - 5.003) / 5.003)
+
+    def test_second_ranked_build_keeps_primary_ties_instead_of_skipping_to_a_lower_outcome(self):
+        payload = self.ranked_payload(killTime=5, total=6240, rawTotal=9000)
+        self.legacy_runner(payload, killTime=5, rawTotal=7000)
+        third_apis = [self.snap.item("Blue Buff")["api"], self.items[1], self.items[1]]
+        third = self.exact_build(payload, third_apis, killTime=6, rawTotal=6300)
+        payload["rows"].append({"items": third["items"], "killTime": 6.0})
+        payload["coreAnalysis"]["candidates"][0]["completions"].append(third)
+        result = tft.leaderboard_runner_up(payload)
+        self.assertEqual(result["itemApis"], self.second_items())
+        self.assertEqual(result["performance"]["killTime"], 5)
+        self.assertEqual(result["performance"]["lossPct"], 0)
+
+    def test_nonclear_gap_uses_exact_damage_and_overkill_does_not_create_a_gap(self):
+        payload = self.ranked_payload(total=100.004, rawTotal=1000)
+        payload["runnerUp"] = self.exact_build(payload, total=100.003, rawTotal=500)
+        result = tft.leaderboard_runner_up(payload)["performance"]
+        self.assertEqual((result["metric"], result["status"], result["value"]),
+                         ("damage", "comparable", 100.003))
+        self.assertAlmostEqual(result["lossPct"], 100 * (100.004 - 100.003) / 100.004)
+        payload["runnerUp"]["performance"]["total"] = 100.004
+        self.assertEqual(tft.leaderboard_runner_up(payload)["performance"]["lossPct"], 0)
+
+    def test_second_build_that_does_not_clear_has_a_censored_gap(self):
+        payload = self.ranked_payload(killTime=5, total=6240)
+        payload["runnerUp"] = self.exact_build(payload, killTime=None, total=6000)
+        performance = tft.leaderboard_runner_up(payload)["performance"]
+        self.assertEqual((performance["metric"], performance["status"]), ("killTime", "noClear"))
+        self.assertIsNone(performance["lossPct"])
+        self.assertIsNone(performance["value"])
+
+    def test_tank_gaps_use_hold_time_stress_time_and_censored_survival_limits(self):
+        cases = [
+            ({"aliveTime": 30.005}, {"aliveTime": 29.995},
+             "aliveTime", "comparable", 100 * (30.005 - 29.995) / 30.005),
+            ({"aliveTime": 60, "survivalCapped": True, "stressAliveTime": 40.004},
+             {"stressAliveTime": 39.996}, "stressAliveTime", "comparable",
+             100 * (40.004 - 39.996) / 40.004),
+            ({"aliveTime": 60, "survivalCapped": True, "stressAliveTime": 40},
+             {"aliveTime": 59.999, "survivalCapped": False, "stressAliveTime": None},
+             "stressAliveTime", "shortSurvival", None),
+            ({"aliveTime": 60, "survivalCapped": True, "stressAliveTime": 60, "stressCapped": True},
+             {"total": 1}, "capped", "comparable", 0),
+            ({"aliveTime": 60, "survivalCapped": True, "stressAliveTime": 60, "stressCapped": True},
+             {"stressAliveTime": 59.999, "stressCapped": False}, "capped", "belowCap", None),
+        ]
+        for first, second, metric, status, expected_gap in cases:
+            with self.subTest(metric=metric, status=status):
+                payload = self.ranked_payload("Leona", **first)
+                payload["runnerUp"] = self.exact_build(payload, **second)
+                performance = tft.leaderboard_runner_up(payload)["performance"]
+                self.assertEqual((performance["metric"], performance["status"]), (metric, status))
+                if expected_gap is None:
+                    self.assertIsNone(performance["lossPct"])
+                else:
+                    self.assertAlmostEqual(performance["lossPct"], expected_gap)
+
+    def test_old_cells_without_an_exact_second_score_do_not_use_rounded_rows(self):
+        payload = self.ranked_payload(killTime=5.003, total=6240)
+        self.assertIsNone(tft.leaderboard_runner_up(payload))
+        payload["coreAnalysis"] = {"optimal": self.exact_build(payload, self.items)}
+        self.assertIsNone(tft.leaderboard_runner_up(payload))
+        payload["coreAnalysis"]["candidates"] = [{"completions": [{
+            "items": self.item_names(self.second_items()), "itemApis": self.second_items()}]}]
+        self.assertIsNone(tft.leaderboard_runner_up(payload))
+        self.save_payload(payload)
+        self.assertNotIn("secondBest", self.board()["damage"][0])
+        single_row = self.write("Azir", killTime=5.003)
+        self.assertIsNone(tft.leaderboard_runner_up(single_row))
+        self.assertNotIn("secondBest", self.board()["damage"][0])
+
+    def test_mismatched_optimal_and_runner_identities_are_rejected(self):
+        payload = self.ranked_payload(killTime=5, total=6240)
+        self.legacy_runner(payload, killTime=6)
+        payload["coreAnalysis"]["optimal"]["itemApis"] = self.second_items()
+        with self.assertRaisesRegex(ValueError, "optimal build"):
+            tft.leaderboard_runner_up(payload)
+
+        payload = self.ranked_payload(killTime=5, total=6240)
+        for change in ({"itemApis": self.items}, {"items": self.item_names(self.items)}):
+            with self.subTest(change=change):
+                payload["runnerUp"] = {**self.exact_build(payload, killTime=6), **change}
+                with self.assertRaisesRegex(ValueError, "second-ranked build"):
+                    tft.leaderboard_runner_up(payload)
+        payload["runnerUp"] = self.exact_build(payload, killTime=4)
+        with self.assertRaisesRegex(ValueError, "ahead of its optimal"):
+            tft.leaderboard_runner_up(payload)
+        payload["rows"][1]["items"] = list(reversed(payload["rows"][0]["items"]))
+        with self.assertRaisesRegex(ValueError, "repeats the optimal"):
+            tft.leaderboard_runner_up(payload)
+
+    def test_cached_runner_metrics_are_exact_and_returned_rows_are_independent(self):
+        payload = self.ranked_payload(killTime=5.003, total=6240)
+        payload["runnerUp"] = self.exact_build(payload, killTime=5.004)
+        self.save_payload(payload)
+        row = self.board()["damage"][0]
+        self.assertEqual(row["secondBest"]["performance"]["killTime"], 5.004)
+        self.assertAlmostEqual(row["secondBest"]["performance"]["lossPct"], 100 * (5.004 - 5.003) / 5.003)
+        row["secondBest"]["items"].clear()
+        row["secondBest"]["itemApis"].clear()
+        row["secondBest"]["performance"]["lossPct"] = -1
+        fresh = self.board()["damage"][0]["secondBest"]
+        self.assertEqual(fresh["items"], self.item_names(self.second_items()))
+        self.assertEqual(fresh["itemApis"], self.second_items())
+        self.assertGreater(fresh["performance"]["lossPct"], 0)
+        payload["runnerUp"]["performance"]["killTime"] = 5.01
+        self.save_payload(payload)
+        self.assertEqual(self.board()["damage"][0]["secondBest"]["performance"]["killTime"], 5.01)
+
     def test_old_cache_cannot_silently_fall_back_to_rounded_results(self):
         payload = self.write("Azir")
         del payload["best"]
@@ -211,6 +380,22 @@ class TestLeaderboard(unittest.TestCase):
         kill_time = best["performance"]["killTime"]
         self.assertEqual(result["rows"][0]["killTime"], None if kill_time is None else round(kill_time, 2))
         self.assertEqual(result["rows"][0]["total"], round(best["performance"]["total"]))
+
+        # Every newly computed cell retains the real second ranked build even
+        # if it would not survive the older core suggestions' display limits.
+        runner = result["runnerUp"]
+        self.assertEqual(json.loads(Path(filename).read_text())["runnerUp"], runner)
+        self.assertNotEqual(sorted(runner["itemApis"]), sorted(best["itemApis"]))
+        self.assertEqual(result["rows"][1]["items"], self.item_names(runner["itemApis"]))
+        _, second_fight = tft.simulate(self.snap, unit, 2, runner["itemApis"], "clump", [],
+                                       tft.dummies_for(self.snap))
+        self.assertEqual(runner["performance"], {field: second_fight[field] for field in runner["performance"]})
+        comparison = tft.leaderboard_runner_up(result)
+        self.assertEqual(comparison["itemApis"], runner["itemApis"])
+        self.assertEqual(comparison["performance"]["killTime"], second_fight["killTime"])
+        without_cores = copy.deepcopy(result)
+        del without_cores["coreAnalysis"]
+        self.assertEqual(tft.leaderboard_runner_up(without_cores), comparison)
 
 
 if __name__ == "__main__":

@@ -56,6 +56,7 @@ pub struct Ashe {
     floor: RowId,
     dur: RowId,
     pct: RowId,
+    mana_refund: RowId,
     arrow: CalcId,
     trail: CalcId,
 }
@@ -66,12 +67,22 @@ impl Driver for Ashe {
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
         Ashe { fall: k.row("DamageFalloffPerEnemy"), floor: k.row("MinDamagePercent"),
                dur: k.row("RiftDuration"), pct: k.row("MaxHealthDamagePerSecond"),
+               mana_refund: k.row("ManaRefund"),
                arrow: k.calc("PhysicalDamageCalc1"), trail: k.calc("PhysicalDamageCalc2") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let (fall, floor) = (f.row(f.drv.fall), f.row(f.drv.floor));
         let tg = f.aoe_all();
+        if tg.len() == 0 {
+            // A spell refund bypasses its own lock, like isolation mana.
+            // Older snapshots predate this optional effect entirely.
+            if f.drv.mana_refund != RowId::MISSING {
+                let refund = f.sheet.mana_max * f.row(f.drv.mana_refund);
+                f.gain_mana_opt(refund, false);
+            }
+            return;
+        }
         for (i, d) in tg.iter().enumerate() {
             let mult = pymax(floor, 1.0 - fall * (i as f64));
             f.hit_ability(f.drv.arrow, Some(d), "ability", mult);

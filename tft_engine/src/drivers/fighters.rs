@@ -330,7 +330,7 @@ impl ElderDragon {
         let (dur, pct) = (f.row(f.drv.ignite_dur), f.row(f.drv.ignite_pct));
         for d in targets.iter() {
             let max_hp = f.d(d).max_hp;
-            f.dot(pct * max_hp * dur, dur, DType::Physical, Some(d), "ignite", false);
+            f.dot(pct * max_hp * dur, dur, DType::Physical, Some(d), "ignite", true);
         }
     }
 

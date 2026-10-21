@@ -16,9 +16,13 @@ import re
 import shutil
 import tempfile
 
+import tft_early
+import tft_flex
+
 
 CACHE_DIR = Path(__file__).resolve().parent / ".cache" / "tft-site"
 SCHEMA = "tft-http-bundle-v1"
+ARCHIVED_COMPOSITION_REVISION = "archived"
 SOURCE_HASH = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 _CHUNK = 1024 * 1024
 _SLUG = re.compile(r"[a-z0-9]+")
@@ -67,7 +71,40 @@ def _team_planner(snap):
             "unitCodes": {api: codes[api] for api in sorted(snap.units) if api in codes}}
 
 
-def _presentation_hash(snap):
+def _early_catalog(snap):
+    """Read only a complete early-board artifact for the supplied snapshot."""
+    if not tft_early.supports(snap):
+        return None
+    result = tft_early.cached_catalog(snap=snap)
+    if (not isinstance(result, dict) or result.get("revision") != tft_early.revision(snap)
+            or result.get("set") != snap.set_no or result.get("patch") != snap.patch
+            or result.get("complete") is not True):
+        raise ValueError("TFT early compositions do not match their calculation generation")
+    return result
+
+
+def _formations(meta):
+    """Expose the same ordered slot positions used by the combat model.
+
+    ``board_positions`` places its input in place. Copies keep the metadata's
+    unpositioned dummies unchanged, including when preparing both geometries.
+    Nonstandard unpositioned fixtures have no schematic to publish.
+    """
+    import tft
+    slots = (meta.get("dummy") or {}).get("slots")
+    if not slots:
+        return None
+    formations = {}
+    for geometry in tft.GEOMETRIES:
+        positioned = tft.board_positions([dict(slot) for slot in slots], geometry)
+        if any(slot.get("lane") is None or slot.get("row") is None for slot in positioned):
+            return None
+        formations[geometry] = [{"lane": slot["lane"], "row": slot["row"]}
+                                for slot in positioned]
+    return formations
+
+
+def _presentation_hash(snap, *, early=None):
     """Inputs to saved metadata that do not affect the calculation revisions.
 
     Fetch/verification timestamps describe a particular check, not changed
@@ -80,19 +117,28 @@ def _presentation_hash(snap):
             if key not in ("fetchedAt", "verifiedAt", "checkedAt")}
     return hashlib.sha256(_json_bytes([
         meta, (snap.audit or {}).get("unresolved", []), snap.communitydragon, _team_planner(snap),
+        tft_flex.catalog(snap)["revision"] if getattr(snap, "units", None) and hasattr(snap, "traits") else None,
+        _early_catalog(snap) if early is None else early,
     ])).hexdigest()
 
 
 def _endpoints(inventory):
     """Validate the inventory and derive its complete API surface."""
-    if not isinstance(inventory, dict) or set(inventory) != {
-            "baselineCells", "compositionContexts", "leaderboardSelections"}:
+    required = {"baselineCells", "compositionContexts", "leaderboardSelections"}
+    optional = {"traitFlex", "earlyComps", "compositionArchived"}
+    if (not isinstance(inventory, dict) or not required <= set(inventory)
+            or not set(inventory) <= required | optional
+            or any(key in inventory and inventory[key] is not True for key in optional)):
         raise ValueError("invalid TFT site inventory")
     cells = inventory["baselineCells"]
     contexts = inventory["compositionContexts"]
     leaderboards = inventory["leaderboardSelections"]
-    if not all(isinstance(values, list) and values for values in (cells, contexts, leaderboards)):
+    if (not all(isinstance(values, list) for values in (cells, contexts, leaderboards))
+            or not cells or not leaderboards
+            or not contexts and not inventory.get("compositionArchived")):
         raise ValueError("TFT site inventory is empty")
+    if contexts and inventory.get("compositionArchived"):
+        raise ValueError("archived TFT compositions cannot contain active contexts")
     for pair in cells:
         if (not isinstance(pair, list) or len(pair) != 2
                 or not isinstance(pair[0], str) or not _SLUG.fullmatch(pair[0])
@@ -107,14 +153,20 @@ def _endpoints(inventory):
                 or key in ("meta", "status") for key in values)
                 or len(set(values)) != len(values)):
             raise ValueError("invalid TFT selection endpoint")
-    return {
+    endpoints = {
         "/api/tft/meta.json", "/api/tft/status.json",
-        "/api/tft/compositions/meta.json", "/api/tft/compositions/status.json",
         *(f"/api/tft/{slug}/{key}.json" for slug, key in cells),
         *(f"/api/tft/{slug}/cores.json" for slug, _ in cells),
         *(f"/api/tft/leaderboard/{key}.json" for key in leaderboards),
         *(f"/api/tft/compositions/{key}.json" for key in contexts),
     }
+    if contexts:
+        endpoints.update({"/api/tft/compositions/meta.json", "/api/tft/compositions/status.json"})
+    if inventory.get("traitFlex"):
+        endpoints.add("/api/tft/traits.json")
+    if inventory.get("earlyComps"):
+        endpoints.add("/api/tft/early.json")
+    return endpoints
 
 
 @dataclass(frozen=True)
@@ -190,6 +242,9 @@ def _load(descriptor, *, directory=None):
                    manifest["publisherHash"], presentation) != descriptor["siteGeneration"]:
         raise ValueError("TFT site generation does not match its inputs")
     expected = _endpoints(manifest.get("inventory"))
+    if (manifest["inventory"].get("compositionArchived")
+            and manifest["compositionRevision"] != ARCHIVED_COMPOSITION_REVISION):
+        raise ValueError("archived TFT composition revision does not match its inventory")
     entries = manifest.get("entries")
     if not isinstance(entries, dict) or set(entries) != expected:
         raise ValueError("TFT site manifest does not contain every expected endpoint")
@@ -265,38 +320,47 @@ def _compress(directory, url):
 def prepare(snap):
     """Prepare every TFT response from complete caches for one supplied snapshot.
 
-    This does not warm caches, activate a snapshot, write the dashboard marker,
-    or remove any previous generation. Call it before publishing the snapshot;
-    pass its descriptor to the existing dashboard publication path afterwards.
+    Champion caches must already be complete. The small early-board cache is
+    warmed here so scheduled refreshes include it. Late-game composition
+    artifacts are archived and do not participate in active publication.
+    This does not activate a snapshot, write the dashboard marker, or remove a
+    previous generation. Pass the descriptor to dashboard publication later.
     """
     import tft
-    import tft_comps
 
     def revisions():
         if (hashlib.sha256(Path(__file__).read_bytes()).hexdigest() != SOURCE_HASH
-                or tft.source_stale() or tft_comps.source_stale()):
+                or tft.source_stale() or tft_flex.source_stale()
+                or tft_early.source_stale()):
             raise RuntimeError("TFT site source changed; restart preparation with current code")
-        return tft.snapshot_revision(snap), tft_comps.revision(snap)
+        return tft.snapshot_revision(snap), ARCHIVED_COMPOSITION_REVISION
 
     baseline, composition = revisions()
-    presentation = _presentation_hash(snap)
-    paths, comp_paths = tft.cell_paths(snap), tft_comps.cell_paths(snap)
+    if tft_early.supports(snap) and tft_early.warm(snap=snap) is None:
+        raise RuntimeError("another TFT early composition warm is running; finish it before publication")
+    early = _early_catalog(snap)
+    if early is not None and early.get("baselineRevision") != baseline:
+        raise ValueError("TFT early compositions do not match their calculation generation")
+    presentation = _presentation_hash(snap, early=early)
+    paths = tft.cell_paths(snap)
     inventory = {"baselineCells": [list(key) for key in sorted(paths)],
-                 "compositionContexts": sorted(comp_paths),
+                 "compositionContexts": [], "compositionArchived": True,
                  "leaderboardSelections": sorted(tft.leaderboard_scenarios())}
+    if getattr(snap, "units", None) and hasattr(snap, "traits"):
+        inventory["traitFlex"] = True
+    if early is not None:
+        inventory["earlyComps"] = True
     expected = _endpoints(inventory)
     sources = {f"/api/tft/{slug}/{key}.json": Path(path)
                for (slug, key), path in paths.items()}
-    sources.update({f"/api/tft/compositions/{key}.json": Path(path)
-                    for key, path in comp_paths.items()})
     try:
         original = {url: _stat(path) for url, path in sources.items()}
     except FileNotFoundError as error:
-        raise ValueError("all TFT champion and composition calculations must finish before publication") from error
+        raise ValueError("all TFT champion calculations must finish before publication") from error
 
     def unchanged():
         if (revisions() != (baseline, composition) or _presentation_hash(snap) != presentation
-                or tft.cell_paths(snap) != paths or tft_comps.cell_paths(snap) != comp_paths
+                or tft.cell_paths(snap) != paths
                 or any(_stat(path) != original[url] for url, path in sources.items())):
             raise RuntimeError("TFT calculation inputs changed during site preparation")
 
@@ -322,15 +386,24 @@ def prepare(snap):
         for url, source in sources.items():
             _link(source, stage / url.lstrip("/"))
         unchanged()
-        meta, comp_meta = tft.api_meta(snap), tft_comps.api_meta(snap)
-        if (meta.get("revision") != baseline or comp_meta.get("revision") != composition
-                or comp_meta.get("baselineRevision") != baseline):
+        meta = tft.api_meta(snap)
+        if meta.get("revision") != baseline:
             raise ValueError("TFT metadata does not match its calculation generation")
         planner = _team_planner(snap)
-        if planner is not None:
-            comp_meta = dict(comp_meta, teamPlanner=planner)
-        _write(stage, "/api/tft/meta.json", dict(meta, publicationRevision=generation))
-        _write(stage, "/api/tft/compositions/meta.json", dict(comp_meta, publicationRevision=generation))
+        published_meta = dict(meta, publicationRevision=generation)
+        formations = _formations(meta)
+        if formations is not None:
+            published_meta["formations"] = formations
+        _write(stage, "/api/tft/meta.json", published_meta)
+        if inventory.get("traitFlex"):
+            flex = tft_flex.catalog(snap)
+            if planner is not None:
+                flex = dict(flex, teamPlanner=planner)
+            _write(stage, "/api/tft/traits.json", dict(flex, publicationRevision=generation))
+        if early is not None:
+            if planner is not None:
+                early = dict(early, teamPlanner=planner)
+            _write(stage, "/api/tft/early.json", dict(early, publicationRevision=generation))
         # Read through linked files so all derived responses use the exact
         # champion cells that this generation will serve.
         linked_paths = {key: str(stage / f"api/tft/{key[0]}/{key[1]}.json") for key in paths}
@@ -351,17 +424,9 @@ def prepare(snap):
                     or result.get("selection", {}).get("key") != key):
                 raise ValueError(f"TFT leaderboard is incomplete: {key}")
             _write(stage, f"/api/tft/leaderboard/{key}.json", result)
-        for key in inventory["compositionContexts"]:
-            result = json.loads((stage / f"api/tft/compositions/{key}.json").read_bytes())
-            if (result.get("revision") != composition or result.get("baselineRevision") != baseline
-                    or result.get("key") != key):
-                raise ValueError(f"TFT composition does not match its calculation generation: {key}")
         _write(stage, "/api/tft/status.json", {
             "ready": {f"{slug}/{key}": True for slug, key in paths}, "warmer": "idle",
             "patch": snap.patch, "revision": baseline, "publicationRevision": generation, "refresh": {}})
-        _write(stage, "/api/tft/compositions/status.json", {
-            "revision": composition, "ready": {key: True for key in comp_paths},
-            "publicationRevision": generation, "warmer": "idle", "progress": {}})
         entries = {url: _compress(stage, url) for url in sorted(expected)}
         manifest = {"schema": SCHEMA, "siteGeneration": generation,
                     "baselineRevision": baseline, "compositionRevision": composition,

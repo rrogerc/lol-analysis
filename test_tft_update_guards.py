@@ -164,6 +164,116 @@ class TestWrongRowGuard(Base):
         self.assertEqual(overrides['units']['TFT18_Nidalee']['curve'], {'ThirdAttackEmpoweredDamage': [300, 450, 3000, 5000]})
 
 
+class TestObservedLookupMappings(Base):
+    """A reviewed official value can override a separately recorded lookup conflict."""
+    OLD, EXPECTED, LOOKUP = [68, 102, 155, 165], [73, 108, 165, 175], [73, 108, 165, 280]
+
+    def setUp(self):
+        super().setUp()
+        self.target = {'kind': 'unit', 'api': 'TFT18_Xayah', 'row': 'DamageAD', 'stars': [1, 2, 3, 4]}
+        self.line = fixtures.change('Xayah Ability Damage', '68/102/155/165 AD', '73/108/165/175 AD')
+        xayah = fixtures.unit('Xayah', 1)
+        xayah['curveTable']['DamageAD'] = [[star, value] for star, value in enumerate(self.OLD, 1)]
+        calc = {'resolved': True, 'terms': [{'type': 'scaled', 'op': 'add', 'scaling': 'AttackDamage',
+                                            'row': 'DamageAD', 'coefficient': deepcopy(self.OLD)}],
+                'values': deepcopy(self.OLD)}
+        xayah['ability']['attributeCalcs'] = {'PhysicalDamageCalc1': deepcopy(calc)}
+        xayah['attributeCalcs'] = {'PhysicalDamageCalc1': deepcopy(calc)}
+        raw = deepcopy(self.raw)
+        raw['units'].append(xayah)
+        self.rebase(raw)
+
+    def staged_raw(self, fourth=280):
+        raw = deepcopy(self.raw)
+        xayah = raw['units'][-1]
+        values = [*self.LOOKUP[:3], fourth]
+        xayah['curveTable']['DamageAD'] = [[star, value] for star, value in enumerate(values, 1)]
+        for block in (xayah, xayah['ability']):
+            calc = block['attributeCalcs']['PhysicalDamageCalc1']
+            calc['terms'][0]['coefficient'] = deepcopy(values)
+            calc['values'] = deepcopy(values)
+        return raw
+
+    def mapping(self, *, observed=True):
+        record = {'change': self.line, 'target': deepcopy(self.target), 'observedBefore': deepcopy(self.OLD),
+                  'expected': deepcopy(self.EXPECTED), 'numericEncoding': {'scale': 1, 'offset': 0},
+                  'reason': 'Official four-star damage is 175; the staged lookup says 280 and remains a source conflict.'}
+        if observed:
+            record['observedLookup'] = deepcopy(self.LOOKUP)
+        return record
+
+    def test_exact_observed_lookup_acknowledges_the_conflict_but_final_model_uses_expected(self):
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw())
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified coefficient'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, mappings=[self.mapping(observed=False)]))
+        checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, mappings=[self.mapping()]))
+        self.assertEqual(tft_update._values(checked, self.target), self.EXPECTED)
+        self.assertEqual(checked.units['TFT18_Xayah']['calcs']['PhysicalDamageCalc1']['terms'][0]['coefficient'], self.EXPECTED)
+        self.assertEqual(checked.raw['units'][-1]['curveTable']['DamageAD'][-1], [4, 280])
+        check = next(c for c in audit['checks'] if c['target'] == self.target)
+        self.assertEqual((check['expected'], check['observedLookup'], check['fixedScope']),
+                         (self.EXPECTED, self.LOOKUP, True))
+
+    def test_observed_lookup_requires_finite_numeric_values_at_every_target_coordinate(self):
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw())
+        invalid = (None, [], [73, 108, 165], (73, 108, 165, 280), ['73', 108, 165, 280],
+                   [True, 108, 165, 280], [float('nan'), 108, 165, 280], [float('inf'), 108, 165, 280])
+        for values in invalid:
+            with self.subTest(values=values), self.assertRaisesRegex(tft_update.ReviewRequired, 'invalid reviewed observedLookup'):
+                record = {**self.mapping(), 'observedLookup': values}
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, mappings=[record]))
+
+    def test_observed_lookup_matches_override_free_source_and_rejects_stale_values(self):
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw())
+        overrides = deepcopy(self.overrides)
+        overrides['units']['TFT18_Xayah'] = {'curve': {'DamageAD': deepcopy(self.EXPECTED)}}
+        effective = self.snapshot('effective', candidate.raw, notes, overrides, self.audit)
+        self.assertEqual(tft_update._values(effective, self.target), self.EXPECTED)
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'staged lookup does not hold.*observedLookup'):
+            tft_update.reconcile(effective, self.previous, notes,
+                                 review=self.manifest(effective, notes, mappings=[{**self.mapping(), 'observedLookup': self.EXPECTED}]))
+        self.reviewed(effective, notes, self.manifest(effective, notes, mappings=[self.mapping()]))
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw(fourth=281))
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'staged lookup does not hold.*observedLookup'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, mappings=[self.mapping()]))
+
+    def test_observed_lookup_does_not_cover_an_unrelated_stat_or_unmapped_star(self):
+        for case in ('stat', 'star'):
+            with self.subTest(case=case):
+                raw, record = self.staged_raw(), self.mapping()
+                if case == 'stat':
+                    raw['units'][-1]['stats']['armor'] += 1
+                    message = 'unexplained base-stat change'
+                else:
+                    record['target']['stars'] = [1, 2, 3]
+                    for key in ('expected', 'observedBefore', 'observedLookup'):
+                        record[key] = record[key][:3]
+                    message = 'unverified coefficient'
+                candidate, notes = self.candidate([self.line], raw=raw)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, message):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, mappings=[record]))
+
+    def test_observed_lookup_does_not_permit_a_second_coordinate_decision(self):
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw())
+        lookup = TestLookupChanges.record(self, self.target, self.LOOKUP, decision='keep-reviewed-value')
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'same coordinate twice'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, mappings=[self.mapping()], lookupChanges=[lookup]))
+
+    def test_a_persisted_lookup_conflict_does_not_approve_a_changed_future_feed(self):
+        candidate, notes = self.candidate([self.line], raw=self.staged_raw())
+        checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, mappings=[self.mapping()]))
+        _, repeated = tft_update.reconcile(checked, checked, notes)
+        self.assertEqual(repeated, audit)
+        future = self.snapshot('future', self.staged_raw(fourth=281), notes, checked.overrides, audit)
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified coefficient'):
+            tft_update.reconcile(future, checked, notes)
+
+
 class TestPublished18_2Review(unittest.TestCase):
     """The real 18.1d -> 18.2 review, replayed on the archived inputs."""
     WHAT = 'Nidalee AP Form: Nidalee Empowered Attack Damage'
@@ -430,9 +540,366 @@ class TestLookupChanges(Base):
             tft_update.reconcile(candidate, self.previous, notes)
 
 
+class TestTraitCalculationCaches(Base):
+    OLD, NEW = [.07, .10, .14, .18], [.07, .12, .16, .20]
+
+    def setUp(self):
+        super().setUp()
+        self.api = 'DA_18_Lunar'
+        self.target = {'kind': 'trait', 'api': self.api, 'row': 'AbilityPower', 'columns': [1, 2, 3, 4]}
+        self.line = fixtures.change('Lunar Ability Power', '7/10/14/18%', '7/12/16/20%', section='TRAITS')
+        calc = {'resolved': True, 'terms': [
+            {'type': 'flat', 'op': 'add', 'row': 'AbilityPower', 'values': deepcopy(self.OLD)},
+            {'type': 'flat', 'op': 'add', 'row': 'LunarMultiplier', 'values': [2, 2, 2, 2]}],
+            'values': [value + 2 for value in self.OLD]}
+        trait = {'apiName': self.api, 'name': 'Lunar', 'effects': [{'minUnits': 2, 'style': 1}],
+                 'curveTable': {'AbilityPower': [[0, .07], *[[column, value] for column, value in enumerate(self.OLD, 1)]],
+                                'LunarMultiplier': [[column, 2] for column in range(5)],
+                                'UnrelatedValue': [[0, .3], [1, .3]]},
+                 'attributeCalcs': {'GenericCalc1': calc},
+                 'attributeValues': {'GenericCalc1': deepcopy(calc['values'])}}
+        raw = deepcopy(self.raw)
+        raw['traits'].append(trait)
+        self.rebase(raw)
+
+    def changed_raw(self):
+        raw = deepcopy(self.raw)
+        trait = raw['traits'][-1]
+        trait['curveTable']['AbilityPower'] = [[0, .07], *[[column, value] for column, value in enumerate(self.NEW, 1)]]
+        calc = trait['attributeCalcs']['GenericCalc1']
+        term = calc['terms'][0]
+        term['coefficient' if term['type'] == 'scaled' else 'values'] = deepcopy(self.NEW)
+        calc['values'] = [value + 2 for value in self.NEW]
+        trait['attributeValues']['GenericCalc1'] = deepcopy(calc['values'])
+        return raw
+
+    def mapping(self):
+        return {'change': self.line, 'target': self.target, 'observedBefore': self.OLD, 'expected': self.NEW,
+                'numericEncoding': {'scale': .01, 'offset': 0}, 'reason': 'The official AP row names these breakpoint columns.'}
+
+    def test_flat_trait_calculation_caches_follow_their_mapped_rows_without_a_cache_disposition(self):
+        candidate, notes = self.candidate([self.line], raw=self.changed_raw())
+        checked, _ = self.reviewed(candidate, notes, self.manifest(candidate, notes, mappings=[self.mapping()]))
+        self.assertEqual(tft_update._values(checked, self.target), self.NEW)
+        self.assertEqual(checked.raw['traits'][-1]['attributeValues']['GenericCalc1'], [2.07, 2.12, 2.16, 2.20])
+
+    def test_flat_trait_caches_reject_corrupt_old_or_new_calculation_and_attribute_values(self):
+        baseline = deepcopy(self.raw)
+        for when, key in (('old', 'attributeCalcs'), ('new', 'attributeCalcs'),
+                          ('old', 'attributeValues'), ('new', 'attributeValues')):
+            with self.subTest(when=when, key=key):
+                raw = deepcopy(baseline)
+                if when == 'old':
+                    values = raw['traits'][-1][key]['GenericCalc1']
+                    (values['values'] if key == 'attributeCalcs' else values)[1] += 1
+                self.rebase(raw)
+                changed = self.changed_raw()
+                if when == 'new':
+                    values = changed['traits'][-1][key]['GenericCalc1']
+                    (values['values'] if key == 'attributeCalcs' else values)[1] += 1
+                candidate, notes = self.candidate([self.line], raw=changed)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified calculation cache'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, mappings=[self.mapping()]))
+
+    def test_trait_caches_never_assume_stats_for_scaled_runtime_or_unknown_terms(self):
+        baseline = deepcopy(self.raw)
+        for kind in ('scaled', 'runtime', 'unknown'):
+            with self.subTest(kind=kind):
+                raw = deepcopy(baseline)
+                term = raw['traits'][-1]['attributeCalcs']['GenericCalc1']['terms'][0]
+                term['type'] = kind
+                if kind == 'scaled':
+                    term['scaling'] = 'AbilityPower'
+                    term['coefficient'] = term.pop('values')
+                self.rebase(raw)
+                candidate, notes = self.candidate([self.line], raw=self.changed_raw())
+                with self.assertRaisesRegex(tft_update.ReviewRequired, 'trait calculation contains runtime or scaled terms'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, mappings=[self.mapping()]))
+
+    def test_trait_cache_arithmetic_does_not_approve_other_rows_or_formula_changes(self):
+        for case, message in (('row', 'unexplained lookup change'), ('formula', 'unverified formula')):
+            with self.subTest(case=case):
+                changed = self.changed_raw()
+                if case == 'row':
+                    changed['traits'][-1]['curveTable']['UnrelatedValue'][1][1] = .5
+                else:
+                    changed['traits'][-1]['attributeCalcs']['GenericCalc1']['terms'][1]['op'] = 'multiply'
+                candidate, notes = self.candidate([self.line], raw=changed)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, message):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, mappings=[self.mapping()]))
+
+
 class TestDefinitionDispositions(Base):
     def disposition(self, path, before, after):
         return {'path': path, 'before': before, 'after': after, 'disposition': 'presentation-only', 'reason': 'Renamed, same numbers.'}
+
+    def root_leaf_fixture(self):
+        raw = deepcopy(self.raw)
+        role = 'DA_Role_MagicSpecialist_Manaless'
+        raw['roleData'][role] = {'name': 'Magic Specialist', 'roleTags': ['Role.Magic', 'Role.Specialist'],
+                                 'resourceType': 'Mana.ResourceType.Mana'}
+        raw['units'][2]['role'] = role
+        raw['units'][2]['stats'].update(mana=0, initialMana=0)
+        raw['unitAssetNames'] = {'DA_18_GnarBig': 'TFT18_Gnar'}
+        self.rebase(raw)
+        changed = deepcopy(raw)
+        changed['roleData'][role]['resourceType'] = 'Mana.ResourceType.None'
+        changed['unitAssetNames']['DA_18_GnarBig'] = 'TFT18_GnarBig'
+        records = [self.disposition(f'roleData.{role}.resourceType', 'Mana.ResourceType.Mana', 'Mana.ResourceType.None'),
+                   self.disposition('unitAssetNames.DA_18_GnarBig', 'TFT18_Gnar', 'TFT18_GnarBig')]
+        return changed, records
+
+    def test_known_root_leaves_need_separate_exact_records_and_keep_the_audit(self):
+        raw, records = self.root_leaf_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        for absent in ([], records[:1], records[1:]):
+            with self.subTest(records=absent), self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified role definitions or lookup structure'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=absent))
+        checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, definitionDispositions=records))
+        self.assertEqual(checked.units['TFT18_Soraka']['resource'], 'None')
+        for field in ('stats', 'kind', 'roleTags'):
+            self.assertEqual(checked.units['TFT18_Soraka'][field], self.previous.units['TFT18_Soraka'][field])
+        for record in records:
+            self.assertIn({'kind': 'reviewed-definition', 'path': record['path'],
+                           'disposition': record['disposition'], 'reason': record['reason']},
+                          audit['automatic']['definitionChanges'])
+
+    def test_known_root_leaf_records_reject_wrong_values_stale_records_and_broad_parents(self):
+        raw, records = self.root_leaf_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        role = 'DA_Role_MagicSpecialist_Manaless'
+        bad_records = [
+            {**records[0], 'before': 'Mana.ResourceType.Energy'},
+            {**records[0], 'after': 'Mana.ResourceType.Rage'},
+            self.disposition('roleData', self.previous.raw['roleData'], raw['roleData']),
+            self.disposition(f'roleData.{role}', self.previous.raw['roleData'][role], raw['roleData'][role]),
+        ]
+        for bad in bad_records:
+            with self.subTest(record=bad), self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified role definitions or lookup structure'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=[bad, records[1]]))
+        candidate, notes = self.candidate()
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'does not contain'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def test_known_root_leaf_approval_cannot_cover_other_tags_aliases_or_roots(self):
+        base_raw, records = self.root_leaf_fixture()
+        role = 'DA_Role_MagicSpecialist_Manaless'
+        for case in ('role-tag', 'unit-alias', 'other-root', 'new-root', 'new-role-key'):
+            with self.subTest(case=case):
+                raw = deepcopy(base_raw)
+                if case == 'role-tag':
+                    raw['roleData'][role]['roleTags'][0] = 'Role.Attack'
+                elif case == 'unit-alias':
+                    raw['unitAssetNames']['DA_18_GnarBig'] = 'TFT18_Soraka'
+                elif case == 'other-root':
+                    raw['roles']['caster'] = 'Attack Caster'
+                elif case == 'new-root':
+                    raw['combatSettings'] = {'multiplier': 2}
+                elif case == 'new-role-key':
+                    raw['roleData'][role]['newManaMechanic'] = True
+                candidate, notes = self.candidate(raw=raw)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified role definitions or lookup structure'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def test_a_known_root_cannot_be_added_even_when_its_value_is_null(self):
+        raw = deepcopy(self.raw)
+        self.assertNotIn('unitAssetNames', raw)
+        raw['unitAssetNames'] = None
+        candidate, notes = self.candidate(raw=raw)
+        for records in ([], [self.disposition('unitAssetNames', None, None)]):
+            with self.subTest(records=records), self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified role definitions or lookup structure'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def calculation_member_fixture(self):
+        raw = deepcopy(self.raw)
+        unit = raw['units'][2]
+        unit['attributeCalcs'] = deepcopy(unit['ability']['attributeCalcs'])
+        unit['attributeValues'] = {name: deepcopy(calc['values']) for name, calc in unit['attributeCalcs'].items()}
+        unit['ability']['attributeValues'] = deepcopy(unit['attributeValues'])
+        self.rebase(raw)
+        added = deepcopy(raw)
+        calc = {'resolved': True, 'terms': [{'type': 'flat', 'op': 'add', 'values': [1, 1, 1, 1]}],
+                'values': [1, 1, 1, 1]}
+        records = []
+        for block, path in ((added['units'][2], 'TFT18_Soraka'),
+                            (added['units'][2]['ability'], 'TFT18_Soraka.ability')):
+            for key, value in (('attributeCalcs', calc), ('attributeValues', calc['values'])):
+                block[key]['GenericCalc3'] = deepcopy(value)
+                records.append(self.disposition(f'{path}.{key}.GenericCalc3', None, deepcopy(value)))
+        return added, records
+
+    def test_each_added_calculation_and_value_member_requires_its_exact_record(self):
+        raw, records = self.calculation_member_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        for missing in (records, *[[record] for record in records]):
+            supplied = [record for record in records if record not in missing]
+            with self.subTest(missing=[r['path'] for r in missing]), \
+                    self.assertRaisesRegex(tft_update.ReviewRequired, 'definition structure changed'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=supplied))
+        checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, definitionDispositions=records))
+        self.assertEqual(checked.units['TFT18_Soraka']['calcs']['MagicDamageCalc1'],
+                         self.previous.units['TFT18_Soraka']['calcs']['MagicDamageCalc1'])
+        self.assertEqual(checked.units['TFT18_Soraka']['calcs']['GenericCalc3']['values'], [1, 1, 1, 1])
+        for record in records:
+            self.assertIn({'kind': 'reviewed-definition', 'path': record['path'],
+                           'disposition': record['disposition'], 'reason': record['reason']},
+                          audit['automatic']['definitionChanges'])
+
+    def test_added_calculation_records_reject_wrong_or_stale_full_member_values(self):
+        raw, records = self.calculation_member_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        for bad in ({**records[0], 'before': {}}, {**records[0], 'after': {'resolved': True}},
+                    {**records[0], 'after': {**records[0]['after'], 'values': [2, 2, 2, 2]}},
+                    {**records[1], 'after': [2, 2, 2, 2]}):
+            supplied = [bad if record['path'] == bad['path'] else record for record in records]
+            with self.subTest(record=bad), self.assertRaisesRegex(tft_update.ReviewRequired, 'definition structure changed'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=supplied))
+        candidate, notes = self.candidate()
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'does not contain'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def test_calculation_parent_approval_and_other_formula_edits_do_not_cover_added_members(self):
+        raw, records = self.calculation_member_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        parent_records = []
+        for before, after, path in ((self.previous.raw['units'][2], raw['units'][2], 'TFT18_Soraka'),
+                                    (self.previous.raw['units'][2]['ability'], raw['units'][2]['ability'], 'TFT18_Soraka.ability')):
+            for key in ('attributeCalcs', 'attributeValues'):
+                parent_records.append(self.disposition(f'{path}.{key}', before[key], after[key]))
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'definition structure changed'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=parent_records))
+        for case, message in (('formula', 'unverified formula'), ('cache', 'unverified calculation cache')):
+            with self.subTest(case=case):
+                changed = deepcopy(raw)
+                calc = changed['units'][2]['ability']['attributeCalcs']['MagicDamageCalc1']
+                if case == 'formula':
+                    calc['terms'][0]['op'] = 'multiply'
+                else:
+                    calc['values'][0] += 1
+                candidate, notes = self.candidate(raw=changed)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, message):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def orphan_row_fixture(self, *, shop=False, addressable=False, array='values'):
+        old, new = [.035, .0455, .056, .056], [.045, .0059, .072, .072]
+        row, name = 'HealthPercentHeal', 'TFTCalculationAttributes.HealthCalc1'
+        extra = fixtures.unit('SprykinSummonMelee')
+        extra['shopUnit'] = shop
+        term = {'type': 'flat' if array == 'values' else 'scaled', 'op': 'add', 'row': row, array: old}
+        if array == 'coefficient':
+            term['scaling'] = 'AbilityPower'
+        calc = {'resolved': True, 'terms': [term], 'values': old}
+        extra['attributeCalcs'] = {name: deepcopy(calc)}
+        extra['attributeValues'] = {name: deepcopy(old)}
+        extra['ability']['attributeCalcs'] = {name: deepcopy(calc)}
+        extra['ability']['attributeValues'] = {name: deepcopy(old)}
+        extra['ability']['footer'] = [{'row': row, 'values': [[star, value] for star, value in enumerate(old[:3], 1)]}]
+        if addressable:
+            extra['curveTable'][row] = [[star, value] for star, value in enumerate(old, 1)]
+        raw = deepcopy(self.raw)
+        raw['units'] = [unit for unit in raw['units'] if unit['apiName'] != extra['apiName']]
+        raw['units'].append(extra)
+        self.rebase(raw)
+        changed = deepcopy(raw)
+        unit = changed['units'][-1]
+        records = []
+        for block, path in ((unit, extra['apiName']), (unit['ability'], extra['apiName'] + '.ability')):
+            block['attributeCalcs'][name]['terms'][0][array] = deepcopy(new)
+            block['attributeCalcs'][name]['values'] = deepcopy(new)
+            block['attributeValues'][name] = deepcopy(new)
+            records.append(self.disposition(f'{path}.attributeCalcs.{name}.terms[0].{array}', old, new))
+        footer = [[1, .045], [2, .00585], [3, .072]]  # the source footer has different two-star precision
+        unit['ability']['footer'][0]['values'] = footer
+        records.append(self.disposition(extra['apiName'] + '.ability.footer[0].values',
+                                        extra['ability']['footer'][0]['values'], footer))
+        return changed, records
+
+    def test_non_shop_orphan_arrays_are_accepted_only_by_their_exact_array_records(self):
+        for array in ('values', 'coefficient'):
+            with self.subTest(array=array):
+                raw, records = self.orphan_row_fixture(array=array)
+                candidate, notes = self.candidate(raw=raw)
+                for missing in (records, *[[record] for record in records]):
+                    supplied = [record for record in records if record not in missing]
+                    with self.subTest(missing=[r['path'] for r in missing]), self.assertRaises(tft_update.ReviewRequired):
+                        tft_update.reconcile(candidate, self.previous, notes,
+                                             review=self.manifest(candidate, notes, definitionDispositions=supplied))
+                checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, definitionDispositions=records))
+                self.assertEqual(checked.extras['TFT18_SprykinSummonMelee']['curve'], {})
+                self.assertEqual(checked.extras['TFT18_SprykinSummonMelee']['stats'],
+                                 self.previous.extras['TFT18_SprykinSummonMelee']['stats'])
+                for record in records:
+                    self.assertIn({'kind': 'reviewed-definition', 'path': record['path'],
+                                   'disposition': record['disposition'], 'reason': record['reason']},
+                                  audit['automatic']['definitionChanges'])
+
+    def test_orphan_array_records_reject_wrong_stale_parent_and_corrupt_cache_values(self):
+        raw, records = self.orphan_row_fixture()
+        candidate, notes = self.candidate(raw=raw)
+        for bad in ({**records[0], 'before': [.01] * 4}, {**records[0], 'after': [.09] * 4}):
+            supplied = [bad, *records[1:]]
+            with self.subTest(record=bad), self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified coefficient'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=supplied))
+        parent = 'TFT18_SprykinSummonMelee.ability.footer[0]'
+        broad = self.disposition(parent, self.previous.raw['units'][-1]['ability']['footer'][0], raw['units'][-1]['ability']['footer'][0])
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'unexplained lookup change'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=[*records[:2], broad]))
+        corrupted = deepcopy(raw)
+        corrupted['units'][-1]['ability']['attributeCalcs']['TFTCalculationAttributes.HealthCalc1']['values'][0] += .01
+        candidate, notes = self.candidate(raw=corrupted)
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified calculation cache'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=records))
+        candidate, notes = self.candidate()
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'does not contain'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def test_orphan_array_dispositions_cannot_approve_shop_units_or_addressable_rows(self):
+        for case in ('shop', 'previous-shop', 'candidate-shop', 'addressable', 'previous-row', 'candidate-row'):
+            with self.subTest(case=case):
+                raw, records = self.orphan_row_fixture(shop=case in ('shop', 'previous-shop'),
+                                                       addressable=case in ('addressable', 'previous-row'))
+                unit = raw['units'][-1]
+                if case in ('previous-shop', 'candidate-shop'):
+                    unit['shopUnit'] = case == 'candidate-shop'
+                    records.append(self.disposition(unit['apiName'] + '.shopUnit', not unit['shopUnit'], unit['shopUnit']))
+                elif case == 'previous-row':
+                    old = unit['curveTable'].pop('HealthPercentHeal')
+                    records.append(self.disposition(unit['apiName'] + '.curveTable.HealthPercentHeal', old, None))
+                elif case == 'candidate-row':
+                    curve = [[star, value] for star, value in enumerate([.045, .0059, .072, .072], 1)]
+                    unit['curveTable']['HealthPercentHeal'] = curve
+                    records.append(self.disposition(unit['apiName'] + '.curveTable.HealthPercentHeal', None, curve))
+                candidate, notes = self.candidate(raw=raw)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, 'unverified coefficient'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=records))
+        # Addressable extra rows still work through the ordinary numeric lookup review.
+        raw, _ = self.orphan_row_fixture(addressable=True)
+        values = [.045, .0059, .072, .072]
+        raw['units'][-1]['curveTable']['HealthPercentHeal'] = [[star, value] for star, value in enumerate(values, 1)]
+        raw['units'][-1]['ability']['footer'][0]['values'][1][1] = values[1]
+        candidate, notes = self.candidate(raw=raw)
+        target = {'kind': 'unit', 'api': 'TFT18_SprykinSummonMelee', 'row': 'HealthPercentHeal', 'stars': [1, 2, 3, 4]}
+        record = TestLookupChanges.record(self, target, values)
+        checked, _ = self.reviewed(candidate, notes, self.manifest(candidate, notes, lookupChanges=[record]))
+        self.assertEqual([tft.curve_at(checked.extras[target['api']]['curve'][target['row']], star) for star in target['stars']], values)
 
     def test_a_text_change_needs_its_exact_record(self):
         raw = deepcopy(self.raw)
@@ -456,6 +923,128 @@ class TestDefinitionDispositions(Base):
         for bad in ({**stale, 'path': ''}, {k: v for k, v in stale.items() if k != 'after'}, {**stale, 'disposition': ''}, {**stale, 'reason': ''}):
             with self.subTest(bad=bad), self.assertRaises(tft_update.ReviewRequired):
                 tft_update.reconcile(candidate, self.previous, notes, review=self.manifest(candidate, notes, definitionDispositions=[bad]))
+
+    def test_added_non_shop_unit_and_unused_trait_require_exact_root_records(self):
+        extra = fixtures.unit('GnarBig')
+        extra['shopUnit'] = False
+        trait = {'apiName': 'TFT18_Prowler', 'name': 'Prowler', 'units': [], 'effects': [], 'curveTable': {}}
+        raw = deepcopy(self.raw)
+        raw['units'].append(extra)
+        raw['traits'].append(trait)
+        candidate, notes = self.candidate(raw=raw)
+        records = [self.disposition(value['apiName'], None, value) for value in (extra, trait)]
+        for absent in ([], records[:1], records[1:]):
+            with self.subTest(records=absent), self.assertRaisesRegex(tft_update.ReviewRequired, 'new or removed'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=absent))
+        checked, audit = self.reviewed(candidate, notes, self.manifest(candidate, notes, definitionDispositions=records))
+        self.assertEqual(set(checked.units), set(self.previous.units))
+        self.assertIn(extra['apiName'], checked.extras)
+        self.assertIn(trait['apiName'], checked.traits)
+        for record in records:
+            self.assertIn({'kind': 'reviewed-definition', 'path': record['path'],
+                           'disposition': record['disposition'], 'reason': record['reason']},
+                          audit['automatic']['definitionChanges'])
+
+    def test_added_definition_record_must_match_the_full_entity_and_absent_baseline(self):
+        extra = fixtures.unit('GnarBig')
+        extra['shopUnit'] = False
+        raw = deepcopy(self.raw)
+        raw['units'].append(extra)
+        candidate, notes = self.candidate(raw=raw)
+        good = self.disposition(extra['apiName'], None, extra)
+        incomplete = {key: value for key, value in extra.items() if key != 'ability'}
+        changed = deepcopy(extra)
+        changed['stats']['hp'] += 1
+        for bad in ({**good, 'before': {}}, {**good, 'after': incomplete}, {**good, 'after': changed},
+                    {**good, 'path': extra['apiName'] + '.stats'}):
+            with self.subTest(record=bad), self.assertRaisesRegex(tft_update.ReviewRequired, 'new or removed unit'):
+                tft_update.reconcile(candidate, self.previous, notes,
+                                     review=self.manifest(candidate, notes, definitionDispositions=[bad]))
+        candidate, notes = self.candidate()  # the reviewed addition is no longer present
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'does not contain'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=[good]))
+
+    def test_new_shop_champion_is_refused_even_with_an_exact_definition_record(self):
+        base_raw = deepcopy(self.raw)
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                raw = deepcopy(base_raw)
+                extra = fixtures.unit('NewChampion')
+                if legacy:
+                    for unit in [*raw['units'], extra]:
+                        unit.pop('shopUnit')
+                        unit['traits'] = ['Existing']
+                self.rebase(raw)
+                raw['units'].append(extra)
+                candidate, notes = self.candidate(raw=raw)
+                record = self.disposition(extra['apiName'], None, extra)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, 'new or removed unit'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=[record]))
+
+    def test_legacy_shop_classification_cannot_be_changed_by_an_extra_unit(self):
+        raw = deepcopy(self.raw)
+        for unit in raw['units']:
+            unit.pop('shopUnit')
+            unit['traits'] = ['Existing']
+        self.rebase(raw)
+        extra = fixtures.unit('GnarBig')
+        extra['shopUnit'] = False
+        raw['units'].append(extra)  # the first flag would demote every legacy champion
+        candidate, notes = self.candidate(raw=raw)
+        record = self.disposition(extra['apiName'], None, extra)
+        with self.assertRaisesRegex(tft_update.ReviewRequired, 'new or removed unit'):
+            tft_update.reconcile(candidate, self.previous, notes,
+                                 review=self.manifest(candidate, notes, definitionDispositions=[record]))
+
+    def test_added_trait_with_champion_members_or_modeled_effects_is_refused(self):
+        trait = {'apiName': 'TFT18_Prowler', 'name': 'Prowler', 'units': [], 'effects': [], 'curveTable': {}}
+        base_raw = deepcopy(self.raw)
+        for case in ('declared-member', 'current-reference', 'previous-reference', 'modeled-effect'):
+            with self.subTest(case=case):
+                previous_raw = deepcopy(base_raw)
+                if case == 'previous-reference':
+                    previous_raw['units'][2]['traitApiNames'] = [trait['apiName']]
+                self.rebase(previous_raw)
+                raw = deepcopy(previous_raw)
+                added = deepcopy(trait)
+                if case == 'declared-member':
+                    added['units'] = [{'unit': 'TFT18_Soraka'}]
+                elif case == 'current-reference':
+                    raw['units'][2]['traitApiNames'] = [trait['apiName']]
+                elif case == 'previous-reference':
+                    raw['units'][2]['traitApiNames'] = []
+                raw['traits'].append(added)
+                candidate, notes = self.candidate(raw=raw)
+                records = [self.disposition(added['apiName'], None, added)]
+                if case in ('current-reference', 'previous-reference'):
+                    records.append(self.disposition('TFT18_Soraka.traitApiNames',
+                                                    previous_raw['units'][2]['traitApiNames'], raw['units'][2]['traitApiNames']))
+                effects = {trait['apiName']: {}} if case == 'modeled-effect' else {}
+                with patch.object(tft, 'load_trait_effects', return_value=effects), \
+                        self.assertRaisesRegex(tft_update.ReviewRequired, 'new or removed trait'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=records))
+
+    def test_unit_and_trait_removals_remain_refused_with_exact_records(self):
+        extra = fixtures.unit('GnarBig')
+        extra['shopUnit'] = False
+        trait = {'apiName': 'TFT18_Prowler', 'name': 'Prowler', 'units': [], 'effects': [], 'curveTable': {}}
+        previous_raw = deepcopy(self.raw)
+        previous_raw['units'].append(extra)
+        previous_raw['traits'].append(trait)
+        self.rebase(previous_raw)
+        for kind, value in (('unit', extra), ('trait', trait)):
+            with self.subTest(kind=kind):
+                raw = deepcopy(previous_raw)
+                raw[kind + 's'] = [entity for entity in raw[kind + 's'] if entity['apiName'] != value['apiName']]
+                candidate, notes = self.candidate(raw=raw)
+                record = self.disposition(value['apiName'], value, None)
+                with self.assertRaisesRegex(tft_update.ReviewRequired, f'new or removed {kind}'):
+                    tft_update.reconcile(candidate, self.previous, notes,
+                                         review=self.manifest(candidate, notes, definitionDispositions=[record]))
 
     def test_a_new_trait_row_is_acknowledged_by_name_and_value(self):
         raw = deepcopy(self.raw)

@@ -129,7 +129,7 @@ impl Sheet {
             adap_mult: fx.adap_mult,
             base_as: s.as_,
             as_pct: fx.as_pct,
-            max_hp: (kit.hp_star + fx.hp) * fx.hp_mult,
+            max_hp: (kit.hp_star + fx.hp) * fx.hp_mult * fx.hp_compound_mult,
             armor: s.armor + fx.armor,
             mr: s.mr + fx.mr,
             crit_chance: pymin(crit, 1.0),
@@ -146,8 +146,8 @@ impl Sheet {
     /// Blue Buff's "10% additional Attack Damage and Ability Power from all
     /// sources" (`adap_mult`) multiplies what the unit gains — items, traits
     /// and every stack a fight adds — never the base it starts with: an
-    /// adopted reading, by analogy with Adaptive Helm's "additional Mana from
-    /// all sources", and unverified in game. Copies multiply each other. A
+    /// native bonus-only modifier, with baseline cancellation after its
+    /// evaluation channel. Copies add their extra percentage together. A
     /// sheet without the item keeps the plain expression, bit for bit.
     #[inline]
     pub fn ad(&self, ad_pct_extra: f64) -> f64 {
@@ -188,6 +188,9 @@ pub struct Dot {
     pub src: &'static str,
     pub start: f64,
     pub ability: bool,
+    pub cast: i64,
+    pub crit_period: f64,
+    pub next_crit: f64,
 }
 
 /// tft.Dummy: a health pool with resists — and, when the fight has the
@@ -445,22 +448,36 @@ impl Sel {
 /// How `deal` treats the damage: ability damage crits only with Precision;
 /// `raw` skips amp, Solar and bleeds (Python's `ability=`, `crit=`, `raw=`).
 #[derive(Clone, Copy, Debug)]
+pub enum DamageSource { Unit, Item, Trait }
+
+#[derive(Clone, Copy, Debug)]
 pub struct Deal {
     pub ability: bool,
     pub crit: bool,
     pub raw: bool,
+    pub source: DamageSource,
+    pub applies_on_attack: bool,
+    pub applies_on_spell: bool,
+    /// Gameplay hit opportunities, not the number of integration fragments.
+    pub proc_hits: usize,
 }
 
 impl Deal {
     /// Python's defaults: ability damage that may crit (with Precision).
-    pub const ABILITY: Deal = Deal { ability: true, crit: true, raw: false };
+    pub const ABILITY: Deal = Deal { ability: true, crit: true, raw: false,
+        source: DamageSource::Unit, applies_on_attack: false, applies_on_spell: true, proc_hits: 1 };
+    pub const ATTACK: Deal = Deal { ability: false, crit: true, raw: false,
+        source: DamageSource::Unit, applies_on_attack: true, applies_on_spell: false, proc_hits: 1 };
     // (`ability=True, crit=False` had one caller, Draven's giant-axe
     // cash-out, and it now crits with the bleed ticks it replaces. A driver
     // that needs the combination again writes the `Deal` out.)
     /// `ability=False, crit=False`: burns, thorns, executes.
-    pub const PLAIN: Deal = Deal { ability: false, crit: false, raw: false };
+    pub const PLAIN: Deal = Deal { ability: false, crit: false, raw: false,
+        source: DamageSource::Item, applies_on_attack: false, applies_on_spell: false, proc_hits: 0 };
+    /// Bramble's native damage is Unit-sourced but has no attack/spell tag.
+    pub const THORNS: Deal = Deal { source: DamageSource::Unit, proc_hits: 1, ..Self::PLAIN };
     /// `ability=False, crit=False, raw=True`: Solar's bonus.
-    pub const RAW: Deal = Deal { ability: false, crit: false, raw: true };
+    pub const RAW: Deal = Deal { source: DamageSource::Trait, raw: true, ..Self::PLAIN };
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -474,6 +491,8 @@ pub enum Event {
     Driver(u32),
     /// Complete the currently selected engagement, ignoring superseded moves.
     Reposition(u64),
+    /// Resolve combat-start item auras after shared target projections exist.
+    ItemStart,
 }
 
 #[derive(Clone, Debug)]
@@ -481,9 +500,34 @@ pub struct Shield {
     pub amount: f64,
     pub until: f64,
     pub decay: f64,
+    /// Sterak's periodic decay starts relative to this shield's application.
+    next_decay: f64,
     /// Dropped by the tick (spent or expired): Python removed it from the
     /// list; it stays here so a driver watching it still reads its end.
     pub dead: bool,
+}
+
+impl Shield {
+    fn decay_steps(&self, now: f64) -> f64 {
+        if self.dead || self.decay == 0.0 || now + 1e-9 < self.next_decay {
+            0.0
+        } else {
+            ((now - self.next_decay + 1e-9) / TICK_S).floor() + 1.0
+        }
+    }
+
+    /// Observing between integration ticks does not advance the effect clock.
+    fn remaining_at(&self, now: f64) -> f64 {
+        pymax(0.0, self.amount - self.decay * TICK_S * self.decay_steps(now))
+    }
+
+    fn advance_decay(&mut self, now: f64) {
+        let steps = self.decay_steps(now);
+        if steps > 0.0 {
+            self.amount = self.remaining_at(now);
+            self.next_decay += steps * TICK_S;
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -593,6 +637,13 @@ impl SleepTracker {
                                            remaining: threshold, fraction });
     }
 
+    pub fn clear(&mut self, target: usize, generation: u64) {
+        if let Some(entry) = self.targets.get_mut(target) {
+            if entry.is_some_and(|sleep| sleep.generation == generation) { *entry = None; }
+        }
+        self.wakes.retain(|wake| wake.target != target || wake.generation != generation);
+    }
+
     pub fn until(&self, target: usize, generation: u64, time: f64) -> f64 {
         self.targets.get(target).and_then(|entry| *entry)
             .filter(|sleep| sleep.generation == generation && sleep.until > time)
@@ -688,6 +739,7 @@ pub struct Fight<'a, D: Driver> {
     pub rapidfire_n: i64,
     pub ap_stack: f64,
     pub amp_stacks: Vec<(f64, f64, usize)>,
+    sunfire_next: Vec<f64>,
     pending: Vec<(f64, u64, Event)>,
     seq: u64,
     pub amp_extra: f64,
@@ -708,6 +760,8 @@ pub struct Fight<'a, D: Driver> {
     /// hits. Kept separately so legacy fight counters remain unchanged.
     response_overkill: f64,
     pub taken: f64,
+    /// Health and shields consumed by the latest incoming hit, before heals.
+    pub(crate) last_damage_spent: f64,
     pub mitigated: f64,
     pub healed: f64,
     pub shield_used: f64,
@@ -725,6 +779,8 @@ pub struct Fight<'a, D: Driver> {
     fired_mana: u64,
     fired_untargetable: u64,
     fired_fae: bool,
+    regen_next: f64,
+    pub(crate) pending_item_cleanse: bool,
     thorns_ready: Vec<f64>,
     pub drv: D,
     pub trace: Option<Vec<Ev>>,
@@ -764,6 +820,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         } else { 0.0 };
         let pressure = spec.pressure_for(fx.form);
         let thorns_ready = vec![0.0; fx.thorns.len()];
+        let sunfire_next = vec![0.0; fx.sunfire_auras.len()];
         let timed_stats_next = fx.timed_stats.iter().map(|grant| grant.after).collect();
         // Like the range, the timeline follows the equipped form.
         let timing = spec.timing_for(fx.form);
@@ -813,6 +870,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             rapidfire_n: 0,
             ap_stack: 0.0,
             amp_stacks: Vec::new(),
+            sunfire_next,
             pending: Vec::new(),
             seq: 0,
             amp_extra: 0.0,
@@ -831,6 +889,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             absorbed: 0.0,
             response_overkill: 0.0,
             taken: 0.0,
+            last_damage_spent: 0.0,
             mitigated: 0.0,
             healed: 0.0,
             shield_used: 0.0,
@@ -848,6 +907,8 @@ impl<'a, D: Driver> Fight<'a, D> {
             fired_mana: 0,
             fired_untargetable: 0,
             fired_fae: false,
+            regen_next: 1.0,
+            pending_item_cleanse: false,
             thorns_ready,
             drv,
             trace: None,
@@ -892,6 +953,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             f.resist_buffs.push((a, m, dur));
         }
         if let Some(target) = f.target() { f.begin_reposition(None, target); }
+        if !f.sunfire_next.is_empty() { f.push_event(0.0, Event::ItemStart); }
         f
     }
 
@@ -1225,9 +1287,13 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     pub fn amp(&self, target: usize) -> f64 {
+        self.damage_amp(target, DamageSource::Unit)
+    }
+
+    fn damage_amp(&self, target: usize, source: DamageSource) -> f64 {
         let tg = &self.targets[target];
         let mut a = self.fx.amp + self.amp_extra;
-        if tg.is_tank {
+        if tg.is_tank && matches!(source, DamageSource::Unit) {
             a += self.fx.amp_vs_tank;
         }
         for &(amp, until, _) in &self.amp_stacks {
@@ -1298,7 +1364,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         // its time and remaining amount directly: observations can occur
         // between shield-maintenance ticks, including exactly at expiry.
         let shielded = !self.fx.durability_while_shielded.is_empty() && self.shields.iter()
-            .any(|shield| !shield.dead && shield.until > self.t && shield.amount > 0.0);
+            .any(|shield| !shield.dead && shield.until > self.t && shield.remaining_at(self.t) > 0.0);
         let it = self.fx.durabilities.iter().copied()
             .chain(self.fx.durability_while_shielded.iter().copied().filter(|_| shielded))
             .chain(self.fx.durability_by_health.iter()
@@ -1321,7 +1387,15 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub(crate) fn take_with_ignore(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
                                   attack: bool, armor_ignore: f64, mr_ignore: f64) -> f64 {
-        self.take_from_source(amount, dtype, attacker, attack, armor_ignore, mr_ignore, attacker)
+        self.take_with_events(amount, dtype, attacker, attack, armor_ignore, mr_ignore, true, 1)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn take_with_events(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
+                                  attack: bool, armor_ignore: f64, mr_ignore: f64,
+                                  eligible_item_hit: bool, hit_opportunities: usize) -> f64 {
+        self.take_from_source(amount, dtype, attacker, attack, armor_ignore, mr_ignore,
+                              attacker, eligible_item_hit, hit_opportunities)
     }
 
     // Most callers use the same index for source identity and local
@@ -1330,7 +1404,9 @@ impl<'a, D: Driver> Fight<'a, D> {
     #[allow(clippy::too_many_arguments)]
     fn take_from_source(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
                         attack: bool, armor_ignore: f64, mr_ignore: f64,
-                        source: Option<usize>) -> f64 {
+                        source: Option<usize>, eligible_item_hit: bool,
+                        hit_opportunities: usize) -> f64 {
+        self.last_damage_spent = 0.0;
         if amount <= 0.0 || !self.holding() {
             return 0.0;
         }
@@ -1353,6 +1429,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.absorbed += pre;
             self.taken += amount;
             self.mitigated += pre - amount;
+            self.last_damage_spent = pymin(amount, pymax(b.hp, 0.0));
             b.hp -= amount;
             if b.hp <= 0.0 {
                 if amount > 0.0 {
@@ -1371,6 +1448,9 @@ impl<'a, D: Driver> Fight<'a, D> {
                 }
             }
         }
+        for shield in &mut self.shields {
+            shield.advance_decay(self.t);
+        }
         match dtype {
             DType::Physical => amount *= resist_mult(pymax(self.armor_now() - armor_ignore, 0.0)),
             DType::Magic => amount *= resist_mult(pymax(self.mr_now() - mr_ignore, 0.0)),
@@ -1381,6 +1461,9 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
         amount *= 1.0 - self.durability_now();
         let post = amount;
+        let (edge_floor, edge_procs) = self.pre_damage_items(post);
+        let hp_budget = pymax(0.0, self.hp - pymax(0.0, edge_floor));
+        let shield_used_before = self.shield_used;
         let mut left = post;
         let t = self.t;
         for sh in self.shields.iter_mut() {
@@ -1395,7 +1478,8 @@ impl<'a, D: Driver> Fight<'a, D> {
             left -= use_;
             self.shield_used += use_;
         }
-        self.hp -= left;
+        self.last_damage_spent = pymin(post, hp_budget + (self.shield_used - shield_used_before));
+        self.hp = pymax(self.hp - left, edge_floor);
         self.absorbed += pre;
         self.taken += post;
         self.mitigated += pre - post;
@@ -1406,8 +1490,10 @@ impl<'a, D: Driver> Fight<'a, D> {
                           pre * TANK_MANA_PER_PREMIT + post * TANK_MANA_PER_POSTMIT);
             self.gain_mana(m);
         }
-        if self.fx.adap_per_hit {
-            self.adap_stack();
+        if self.fx.adap_per_hit && eligible_item_hit && hit_opportunities > 0 {
+            for _ in 0..hit_opportunities {
+                self.adap_stack();
+            }
         }
         if attack {
             for i in 0..self.fx.thorns.len() {
@@ -1416,13 +1502,13 @@ impl<'a, D: Driver> Fight<'a, D> {
                     self.thorns_ready[i] = self.t + cd;
                     let adj = self.adjacent(attacker);
                     for d in adj.iter() {
-                        self.deal(dmg, DType::Magic, Some(d), "thorns", Deal::PLAIN);
+                        self.deal(dmg, DType::Magic, Some(d), "thorns", Deal::THORNS);
                     }
                 }
             }
         }
         D::hit(self, attacker, post);
-        self.health_triggers();
+        self.health_triggers(edge_procs);
         if self.hp <= 0.0 && self.alive_unit {
             if post > 0.0 {
                 self.response_overkill += pre * pymax(-self.hp, 0.0) / post;
@@ -1432,11 +1518,48 @@ impl<'a, D: Driver> Fight<'a, D> {
         post
     }
 
-    fn health_triggers(&mut self) {
+    /// Lifelines have a native PreApply fallback for an otherwise lethal hit.
+    /// Earlier copies' shields participate in later copies' lethal checks.
+    fn pre_damage_items(&mut self, damage: f64) -> (f64, u64) {
+        for i in 0..self.fx.shield_at_hp.len() {
+            let shield = self.shields.iter().filter(|s| !s.dead && s.until > self.t)
+                .map(|s| s.remaining_at(self.t)).sum::<f64>();
+            if self.hp + shield - damage <= 0.0 && self.fired_shield & (1 << i) == 0 {
+                let (threshold, pct, duration, decays) = self.fx.shield_at_hp[i];
+                self.fired_shield |= 1 << i;
+                self.shield(pct * self.max_hp(), duration, "low health", decays);
+                // Protector's Vow grants its mana in the same fallback. Pair
+                // one unfired mana entry with the triggering shield copy.
+                for mana_index in 0..self.fx.mana_at_hp.len() {
+                    let (mana_threshold, mana) = self.fx.mana_at_hp[mana_index];
+                    if mana_threshold == threshold && self.fired_mana & (1 << mana_index) == 0 {
+                        self.fired_mana |= 1 << mana_index;
+                        self.gain_mana_opt(mana, false);
+                        break;
+                    }
+                }
+            }
+        }
+        let shield = self.shields.iter().filter(|s| !s.dead && s.until > self.t)
+            .map(|s| s.remaining_at(self.t)).sum::<f64>();
+        let mut floor: f64 = -f64::INFINITY;
+        let mut edge_procs = 0;
+        for i in 0..self.fx.untargetable_at_hp.len() {
+            let (threshold, _, _) = self.fx.untargetable_at_hp[i];
+            let minimum = threshold * self.max_hp();
+            if self.fired_untargetable & (1 << i) == 0 && self.hp + shield - damage <= minimum {
+                floor = floor.max(minimum);
+                edge_procs |= 1 << i;
+            }
+        }
+        (floor, edge_procs)
+    }
+
+    fn health_triggers(&mut self, edge_procs: u64) {
         let frac = self.hp_frac();
         for i in 0..self.fx.shield_at_hp.len() {
             let (thr, pct, dur, decays) = self.fx.shield_at_hp[i];
-            if frac < thr && self.fired_shield & (1 << i) == 0 {
+            if frac <= thr && self.fired_shield & (1 << i) == 0 {
                 self.fired_shield |= 1 << i;
                 let amount = pct * self.max_hp();
                 self.shield(amount, dur, "low health", decays);
@@ -1444,16 +1567,17 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
         for i in 0..self.fx.mana_at_hp.len() {
             let (thr, mana) = self.fx.mana_at_hp[i];
-            if frac < thr && self.fired_mana & (1 << i) == 0 {
+            if frac <= thr && self.fired_mana & (1 << i) == 0 {
                 self.fired_mana |= 1 << i;
                 self.gain_mana_opt(mana, false);
             }
         }
         for i in 0..self.fx.untargetable_at_hp.len() {
             let (thr, dur, heal_missing) = self.fx.untargetable_at_hp[i];
-            if frac < thr && self.fired_untargetable & (1 << i) == 0 {
+            if (frac <= thr || edge_procs & (1 << i) != 0) && self.fired_untargetable & (1 << i) == 0 {
                 self.fired_untargetable |= 1 << i;
                 self.untargetable(dur);
+                self.cleanse_item_debuffs();
                 let amount = (self.max_hp() - self.hp) * heal_missing;
                 self.heal(amount, "edge of night");
             }
@@ -1465,6 +1589,21 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.heal(amount, "pixies");
             }
         }
+    }
+
+    fn cleanse_item_debuffs(&mut self) {
+        self.mana_reave = 0.0;
+        self.combat_stunned_until = 0.0;
+        self.combat_armor_flat = 0.0;
+        self.combat_mr_flat = 0.0;
+        if self.combat_bridge.is_some() {
+            self.enemy_debuffs = EnemyDebuffs::default();
+            self.pending_item_cleanse = true;
+        }
+    }
+
+    pub(crate) fn take_edge_cleanse_request(&mut self) -> bool {
+        std::mem::take(&mut self.pending_item_cleanse)
     }
 
     fn die(&mut self) {
@@ -1521,6 +1660,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.record("shield", amount, None, src);
         self.shields.push(Shield { amount, until: self.t + duration,
                                    decay: if decays { amount / duration } else { 0.0 },
+                                   next_decay: self.t + TICK_S,
                                    dead: false });
         Some(self.shields.len() - 1)
     }
@@ -1684,10 +1824,10 @@ impl<'a, D: Driver> Fight<'a, D> {
         if let Some(bridge) = self.combat_bridge.clone() {
             self.combat_flush();
             bridge.publish(self.combat_state());
-            if dtype != DType::True && !mode.raw { amount *= self.amp(target); }
+            if dtype != DType::True && !mode.raw { amount *= self.damage_amp(target, mode.source); }
             let hit = crate::symmetric::CombatHit { target, amount, dtype, src, mode,
                 generation: self.targets[target].generation,
-                attack: !mode.ability && mode.crit,
+                attack: mode.applies_on_attack,
                 execution: false, armor_ignore_pct: self.armor_ignore_now(),
                 armor_ignore: self.targets[target].armor_flat,
                 mr_ignore: self.targets[target].mr_flat };
@@ -1723,9 +1863,10 @@ impl<'a, D: Driver> Fight<'a, D> {
             }
         }
         if dtype != DType::True && !mode.raw {
-            amount *= self.amp(target);
+            amount *= self.damage_amp(target, mode.source);
         }
-        self.apply(amount, target, src, pre);
+        self.apply(amount, target, src, pre, mode);
+        self.on_damage_procs(target, mode);
         if !mode.raw && dtype != DType::True {
             if self.fx.bonus_magic_pct != 0.0 {
                 let bonus = amount * self.fx.bonus_magic_pct;
@@ -1791,16 +1932,6 @@ impl<'a, D: Driver> Fight<'a, D> {
         amount
     }
 
-    fn on_hit_after_damage(&mut self, target: Option<usize>, ability: bool) {
-        if self.combat_last_deferred {
-            if let (Some(target), Some(bridge)) = (target, &self.combat_bridge) {
-                bridge.deferred_on_hit(target, self.combat_last_target_generation);
-                return;
-            }
-        }
-        self.on_hit_effects(target, ability);
-    }
-
     fn breakdown_add(&mut self, src: &'static str, amount: f64) {
         for entry in self.breakdown.iter_mut() {
             if entry.0 == src {
@@ -1811,7 +1942,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.breakdown.push((src, amount));
     }
 
-    fn apply(&mut self, amount: f64, target: usize, src: &'static str, pre: f64) {
+    fn apply(&mut self, amount: f64, target: usize, src: &'static str, pre: f64, mode: Deal) {
         self.raw_total += amount;
         let t = self.t;
         let mut amount = amount;
@@ -1837,7 +1968,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.heal(amount * omni, "omnivamp");
             }
         }
-        if self.fx.ally_heal_pct != 0.0 {
+        if self.fx.ally_heal_pct != 0.0 && matches!(mode.source, DamageSource::Unit) {
             self.heal_ally(amount * self.fx.ally_heal_pct);
         }
         if !self.targets[target].immortal && self.targets[target].hp <= 0.0 && self.targets[target].alive {
@@ -1879,6 +2010,10 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     /// Sunder, shred and burns that attacks and ability damage apply.
     pub fn on_hit_effects(&mut self, target: Option<usize>, _ability: bool) {
+        self.on_hit_effects_for(target, Deal::ABILITY);
+    }
+
+    fn on_hit_effects_for(&mut self, target: Option<usize>, mode: Deal) {
         let target = match target {
             Some(i) if self.targets[i].alive => i,
             _ => return,
@@ -1896,8 +2031,10 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.shred(target, pct, dur);
         }
         for k in 0..self.fx.burn_on_hit.len() {
-            let (pct, dur, stacks) = self.fx.burn_on_hit[k];
-            self.burn(target, pct, dur, stacks);
+            let (pct, dur, stacks, requires_tag) = self.fx.burn_on_hit[k];
+            if !requires_tag || mode.applies_on_attack || mode.applies_on_spell {
+                self.burn(target, pct, dur, stacks);
+            }
         }
     }
 
@@ -1967,19 +2104,37 @@ impl<'a, D: Driver> Fight<'a, D> {
         };
         if duration <= 0.0 {
             self.deal(total, dtype, Some(target), src,
-                      Deal { ability, crit: ability, raw: false });
+                      if src == "bleed" { Deal::RAW } else { Deal { ability, crit: ability, ..Deal::ABILITY } });
             return;
         }
         let t = self.t;
+        let crit_period = if src != "bleed" {
+            self.kit.dot_crit_periods.get(src).copied().unwrap_or(0.0)
+        }
+                          else { 0.0 };
+        // Several formula terms can represent one periodic hit (Ashe's
+        // flat and max-health trail shares). Resolve that hit as one event
+        // so an earlier lethal term cannot discard its critical proc.
+        // This grouping is independent of equipped items: the recipient
+        // also needs one logical hit for effects such as Titan's Resolve.
+        if crit_period > 0.0 {
+            for dot in &mut self.targets[target].dots {
+                if dot.src == src && dot.start == t && dot.until == t + duration
+                    && dot.cast == self.casts && dot.ability == ability && dot.dtype == dtype {
+                    dot.dps += total / duration;
+                    return;
+                }
+            }
+        }
         self.targets[target].dots.push(Dot { dps: total / duration, until: t + duration, dtype,
-                                             src, start: t, ability });
+            src, start: t, ability, cast: self.casts, crit_period,
+            next_crit: if crit_period > 0.0 { t + crit_period } else { FAR } });
     }
 
     /// One basic attack's damage on `target`.
     pub fn hit_attack(&mut self, target: usize, mult: f64, src: &'static str) -> f64 {
         let dmg = self.deal(self.ad() * mult, DType::Physical, Some(target), src,
-                            Deal { ability: false, crit: true, raw: false });
-        self.on_hit_after_damage(Some(target), false);
+                            Deal::ATTACK);
         dmg
     }
 
@@ -1993,7 +2148,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn hit_ability_typed(&mut self, calc: CalcId, target: Option<usize>, src: &'static str,
                              mult: f64, dtype: DType) -> f64 {
         let dmg = self.deal(self.calc(calc) * mult, dtype, target, src, Deal::ABILITY);
-        self.on_hit_after_damage(target, true);
         dmg
     }
 
@@ -2004,14 +2158,12 @@ impl<'a, D: Driver> Fight<'a, D> {
                           mult: f64, runtime: Runtime<'_>) -> f64 {
         let dtype = self.kit.calc_dtype(calc);
         let dmg = self.deal(self.calc_rt(calc, runtime) * mult, dtype, target, src, Deal::ABILITY);
-        self.on_hit_after_damage(target, true);
         dmg
     }
 
     pub fn dot_ability(&mut self, calc: CalcId, target: Option<usize>, duration: f64,
                        src: &'static str, mult: f64) {
         let dtype = self.kit.calc_dtype(calc);
-        self.on_hit_effects(target, true);
         self.dot(self.calc(calc) * mult, duration, dtype, target, src, true);
     }
 
@@ -2111,7 +2263,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             hp: pymax(0.0, self.hp),
             shield_hp: self.shields.iter()
                 .filter(|s| !s.dead && s.until > time)
-                .map(|s| pymax(0.0, s.amount)).sum(),
+                .map(|s| s.remaining_at(time)).sum(),
             armor: self.armor_now(),
             mr: self.mr_now(),
             durability: self.durability_now(),
@@ -2135,7 +2287,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         if self.alive_unit {
             let health = pymax(0.0, self.hp) + self.shields.iter()
                 .filter(|s| !s.dead && s.until > self.t)
-                .map(|s| pymax(0.0, s.amount)).sum::<f64>();
+                .map(|s| s.remaining_at(self.t)).sum::<f64>();
             let durability = 1.0 - self.durability_now();
             pools.push((
                 health / (resist_mult(pymax(self.armor_now(), 0.0))
@@ -2187,6 +2339,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             }
             Event::Driver(tag) => D::event(self, tag),
             Event::Reposition(generation) => self.complete_reposition(generation),
+            Event::ItemStart => self.sunfire_due(),
         }
     }
 
@@ -2314,7 +2467,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                     self.fx.mana_regen += grant.mana_regen;
                     // A flat stat grant participates in existing max-health
                     // multipliers just as the opening trait packet does.
-                    self.gain_max_hp(grant.hp * self.fx.hp_mult);
+                    self.gain_max_hp(grant.hp * self.fx.hp_mult * self.fx.hp_compound_mult);
                     self.record("trait stats", grant.as_pct, None, "timed trait");
                     self.timed_stats_next[index] = if grant.interval > 0.0 {
                         self.timed_stats_next[index] + grant.interval
@@ -2344,13 +2497,24 @@ impl<'a, D: Driver> Fight<'a, D> {
                 let mut keep = Vec::with_capacity(self.targets[di].dots.len());
                 let mut k = 0;
                 while k < self.targets[di].dots.len() {
-                    let dot = self.targets[di].dots[k].clone();
+                    let mut dot = self.targets[di].dots[k].clone();
                     k += 1;
                     let span = pymin(now, dot.until) - pymax(now - TICK_S, dot.start);
                     if span > 0.0 {
+                        let mut proc_hits = 0;
+                        // Only source-defined periodic hits create a crit
+                        // opportunity. A partial .25s integration slice
+                        // alone must not invent an additional gameplay hit.
+                        if dot.crit_period > 0.0 {
+                            while dot.next_crit <= pymin(now, dot.until) + 1e-9 {
+                                proc_hits += 1;
+                                dot.next_crit += dot.crit_period;
+                            }
+                        }
                         self.deal(dot.dps * span, dot.dtype, Some(di), dot.src,
-                                  Deal { ability: dot.ability, crit: dot.ability,
-                                         raw: dot.src == "bleed" });
+                                  if dot.src == "bleed" { Deal::RAW } else {
+                                      Deal { ability: dot.ability, crit: dot.ability, proc_hits, ..Deal::ABILITY }
+                                  });
                     }
                     if self.combat_bridge.is_some() && !self.targets[di].alive {
                         keep.clear();
@@ -2363,6 +2527,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.targets[di].dots = keep;
             }
         }
+        self.sunfire_due();
         if let Some((pct, dur)) = self.fx.burn_aura {
             if self.alive_unit {
                 if let Some(tgt) = self.target() {
@@ -2399,9 +2564,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                     if sh.dead {
                         continue;
                     }
-                    if sh.decay != 0.0 {
-                        sh.amount -= sh.decay * TICK_S;
-                    }
+                    sh.advance_decay(now);
                 }
                 for sh in self.shields.iter_mut() {
                     if !sh.dead && !(sh.amount > 0.0 && sh.until > now) {
@@ -2417,9 +2580,12 @@ impl<'a, D: Driver> Fight<'a, D> {
                     heal_next[i] = (at + self.fx.heal_per_interval[i].1, pct);
                 }
             }
-            if self.fx.regen_missing_pct != 0.0 && self.hp < self.max_hp() {
-                let amount = self.fx.regen_missing_pct * (self.max_hp() - self.hp) * TICK_S;
-                self.heal(amount, "regeneration");
+            if self.fx.regen_missing_pct != 0.0 {
+                while now >= self.regen_next - 1e-9 {
+                    let amount = self.fx.regen_missing_pct * (self.max_hp() - self.hp);
+                    self.heal(amount, "regeneration");
+                    self.regen_next += 1.0;
+                }
             }
         }
         if self.pressure {
@@ -2464,7 +2630,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     /// What every attack does to the per-attack stacks: Kraken's, Titan's,
-    /// Rapidfire, Striker's Flail.
+    /// Rapidfire. Critical-damage procs run separately after damage settles.
     pub fn on_attack_stacks(&mut self) {
         self.ad_stack_n += 1;
         for k in 0..self.fx.ad_per_attack.len() {
@@ -2482,15 +2648,88 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.as_attack_stack += pct;
             }
         }
+    }
+
+    /// Item callbacks run after accepted champion damage, once per logical
+    /// hit. Integration slices without a verified hit carry zero opportunities.
+    fn on_damage_procs(&mut self, target: usize, mode: Deal) {
+        if !matches!(mode.source, DamageSource::Unit) || mode.proc_hits == 0 { return; }
+        self.on_hit_effects_for(Some(target), mode);
+        if mode.applies_on_attack && mode.crit && (!mode.ability || self.sheet.precision)
+            && self.fx.mana_per_crit > 0.0 {
+            self.gain_mana(self.fx.mana_per_crit * self.sheet.crit_chance * mode.proc_hits as f64);
+        }
+        self.on_critical_damage(mode);
+    }
+
+    /// Each equipped Sunfire has its own two-second pulse. The schematic
+    /// nearby coverage supplies distance eligibility; target order breaks ties.
+    fn sunfire_due(&mut self) {
+        if !self.alive_unit { return; }
+        for index in 0..self.sunfire_next.len() {
+            if self.t + 1e-9 < self.sunfire_next[index] { continue; }
+            let (pct, duration, interval, _) = self.fx.sunfire_auras[index];
+            self.sunfire_next[index] += interval;
+            let eligible = |target: &Dummy| target.alive && target.nearby;
+            let unburned = self.targets.iter().position(|target| eligible(target)
+                && !(target.burn_pct > 0.0 && target.burn_until > self.t)
+                && !(target.burn_stack > 0.0 && target.burn_stack_until > self.t));
+            // Native assets establish preference for unburned enemies. If all
+            // nearby enemies are burning, refresh the nearest schematic slot;
+            // the native empty-filter fallback remains unverified.
+            if let Some(target) = unburned.or_else(|| self.targets.iter().position(eligible)) {
+                self.burn(target, pct, duration, false);
+            }
+        }
+    }
+
+    /// Striker's Flail listens for critical damage, including abilities
+    /// with Precision, in the native item's PostApply callback. Its new
+    /// stack cannot amplify the hit that earned it. Copies share the native
+    /// buff definition's cap; a capped application refreshes only the oldest
+    /// instance. Fractional expected stacks remain a deterministic estimate.
+    fn on_critical_damage(&mut self, mode: Deal) {
+        if self.fx.amp_per_crit.is_empty() || mode.proc_hits == 0 || mode.raw || !mode.crit || (mode.ability && !self.sheet.precision)
+            || self.sheet.crit_chance <= 0.0 {
+            return;
+        }
+        self.amp_stacks.retain(|&(_, until, _)| until > self.t);
         for i in 0..self.fx.amp_per_crit.len() {
-            let (amp, dur, mx) = self.fx.amp_per_crit[i];
-            let t = self.t;
-            let live = pysum(self.amp_stacks.iter()
-                             .filter(|&&(_, u, j)| u > t && j == i)
-                             .map(|&(a, _, _)| a));
-            let add = pymin(amp * self.sheet.crit_chance, pymax(0.0, amp * mx - live));
-            if add > 0.0 {
-                self.amp_stacks.push((add, self.t + dur, i));
+            let effect = &self.fx.amp_per_crit[i];
+            let (amp, dur, mx, copies) = (effect.amp, effect.duration, effect.max_stacks, effect.copies);
+            for _ in 0..copies * mode.proc_hits {
+                let live = pysum(self.amp_stacks.iter()
+                                 .filter(|&&(_, _, group)| group == i)
+                                 .map(|&(a, _, _)| a));
+                let budget = amp * self.sheet.crit_chance;
+                let add = pymin(budget, pymax(0.0, amp * mx - live));
+                if add > 0.0 {
+                    self.amp_stacks.push((add, self.t + dur, i));
+                }
+                // At fractional crit chance, refresh a crit-chance share
+                // of one oldest stack rather than the entire live buff.
+                let mut refresh = budget - add;
+                while refresh > 0.0 {
+                    let oldest = self.amp_stacks.iter().enumerate()
+                        // An instance already refreshed at this timestamp
+                        // needs no further movement. Excluding it also makes
+                        // progress finite when subtracting a tiny fractional
+                        // fragment cannot change the floating-point budget.
+                        .filter(|(_, &(a, until, group))|
+                            a > 0.0 && group == i && until < self.t + dur)
+                        .min_by(|(_, a), (_, b)| a.1.total_cmp(&b.1))
+                        .map(|(index, _)| index);
+                    let Some(oldest) = oldest else { break; };
+                    let (amount, _, _) = self.amp_stacks[oldest];
+                    let moved = pymin(refresh, amount);
+                    if moved == amount {
+                        self.amp_stacks[oldest].1 = self.t + dur;
+                    } else {
+                        self.amp_stacks[oldest].0 -= moved;
+                        self.amp_stacks.push((moved, self.t + dur, i));
+                    }
+                    refresh -= moved;
+                }
             }
         }
     }
@@ -2498,9 +2737,8 @@ impl<'a, D: Driver> Fight<'a, D> {
     /// An ability hit that counts as an attack for on-hit purposes: the
     /// per-attack stacks and the on-hit effects, no damage of its own and no
     /// mana (the unit is casting).
-    pub fn simulated_attack(&mut self, target: usize) {
+    pub fn simulated_attack(&mut self, _target: usize) {
         self.on_attack_stacks();
-        self.on_hit_effects(Some(target), false);
     }
 
     fn attack(&mut self) {
@@ -2516,8 +2754,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.on_attack_stacks();
         // mana on attack (role + items), before the driver so an attack
         // that fills the bar casts right after
-        let mana = self.sheet.mana_per_attack + self.fx.mana_per_attack
-            + self.fx.mana_per_crit * self.sheet.crit_chance;
+        let mana = self.sheet.mana_per_attack + self.fx.mana_per_attack;
         self.gain_mana(mana);
         D::attack(self, tgt);
         if self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0 && self.alive_unit {
@@ -2623,7 +2860,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         crate::symmetric::CombatState { hp, max_hp, champion_max_hp: self.max_hp(),
             generation: self.combat_generation,
             alive: self.alive_unit, holding: self.holding(), armor, mr,
-            shield: self.shields.iter().filter(|s| !s.dead && s.until > self.t).map(|s| s.amount.max(0.0)).sum(),
+            shield: self.shields.iter().filter(|s| !s.dead && s.until > self.t).map(|s| s.remaining_at(self.t)).sum(),
             untargetable_until: self.untargetable_until, stunned_until: self.combat_stunned_until,
             mana_max: self.mana_cost(), tank: self.sheet.kind == Kind::Tank,
             sunder_aura: self.fx.sunder_aura, shred_aura: self.fx.shred_aura,
@@ -2660,13 +2897,20 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.total += damage.amount;
         self.breakdown_add(hit.src, damage.amount);
         self.record("damage", damage.amount, Some(target), hit.src);
+        // Deferred hits reach this same settlement callback. Never grant a
+        // stack when queuing them, or let a rejected hit grant one.
+        if damage.raw_amount > 0.0 && !hit.execution {
+            self.on_damage_procs(target, hit.mode);
+        }
         let healing = self.combat_bridge.as_ref().is_some_and(|bridge|
             bridge.damage_heals(self.alive_unit, hit.src));
         if healing {
             if self.alive_unit && self.omnivamp() > 0.0 {
                 self.heal(damage.amount * self.omnivamp(), "omnivamp");
             }
-            if self.fx.ally_heal_pct > 0.0 { self.heal_ally(damage.amount * self.fx.ally_heal_pct); }
+            if self.fx.ally_heal_pct > 0.0 && matches!(hit.mode.source, DamageSource::Unit) {
+                self.heal_ally(damage.amount * self.fx.ally_heal_pct);
+            }
         }
         if damage.champion_killed {
             if self.fx.heal_on_takedown > 0.0 {
@@ -2712,9 +2956,10 @@ impl<'a, D: Driver> Fight<'a, D> {
         let attack = if self.alive_unit && available { self.attack_ready_at() } else { FAR };
         let effect = self.pending.first().map(|event| pymax(event.0, self.combat_stunned_until)).unwrap_or(FAR);
         let next = pymin(pymin(attack, effect), clock.next_tick);
-        // A previously unavailable target may become targetable after an
-        // attack was due. Resume now rather than moving the world backwards.
-        if self.combat_bridge.is_some() { pymax(self.t, next) } else { next }
+        // Target availability or an Edge cleanse can release an overdue
+        // attack/effect. Both real and theoretical actors resume it now;
+        // removing a stun must never rewind the actor's persistent clock.
+        pymax(self.t, next)
     }
 
     pub(crate) fn team_advance(&mut self, clock: &mut TeamClock, time: f64) {
@@ -2774,7 +3019,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         let before = self.response_overkill;
         let local = source % self.targets.len();
         self.take_from_source(amount, dtype, Some(local), dtype == DType::Physical,
-                              0.0, 0.0, Some(source));
+                              0.0, 0.0, Some(source), true, 1);
         (self.response_overkill - before).clamp(0.0, amount)
     }
 

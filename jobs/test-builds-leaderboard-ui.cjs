@@ -320,7 +320,8 @@ bstate.scenario = 'full-squishy';
 // the hash carries the order, and init reads it back
 context.state = { view: 'builds', tier: 'soloq_masters_plus' };
 let written = '';
-context.history = { replaceState: (state, title, hash) => { written = hash; } };
+context.location = { hash: '' }; context.restoringHash = false; context.restoredHash = null;
+context.history = { replaceState: (state, title, hash) => { written = hash; context.location.hash = hash; } };
 const writeHash = vm.runInContext(
   `(() => { ${section('function updateHash(', 'function showView(')}; return updateHash; })()`, context);
 const readHash = text => {
@@ -350,7 +351,7 @@ show({ ...squishy, complete: false, expectedCount: 9, readyCount: 6,
 assert.equal(element('bboard-status').textContent,
   '4 champions · 6 of 9 computed for the current code and data (the rest are warming in the background): ranks are provisional');
 assert.equal(element('bboard-failed').hidden, false);
-assert.match(element('bboard-failed').textContent, /driver failed in the enumeration: Zed \(PanicException: boom\)\.$/);
+assert.equal(element('bboard-failed').textContent, 'Not ranked: Zed (PanicException: boom).');
 bstate.status = { warmer: 'stale' };
 renderLeaderboard();
 assert.match(element('bboard-status').textContent, /\(serve is running older code than is on disk/);
@@ -360,6 +361,11 @@ element('bboard-wrap').scrollTop = 420;
 renderLeaderboard();
 assert.equal(element('bboard-wrap').scrollTop, 420);
 element('bboard-wrap').scrollTop = 0;
+
+show({ ...squishy,
+       failed: [{ champion: 'vex', championName: 'Vex', error: 'Saved result could not be read: invalid JSON' }] });
+assert.equal(body().length, 4, 'a damaged saved result does not hide the healthy rows');
+assert.equal(element('bboard-failed').textContent, 'Not ranked: Vex (Saved result could not be read: invalid JSON).');
 
 // ---- a champion's name opens its ranked builds, under the board's scenario ----
 show(squishy);
@@ -423,12 +429,18 @@ assert.deepEqual(lists['#builds-mode-seg button'].map(b => b.attributes['aria-pr
   assert.equal(timers.length, 0);
   assert.equal(element('bboard-status').textContent, '2 champions');
 
-  // a serve from before the endpoint answers 404: say so, keep what is shown, retry
+  // HTTP errors keep what is shown and retry without guessing their cause.
   respond = async () => { throw new Error('HTTP 404'); };
   await loadLeaderboard();
   assert.equal(body().length, 2);
   assert.match(element('bboard-status').textContent,
-    /^The leaderboard could not be loaded \(HTTP 404\)\. A dashboard started before the leaderboard existed needs a restart\. Showing the board as last loaded\.$/);
+    /^The leaderboard could not be loaded \(HTTP 404\)\. Retrying shortly\. Showing the board as last loaded\.$/);
+  assert.equal(timers.length, 1);
+  timers.length = 0;
+  respond = async () => { throw new Error('HTTP 500'); };
+  await loadLeaderboard();
+  assert.equal(body().length, 2);
+  assert.match(element('bboard-status').textContent, /HTTP 500.*Retrying shortly/);
   assert.equal(timers.length, 1);
   timers.length = 0;
   // and a payload for another scenario is refused

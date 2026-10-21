@@ -103,7 +103,9 @@ class TestSymmetricDamage(unittest.TestCase):
         result = match([ally(ad=200, attack_speed=2)], [target], duration=2.6)
         self.assertEqual([e["time"] for e in events(result, "attack")], [0.0, 2.0, 2.5])
         self.assertEqual(result["duration"], 2.6)
-        self.assertEqual(result["damage"], 600.0)
+        # The Edge-style90% floor prevents100 of the opening200 hit.
+        # Both later hits receive full credit once the effect is spent.
+        self.assertEqual(result["damage"], 500.0)
 
 
 class TestSymmetricAbilities(unittest.TestCase):
@@ -315,25 +317,35 @@ class TestSymmetricGunblade(unittest.TestCase):
         self.assertEqual(result["allies"][1]["healing"], 15.0)
         self.assertEqual(result["allies"][1]["allyHealing"], 20.0)
 
-    def test_proc_healing_assumption_is_explicit_and_switchable(self):
-        holder = ally(ad=1, fx=[{"burnOnHit": [0.01, 4.0], "allyHealPct": 0.2}])
-        target = ally(hp=1000, ad=100, lane=5)
+    def test_proc_healing_option_preserves_gunblade_source_gate(self):
+        holder = ally(ad=1, fx=[{"burnOnHit": [0.01, 4.0], "allyHealPct": 0.2,
+                               "stats": [["omnivamp", 0.2]]}])
+        target = ally(hp=1000, ad=100, lane=3)
         board = [holder, ally(lane=5)]
         yes = match(board, [target], duration=0.3, damageHealingFromProcs=True)
         no = match(board, [target], duration=0.3, damageHealingFromProcs=False)
         self.assertTrue(yes["damageHealingFromProcs"])
         self.assertFalse(no["damageHealingFromProcs"])
-        self.assertGreater(yes["allies"][0]["allyHealing"], 0.0)
+        # The item burn can self-heal under the option, but cannot feed Gunblade.
+        self.assertAlmostEqual(yes["allies"][0]["healing"], 0.5)
+        self.assertEqual(no["allies"][0]["healing"], 0.0)
+        self.assertEqual(yes["allies"][0]["allyHealing"], 0.0)
         self.assertEqual(no["allies"][0]["allyHealing"], 0.0)
 
     def test_postdeath_ally_healing_assumption_is_explicit(self):
-        holder = ally(hp=50, ad=1, lane=1, fx=[{"burnOnHit": [0.01, 4.0], "allyHealPct": 0.2}])
+        holder = ally("Cassiopeia", driver="Cassiopeia", cast=True, hp=50,
+                      ad=0, lane=1, fx=[{"allyHealPct": 0.2}])
+        flat_calc(holder, "MagicDamageCalc1", 100)
+        holder["spec"]["kits"]["base"]["rows"]["Duration"] = 1.0
         survivor = ally(lane=5)
         attackers = [ally(ad=100, lane=1), ally(ad=100, lane=5)]
-        yes = match([holder, survivor], attackers, duration=0.3, postDeathAllyHealing=True)
-        no = match([holder, survivor], attackers, duration=0.3, postDeathAllyHealing=False)
+        for attacker in attackers:
+            attacker["spec"]["unit"]["timing"] = {"base": {"attackDelay": 0.5}}
+        # Unit-sourced poison remains eligible after its owner dies at 0.5.
+        yes = match([holder, survivor], attackers, duration=0.81, postDeathAllyHealing=True)
+        no = match([holder, survivor], attackers, duration=0.81, postDeathAllyHealing=False)
         self.assertFalse(yes["allies"][0]["alive"])
-        self.assertGreater(yes["allies"][0]["allyHealing"], 0.0)
+        self.assertAlmostEqual(yes["allies"][0]["allyHealing"], 10.0)
         self.assertEqual(no["allies"][0]["allyHealing"], 0.0)
 
 

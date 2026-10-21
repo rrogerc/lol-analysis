@@ -322,7 +322,9 @@ class TestTheoryTargetConditions(unittest.TestCase):
         carry = copy.deepcopy(lillia)
         carry["unit"].update(api="TFT18_Ashe", name="Ashe")
         carry["driver"] = "Driver"
-        carry["kits"]["base"]["stats"].update(mana=0, initialMana=0)
+        # The allied burn needs a positive hit, credited to the carry itself.
+        carry["kits"]["base"]["baseAd"] = 1
+        carry["kits"]["base"]["stats"].update(ad=1, mana=0, initialMana=0)
         carry["items"] = [{"api": "test", "name": "test", "unique": False,
                            "stats": [], "burnOnHit": [0.2, 3]}]
         result = measure([lillia, carry], [True, False], pressure=100, window=2.1)

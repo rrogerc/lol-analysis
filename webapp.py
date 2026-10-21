@@ -25,7 +25,8 @@ import items
 import onetricks
 import scaling
 import tft
-import tft_comps
+import tft_early
+import tft_flex
 from common import BASE_DIR, WEB_DIR, db_connect
 
 JOBS_DIR = os.path.join(BASE_DIR, "jobs")
@@ -223,7 +224,27 @@ def cmd_export(args):
     if tft.patch_dirs(tft.DEFAULT_SET):
         tsnap = tft.load_snapshot()
         tmeta = tft.api_meta(tsnap)
+        import tft_site
+        if tft_early.supports(tsnap) and tft_early.warm(snap=tsnap) is None:
+            sys.exit("Another early composition warm is running — wait for it, then export again.")
+        early = tft_site._early_catalog(tsnap)
+        if early is not None and early.get("baselineRevision") != tmeta["revision"]:
+            raise ValueError("TFT early compositions do not match their calculation generation")
+        publication = tft_site._generation(tmeta["revision"], tft_site.ARCHIVED_COMPOSITION_REVISION,
+            tft_site.SOURCE_HASH, tft_site._presentation_hash(tsnap, early=early))
+        tmeta = dict(tmeta, publicationRevision=publication)
         dump("api/tft/meta.json", tmeta)
+        flex = tft_flex.catalog(tsnap)
+        planner = tft_site._team_planner(tsnap)
+        if planner is not None:
+            flex = dict(flex, teamPlanner=planner)
+        dump("api/tft/traits.json", dict(flex, publicationRevision=publication))
+        files += 1
+        if early is not None:
+            if planner is not None:
+                early = dict(early, teamPlanner=planner)
+            dump("api/tft/early.json", dict(early, publicationRevision=publication))
+            files += 1
         if tft.warm(snap=tsnap, prune=False) is None:
             sys.exit("Another TFT warm is running — wait for it, then export again.")
         tpaths = tft.cell_paths(tsnap)
@@ -237,18 +258,9 @@ def cmd_export(args):
             dump(f"api/tft/leaderboard/{key}.json", tft.cached_leaderboard(key, tpaths, snap=tsnap))
         dump("api/tft/status.json",
              {"ready": {f"{slug}/{key}": True for slug, key in tpaths}, "warmer": "idle",
-              "patch": tmeta["patch"], "revision": tmeta["revision"], "refresh": {}})
+              "patch": tmeta["patch"], "revision": tmeta["revision"],
+              "publicationRevision": publication, "refresh": {}})
         files += 2 + len(tpaths) + len(tslugs) + len(leaderboards)
-        # Composition artifacts share the exact same underlying TFT snapshot.
-        if tft_comps.warm(snap=tsnap) is None:
-            sys.exit("Another composition warm is running — wait for it, then export again.")
-        cmeta = tft_comps.api_meta(tsnap)
-        dump("api/tft/compositions/meta.json", cmeta)
-        for key in tft_comps.scenarios():
-            dump(f"api/tft/compositions/{key}.json", tft_comps.cached_scenario(key, snap=tsnap))
-        dump("api/tft/compositions/status.json", {"revision": cmeta["revision"],
-             "ready": tft_comps.cell_ready(tsnap), "warmer": "idle", "progress": {}})
-        files += 2 + len(tft_comps.scenarios())
     for tier in meta["tiers"]:
         patches = scaling.db_patches(con, tier)
         dump(f"api/rows/{tier}.json", scaling.build_rows(con, tier, patches))
@@ -258,6 +270,11 @@ def cmd_export(args):
         for name in names:
             dump(f"api/champion/{tier}/{name}.json", scaling.api_champion(con, tier, name))
         files += 2 + len(names)
+    legacy_compositions = Path(out) / "api" / "tft" / "compositions"
+    if legacy_compositions.is_dir():
+        archived = Path(out) / "archive" / "tft-compositions" / str(time.time_ns())
+        archived.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(legacy_compositions), str(archived))
     print(f"Exported static site to {out}/ ({files} API files, tiers: {', '.join(meta['tiers'])})")
 
 
@@ -362,14 +379,16 @@ class TftResponses:
             if (marker["revision"] != bundle.manifest["baselineRevision"]
                     or marker["compositionRevision"] != bundle.manifest["compositionRevision"]):
                 raise ValueError("TFT publication revisions do not match the ready marker")
-            self.statuses = {url: bundle.json(url) for url in (
-                "/api/tft/status.json", "/api/tft/compositions/status.json")}
+            self.statuses = {"/api/tft/status.json": bundle.json("/api/tft/status.json")}
             self.bundle = bundle
         except (OSError, ValueError, KeyError, TypeError) as error:
             print(f"TFT saved responses are unavailable: {error}", file=sys.stderr)
 
     def send(self, handler, url):
-        if url in ("/api/tft/status.json", "/api/tft/compositions/status.json"):
+        if url.startswith("/api/tft/compositions/"):
+            handler._json({"archived": True, "message": "Late-game composition analysis has been archived."}, 410)
+            return
+        if url == "/api/tft/status.json":
             payload = dict(self.statuses.get(url, {"revision": None, "ready": {}, "warmer": "idle", "pending": True}))
             # The refresh state is small operational metadata. It does not
             # change the revision or readiness of the files being served.
@@ -445,10 +464,11 @@ def cmd_serve(args):
                     return
                 # before the cells' route, which would read "leaderboard" as a champion
                 if m := re.fullmatch(r"/api/builds/leaderboard/([a-z0-9-]+)\.json", u.path):
-                    try:
-                        self._json(builds_leaderboard.cached_leaderboard(m.group(1)))
-                    except ValueError as e:
-                        self._json({"error": str(e)}, 404)
+                    key = m.group(1)
+                    if key not in builds_leaderboard.leaderboard_scenarios():
+                        self._json({"error": f"unknown leaderboard scenario '{key}'"}, 404)
+                        return
+                    self._json(builds_leaderboard.cached_leaderboard(key))
                     return
                 if m := re.fullmatch(r"/api/builds/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
                     try:
@@ -498,7 +518,7 @@ def cmd_serve(args):
         print("LoL auto-warm is off; run `lol.py builds warm` when needed.")
     else:
         print("Cold LoL builds warm in the background (log: .cache/builds/warm.log).")
-    print("TFT serves saved results; `lol.py tft refresh` prepares both analyses on the scheduled timer.")
+    print("TFT serves saved results; `lol.py tft refresh` prepares active analyses on the scheduled timer.")
     if not args.no_open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     # a restart's SIGTERM must unwind normally so the warm we spawned goes too

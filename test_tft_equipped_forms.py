@@ -61,7 +61,7 @@ class TestEquippedNidalee(unittest.TestCase):
             self.assertEqual(result["absorbed"] > 0, opening["form"] == "AD")
 
     def test_aura_reach_is_resolved_after_form_selection(self):
-        for name, fields in (("Sunfire Cape", ("burnAura",)), ("Evenshroud", ("sunderAura",)),
+        for name, fields in (("Sunfire Cape", ("sunfireAuras",)), ("Evenshroud", ("sunderAura",)),
                               ("Ionic Spark", ("shredAura", "ionicSpark"))):
             for form in ("AD", "AP"):
                 with self.subTest(item=name, form=form):
@@ -80,8 +80,7 @@ class TestFormDependentItemSpecs(unittest.TestCase):
     def test_form_units_retain_aura_reach_until_items_choose_the_form(self):
         effects = tft.load_item_effects(SNAP.set_no)
         for api, fields in (("DA_Evenshroud", ("sunderAura",)),
-                            ("DA_IonicSpark", ("shredAura", "ionicSpark")),
-                            ("DA_SunfireCape", ("burnAura",))):
+                            ("DA_IonicSpark", ("shredAura", "ionicSpark"))):
             with self.subTest(item=api):
                 spec = tft.item_spec(SNAP, api, effects, SNAP.unit("Nidalee"))
                 for field in fields:
@@ -91,14 +90,25 @@ class TestFormDependentItemSpecs(unittest.TestCase):
                     static = tft.item_spec(SNAP, api, effects, SNAP.unit(name))
                     self.assertFalse(any(key.endswith("ByRange") for key in static))
 
+    def test_periodic_sunfire_retains_copy_cadence_and_form_dependent_reach(self):
+        effects = tft.load_item_effects(SNAP.set_no)
+        for name in ("Nidalee", "Brambleback"):
+            with self.subTest(unit=name):
+                spec = tft.item_spec(SNAP, "DA_SunfireCape", effects, SNAP.unit(name))
+                self.assertEqual(spec["sunfireAura"], [0.01, 10.0, 2.0, 2.0])
+                self.assertNotIn("burnAura", spec)
+                self.assertNotIn("burnAuraByRange", spec)
+        ranged = tft.item_spec(SNAP, "DA_SunfireCape", effects, SNAP.unit("Ashe"))
+        self.assertNotIn("sunfireAura", ranged)
+
     def test_nonowner_burn_suppression_removes_form_dependent_aura_without_mutating_templates(self):
         profiles = UnitProfiles(SNAP, "clump")
         args = (SNAP.unit("Nidalee")["api"], 2, [], ["DA_SunfireCape", "DA_Deathblade", "DA_Deathblade"])
         before = profiles.spec(*args)
         saved = deepcopy(before)
         suppressed = profiles.spec(*args, item_burn=False)
-        self.assertTrue(any(item.get("burnAuraByRange") for item in before["items"]))
-        self.assertFalse(any(item.get("burnAuraByRange") for item in suppressed["items"]))
+        self.assertTrue(any(item.get("sunfireAura") for item in before["items"]))
+        self.assertFalse(any(item.get("sunfireAura") for item in suppressed["items"]))
         self.assertEqual(before, saved)
         self.assertEqual([item["stats"] for item in before["items"]],
                          [item["stats"] for item in suppressed["items"]])

@@ -320,11 +320,11 @@ class TestDamage(unittest.TestCase):
     def test_aoe_geometry(self):
         # Ahri's bomb has a 3-hex radius (HexRadius), so the formation decides
         # what it covers rather than a nearby flag. Clumped the frontline sits
-        # at lanes 2/3/4 and the backline at lanes 2/4 two rows behind, so the
-        # bomb centred on the first frontliner reaches all three of them and
-        # the backliner directly behind it; spread it reaches the target, the
-        # middle frontliner and the near backliner, all three hexes away.
-        for geo, hits in (("clump", 4), ("spread", 3)):
+        # at lanes 2/3/4/5 and the backline at lanes 2/4 two rows behind, so
+        # the bomb centred on the first frontliner reaches all four of them
+        # and the backliner directly behind it. Spread it also reaches the
+        # frontliner two hexes away and the near backliner three hexes away.
+        for geo, hits in (("clump", 5), ("spread", 3)):
             _, res = run("Ahri", geometry=geo, dummy=immortal(DUMMY))
             land = events(res, "land")[0][0]
             self.assertEqual(len([e for e in events(res, "damage", "ability") if e[0] == land]), hits, geo)
@@ -386,7 +386,7 @@ class TestAbilityRadii(unittest.TestCase):
         slots = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:3]]
         placed = tft.board_positions([dict(s) for s in slots], "clump")
         self.assertEqual([(s["lane"], s["row"]) for s in placed],
-                         [(lane, 0) for lane in tft.FRONT_LANES["clump"]])
+                         [(2, 0), (3, 0), (4, 0)])
         board = dict(DUMMY, slots=slots, count=3, board=[1, 1, 1])
         _, res = run("Gromp", geometry="clump", dummy=board)
         self.assertEqual(len({e[3] for e in events(res, "damage", "cloud")}), 2)
@@ -400,8 +400,8 @@ class TestAbilityRadii(unittest.TestCase):
         _, res = run("Gromp", geometry="clump", dummy=board)
         self.assertEqual(len({e[3] for e in events(res, "damage", "cloud")}), 3)
 
-        four = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:4]]
-        self.assertNotIn("lane", tft.board_positions([dict(s) for s in four], "clump")[0])
+        two = [dict(s, hp=10 ** 6) for s in DUMMY["slots"][:2]]
+        self.assertNotIn("lane", tft.board_positions([dict(s) for s in two], "clump")[0])
 
     def test_the_composition_team_measurement_keeps_the_positions(self):
         # The composition score's shared measurement rebuilds its targets
@@ -748,7 +748,10 @@ class TestBody(unittest.TestCase):
         # slot stands for one attacker. The legacy split puts the fast slots
         # behind the frontline, outside the three his stun selects.
         tank_board = dict(tft.dummies_for(SNAP, threat="mixed"), meleeRepositionSeconds=0.0)
-        _, res = sim("Hecarim", geometry="clump", dummy=tank_board)
+        # Give him enough health to remain alive for the enemy attacks his
+        # first stun blocks; the six-source preset kills an unitemized body
+        # before those attacks become due.
+        _, res = sim("Hecarim", ("Warmog's Armor",), geometry="clump", dummy=tank_board)
         self.assertGreater(res["ccTime"], 0.0)
         self.assertGreater(res["denied"], 0.0)
         _, res = run("Leona", driver="Driver", fx=[{"untargetableAtHp": [0.6, 1.0, 0.2]}])
@@ -758,14 +761,17 @@ class TestBody(unittest.TestCase):
     def test_legacy_board_streams_remain_available_for_custom_fights(self):
         self.assertEqual(sum(DUMMY["board"]), tft.BOARD_SIZE)
         self.assertGreater(DUMMY["boardPressureDps"], 2 * DUMMY["pressureDps"])
-        # a tank's fight is the whole board's; a fighter faces the three in
+        # a tank's fight is the whole board's; a fighter faces the four in
         # front of it and the backline stands there as a damage target only
         _, leona = sim("Leona", duration=10.0)
         _, akali = sim("Akali", duration=10.0)
         rate = lambda r: r["hitsTaken"] / r["aliveTime"]
         self.assertGreater(rate(leona), rate(akali) * 2)
         self.assertEqual(len(leona["dummyAttacks"]), tft.FRONTLINERS + tft.BACKLINERS)
-        self.assertTrue(all(n > 0 for n in leona["dummyAttacks"]))
+        # The legacy eight-attacker allocation need not arm every slot: its
+        # three tank-role streams leave the fourth frontliner unarmed.
+        self.assertEqual([n > 0 for n in leona["dummyAttacks"]],
+                         [streams > 0 for streams in DUMMY["board"]])
         self.assertTrue(all(n > 0 for n in akali["dummyAttacks"][:tft.FRONTLINERS]))
         self.assertEqual(akali["dummyAttacks"][tft.FRONTLINERS:], [0] * tft.BACKLINERS)
         self.assertEqual(akali["dummyCasts"][tft.FRONTLINERS:], [0] * tft.BACKLINERS)
@@ -773,7 +779,7 @@ class TestBody(unittest.TestCase):
     def test_dummies_cast_on_their_mana(self):
         # the non-tank dummy: 7 mana per attack, 42.5 to fill, first swing one period in
         _, res = run("Leona", fx=[{"stats": [["hp", 10 ** 9]]}])
-        self.assertGreaterEqual(res["dummyCasts"][2], 2)
+        self.assertGreaterEqual(res["dummyCasts"][tft.FRONTLINERS], 2)
         self.assertGreater(res["dummyCasts"][0], 0)   # tanks fill from the damage Leona deals them
         self.assertGreater(res["absorbed"], 0.0)
 
@@ -904,6 +910,29 @@ class TestEnumeration(unittest.TestCase):
 
 
 class TestSnapshot(unittest.TestCase):
+    def test_benchmark_places_four_frontliners_and_two_backliners(self):
+        self.assertEqual((tft.FRONTLINERS, tft.BACKLINERS), (4, 2))
+        positions = {
+            "clump": [(2, 0), (3, 0), (4, 0), (5, 0), (2, 2), (4, 2)],
+            "spread": [(0, 0), (2, 0), (4, 0), (6, 0), (1, 2), (5, 2)],
+        }
+        for name, threat in (("Ashe", None), ("Leona", "mixed")):
+            dummy = tft.dummies_for(SNAP, threat=threat)
+            self.assertEqual(dummy["count"], 6)
+            for geometry, expected in positions.items():
+                with self.subTest(unit=name, geometry=geometry):
+                    spec = tft.cell_spec(SNAP, SNAP.unit(name), 2, geometry, [], dummy,
+                                         duration=0.1, item_fx=ITEM_FX, trait_fx=TRAIT_FX)
+                    slots = spec["dummies"]["slots"]
+                    self.assertEqual([(s["lane"], s["row"]) for s in slots], expected)
+                    self.assertEqual([s["line"] for s in slots],
+                                     ["frontline"] * 4 + ["backline"] * 2)
+                    _, result = ENGINE.simulate(spec, False)
+                    self.assertEqual(len(result["left"]), 6)
+                    other = "spread" if geometry == "clump" else "clump"
+                    tft.set_geometry(spec, other)
+                    self.assertEqual([(s["lane"], s["row"]) for s in slots], positions[other])
+
     def test_dummies_from_the_set(self):
         self.assertEqual(DUMMY["count"], tft.FRONTLINERS + tft.BACKLINERS)
         self.assertEqual([s["kind"] for s in DUMMY["slots"]],
@@ -920,14 +949,15 @@ class TestSnapshot(unittest.TestCase):
         defenses = lambda slot: (slot["hp"], slot["armor"], slot["mr"])
         self.assertEqual([defenses(slot) for slot in dummy["slots"]],
                          [(3000, 110, 110), (1800, 45, 45), (1800, 45, 45),
+                          (1800, 45, 45),
                           (1440, 40, 40), (1440, 40, 40)])
-        self.assertEqual(dummy["totalHp"], 9480)
+        self.assertEqual(dummy["totalHp"], 11280)
         self.assertEqual(defenses(dummy["tank"]), (1800, 45, 45))
         self.assertEqual([slot["nearby"] for slot in dummy["slots"]],
-                         [True] * 3 + [False] * 2)
+                         [True] * 4 + [False] * 2)
         # the backline is a damage target only: it never attacks
         self.assertEqual([slot["streams"] for slot in dummy["slots"]],
-                         [1] * 3 + [0] * 2)
+                         [1] * 4 + [0] * 2)
         extra = ("nearby", "line", "streams")
         self.assertEqual({k: v for k, v in dummy["slots"][1].items() if k not in extra},
                          dummy["tank"])
@@ -942,6 +972,7 @@ class TestSnapshot(unittest.TestCase):
         # One formation for every objective: the damage board and the tank
         # board differ in who attacks, not in who is standing there.
         formation = [(3000, 110, 110), (1800, 45, 45), (1800, 45, 45),
+                     (1800, 45, 45),
                      (1440, 40, 40), (1440, 40, 40)]
         count = 0
         for unit in tft.modeled_units(SNAP):
@@ -1073,11 +1104,13 @@ class TestAuditFixes(unittest.TestCase):
         # Hand of Justice: both copies count
         s, _ = run("Warwick", driver="Driver", fx=[{"hoj": [0.15, 15.0, 0.12, 0.5]}] * 2)
         self.assertAlmostEqual(s["ad"], 60 * (1 + 0.6))
-        # Striker's Flail: each copy fills its own cap (crit 100%: a stack per attack)
+        # Striker's Flail: both copies apply to the same four-stack cap.
         _, res = run("Ashe", driver="Driver", dummy=immortal(DUMMY),
                      fx=[{"ampPerCrit": [0.05, 5.0, 4]}] * 2 + [{"stats": [["crit", 0.75]]}])
         autos = events(res, "damage", "auto")
-        self.assertAlmostEqual(autos[4][2] / autos[0][2], 1.4 / 1.1)
+        # The first hit has no stacks. Copies fill the shared cap faster,
+        # but four stacks still grant only 20% amp.
+        self.assertAlmostEqual(autos[4][2] / autos[0][2], 1.2)
 
     def test_ability_dots_crit_with_precision(self):
         _, with_p = run("Cassiopeia", fx=[{"stats": [["crit", 0.75]], "precision": 1}], duration=6.0)

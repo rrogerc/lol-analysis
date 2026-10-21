@@ -170,6 +170,8 @@ pub struct Kit {
     pub base_ad: f64,
     /// Base health at this star, before items.
     pub hp_star: f64,
+    /// Verified gameplay damage periods, separate from numerical integration.
+    pub dot_crit_periods: HashMap<String, f64>,
     rows: Vec<f64>,
     row_names: HashMap<String, u32>,
     calcs: Vec<Calc>,
@@ -181,6 +183,18 @@ impl Kit {
         let stats = Stats::from_py(&reqd(d, "stats")?)?;
         let base_ad = reqf(d, "baseAd")?;
         let hp_star = reqf(d, "hpStar")?;
+        let mut dot_crit_periods = HashMap::new();
+        if let Some(periods) = get(d, "dotCritPeriods")? {
+            for (name, period) in dict_of(&periods)?.iter() {
+                let name: String = name.extract()?;
+                let period: f64 = period.extract()?;
+                if !period.is_finite() || period <= 0.0 {
+                    return Err(pyo3::exceptions::PyValueError::new_err(
+                        format!("{unit_name} {name}: periodic crit interval must be positive and finite")));
+                }
+                dot_crit_periods.insert(name, period);
+            }
+        }
         let mut rows = Vec::new();
         let mut row_names = HashMap::new();
         for (k, v) in reqd(d, "rows")?.iter() {
@@ -253,7 +267,7 @@ impl Kit {
             }
             calcs.push(Calc { name: name.clone(), dtype, terms });
         }
-        Ok(Kit { unit_name: unit_name.to_string(), stats, base_ad, hp_star, rows, row_names,
+        Ok(Kit { unit_name: unit_name.to_string(), stats, base_ad, hp_star, dot_crit_periods, rows, row_names,
                  calcs, calc_names })
     }
 

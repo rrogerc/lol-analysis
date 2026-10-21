@@ -1,5 +1,5 @@
 // node jobs/test-tft-damage-ui.cjs [--payload leaderboard.json] [--cell finite-cell.json]
-// Exercises the finite leaderboard and per-loadout exposure with the real page functions.
+// Exercises the finite leaderboard, formation preview and per-loadout exposure with the real page functions.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,15 +12,15 @@ const section = (from, to) => script.slice(script.indexOf(from), script.indexOf(
 
 function payload() {
   const row = (unit, rank, killTime, objective) => ({ unit, unitName: unit[0].toUpperCase() + unit.slice(1),
-    unitApi: 'TFT18_' + unit, star: 2, cost: 4, scenario: 's2-clump-bare-mixed', rank, objective,
+    unitApi: 'TFT18_' + unit, star: 2, cost: 4, scenario: 's2-clump-low', rank, objective,
     items: ['One', 'Two', 'Three'], itemApis: ['one', 'two', 'three'],
     performance: { killTime, total: killTime === null ? 7000 : 9000, dps: killTime === null ? 350 : 9000 / killTime } });
-  return { revision: 'finite-revision', selection: { key: 's2-clump-bare-mixed' }, complete: true,
+  return { revision: 'finite-revision', selection: { key: 's2-clump-low-mixed' }, complete: true,
     expectedCount: 4, readyCount: 4,
     damage: [Object.assign(row('alpha', 1, 8, 'fighter'), { form: 'AD', role: 'Attack Assassin', range: 1, pressure: true }),
       row('beta', 2, 10, 'carry'), row('gamma', 3, null, 'carry')],
     tanks: [{ unit: 'tank', unitName: 'Tank', rank: 1, star: 2, cost: 3, objective: 'tank',
-      scenario: 's2-clump-bare-mixed', items: ['Armor', 'Health', 'Shield'], itemApis: ['armor', 'health', 'shield'],
+      scenario: 's2-clump-low', items: ['Armor', 'Health', 'Shield'], itemApis: ['armor', 'health', 'shield'],
       performance: { aliveTime: 60, survivalCapped: true, stressAliveTime: 37.1234, stressCapped: false } }] };
 }
 
@@ -76,14 +76,18 @@ function harness(data = payload()) {
     return [...elements.values()].flatMap(node => node.querySelectorAll(selector));
   };
   const state = { mode: 'damage', star: data.selection.key.split('-')[0], geo: data.selection.key.split('-')[1],
-    traits: 'bare', threat: 'mixed', role: 'all', cost: 'all', search: '',
+    traits: data.selection.key.split('-')[2], threat: 'mixed', role: 'all', cost: 'all', search: '',
     data, key: data.selection.key, req: 0, loading: false, error: null };
   const champion = { mode: 'leaderboard', meta: { revision: data.revision, stars: [1, 2, 3],
     units: [...data.damage, ...data.tanks].map(row => ({ slug: row.unit, name: row.unitName, cost: row.cost,
       stars: [1, 2], traits: ['Shared trait'], icon: null })),
-    geometries: { spread: 'Spread', clump: 'Clumped' }, traitContexts: { bare: 'No traits' },
+    geometries: { spread: 'Spread', clump: 'Clumped' },
+    dummy: { count: 6, tanks: 4, others: 2,
+      slots: Array.from({ length: 6 }, (_, i) => ({ kind: i < 4 ? 'tank' : 'non-tank',
+        line: i < 4 ? 'frontline' : 'backline', nearby: i < 4 })) },
+    traitContexts: { bare: 'No traits', low: 'First trait breakpoints', high: 'Highest trait breakpoints' },
     tankThreats: [{ key: 'mixed', label: 'Mixed' }] } };
-  const h = { state, champion, create, element, queryAll, navigations: [], requests: [], hash: '',
+  const h = { state, champion, create, element, queryAll, navigations: [], requests: [], tooltips: new Map(), hash: '',
     get focused() { return focused; } };
   const context = vm.createContext({ tboard: state, tstate: champion, tcomp: { fromComposition: false, req: 0 },
     document: { createElement: create, createElementNS: (ns, tag) => create(tag),
@@ -92,7 +96,10 @@ function harness(data = payload()) {
         : selector === '#tft-board-table tbody' ? element('tbody') : queryAll(selector)[0],
       get activeElement() { return focused; } },
     tftText: (tag, text, className = '') => Object.assign(create(tag), { textContent: text, className }),
-    tftIcon: () => create('span'), tftActive() {}, hideTftTooltip() {}, renderTftStars() {}, scheduleTftStatus() {},
+    tftIcon: (url, name, trait = false) => Object.assign(create('span'), {
+      className: trait ? 'tft-icon tft-trait-icon' : 'tft-icon', dataset: { icon: url || '', name } }),
+    tftActive() {}, hideTftTooltip() {}, renderTftUnits() {}, renderTftStars() {}, scheduleTftStatus() {},
+    bindTftTooltip(anchor, contents, tap = false) { h.tooltips.set(anchor, { contents, tap }); },
     tftHeldTime: (time, capped) => !Number.isFinite(time) ? '—' : capped ? '60s+' : time.toFixed(2) + 's',
     tftSeg(id, options, callback) {
       element(id).replaceChildren(...options.map(option => {
@@ -106,8 +113,11 @@ function harness(data = payload()) {
     api: async (url, options) => { h.requests.push(url); return h.response ? h.response() : structuredClone(data); },
     loadTftCompositions: async () => {}, openTft: async () => {},
   });
-  vm.runInContext(section('const tftLeaderboardKey', 'const tftCompositionKey')
-    + section('function tftCoreItems(', 'function tftComponentUse(')
+  vm.runInContext(section('function tftUnitTraits(', 'const tftTip')
+    + section('function tftTooltipHead(', 'function renderTftSelected(')
+    + section('function tftEnemyFormation(', 'function renderTftFight(')
+    + section('const tftLeaderboardKey', 'const tftCompositionKey')
+    + section('function tftCoreItems(', 'function tftCoreCompletionOrder(')
     + section('function openTftLeaderboardEntry(', 'document.querySelectorAll("#tft-mode-seg button")'), context);
   context.renderTftLeaderboardControls();
   h.context = context;
@@ -123,8 +133,12 @@ function checkFiniteLeaderboard() {
   assert(h.element('tbody').textContent.includes('AD form · Attack Assassin · 1 range'));
   assert.equal(h.element('tft-board-movement-note').hidden, true, 'Old payloads have no new movement assumption');
   assert(!h.element('tbody').textContent.includes('s moving'));
-  assert.equal(h.queryAll('#tft-board-geo-seg button')[0].textContent, 'Spread');
-  assert.equal(h.queryAll('#tft-board-geo-seg button')[1].textContent, 'Clumped');
+  assert(!html.includes('id="tft-board-geo-seg"'), 'The leaderboard uses only clumped enemies');
+  assert(html.includes('id="tft-board-formation"'), 'The fixed enemy formation remains visible');
+  assert.equal(h.element('tft-board-formation').querySelectorAll('button').length, 0,
+    'The fixed formation is a read-only description');
+  assert.equal(h.element('tft-board-formation').textContent,
+    'Clumped · 4 frontliners + 2 backliners (6 enemies)');
   assert(!html.includes('id="tft-damage-time"') && !html.includes('id="tft-damage-comparison"'), 'The slider and curve comparison are removed');
   h.state.role = 'fighter'; c.renderTftLeaderboard();
   assert.deepEqual(h.element('tbody').children.map(row => row.dataset.unit), ['alpha']);
@@ -134,6 +148,223 @@ function checkFiniteLeaderboard() {
   assert(h.element('tbody').textContent.includes('60s+') && h.element('tbody').textContent.includes('37.12s'));
   assert(h.element('thead').textContent.includes('2× pressure'));
   assert.equal(h.element('tft-board-role-seg').hidden, true);
+}
+
+function checkBisGaps() {
+  const data = payload();
+  const runnerUp = performance => ({ items: ['Runner one', 'Runner two', 'Runner three'],
+    itemApis: ['runner-one', 'runner-two', 'runner-three'], performance });
+  data.damage[0].secondBest = runnerUp({ metric: 'killTime', status: 'comparable', lossPct: 10.1543125,
+    value: 8.812345, killTime: 8.812345, total: 9000 });
+  data.damage[1].secondBest = runnerUp({ metric: 'killTime', status: 'comparable', lossPct: 0,
+    value: 10, killTime: 10, total: 9000 });
+  data.damage[2].secondBest = runnerUp({ metric: 'damage', status: 'comparable', lossPct: 5,
+    value: 6650, killTime: null, total: 6650 });
+  const before = JSON.stringify(data), h = harness(data), c = h.context;
+  const cells = () => h.element('tbody').children.map(row => row.children[3]);
+  const value = cell => cell.querySelector('strong').textContent;
+  const detail = cell => cell.querySelector('small').textContent;
+  assert.equal(h.element('thead').children[3].textContent, '2nd BIS gap', 'The new gap sits beside optimal items');
+  assert(h.element('thead').children[3].title.includes('second-best distinct three-item build'));
+  let [clear, tied, damage] = cells();
+  assert.deepEqual([value(clear), value(tied), value(damage)], ['10.2%', '0.0%', '5.0%']);
+  assert.deepEqual([detail(clear), detail(damage)], ['slower clear', 'less damage']);
+  assert.equal(clear.dataset.label, '2nd BIS gap', 'The mobile table retains the gap label');
+  assert(clear.title.includes('Runner one · Runner two · Runner three'));
+  assert(clear.title.includes('extra clear time') && clear.title.includes('BIS: cleared in 8s')
+    && clear.title.includes('Second best: cleared in 8.812345s'), 'Hover exposes the clear-time metric and unrounded results');
+  assert(damage.title.includes('Neither build clears') && damage.title.includes('7000 damage') && damage.title.includes('6650 damage'));
+  assert(!damage.title.includes('6650s'), 'Damage uses damage units rather than time');
+  assert(clear.attributes['aria-label'].includes(clear.title), 'The same explanation is available to assistive technology');
+  assert.deepEqual(h.element('tbody').children.map(row => row.dataset.rank), [1, 2, 3], 'Build gaps preserve champion ranks');
+  assert.equal(JSON.stringify(data), before, 'Gap rendering preserves the saved result');
+
+  data.damage[0].secondBest.performance.lossPct = .00001;
+  c.renderTftLeaderboard();
+  assert.equal(value(cells()[0]), '<0.1%', 'A positive gap never rounds down to a tie');
+  data.damage[0].secondBest.performance.lossPct = .1;
+  c.renderTftLeaderboard();
+  assert.equal(value(cells()[0]), '0.1%');
+  data.damage[0].secondBest.performance = { metric: 'killTime', status: 'noClear', lossPct: null,
+    value: null, killTime: null, total: 7000 };
+  c.renderTftLeaderboard();
+  clear = cells()[0];
+  assert.equal(value(clear), '—'); assert.equal(detail(clear), 'Does not clear');
+  assert(clear.title.includes('does not clear') && clear.title.includes('percentage is unavailable')
+    && clear.title.includes('7000 damage'));
+
+  h.state.mode = 'tanks';
+  const tank = data.tanks[0];
+  tank.secondBest = runnerUp({ metric: 'stressAliveTime', status: 'comparable', lossPct: 10,
+    value: 33.41106, aliveTime: 60, survivalCapped: true, stressAliveTime: 33.41106, stressCapped: false });
+  c.renderTftLeaderboard();
+  let held = cells()[0];
+  assert.equal(value(held), '10.0%'); assert.equal(detail(held), 'less held at 2×');
+  assert(held.title.includes('at least 60s (fight limit)') && held.title.includes('37.1234s at 2× pressure')
+    && held.title.includes('33.41106s at 2× pressure'));
+  Object.assign(tank.performance, { aliveTime: 50.12345, survivalCapped: false, stressAliveTime: null, stressCapped: false });
+  tank.secondBest.performance = { metric: 'aliveTime', status: 'comparable', lossPct: 20,
+    value: 40.09876, aliveTime: 40.09876, survivalCapped: false, stressAliveTime: null, stressCapped: false };
+  c.renderTftLeaderboard();
+  held = cells()[0];
+  assert.equal(value(held), '20.0%'); assert.equal(detail(held), 'less time held');
+  assert(held.title.includes('50.12345s') && held.title.includes('40.09876s'));
+  assert(!held.title.includes('40.09876 damage'));
+
+  Object.assign(tank.performance, { aliveTime: 60, survivalCapped: true, stressAliveTime: 60, stressCapped: true });
+  for (const [metric, status, expected, performance] of [
+    ['stressAliveTime', 'shortSurvival', 'Below regular limit', { aliveTime: 50, survivalCapped: false }],
+    ['capped', 'belowCap', 'Below best limit', { aliveTime: 60, survivalCapped: true, stressAliveTime: 50, stressCapped: false }],
+    ['aliveTime', 'unavailable', 'Unavailable', {}],
+  ]) {
+    tank.secondBest.performance = { metric, status, lossPct: null, value: null, ...performance };
+    c.renderTftLeaderboard();
+    held = cells()[0];
+    assert.equal(value(held), '—'); assert.equal(detail(held), expected);
+    assert(held.title.includes('unavailable'), `${status} explains why the percentage is missing`);
+    assert(!/undefined|NaN/.test(held.textContent + held.title));
+  }
+  tank.secondBest.performance = { metric: 'capped', status: 'comparable', lossPct: 0,
+    value: 60, aliveTime: 60, survivalCapped: true, stressAliveTime: 60, stressCapped: true };
+  c.renderTftLeaderboard();
+  held = cells()[0];
+  assert.equal(value(held), '0.0%'); assert.equal(detail(held), 'same limits');
+  assert(held.title.includes('tied in this benchmark') && held.title.includes('beyond those limits is unknown'));
+
+  const legacy = harness();
+  for (const row of legacy.element('tbody').children) {
+    const gap = row.children[3];
+    assert.equal(value(gap), '—'); assert.equal(detail(gap), 'Unavailable');
+    assert(gap.title.includes('unavailable for this saved result'));
+  }
+}
+
+async function checkTraitContexts() {
+  const h = harness(), c = h.context;
+  assert.deepEqual(h.element('tft-board-trait-seg').children.map(button => button.dataset.key), ['low', 'high']);
+  assert(!h.element('tft-board-trait-seg').textContent.includes('None'));
+
+  const previous = { ...payload(), selection: { key: 's2-clump-bare-mixed' } };
+  h.state.traits = 'bare'; h.state.data = previous;
+  c.renderTftLeaderboardControls();
+  assert.equal(h.state.traits, 'low', 'Older no-trait selections open first breakpoints');
+  assert.equal(h.state.data, null, 'No-trait results are cleared before displaying the new context');
+  assert.equal(h.element('tbody').children.length, 0);
+  await c.loadTftLeaderboard();
+  assert.deepEqual(h.requests, ['api/tft/leaderboard/s2-clump-low-mixed.json']);
+  assert.equal(h.state.data.selection.key, 's2-clump-low-mixed');
+  assert.equal(previous.selection.key, 's2-clump-bare-mixed', 'Saved payloads remain unchanged');
+
+  h.response = () => ({ ...payload(), selection: { key: 's2-clump-high-mixed' } });
+  const loaded = new Promise(resolve => { c.scheduleTftStatus = resolve; });
+  h.element('tft-board-trait-seg').children.find(button => button.dataset.key === 'high').events.click();
+  await loaded;
+  assert.equal(h.state.traits, 'high');
+  assert.equal(h.requests.at(-1), 'api/tft/leaderboard/s2-clump-high-mixed.json');
+  assert.equal(h.state.data.selection.key, 's2-clump-high-mixed');
+
+  const restore = section('    if (hash.tab === "tft") {', '    if (view === "champion")');
+  for (const traits of ['bare', 'low', 'high']) {
+    const board = { traits: 'low' };
+    vm.runInContext(restore, vm.createContext({
+      hash: { tab: 'tft', tftview: 'leaderboard', btr: traits },
+      tstate: { mode: 'builds' }, tboard: board, tcomp: {}, setTftMode() {},
+    }));
+    assert.equal(board.traits, traits === 'bare' ? 'low' : traits);
+  }
+}
+
+async function checkClumpedFormation() {
+  const h = harness(), c = h.context;
+  const previous = { ...payload(), selection: { key: 's2-spread-low-mixed' } };
+  Object.assign(h.state, { geo: 'spread', key: previous.selection.key, data: previous });
+  assert.equal(vm.runInContext('tftLeaderboardKey()', c), 's2-clump-low-mixed',
+    'Stale in-memory geometry cannot create a spread request');
+  c.renderTftLeaderboardControls();
+  assert.equal(h.state.geo, 'clump', 'An older separated formation selection opens clumped enemies');
+  assert.equal(h.state.data, null, 'Saved spread results are cleared before displaying the clumped context');
+  assert.equal(h.element('tbody').children.length, 0);
+  await c.loadTftLeaderboard();
+  assert.deepEqual(h.requests, ['api/tft/leaderboard/s2-clump-low-mixed.json']);
+  assert.equal(h.state.data.selection.key, 's2-clump-low-mixed');
+  assert.equal(previous.selection.key, 's2-spread-low-mixed', 'Saved spread payloads remain unchanged');
+
+  let resolve;
+  h.response = () => new Promise(finish => { resolve = finish; });
+  Object.assign(h.state, { geo: 'spread', data: previous });
+  const loading = c.loadTftLeaderboard({ preserve: true });
+  assert.equal(h.state.geo, 'clump', 'Reloading normalizes a stale in-memory formation');
+  assert.equal(h.state.data, null, 'Preserve cannot retain a spread payload while loading clumped results');
+  resolve(payload());
+  await loading;
+
+  // Older metadata must describe its actual benchmark while the new generation is being prepared.
+  h.champion.meta.dummy.slots = Array.from({ length: 5 }, (_, i) => ({ nearby: i < 3 }));
+  c.renderTftLeaderboardControls();
+  assert.equal(h.element('tft-board-formation').textContent,
+    'Clumped · 3 frontliners + 2 backliners (5 enemies)', 'Enemy counts come from the published slots');
+  delete h.champion.meta.dummy;
+  c.renderTftLeaderboardControls();
+  assert.equal(h.element('tft-board-formation').textContent, 'Clumped', 'Missing formation metadata does not invent enemy counts');
+
+  h.response = () => previous;
+  await c.loadTftLeaderboard();
+  assert.equal(h.state.data, null, 'A spread response cannot be displayed as a clumped benchmark');
+  assert(h.state.error, 'A mismatched response exposes a load failure');
+}
+
+async function checkLeaderboardLayout() {
+  const h = harness(), c = h.context, wrap = h.element('tft-board-tablewrap');
+  assert.equal(h.element('view-tft').dataset.mode, 'leaderboard');
+  assert.match(html, /#view-tft\[data-mode="leaderboard"\]\s*\{\s*padding-bottom:\s*max\(560px,\s*100vh\)/,
+    'Short leaderboards have room below them even on a small viewport');
+  wrap.getBoundingClientRect = () => ({ height: wrap.hidden ? 0
+    : Math.max(parseFloat(wrap.style.minHeight) || 0, h.element('tbody').children.length > 1 ? 560 : 100) });
+  const requests = [];
+  h.response = () => new Promise((resolve, reject) => { requests.push({ resolve, reject }); });
+
+  const loaded = new Promise(resolve => { c.scheduleTftStatus = resolve; });
+  h.element('tft-board-star-seg').children.find(button => button.dataset.key === 's1').events.click();
+  assert.equal(h.state.data, null, 'Changing stars clears the previous scenario');
+  assert.equal(h.element('tbody').children.length, 0, 'Old rows are removed while the new setting loads');
+  assert.equal(wrap.hidden, false, 'The table region stays on the page during loading');
+  assert.equal(wrap.style.minHeight, '560px', 'Loading reserves the previous table height');
+  const single = payload();
+  single.selection.key = 's1-clump-low-mixed';
+  single.damage = [{ ...single.damage[0], star: 1, scenario: 's1-clump-low' }];
+  requests[0].resolve(single);
+  await loaded;
+  assert.equal(h.element('tbody').children.length, 1);
+  assert.equal(wrap.hidden, false);
+  assert.equal(wrap.style.minHeight, '', 'The loaded one-unit table uses its own height');
+  assert.equal(h.element('view-tft').dataset.mode, 'leaderboard', 'Bottom padding remains for a single result');
+
+  h.state.star = 's2';
+  const superseded = c.loadTftLeaderboard();
+  assert.equal(wrap.style.minHeight, '100px');
+  h.state.traits = 'high';
+  const latest = c.loadTftLeaderboard();
+  requests[1].resolve(payload());
+  await superseded;
+  assert.equal(h.state.loading, true);
+  assert.equal(wrap.hidden, false);
+  assert.equal(wrap.style.minHeight, '100px', 'A superseded request cannot release the current loading space');
+  requests[2].resolve({ ...payload(), selection: { key: 's2-clump-high-mixed' }, damage: [] });
+  await latest;
+  assert.equal(wrap.style.minHeight, '', 'Empty results release the loading height');
+  assert.equal(wrap.hidden, true);
+  assert.equal(h.element('tft-board-empty').hidden, false);
+  assert.equal(h.element('view-tft').dataset.mode, 'leaderboard', 'Empty results keep the page padding');
+
+  const failed = c.loadTftLeaderboard();
+  requests[3].reject(new Error('Fixture network failure'));
+  await failed;
+  assert(h.state.error);
+  assert.equal(wrap.style.minHeight, '', 'A failed request releases the loading height');
+  assert.equal(wrap.hidden, true);
+  assert.equal(h.element('tft-board-retry').disabled, false);
+  await c.setTftMode('builds', { load: false });
+  assert.equal(h.element('view-tft').dataset.mode, 'builds', 'Leaderboard padding stays scoped to that page');
 }
 
 function checkPinnedCompatibility() {
@@ -159,17 +390,24 @@ function checkPinnedCompatibility() {
     const invalid = pinnedCurvePayload(); mutate(invalid);
     assert.equal(c.tftFiniteLeaderboardValid(invalid), false, 'Potential metrics cannot masquerade as finite results');
   }
+  const potentialGap = pinnedCurvePayload();
+  potentialGap.damage[0].secondBest = { items: ['Potential runner', 'Two', 'Three'],
+    itemApis: ['p1', 'two', 'three'], performance: { metric: 'damage', status: 'comparable', lossPct: 75, total: 15000 } };
+  const pinned = harness(potentialGap);
+  assert(pinned.element('tbody').children.every(row => row.children[3].querySelector('strong').textContent === '—'),
+    'A potential runner-up cannot masquerade as the saved finite build comparison');
 }
 
 async function checkNavigationAndLoad() {
   const h = harness(), c = h.context;
   h.element('tbody').children[0].querySelector('.tft-board-champion').events.click();
-  assert.deepEqual(h.navigations.at(-1), { unit: 'alpha', star: 2, geo: 'clump', traits: 'bare' });
+  assert.deepEqual(h.navigations.at(-1), { unit: 'alpha', star: 2, geo: 'clump', traits: 'low' });
   assert.equal(h.champion.mode, 'builds');
   await c.setTftMode('leaderboard', { load: false, focus: true });
   assert.equal(h.focused.dataset.unit, 'alpha');
   c.state = { view: 'tft', tier: 'test' };
-  c.history = { replaceState: (state, title, hash) => { h.hash = hash; } };
+  c.location = { hash: '' }; c.restoringHash = false; c.restoredHash = null;
+  c.history = { replaceState: (state, title, hash) => { h.hash = hash; c.location.hash = hash; } };
   vm.runInContext(section('function updateHash(', 'function showView('), c);
   c.updateHash();
   const hash = Object.fromEntries(new URLSearchParams(h.hash.slice(1)));
@@ -225,6 +463,142 @@ function checkFiniteEquippedPressure() {
   assert(!/undefined|NaN/.test(h.element('tbd-hint').textContent));
   assert.equal(unit.objective, 'carry', 'Per-build rendering preserves base identity used by navigation guards');
   return h;
+}
+
+function checkEnemyFormationPreviews() {
+  // Keep the earlier five-target Nidalee fixture as an independent compatibility check.
+  const h = checkFiniteEquippedPressure(), c = h.context;
+  const unit = h.champion.meta.units.find(entry => entry.slug === 'alpha');
+  const [fighter, carry] = h.champion.data.rows;
+  unit.name = 'Sivir';
+  const legacy = h.champion.data.scenario.dummy;
+  const catalog = {
+    clump: [{ lane: 0, row: 0 }, { lane: 1, row: 0 }, { lane: 2, row: 0 },
+      { lane: 3, row: 0 }, { lane: 0, row: 2 }, { lane: 3, row: 2 }],
+    spread: [{ lane: -3, row: 0 }, { lane: 0, row: 0 }, { lane: 3, row: 0 },
+      { lane: 6, row: 0 }, { lane: -3, row: 2 }, { lane: 6, row: 2 }],
+  };
+  h.champion.meta.formations = catalog;
+  const dummy = (front, back, count = front + back) => ({ count, star: 2, pressureDps: 100,
+    slots: Array.from({ length: front + back }, (_, i) => ({
+      hp: i === 0 ? 3000 : i < front ? 1800 : 1440, armor: 100, mr: 100,
+      ad: 50, as: 1, ability: 100, manaStart: 0, manaMax: 100, manaPerAttack: 10,
+      fixedDefenses: i === 0, nearby: i < front,
+      line: i < front ? 'frontline' : 'backline', kind: i < front ? 'tank' : 'non-tank',
+    })) });
+  const diagram = () => h.element('tft-formation-diagram');
+  const enemies = () => diagram().children.filter(node => node.tag === 'circle' && node.attributes['data-target']);
+  const targets = nodes => nodes.map(node => Number(node.attributes['data-target'])).sort((a, b) => a - b);
+  const render = (dm, build = carry, geometry = 'clump') => {
+    Object.assign(h.champion.data.scenario, { dummy: dm, geometry });
+    c.renderTftBreakdown(build);
+  };
+  const assertTargets = (front, back) => {
+    assert.deepEqual(targets(enemies()), Array.from({ length: front + back }, (_, i) => i + 1),
+      'Every published slot appears exactly once with the simulation target number');
+    assert.equal(enemies().filter(node => node.attributes['data-line'] === 'frontline').length, front);
+    assert.equal(enemies().filter(node => node.attributes['data-line'] === 'backline').length, back);
+    assert.deepEqual(diagram().children.filter(node => node.attributes.class === 'tft-diagram-number'
+      && /^\d+$/.test(node.textContent)).map(node => Number(node.textContent)).sort((a, b) => a - b),
+    Array.from({ length: front + back }, (_, i) => i + 1), 'Visible diagram numbering agrees with target stats');
+  };
+  const assertNoUniversalSplash = () => {
+    const notes = ['tft-diagram-desc', 'tft-formation-caption', 'tft-dummy-intro', 'tft-targeting-note']
+      .map(id => id.startsWith('tft-diagram') ? diagram().children.find(node => node.attributes.id === id)?.textContent
+        : h.element(id).textContent).join(' ');
+    assert(!/outside nearby effects|only the frontline is within reach|backline is reached only|only whole-board and nearest-N/i.test(notes),
+      'Formation prose does not turn a schematic row into a universal ability-radius rule');
+    assert.equal(diagram().children.filter(node => node.tag === 'ellipse').length, 0,
+      'A general preview does not mark the entire frontline as one ability’s coverage');
+    assert(!/undefined|NaN/.test(diagram().textContent + notes));
+  };
+
+  // A stale aggregate count cannot override the actual slots loaded with the selected cell.
+  const six = dummy(4, 2, 5), before = JSON.stringify({ six, catalog, unit, fighter, carry });
+  render(six);
+  assertTargets(4, 2); assertNoUniversalSplash();
+  assert(h.element('tft-dummy-intro').textContent.includes('6 test targets'));
+  assert(h.element('tft-targeting-note').textContent.includes('1 → 2 → 3 → 4 → 5 → 6'));
+  assert.equal(h.element('tft-dummy-stats').children.length, 6);
+  assert(h.element('tft-dummy-stats').children[0].textContent.includes('Main tank'));
+  assert.deepEqual(enemies().map(node => [Number(node.attributes['data-lane']), Number(node.attributes['data-row'])]),
+    catalog.clump.map(position => [position.lane, position.row]), 'Diagram locations use published engine coordinates');
+  assert.equal(c.tftEnemyFormation(six, 'clump').mainTanks.length, 1);
+  render(six, fighter);
+  assert(h.element('tft-pressure-note').textContent.includes('The 4 frontline dummies attack and cast'));
+  assert.equal(h.element('tft-pressure-details').hidden, false);
+  render(six, carry, 'spread');
+  assertTargets(4, 2); assertNoUniversalSplash();
+  assert.deepEqual(enemies().map(node => [Number(node.attributes['data-lane']), Number(node.attributes['data-row'])]),
+    catalog.spread.map(position => [position.lane, position.row]), 'Changing geometry reads its own published coordinates');
+  assert.equal(JSON.stringify({ six, catalog, unit, fighter, carry }), before, 'Formation rendering preserves source metadata and builds');
+
+  // Metadata is additive: the current six-slot catalog must never reposition a saved five-slot fight.
+  render(legacy);
+  assertTargets(3, 2); assertNoUniversalSplash();
+  assert.equal(c.tftEnemyFormation(legacy, 'clump').positioned, false);
+  assert(enemies().every(node => !('data-lane' in node.attributes) && !('data-row' in node.attributes)));
+  assert(h.element('tft-dummy-intro').textContent.includes('5 test targets'));
+  assert(h.element('tft-targeting-note').textContent.includes('1 → 2 → 3 → 4 → 5'));
+
+  const seven = dummy(5, 2), sevenBefore = JSON.stringify(seven);
+  render(seven);
+  assertTargets(5, 2); assertNoUniversalSplash();
+  assert.equal(c.tftEnemyFormation(seven, 'clump').positioned, false, 'Unsupported counts retain a labeled schematic');
+  assert(h.element('tft-dummy-intro').textContent.includes('7 test targets'));
+  assert.equal(h.element('tft-dummy-stats').children.length, 7);
+  assert.equal(JSON.stringify(seven), sevenBefore);
+
+  // A supplied custom formation wins over the shared standard, including its role and numbering order.
+  const custom = dummy(2, 1);
+  custom.slots = [custom.slots[2], custom.slots[0], custom.slots[1]];
+  custom.slots.forEach((slot, i) => Object.assign(slot, { lane: [-2, 1, 4][i], row: [4, 0, 0][i] }));
+  custom.slots[1].label = 'An imported label';
+  const customBefore = JSON.stringify(custom);
+  render(custom);
+  assertTargets(2, 1); assertNoUniversalSplash();
+  const formation = c.tftEnemyFormation(custom, 'clump');
+  assert.equal(formation.positioned, true);
+  assert.deepEqual(plain(formation.mainTanks.map(slot => [slot.index, slot.label])), [[1, 'Main tank']]);
+  const ordered = [...enemies()].sort((a, b) => Number(a.attributes['data-target']) - Number(b.attributes['data-target']));
+  assert.deepEqual(ordered.map(node => [Number(node.attributes['data-lane']), Number(node.attributes['data-row'])]),
+    custom.slots.map(slot => [slot.lane, slot.row]));
+  assert.equal(ordered[0].attributes['data-line'], 'backline');
+  assert.equal(JSON.stringify(custom), customBefore, 'Custom coordinates are read without mutation');
+  custom.slots[0].row = NaN;
+  render(custom);
+  assert.equal(c.tftEnemyFormation(custom, 'clump').positioned, false,
+    'Partially invalid explicit coordinates do not silently switch to a different formation');
+  assertTargets(2, 1);
+  assert(enemies().every(node => !('data-lane' in node.attributes) && !('data-row' in node.attributes)));
+  assert(!enemies().some(node => /NaN|undefined/.test(node.attributes.cx + ' ' + node.attributes.cy)));
+
+  const tankDummy = dummy(4, 2);
+  tankDummy.threat = { label: 'Mixed', attackers: 6, frontlineAttackers: 4, backlineAttackers: 2,
+    dps: 1000, frontlineDps: 200, backlineDps: 800, physicalShare: .5, attackInterval: 1,
+    castInterval: 6, backlineAttackShare: .8, backlineSpellPhysicalShare: .5,
+    frontlineAttackInterval: 1, frontlineCastInterval: 6 };
+  const tankBuild = { ...fighter, objective: 'tank', pressure: true };
+  const tankScenario = { geometry: 'clump', duration: 60, threat: 'mixed', dummy: tankDummy };
+  c.tftTankDebuffNote = () => 'Tank defenses.';
+  c.renderTftFight(unit, tankScenario, tankBuild);
+  assertTargets(4, 2); assertNoUniversalSplash();
+  const incoming = () => diagram().children.filter(node => node.attributes['data-direction'] === 'incoming');
+  assert.deepEqual(targets(incoming()), [1, 2, 3, 4, 5, 6], 'Each of the six attackers has an incoming arrow');
+  assert.equal(incoming().filter(node => node.attributes['data-line'] === 'frontline').length, 4);
+  assert.equal(incoming().filter(node => node.attributes['data-line'] === 'backline').length, 2);
+  assert(h.element('tft-dummy-intro').textContent.includes('6 attackers'));
+  unit.name = 'Hecarim';
+  c.renderTftFight(unit, tankScenario, tankBuild);
+  assertTargets(4, 2);
+  assert.deepEqual(targets(diagram().children.filter(node => node.tag === 'ellipse')), [1, 2, 3],
+    'Hecarim marks three nearest targets; adding a fourth frontliner does not expand his target limit');
+  assert.deepEqual(targets(incoming()), [1, 2, 3, 4, 5, 6], 'The unmarked fourth frontliner and both carries still attack');
+  c.renderTftFight(unit, { ...tankScenario, geometry: 'spread' }, tankBuild);
+  assert.deepEqual(targets(diagram().children.filter(node => node.tag === 'ellipse')), [1, 2, 3],
+    'Nearest-N targeting retains its cap when the frontline is separated');
+  c.renderTftFight(unit, { ...tankScenario, dummy: { slots: [] } }, tankBuild);
+  assert.equal(h.element('fight-preview').hidden, true, 'Missing targets hide the preview rather than inventing an enemy board');
 }
 
 function checkMovementLeaderboard() {
@@ -296,6 +670,7 @@ function checkMovementDetails() {
 
 function checkRealCell(filename) {
   const data = JSON.parse(fs.readFileSync(filename, 'utf8'));
+  const before = JSON.stringify(data);
   const h = checkFiniteEquippedPressure(), c = h.context;
   h.champion.data = data;
   Object.assign(h.champion.meta.units[0], { slug: data.unit, name: data.unitName, cost: data.cost, objective: data.objective });
@@ -304,21 +679,35 @@ function checkRealCell(filename) {
   c.bar = () => { const node = h.create('div'); node.append(Object.assign(h.create('span'), { className: 'bar-fill' })); return node; };
   h.element('tft-show-stats').checked = true;
   const columns = c.tftColumns(), states = new Set();
+  const aliveColumn = columns.find(column => column.th === 'Alive');
+  if (!aliveColumn) {
+    assert(!data.pressureByBuild && data.rows.every(row => row.pressure === false),
+      'A fully protected carry has no survival column');
+  }
   for (const row of data.rows) {
     c.renderTftBreakdown(row);
+    assert.equal(h.element('tft-formation-diagram').children.filter(node => node.tag === 'circle'
+      && node.attributes['data-target']).length, data.scenario.dummy.slots.length,
+    'Every real loadout retains the complete published enemy formation');
     assert.equal(h.element('tft-pressure-details').hidden, !row.pressure);
     assert(!/undefined|NaN/.test(h.element('tbd-hint').textContent + h.element('tft-selected-meta').textContent));
     const movement = data.objective !== 'tank' && data.scenario.dummy?.meleeRepositionSeconds > 0
       && Number.isFinite(row.range) && row.range <= 2 && Number.isFinite(row.movementTime);
     assert.equal(h.element('tbd-hint').textContent.includes('s moving'), movement);
     assert(columns.every(column => !/undefined|NaN/.test(column.td(row).textContent)));
-    if (!row.pressure) assert.equal(columns.find(column => column.th === 'Alive').td(row).textContent, 'Protected');
-    else assert(Number.isFinite(row.hp) && columns.find(column => column.th === 'HP').td(row).textContent !== '—');
+    if (!row.pressure && aliveColumn) assert.equal(aliveColumn.td(row).textContent, 'Protected');
+    else if (row.pressure) assert(Number.isFinite(row.hp) && columns.find(column => column.th === 'HP').td(row).textContent !== '—');
+    if (data.unit === 'nidalee') {
+      assert(['AD', 'AP'].includes(row.form));
+      assert.equal(row.pressure, row.form === 'AD', 'Nidalee’s equipped form determines its actual exposure');
+      assert.equal(row.objective, row.form === 'AD' ? 'fighter' : 'carry');
+    }
     states.add(`${row.form}:${row.pressure}`);
   }
-  assert(states.has('AD:true') && states.has('AP:false'));
+  assert(states.size > 0);
+  assert.equal(JSON.stringify(data), before, 'Rendering real loadouts preserves their saved results');
   assert.equal(data.objective, 'carry');
-  console.log(`Real finite-form UI checks passed: ${filename}; ${data.rows.length} rows retain actual pressure, roles and health, including AD and AP.`);
+  console.log(`Real finite-form UI checks passed: ${filename}; ${data.rows.length} rows retain actual pressure, roles, health and target counts; observed forms/exposure: ${[...states].join(', ')}.`);
 }
 
 function checkRealPayload(filename) {
@@ -346,14 +735,15 @@ function checkRealPayload(filename) {
 }
 
 (async () => {
-  checkFiniteLeaderboard(); checkPinnedCompatibility();
+  checkFiniteLeaderboard(); checkBisGaps(); checkPinnedCompatibility();
+  await checkTraitContexts(); await checkClumpedFormation(); await checkLeaderboardLayout();
   await checkNavigationAndLoad(); checkFiniteEquippedPressure();
-  checkMovementLeaderboard(); checkMovementDetails();
+  checkEnemyFormationPreviews(); checkMovementLeaderboard(); checkMovementDetails();
   for (let i = 2; i < process.argv.length; i += 2) {
     assert(process.argv[i + 1]);
     if (process.argv[i] === '--payload') checkRealPayload(process.argv[i + 1]);
     else if (process.argv[i] === '--cell') checkRealCell(process.argv[i + 1]);
     else throw new Error(`Unknown argument ${process.argv[i]}`);
   }
-  console.log('Finite damage UI checks passed: clear-time ranks, tank preservation, pinned diagnostic compatibility, filters, navigation, Nidalee per-build roles/pressure/health, and optional movement assumptions/time with ranged and old-payload compatibility.');
+  console.log('Finite damage UI checks passed: clear-time ranks, second-BIS build gaps with exact results, metric units, ties, tiny gaps, censored and missing comparisons, tank preservation, pinned diagnostic compatibility, filters, navigation, stable loading layout and short-table spacing, metadata-driven formation counts/numbering/coordinates with saved and custom boards, Hecarim’s three-target cap, Nidalee per-build roles/pressure/health, and optional movement assumptions/time with ranged and old-payload compatibility.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

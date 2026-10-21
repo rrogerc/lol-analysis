@@ -96,14 +96,15 @@ class TestConservativeBramblebackFrenzy(unittest.TestCase):
         _, result = ENGINE.simulate(spec, True)
         # A single low-health mana trigger supplies the second cast. No
         # further mana is available, so the refreshed expiration is observable.
-        self.assertEqual(result["castTimes"], [0, 3])
-        self.assertEqual([hit[0] for hit in events(result, "land")], [0.25, 3.25])
+        # Native threshold equality triggers at950 HP on the second hit.
+        self.assertEqual(result["castTimes"], [0, 2])
+        self.assertEqual([hit[0] for hit in events(result, "land")], [0.25, 2.25])
         for hit in events(result, "damage", "auto"):
             with self.subTest(time=hit[0]):
                 # One +80% AD and 40% personal ignore: 180/(1+60/100).
                 # It stays active beyond the first expiration at 8.25s,
-                # then ends at 11.25s. Opening/expired damage is 100/2.
-                expected = 112.5 if 0.25 <= hit[0] < 11.25 else 50
+                # then ends at 10.25s. Opening/expired damage is 100/2.
+                expected = 112.5 if 0.25 <= hit[0] < 10.25 else 50
                 self.assertAlmostEqual(hit[2], expected)
 
     def test_real_three_rageblade_loadout_cannot_multiply_frenzy_ad_with_recasts(self):

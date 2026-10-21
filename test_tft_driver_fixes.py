@@ -73,6 +73,23 @@ def hit_times(res, src):
     return [e[0] for e in events(res, "damage", src)]
 
 
+def five_target_dummy(geometry):
+    """Pin these area-rule fixtures to three frontliners and two backliners.
+
+    Explicit positions keep their recipient oracles independent of changes
+    to the leaderboard's default enemy formation.
+    """
+    positions = {
+        "clump": ((2, 0), (3, 0), (4, 0), (2, 2), (4, 2)),
+        "spread": ((0, 0), (3, 0), (6, 0), (1, 2), (5, 2)),
+    }
+    slots = copy.deepcopy(DUMMY["slots"][:3] + DUMMY["slots"][-2:])
+    for index, (slot, (lane, row)) in enumerate(zip(slots, positions[geometry])):
+        slot.update(lane=lane, row=row, nearby=index < 3)
+    return dict(DUMMY, slots=slots, count=5, board=None,
+                totalHp=sum(slot["hp"] for slot in slots))
+
+
 class TestNidaleeJavelinLock(unittest.TestCase):
     """AP form: no mana from the cast until the third javelin is thrown."""
 
@@ -236,10 +253,10 @@ class TestDianaBarrier(unittest.TestCase):
         # whole frontline plus the backliner two rows behind the target;
         # spread, only the target, and when it dies the orbs left over are
         # lost rather than flying on to the next dummy.
-        dummy = copy.deepcopy(DUMMY)
-        dummy["slots"][0]["hp"] = 60.0
         for geometry, recipients in (("spread", {0}), ("clump", {0, 1, 2, 3})):
             with self.subTest(geometry=geometry):
+                dummy = five_target_dummy(geometry)
+                dummy["slots"][0]["hp"] = 60.0
                 spec = timing_spec("Diana", geometry=geometry, duration=20.0, dummy=dummy)
                 spec["kits"]["base"]["stats"].update(initialMana=spec["kits"]["base"]["stats"]["mana"])
                 for kit in spec["kits"].values():
@@ -500,9 +517,9 @@ class TestAsheTrailCrit(unittest.TestCase):
         precise = events(runs["precise"], "damage", "trail")
         self.assertGreater(len(plain), 10)
         self.assertEqual([(e[0], e[3]) for e in plain], [(e[0], e[3]) for e in precise])
-        # two shares tick on every dummy in the trail: the flat one and the max-Health one
+        # The flat and max-Health shares form one native trail hit per target.
         per_tick = collections.Counter((e[0], e[3]) for e in plain)
-        self.assertEqual(set(per_tick.values()), {2})
+        self.assertEqual(set(per_tick.values()), {1})
         for before, after in zip(plain, precise):
             self.assertAlmostEqual(after[2] / before[2], 1.4)
 
@@ -538,7 +555,8 @@ class TestMorganaBlastTargets(unittest.TestCase):
     def test_the_blast_picks_three_enemies_whatever_the_geometry(self):
         for geometry in ("spread", "clump"):
             with self.subTest(geometry=geometry):
-                spec = timing_spec("Morgana", geometry=geometry, duration=20.0)
+                spec = timing_spec("Morgana", geometry=geometry, duration=20.0,
+                                   dummy=immortal(five_target_dummy(geometry)))
                 count = spec["kits"]["base"]["rows"]["NumEnemiesCursed"]
                 self.assertEqual(count, 3)
                 _, res = fight(spec)

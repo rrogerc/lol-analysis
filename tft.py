@@ -43,12 +43,12 @@ mana, the ability casts when the bar fills — for the length of its cast
 animation (and channel) the unit neither attacks nor gains mana, then a
 fresh attack starts — damage goes through the
 armor/MR formula with sunder, shred, crit, Precision and post-mitigation
-damage amp. Every fight uses one formation: three frontliners screen two
-backliners, and only the frontline is within reach of a nearby area effect.
-"spread" puts the frontliners out of each other's reach (area abilities hit
-one), "clump" puts them together (area abilities hit all three); the
-backline stays outside such effects either way, so an ability reaches it
-only by naming the whole board or its own count of nearest enemies.
+damage amp. The benchmark has four frontliners screening two backliners.
+"clump" puts the frontliners in adjacent lanes; "spread" separates them
+by two lanes. An ability's stated radius determines which positions it
+reaches. Nearby-only effects cover the frontline, global spells reach all
+six, and nearest-N spells keep their stated target count. The carry
+leaderboard uses only the clumped benchmark.
 Carry and fighter targets start with permanent Sunder and Shred supplied
 by the rest of the team. Reapplying the same effect does not reduce their
 resistances again; the strongest active percentage applies.
@@ -57,12 +57,12 @@ What a unit is scored on follows Riot's role label for it (the second word
 of "Attack Caster", "Magic Tank", …):
 
 - Marksman, Caster, Specialist — a carry: the dummies never hit back and
-  the build is ranked by the time to kill all five, then by damage.
-- Fighter, Assassin — a frontliner: the three frontliners hit back with the
+  the build is ranked by the time to kill all six, then by damage.
+- Fighter, Assassin — a frontliner: the four frontliners hit back with the
   set's median attacks and abilities and the unit can die; the backline is
   a damage target only. Ranked by kill time, then by damage dealt before
   dying.
-- Tank — the same three frontliners screen two backline damage dealers.
+- Tank — the same four frontliners screen two backline damage dealers.
   Nearby effects reach the frontline; here the backline applies physical,
   mixed, or magic-burst pressure, with continuous Wound, Sunder and Shred. Builds rank by hold
   time, including on-death bodies. Survivors of the 60-second benchmark
@@ -154,7 +154,7 @@ ASSASSIN_OFFTARGET_REDUCTION = 0.15
 TANK_ROLE_TAG = "Role.Tank"
 PRISMATIC_STYLE = 5    # trait breakpoint styles at or above this are chase tiers
 
-FIGHT_DURATION = 30.0  # carries and frontliners: five dummies take longer
+FIGHT_DURATION = 30.0  # carries and frontliners: six finite targets
 TANK_DURATION = 60.0   # tanks are scored on how long they last, so longer
 # User-selected shared approximation, not a decoded champion animation.
 # Applies to the first engagement and each current-target death, at equipped
@@ -165,12 +165,12 @@ DUMMY_STAR = 2
 FRONT_TANK_DEFENSES = {"hp": 3000, "armor": 110, "mr": 110}
 BOARD_SIZE = 8         # the enemy board at STAGE: what a tank ("more likely
                        # to be targeted") is hit by; a fighter fights the
-                       # three dummies in front of it
+                       # four dummies in front of it
 CACHED_ROWS = 250
 CORE_TOLERANCE_PCT = 5.0
 CORE_CANDIDATES = 6
 
-# One formation for every fight: three nearest frontliners screen two damage
+# One formation for every fight: four nearest frontliners screen two damage
 # dealers. Only the frontline is within reach of a nearby area effect, so an
 # ability's own radius is what a clump can and cannot cover; whole-board and
 # nearest-N spells still reach the backline (Roger's call, 2026-09-21 — the
@@ -178,18 +178,21 @@ CORE_CANDIDATES = 6
 # paid an area unit for covering every enemy that had to die).
 # Carry pressure is calibrated with itemized references in the Rust engine;
 # the three tank presets vary backline damage type/timing at one DPS budget.
-FRONTLINERS = 3
+FRONTLINERS = 4
 BACKLINERS = 2
 # Where those slots stand, so an ability with a stated radius measures a
 # formation instead of a boolean. Lanes run across the board and rows back
 # from the frontline; the distance between two slots is |dlane| + |drow|.
-# Clumped frontliners stand shoulder to shoulder, spread ones three hexes
+# Clumped frontliners stand shoulder to shoulder, spread ones two hexes
 # apart, and the backline sits BACK_ROW rows behind either way. Real hex
 # movement is not simulated and the epicenter is always the current target,
 # never the placement that would catch the most enemies: this is the same
 # fixed-lane approximation the symmetric match already makes, one step less
 # coarse than the nearby flag it replaces for those abilities.
-FRONT_LANES = {"clump": (2, 3, 4), "spread": (0, 3, 6)}
+FRONT_LANES = {"clump": (2, 3, 4, 5), "spread": (0, 2, 4, 6)}
+# Archived composition probes and mechanics fixtures retain their original
+# three-frontliner positions; they do not define the active benchmark.
+LEGACY_FRONT_LANES = {"clump": (2, 3, 4), "spread": (0, 3, 6)}
 BACK_LANES = {"clump": (2, 4), "spread": (1, 5)}
 BACK_ROW = 2
 TANK_REFERENCE_DURATION = 20.0
@@ -227,9 +230,9 @@ TANK_DEBUFF_ROWS = {
 OBJECTIVE_BY_KIND = {"Tank": "tank", "Fighter": "fighter", "Assassin": "fighter",
                      "Marksman": "carry", "Caster": "carry", "Specialist": "carry"}
 OBJECTIVES = {
-    "carry": "three frontliners screen two backliners and none of them hit back; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone still reaches the whole packed frontline, and whole-board and nearest-N spells reach all five; ranked by time to kill all five, then damage dealt",
-    "fighter": "three frontliners screen two backliners; only the frontline hits back and the unit can die; ranked by kill time, then damage dealt before dying",
-    "tank": "three frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone still reaches the whole packed frontline, and whole-board and nearest-N spells reach all five, and the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
+    "carry": "four frontliners screen two backliners and none of them hit back; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone reaches the packed frontline, whole-board spells reach all six, and nearest-N spells keep their stated target count; ranked by time to kill all six, then damage dealt",
+    "fighter": "four frontliners screen two backliners; only the frontline hits back and the unit can die; ranked by kill time, then damage dealt before dying",
+    "tank": "four frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; an ability with a stated radius reaches the slots within it (kits.json records each one and its source), a line or a cone reaches the packed frontline, whole-board spells reach all six, and nearest-N spells keep their stated target count; the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
 }
 PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies attacking
 
@@ -239,8 +242,8 @@ PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies att
 STARS = (1, 2, 3)
 STARS_BY_COST = {1: (1, 2, 3), 2: (1, 2, 3), 3: (1, 2, 3), 4: (1, 2), 5: (1, 2)}
 GEOMETRIES = {
-    "spread": "frontliners out of each other's reach: area abilities hit one",
-    "clump": "frontliners together: area abilities hit all three still standing",
+    "spread": "four frontliners two lanes apart; area hits depend on the spell radius",
+    "clump": "four adjacent frontliners and two backliners; area hits depend on the spell radius",
 }
 TRAIT_CONTEXTS = {
     "bare": "no traits active",
@@ -359,7 +362,7 @@ def tft_patch_key(patch):
 
 _MID_PATCH_MAJOR = re.compile(r"mid-?\s*patch\s+updates?", re.I)
 _DATED_HEADING = re.compile(r"(?:january|february|march|april|may|june|july|august|september|october|"
-                            r"november|december)\s+\d{1,2}\b", re.I)
+                            r"november|december)\s+\d{1,2}(?:st|nd|rd|th)?\b", re.I)
 
 
 class PatchNotesParser(HTMLParser):
@@ -368,7 +371,8 @@ class PatchNotesParser(HTMLParser):
     Riot has used two shapes for a hotfix block. 18.1: <h2>Mid-Patch Updates</h2>
     with one <h3> per dated update and <h4> sections beneath it. 18.2:
     <h2>MID-PATCH UPDATE</h2> with the date as an <h4> ("SEPTEMBER 14") ahead of
-    the <h4> sections. Both are a dated update: the second shape used to leave
+    the <h4> sections; 18.4 uses the ordinal date "OCTOBER 7TH" in that shape.
+    Both are a dated update: the second shape used to leave
     `updates` empty, so the 18.2 hotfix kept the label 18.2 and its notes reached
     the reconciler as an unlabelled same-patch revision.
     """
@@ -1308,11 +1312,11 @@ def dummies_for(snap, star=DUMMY_STAR, threat=None):
     mana cadence, split physical/magic by the group's share of Attack-type
     roles.
 
-    Only the frontline is `nearby`, so an area effect that reaches "enemies
-    within N hexes" covers three of the five; whole-board and nearest-N
-    spells reach all five. On the damage board the backline is a target
-    only (`streams` 0): a fighter still eats the three attackers in front
-    of it, exactly as before. A tank `threat` arms the backline instead,
+    Only the frontline is `nearby`; stated radii instead measure the slots'
+    positions and can also reach backliners. Global spells reach all six;
+    nearest-N spells retain their declared count. On the damage board the
+    backline is a target only (`streams` 0): a fighter takes attacks from
+    the four frontliners. A tank `threat` arms the backline instead,
     with two protected sources calibrated against itemized carry damage."""
     if threat is not None and threat not in TANK_THREATS:
         raise ValueError(f"unknown tank threat {threat!r}")
@@ -1597,6 +1601,8 @@ def item_spec(snap, api, item_fx, unit):
     for k in ("sunderOnHit", "shredOnHit", "burnOnHit"):
         if k in spec:
             out[k] = [rv(spec[k]["pct"]), rv(spec[k]["duration"])]
+    if spec.get("burnRequiresAttackOrSpell"):
+        out["burnRequiresAttackOrSpell"] = True
     rng = unit["stats"]["range"]
     for name in ("sunderAura", "shredAura"):
         if name in spec:
@@ -1607,11 +1613,17 @@ def item_spec(snap, api, item_fx, unit):
                 out[name] = rv(aura["pct"])
     if "burnAura" in spec:
         aura = spec["burnAura"]
-        if unit.get("forms") and "hexes" in aura:
+        if "interval" in aura:
+            # Keep each copy's application clock and range for the engine.
+            # The equipped form, rather than the base form, decides reach.
+            if unit.get("forms") or rng <= rv(aura["hexes"]):
+                out["sunfireAura"] = [rv(aura["pct"]), rv(aura["duration"]),
+                                      rv(aura["interval"]), rv(aura["hexes"])]
+        elif unit.get("forms") and "hexes" in aura:
             out["burnAuraByRange"] = [rv(aura["pct"]), rv(aura["duration"]), rv(aura["hexes"])]
         elif "hexes" not in aura or rng <= rv(aura["hexes"]):
             out["burnAura"] = [rv(aura["pct"]), rv(aura["duration"])]
-    for k in ("hpMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct", "ccImmuneDuration"):
+    for k in ("hpMult", "hpCompoundMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct", "ccImmuneDuration"):
         if k in spec:
             out[k] = rv(spec[k])
     if "durabilityByHealth" in spec:
@@ -1756,23 +1768,25 @@ def ability_radius_rows(unit, kit_hand):
 def board_positions(slots, geometry):
     """Place the schematic board's slots in lanes and rows, in place.
 
-    Two shapes are placed, and only when the caller supplied no positions of
-    its own: the standard FRONTLINERS + BACKLINERS board, and a board of
-    FRONTLINERS alone, which is what the theoretical composition probes are —
-    a frontline with nothing behind it. Any other board (a mechanics fixture,
-    the symmetric placeholder) keeps no position at all, so every selection
-    there follows the older nearby rule exactly as before.
+    Place the standard FRONTLINERS + BACKLINERS board or a frontline alone,
+    only when the caller supplied no positions of its own. Legacy three- and
+    five-slot mechanics fixtures and archived probes keep their old layouts.
+    Any other board keeps no position, preserving its nearby-only selection.
     """
     if geometry not in FRONT_LANES or any("lane" in slot for slot in slots):
         return slots
-    if len(slots) not in (FRONTLINERS, FRONTLINERS + BACKLINERS):
+    if len(slots) in (3, 5):
+        front, front_count = LEGACY_FRONT_LANES[geometry], 3
+    elif len(slots) in (FRONTLINERS, FRONTLINERS + BACKLINERS):
+        front, front_count = FRONT_LANES[geometry], FRONTLINERS
+    else:
         return slots
-    front, back = FRONT_LANES[geometry], BACK_LANES[geometry]
+    back = BACK_LANES[geometry]
     for index, slot in enumerate(slots):
-        if index < FRONTLINERS:
+        if index < front_count:
             slot["lane"], slot["row"] = front[index], 0
         else:
-            slot["lane"], slot["row"] = back[index - FRONTLINERS], BACK_ROW
+            slot["lane"], slot["row"] = back[index - front_count], BACK_ROW
     return slots
 
 
@@ -1850,6 +1864,16 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     if unit.get("forms"):
         kits["AD"] = kit_spec(unit, star, "AD", radii)
         kits["AP"] = kit_spec(unit, star, "AP", radii)
+    # Native periodic hits drive item callbacks on the donor and recipient.
+    # Numerical integration slices cannot invent Flail or incoming Titan procs.
+    dot_periods = (kit_hand.get("units", {}).get(unit["api"], {})
+                   .get("dotCritPeriods", {}))
+    for kit in kits.values():
+        if dot_periods:
+            kit["dotCritPeriods"] = {
+                src: float(kit["rows"][period["row"]] if isinstance(period, dict) else period)
+                for src, period in dot_periods.items()
+            }
     kind = unit_role_kind(unit)
     role = {"manaRegen": CASTER_MANA_REGEN if kind == "Caster" else 0.0,
             "asPct": FIGHTER_AS_BY_STAGE[STAGE] if kind == "Fighter" else 0.0}
@@ -2268,6 +2292,62 @@ def leaderboard_rank_key(performance, objective):
     return (1, -performance["total"])
 
 
+def leaderboard_runner_up(payload):
+    """The second ranked three-item build, compared on exact primary outcomes.
+
+    Older cells may already retain its full-precision score in core analysis.
+    Match the second display row's item multiset; never infer it from rounded
+    times or substitute the next build with a different primary outcome.
+    """
+    rows, best = payload.get("rows", []), payload.get("best")
+    if len(rows) < 2 or not best:
+        return None
+    items = rows[1].get("items", [])
+    if len(items) != 3 or any(not isinstance(item, str) for item in items):
+        raise ValueError("invalid second-ranked TFT build")
+    wanted = sorted(items)
+    if wanted == sorted(rows[0].get("items", [])):
+        raise ValueError("second-ranked TFT build repeats the optimal items")
+    runner = payload.get("runnerUp")
+    if runner is None:
+        analysis = payload.get("coreAnalysis", {})
+        optimal = analysis.get("optimal")
+        if not optimal:
+            return None
+        if sorted(optimal.get("itemApis", [])) != sorted(best["itemApis"]):
+            raise ValueError("TFT core analysis does not match its optimal build")
+        pending = [analysis]
+        while pending:
+            record = pending.pop()
+            if isinstance(record, dict):
+                if (len(record.get("itemApis", [])) == 3 and "performance" in record
+                        and sorted(record.get("items", [])) == wanted):
+                    runner = record
+                    break
+                pending.extend(record.values())
+            elif isinstance(record, list):
+                pending.extend(record)
+    if runner is None:
+        return None
+    apis = runner.get("itemApis", [])
+    if (len(apis) != 3 or any(not isinstance(api, str) for api in apis)
+            or sorted(apis) == sorted(best["itemApis"])
+            or "items" in runner and sorted(runner["items"]) != wanted):
+        raise ValueError("TFT runner-up does not match a distinct second-ranked build")
+    objective = payload.get("objective", best.get("objective", "carry"))
+    first, second = best["performance"], runner["performance"]
+    if leaderboard_rank_key(second, objective) < leaderboard_rank_key(first, objective):
+        raise ValueError("TFT runner-up ranks ahead of its optimal build")
+
+    def score(performance):
+        return ((), performance["killTime"], performance["total"], performance["aliveTime"],
+                performance["survivalCapped"], performance["stressAliveTime"], performance["stressCapped"])
+
+    baseline = score(first)
+    return {"items": list(items), "itemApis": list(apis),
+            "performance": _core_performance(score(second), baseline, _core_metric(baseline, objective))}
+
+
 @lru_cache(maxsize=2048)
 def _leaderboard_best(path, mtime_ns, size):
     """Retain only a compact winner from each version of a scenario file.
@@ -2282,6 +2362,7 @@ def _leaderboard_best(path, mtime_ns, size):
     if not payload.get("best"):
         raise ValueError("scenario lacks an exact leaderboard result; recalculate its cache")
     return {"best": payload["best"], "buildsEvaluated": payload["buildsEvaluated"],
+            "secondBest": leaderboard_runner_up(payload),
             "computedAt": payload["computedAt"],
             "meleeRepositionSeconds": payload.get("scenario", {}).get("dummy", {}).get("meleeRepositionSeconds", 0.0)}
 
@@ -2330,6 +2411,10 @@ def cached_leaderboard(key, paths=None, *, snap=None):
                  "itemApis": list(best["itemApis"]), "performance": dict(best["performance"]),
                  "score": list(leaderboard_rank_key(best["performance"], unit["objective"])),
                  "buildsEvaluated": cached["buildsEvaluated"], "computedAt": cached["computedAt"]}
+        if cached["secondBest"] is not None:
+            second = cached["secondBest"]
+            entry["secondBest"] = {"items": [snap.items[api]["name"] for api in second["itemApis"]],
+                                   "itemApis": list(second["itemApis"]), "performance": dict(second["performance"])}
         if cached["meleeRepositionSeconds"] > 0:
             entry["meleeRepositionSeconds"] = cached["meleeRepositionSeconds"]
         boards["tanks" if unit["objective"] == "tank" else "damage"].append(entry)
@@ -2439,6 +2524,13 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
         fx_notes.append("Nidalee's melee AD form receives incoming damage; her ranged AP form is protected.")
     traits_active = [{"trait": snap.traits[api]["name"], "breakpoint": snap.traits[api]["levels"][col - 1]}
                      for api, col in ctx_traits]
+    leading_builds = [{"items": [snap.items[api]["name"] for api in combo],
+                      "itemApis": list(combo), **equipped_metadata(unit, sheet),
+                      "performance": {field: result[field] for field in (
+                          "killTime", "total", "dps", "aliveTime", "survivalCapped",
+                          "stressAliveTime", "stressCapped")} |
+                          {field: result[field] for field in ("movementTime", "repositions") if field in result}}
+                     for combo, sheet, result in out[:2]]
     payload = {
         "unit": unit_slug(unit), "unitName": unit["name"], "unitApi": unit["api"],
         "cost": unit["cost"], "role": unit["roleName"], "kind": unit["kind"],
@@ -2451,13 +2543,8 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
         "rows": rows,
         # The leaderboard must not rank different champions using rounded
         # display times. Keep the actual winning build and its raw metrics.
-        "best": {"itemApis": list(out[0][0]),
-                 **equipped_metadata(unit, out[0][1]),
-                 "performance": {field: out[0][2][field] for field in (
-                     "killTime", "total", "dps", "aliveTime", "survivalCapped",
-                     "stressAliveTime", "stressCapped")} |
-                     {field: out[0][2][field] for field in ("movementTime", "repositions")
-                      if field in out[0][2]}} if out else None,
+        "best": leading_builds[0] if leading_builds else None,
+        "runnerUp": leading_builds[1] if len(leading_builds) > 1 else None,
         "coreAnalysis": core_analysis,
         "computedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "computeSeconds": secs,
@@ -2617,18 +2704,14 @@ def write_json_atomic(path, content):
 
 def dashboard_ready(snap, *, prepared_site=None):
     """Activate a complete TFT publication, retaining the previous generation."""
-    import tft_comps
     import tft_site
 
-    baseline_ready, compositions_ready = cell_ready(snap), tft_comps.cell_ready(snap)
-    if (not baseline_ready or not all(baseline_ready.values())
-            or not compositions_ready or not all(compositions_ready.values())):
-        raise RuntimeError("TFT publication requires complete champion and composition results.")
-    if tft_comps.source_stale():
-        raise RuntimeError("TFT source changed before publication; keeping the previous results.")
+    baseline_ready = cell_ready(snap)
+    if not baseline_ready or not all(baseline_ready.values()):
+        raise RuntimeError("TFT publication requires complete champion results.")
     site = prepared_site if prepared_site is not None else tft_site.prepare(snap)
     if (site.get("baselineRevision") != snapshot_revision(snap)
-            or site.get("compositionRevision") != tft_comps.revision(snap)):
+            or site.get("compositionRevision") != tft_site.ARCHIVED_COMPOSITION_REVISION):
         raise RuntimeError("Prepared TFT responses do not match the completed calculations.")
     tft_site.load(site)
     path = os.path.join(CACHE_DIR, ".dashboard-ready")
@@ -2641,7 +2724,7 @@ def dashboard_ready(snap, *, prepared_site=None):
         before = None
     files = sorted(os.path.basename(p) for p in cell_paths(snap).values())
     marker = {"revision": snapshot_revision(snap), "patch": snap.patch, "cacheFiles": files,
-              "compositionRevision": tft_comps.revision(snap), "site": site}
+              "compositionRevision": tft_site.ARCHIVED_COMPOSITION_REVISION, "site": site}
     if before != marker:
         write_json_atomic(path, marker)
     # The old server may still be answering until systemd's reload runs.
@@ -2655,8 +2738,7 @@ def dashboard_ready(snap, *, prepared_site=None):
 
 
 def prepare_dashboard(snap, *, log=_say, progress=None):
-    """Prepare both TFT analyses and their HTTP responses before activation."""
-    import tft_comps
+    """Prepare active TFT analyses and saved responses before activation."""
     import tft_site
 
     report = progress or (lambda **fields: None)
@@ -2676,18 +2758,12 @@ def prepare_dashboard(snap, *, log=_say, progress=None):
     ready = cell_ready(snap)
     if not ready or not all(ready.values()):
         raise RuntimeError("Some champion builds did not finish; keeping the previous snapshot.")
-    report(computedCells=count, baselineCellsReady=len(ready), phase="warming-compositions",
-           message=f"Preparing compositions for {snap.patch}.")
-    compositions = calculate(lambda: tft_comps.warm(log=log, snap=snap, prune=False,
-                             workers=tft_comps.DEFAULT_WARM_WORKERS), "composition")
-    comp_ready = tft_comps.cell_ready(snap)
-    if not comp_ready or not all(comp_ready.values()):
-        raise RuntimeError("Some compositions did not finish; keeping the previous snapshot.")
-    report(computedCompositionScenarios=compositions, compositionScenariosReady=len(comp_ready),
+    report(computedCells=count, baselineCellsReady=len(ready),
+           computedCompositionScenarios=0, compositionScenariosReady=0, compositionAnalysis="archived",
            phase="preparing-responses", message="Preparing saved responses for the TFT dashboard.")
     site = tft_site.prepare(snap)
-    report(phase="publishing", message=f"Champion builds and compositions are ready for {snap.patch}.")
-    return {"computedCells": count, "computedCompositionScenarios": compositions, "site": site}
+    report(phase="publishing", message=f"TFT results are ready for {snap.patch}.")
+    return {"computedCells": count, "computedCompositionScenarios": 0, "site": site}
 
 
 def cmd_refresh(args):
@@ -2774,13 +2850,12 @@ def cmd_refresh(args):
             dashboard_ready(snap, prepared_site=prepared["site"])
             finished = now()
             count = state.get("computedCells", 0)
-            compositions = state.get("computedCompositionScenarios", 0)
             finish(status="ok", phase="complete", activePatch=snap.patch, targetPatch=snap.patch,
                    checkedAt=finished, finishedAt=finished, lastSuccessAt=finished, exit=0,
                    reviewBlocker=None, retryNotBefore=None,
                    revision=snapshot_revision(snap),
                    compositionRevision=prepared["site"]["compositionRevision"],
-                   message=f"Patch {snap.patch} is ready; {count} champion scenarios and {compositions} composition contexts recalculated.")
+                   message=f"Patch {snap.patch} is ready; {count} champion scenarios recalculated.")
             print(state["message"])
         except BaseException as error:
             needs_review = isinstance(error, ReviewRequired)
@@ -3085,7 +3160,8 @@ def check_audit(snap, notes):
     if not audit.get("checks"):
         findings.append({"unit": "Source review", "api": "", "what": "missing numeric checks",
                          "where": "audit checks", "have": [], "old": [], "new": [], "status": "differs"})
-    entities = {"unit": snap.units, "item": snap.items, "trait": snap.traits}
+    # Reconciliation also addresses summons and transformed non-shop units.
+    entities = {"unit": {**snap.units, **snap.extras}, "item": snap.items, "trait": snap.traits}
     for check in audit.get("checks", []):
         target = check["target"]
         entity = entities[target["kind"]].get(target["api"])

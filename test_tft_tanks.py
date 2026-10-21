@@ -64,7 +64,7 @@ class TestTankThreats(unittest.TestCase):
             with self.subTest(unit=unit):
                 self.assertFalse(spec_for(unit).get("enemyDebuffs"))
 
-    def test_presets_share_five_sources_and_a_calibrated_damage_budget(self):
+    def test_presets_share_six_sources_and_a_calibrated_damage_budget(self):
         legacy_dps = tft.dummies_for(SNAP)["boardPressureDps"]
         profiles = {p["key"]: p for p in tft.tank_threats(SNAP)}
         self.assertEqual(set(profiles), {"mixed", "physical", "magic"})
@@ -76,28 +76,30 @@ class TestTankThreats(unittest.TestCase):
             with self.subTest(threat=key):
                 dummy = tft.dummies_for(SNAP, threat=key)
                 slots = dummy["slots"]
-                self.assertEqual(len(slots), 5)
-                self.assertEqual([s["nearby"] for s in slots], [True] * 3 + [False] * 2)
-                self.assertEqual([s["kind"] for s in slots], ["tank"] * 3 + ["non-tank"] * 2)
-                self.assertEqual(dummy["board"], [1] * 5)
+                self.assertEqual(len(slots), 6)
+                self.assertEqual([s["nearby"] for s in slots], [True] * 4 + [False] * 2)
+                self.assertEqual([s["kind"] for s in slots], ["tank"] * 4 + ["non-tank"] * 2)
+                self.assertEqual(dummy["board"], [1] * 6)
                 profile = profiles[key]
                 front_dps = sum(s["ad"] * dummy["critEv"] * s["as"]
-                                + s["ability"] / s["castInterval"] for s in slots[:3])
-                attack_dps = sum(s["ad"] * dummy["critEv"] * s["as"] for s in slots[3:])
-                spell_dps = sum(s["ability"] / s["castInterval"] for s in slots[3:])
+                                + s["ability"] / s["castInterval"] for s in slots[:4])
+                attack_dps = sum(s["ad"] * dummy["critEv"] * s["as"] for s in slots[4:])
+                spell_dps = sum(s["ability"] / s["castInterval"] for s in slots[4:])
                 self.assertAlmostEqual(front_dps + attack_dps + spell_dps, baseline_dps)
                 self.assertAlmostEqual(front_dps, profile["frontlineDps"])
                 self.assertAlmostEqual(attack_dps + spell_dps, profile["backlineDps"])
                 self.assertAlmostEqual(attack_dps / profile["backlineDps"], attack_share)
-                self.assertTrue(all(s["physicalShare"] == spell_physical_share for s in slots[3:]))
+                self.assertTrue(all(s["physicalShare"] == spell_physical_share for s in slots[4:]))
                 self.assertEqual(profile["dps"], baseline_dps)
-                self.assertEqual(profile["attackers"], 5)
+                self.assertEqual(profile["attackers"], 6)
+                self.assertEqual(profile["frontlineAttackers"], 4)
+                self.assertEqual(profile["backlineAttackers"], 2)
                 # Presets change the carry damage mix, keeping the same frontline.
                 if frontline is None:
-                    frontline = slots[:3]
-                self.assertEqual(slots[:3], frontline)
+                    frontline = slots[:4]
+                self.assertEqual(slots[:4], frontline)
                 spec = spec_for("Leona", dummy=dummy)
-                self.assertEqual([s["streams"] for s in spec["dummies"]["slots"]], [1] * 5)
+                self.assertEqual([s["streams"] for s in spec["dummies"]["slots"]], [1] * 6)
 
     def test_reference_carries_reproduce_the_backline_budget(self):
         profile = tft.tank_threats(SNAP)[0]
@@ -131,7 +133,7 @@ class TestTankThreats(unittest.TestCase):
                 spec = body_spec(hp=10 ** 9, duration=4.1,
                                  dummy=tft.dummies_for(SNAP, threat=key))
                 _, res = ENGINE.simulate(spec, True)
-                casts = [e for e in events(res, "take", "magic") if e[3] >= 3]
+                casts = [e for e in events(res, "take", "magic") if e[3] >= 4]
                 self.assertEqual(len(casts), 2)
                 for event, time in zip(casts, expected):
                     self.assertAlmostEqual(event[0], time)

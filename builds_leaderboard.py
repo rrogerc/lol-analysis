@@ -61,8 +61,8 @@ def cached_leaderboard(key, paths=None):
     """One row per champion of the scenario's tier: the top row of its cell,
     ranked best first, equal results sharing a rank. Never computes: a
     champion whose cell is cold is listed under `pending` (the ranks are
-    provisional until `complete`), one whose machine-written driver failed in
-    the enumeration under `failed`."""
+    provisional until `complete`), one whose saved result is unreadable or
+    whose driver failed in the enumeration under `failed`."""
     if key not in leaderboard_scenarios():
         raise ValueError(f"unknown leaderboard scenario '{key}'")
     paths = paths if paths is not None else builds.cell_paths()
@@ -82,10 +82,13 @@ def cached_leaderboard(key, paths=None):
         path = paths[(slug, key)]
         try:
             st = os.stat(path)
+            best = _cell_best(path, st.st_mtime_ns, st.st_size)
         except FileNotFoundError:
             pending.append(who)
             continue
-        best = _cell_best(path, st.st_mtime_ns, st.st_size)
+        except (OSError, ValueError) as e:
+            failed.append({**who, "error": f"Saved result could not be read: {e}"})
+            continue
         if best["row"] is None:
             failed.append({**who, "error": best["error"] or "no build was ranked"})
             continue

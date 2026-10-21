@@ -205,10 +205,15 @@ class ReferenceEvaluator:
                             if effect is original:
                                 effect = dict(original)
                             effect[field] = conditional[:2] if field == "burnAura" else conditional[0]
+                    sunfire = original.get("sunfireAura")
+                    if sunfire and spec["unit"]["range"] > sunfire[3]:
+                        if effect is original:
+                            effect = dict(original)
+                        effect.pop("sunfireAura", None)
                     item_effects.append(effect)
                 all_effects = item_effects + spec["traits"]
                 regular = max([0.0] + [effect[field][0] for effect in item_effects
-                              for field in ("burnOnHit", "burnAura") if effect.get(field)])
+                              for field in ("burnOnHit", "burnAura", "sunfireAura") if effect.get(field)])
                 if api == "TFT18_Cinderling" or api == "TFT18_Brambleback" and alpha:
                     regular = max(regular, spec["kits"]["base"]["rows"].get("BurnAmount", 0.0) / 100.0)
                 inferno = max([0.0] + [effect["burnOnHit"][0] for effect in spec["traits"]

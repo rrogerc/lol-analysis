@@ -319,8 +319,11 @@
   provisional, the page polls), error cells under `failed`. Served at
   `/api/builds/leaderboard/<scenario>.json` — the route must stay BEFORE the
   cells' `/<slug>/<scenario>` route, which would read "leaderboard" as a
-  champion (an older serve answers 404 and the page says to restart) — and
-  written by `lol.py export`. The Survival tier has no board (one tank).
+  champion — and written by `lol.py export`. Only unknown leaderboard
+  scenarios return 404; internal failures return 500. Unreadable saved cells
+  are reported under `failed` while healthy champions remain ranked. The
+  page retries failed requests and retains the last loaded board. The
+  Survival tier has no board (one tank).
   Page: selecting a row makes that champion the tab's (breakdown, the draft
   banner in the breakdown card, pool and kit notes below follow it); its name
   opens its ranked builds; Find and "Reviewed kits only" filter without
@@ -1767,6 +1770,32 @@
   attack damage for that star (the rows grow ×1.5 per star like base AD;
   Warwick's 200/300/450 bite is 500% AD throughout), not a percentage
   over 100 — the old reading made every AD ability 1.3–2.5× too weak.
+- Striker's Flail (2026-10-11): the native item listens for critical damage
+  in PostApply, not attacks. `Fight::on_critical_damage` runs after standalone
+  damage or real-target combat credit, including deferred hits. The native
+  custom stack component shares a four-instance cap by buff definition and
+  refreshes only the oldest instance at overflow; it does not refresh every
+  stack. This supersedes the earlier separate-copy-cap interpretation below.
+  `kits.json` carries source-bound `dotCritPeriods`: numerical integration
+  slices cannot create extra crit opportunities, and a multi-term periodic
+  hit (Ashe's trail) procs after its last term. Unknown periodic schedules
+  grant no extra stacks. Crit rolls still use fractional expected stacks;
+  initial periodic execution and duplicate-listener granting remain explicit
+  gaps. Evidence: `data/tft/set18/flail-mechanics.json`; regressions:
+  `test_tft_flail`. Preserve non-Flail fight parity when regenerating the
+  benchmark fixtures; their historical patch stays 18.3.
+- Craftable-item fixes (2026-10-12) supersede the non-Flail parity constraint
+  for this deliberate model update. Keep golden fight inputs and snapshot18.3
+  unchanged while refreshing expected results. See `data/tft/set18/item-audit.json`
+  and the three `test_tft_item_*_fixes` suites. Damage modes distinguish source,
+  attack/spell applicability and logical periodic hit count. Post-damage item
+  callbacks run at standalone settlement or real-target credit, never on a
+  deferred queue insertion. Known periodic formula terms combine for every
+  build because incoming Titan stacks also require one gameplay hit. Bramble
+  is Unit-sourced without attack/spell tags; Spark and burn are Item-sourced.
+  Sunfire has per-copy pulse clocks; synthetic legacy burnAura remains supported.
+  Preserve the documented native-runtime gaps rather than treating model policy
+  as live-client validation.
 - The 2026-09-05 damage-math audit (prompted by Soraka ranking far below
   Aphelios; `test_tft.TestAuditFixes` pins each fix): overrides.json curve
   rows now reach the calcs' coefficient lists (they never did: every

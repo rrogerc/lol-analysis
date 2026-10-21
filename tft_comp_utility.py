@@ -103,10 +103,15 @@ class AntihealPolicy:
             application = definition["application"]
             native = native_items.get(item_api, {})
             channel = native.get(application)
-            if application == "burnAura" and native.get("burnAuraByRange"):
+            if application == "burnAura" and native.get("sunfireAura"):
+                periodic = native["sunfireAura"]
+                channel = periodic[:2] if fx["range"] <= periodic[3] else None
+            elif application == "burnAura" and native.get("burnAuraByRange"):
                 deferred = native["burnAuraByRange"]
                 channel = deferred[:2] if fx["range"] <= deferred[2] else None
             active = fx.get(application)
+            if application == "burnAura" and native.get("sunfireAura"):
+                active = next((entry for entry in fx.get("sunfireAuras", ()) if _channel(entry)), None)
             if application == "burnOnHit":
                 active = next((entry for entry in active or () if _channel(entry)), None)
             if _channel(channel) and _channel(active):

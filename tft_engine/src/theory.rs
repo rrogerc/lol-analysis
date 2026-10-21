@@ -276,6 +276,7 @@ impl Registered {
         providers.sunder = providers.sunder.max(fx.sunder_aura);
         providers.shred = providers.shred.max(fx.shred_aura);
         if let Some((rate, _)) = fx.burn_aura { providers.regular = providers.regular.max(rate); }
+        for &(rate, _, _, _) in &fx.sunfire_auras { providers.regular = providers.regular.max(rate); }
         fraction(providers.sunder, "shared Sunder")?;
         fraction(providers.shred, "shared Shred")?;
         let form = fx.form;
@@ -594,6 +595,7 @@ impl TheoryScorer {
             for item in spec.items.iter_mut().chain(spec.pool.iter_mut()) {
                 item.burn_on_hit = None;
                 item.burn_aura = None;
+                item.sunfire_aura = None;
                 item.burn_aura_by_range = None;
             }
             let duration = match spec.unit.api.as_str() {

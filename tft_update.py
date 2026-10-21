@@ -326,7 +326,9 @@ class _BoundReview:
     Record families, every one tied to exact values of the staged inputs:
     `mappings` / `dispositions` answer a patch-note line (a numeric mapping onto a
     curve row also passes the wrong-row guard, or carries
-    `siblingRowAcknowledgement {rows, reason}`); `lookupChanges` decide a value the
+    `siblingRowAcknowledgement {rows, reason}`). A mapping's optional
+    `observedLookup` retains an exact staged source conflict; `expected` still
+    decides the model. `lookupChanges` decide a value the
     regenerated lookup changed with no note behind it (`accept-lookup`, or
     `keep-reviewed-value` when a better source disagrees with it);
     `definitionDispositions` acknowledge one text or structure change by its path
@@ -365,9 +367,12 @@ class _BoundReview:
         for mapping in document.get('mappings', []):
             kind, evidence = self._evidence(mapping, identities)
             target = mapping['target']
-            positions = self._coordinates(mapping, ('expected', 'observedBefore'))
+            names = ('expected', 'observedBefore') + (('observedLookup',) if 'observedLookup' in mapping else ())
+            positions = self._coordinates(mapping, names)
             if not _same(_values(previous, target), mapping['observedBefore']):
                 _fail(f'reviewed baseline no longer matches {target}')
+            if 'observedLookup' in mapping and _values(lookup(1), target) != mapping['observedLookup']:
+                _fail(f'the staged lookup does not hold the reviewed observedLookup at {target}')
             key = (kind, tft.json_hash(evidence), _target_key(target), tuple(positions))
             if key in seen:
                 _fail(f'duplicate reviewed mapping for {target}')
@@ -749,14 +754,25 @@ def _cached_calc(snap, context, name, star, visiting=()):
     these lookup conventions. Unsupported runtime/formulas require review.
     This does not run the combat engine or reinterpret calculation terms.
     """
-    stats, calcs = _raw_context(snap, context)
-    names = [key for key in calcs if key.split('.')[-1] == name.split('.')[-1]]
+    kind, api, form = context
+    if kind == 'unit':
+        stats, calcs = _raw_context(snap, context)
+        names = [key for key in calcs if key.split('.')[-1] == name.split('.')[-1]]
+    elif kind == 'trait' and not form:
+        # Trait exports can cache arithmetic over literal rows. This validates
+        # that export only, without assuming champion stats or live trait math.
+        stats, calcs = {}, _raw_entities(snap.raw, 'trait')[api].get('attributeCalcs') or {}
+        names = [name] if name in calcs else []
+    else:
+        raise ValueError('unsupported calculation context')
     if len(names) != 1 or names[0] in visiting:
         raise ValueError('missing, duplicate, or recursive calculation')
     name = names[0]
     terms = calcs[name].get('terms')
     if not terms:
         raise ValueError('calculation has no terms')
+    if kind == 'trait' and any(term.get('type') != 'flat' for term in terms):
+        raise ValueError('trait calculation contains runtime or scaled terms')
     def at(values):
         if not isinstance(values, list) or not values:
             raise ValueError('missing coefficient array')
@@ -887,6 +903,22 @@ class _DefinitionReview:
         except ReviewRequired:
             return False
 
+    def reviewed_orphan_array(self, context, row, path, before, after):
+        """Only non-shop extras may review an unaddressable row's exact array.
+        UnitSpec exports their stats, not ability calculations or tooltip rows;
+        addressable rows retain the ordinary numeric-target validation."""
+        import tft
+        kind, api, form = context
+        if kind != 'unit' or not before or len(before) != len(after):
+            return False
+        target = {'kind': kind, 'api': api, **({'form': form} if form else {})}
+        for snap in (self.previous, self.candidate):
+            if api in {unit['apiName'] for unit in tft.real_units(snap.raw)}:
+                return False
+            if row in (_entity(snap, target).get('curve') or {}):
+                return False
+        return self.reviewed(path, before, after)
+
     def curve(self, before, after, context, row, path):
         import tft
         if not before or not after:
@@ -916,7 +948,7 @@ class _DefinitionReview:
     def cached(self, before, after, context, name, path):
         if before == after:
             return
-        if context[0] != 'unit' or not isinstance(before, list) or not isinstance(after, list) or len(before) != len(after):
+        if context[0] not in ('unit', 'trait') or not isinstance(before, list) or not isinstance(after, list) or len(before) != len(after):
             _fail(f'unverified calculation cache change at {path}')
         try:
             for star, (old, new) in enumerate(zip(before, after), 1):
@@ -964,9 +996,8 @@ class _DefinitionReview:
                         next_context = (context[0], context[1], form if form in ("AD", "AP") else context[2])
                         self.compare(a[name], b[name], next_context, f"{location}.{name}")
                 elif key in ('attributeCalcs', 'attributeValues'):
-                    if set(a or {}) != set(b or {}):
-                        _fail(f'new or missing calculations at {location}')
-                    for name in a or {}:
+                    a, b = a or {}, b or {}
+                    for name in self.keys(a, b, context, location):
                         if key == 'attributeValues':
                             self.cached(a[name], b[name], context, name, f'{location}.{name}')
                         else:
@@ -977,6 +1008,8 @@ class _DefinitionReview:
                             self.cached(a[name].get('values'), b[name].get('values'), context, name, f'{location}.{name}.values')
                 elif key in ("coefficient", "values") and before.get("row") and isinstance(a, list) and isinstance(b, list):
                     name = before["row"]
+                    if self.reviewed_orphan_array(context, name, location, a, b):
+                        continue
                     if a and isinstance(a[0], list):
                         self.curve(a, b, context, name, location)
                     else:
@@ -1027,11 +1060,53 @@ class _DefinitionReview:
             return twins[0]
         return name
 
+    def reviewed_addition(self, kind, api, definition):
+        """An exact root record can acknowledge a new non-shop unit or unused
+        trait. It cannot admit shop champions or a trait consumed by their
+        references or the modeled effect table; removals never enter here."""
+        import tft
+        shops = [tft.real_units(snap.raw) for snap in (self.previous, self.candidate)]
+        if kind == 'unit':
+            old_shop, new_shop = ({unit['apiName'] for unit in units} for units in shops)
+            # Adding the first shopUnit flag to a legacy lookup changes how every
+            # existing unit is classified. A non-shop addition cannot approve that.
+            if api in new_shop or old_shop != new_shop:
+                return False
+        elif kind == 'trait':
+            if (definition.get('units') or api in tft.load_trait_effects(self.candidate.set_no)
+                    or any(api in (unit.get('traitApiNames') or []) for units in shops for unit in units)):
+                return False
+        else:
+            return False
+        return self.reviewed(api, None, definition)
+
+    def root_leaves(self, before, after, path):
+        """Known source dictionaries require one exact disposition per changed
+        scalar leaf. Whole dictionaries/lists and schema changes are not approved
+        by a broad parent-path record."""
+        if before == after:
+            return
+        if isinstance(before, dict) and isinstance(after, dict) and set(before) == set(after):
+            for key in sorted(before):
+                self.root_leaves(before[key], after[key], f'{path}.{key}')
+        elif isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
+            for index, (old, new) in enumerate(zip(before, after)):
+                self.root_leaves(old, new, f'{path}[{index}]')
+        elif isinstance(before, (dict, list)) or isinstance(after, (dict, list)):
+            _fail(f'unverified role definitions or lookup structure changed at {path}')
+        elif not self.reviewed(path, before, after):
+            _fail(f'unverified role definitions or lookup structure changed at {path}: {before!r} to {after!r}')
+
     def run(self):
         a, b = self.previous.raw, self.candidate.raw
-        ignored = _NONMODELED_ROOTS | {"units", "items", "traits"}
+        reviewed_roots = {'roleData', 'unitAssetNames'}
+        ignored = _NONMODELED_ROOTS | {"units", "items", "traits"} | reviewed_roots
         if {k: v for k, v in a.items() if k not in ignored} != {k: v for k, v in b.items() if k not in ignored}:
             _fail("unverified role definitions or lookup structure changed")
+        for key in sorted(reviewed_roots):
+            if (key in a) != (key in b):
+                _fail(f'unverified role definitions or lookup structure changed at {key}')
+            self.root_leaves(a.get(key), b.get(key), key)
         for key in sorted(_NONMODELED_ROOTS - {'_metadata'}):
             if a.get(key) != b.get(key):
                 self.changes.append({'kind': 'outside-model', 'key': key,
@@ -1039,11 +1114,14 @@ class _DefinitionReview:
         for kind in ("unit", "item", "trait"):
             old, new = _raw_entities(a, kind), _raw_entities(b, kind)
             added_removed = set(old) ^ set(new)
-            if added_removed and (kind != 'item' or not added_removed <= self.excluded):
-                _fail(f"new or removed {kind} definitions: {sorted(added_removed)[:8]}")
             for api in sorted(added_removed):
-                self.excluded_changed.add(api)
-                self.changes.append({'kind': kind, 'api': api, 'reason': 'added/removed item is outside both build pools'})
+                if kind == 'item' and api in self.excluded:
+                    self.excluded_changed.add(api)
+                    self.changes.append({'kind': kind, 'api': api, 'reason': 'added/removed item is outside both build pools'})
+                elif api not in old and self.reviewed_addition(kind, api, new[api]):
+                    self.changes.append({'kind': kind, 'api': api, 'reason': 'added non-shop unit or unreferenced trait has an exact root review'})
+                else:
+                    _fail(f"new or removed {kind} definitions: {sorted(added_removed)[:8]}")
             for api in sorted(set(old) & set(new)):
                 if old[api] == new[api]:
                     continue
@@ -1186,6 +1264,11 @@ def _reconcile(candidate, previous, notes, review_document=None):
             check['reviewedNote'] = deepcopy(evidence)
         allow(target, mapping['observedBefore'])
         allow(target, expected)
+        if 'observedLookup' in mapping:
+            # A reviewed source conflict permits this staged raw value only;
+            # the final model still uses expected and future feeds get no waiver.
+            allow(target, mapping['observedLookup'])
+            check['observedLookup'] = deepcopy(mapping['observedLookup'])
         _write_override(overrides, working, target, expected)
         _replace_check(checks, check)
         working = _normalized(candidate, overrides)

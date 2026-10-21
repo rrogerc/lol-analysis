@@ -38,19 +38,19 @@ class TestRefreshPublication(unittest.TestCase):
         self.snap = tft.load_snapshot(18, "18.1d")
         self.args = SimpleNamespace(set=18, patch="18.1d", force=True)
         self.marker = self.cache / ".dashboard-ready"
-        self.comp_ready = {key: True for key in tft_comps.scenarios()}
-        self.composition_revision = "composition-a"
-        self.comp_warm = self.stack.enter_context(patch.object(tft_comps, "warm", return_value=0))
-        self.stack.enter_context(patch.object(tft_comps, "cell_ready", return_value=self.comp_ready))
-        self.stack.enter_context(patch.object(tft_comps, "revision", side_effect=lambda snap=None: self.composition_revision))
-        self.stack.enter_context(patch.object(tft_comps, "source_stale", return_value=False))
+        self.comp_models = {}
+        for name in ("warm", "cell_ready", "revision", "source_stale"):
+            self.comp_models[name] = self.stack.enter_context(patch.object(tft_comps, name,
+                side_effect=AssertionError("archived composition model used: " + name)))
+        self.comp_warm = self.comp_models["warm"]
+        self.site_generation = "prepared-active"
         self.site_prepare = self.stack.enter_context(patch.object(tft_site, "prepare", side_effect=self.fake_site))
         self.site_load = self.stack.enter_context(patch.object(tft_site, "load"))
 
     def fake_site(self, snap):
-        return {"siteGeneration": "prepared-" + self.composition_revision,
+        return {"siteGeneration": self.site_generation,
                 "baselineRevision": tft.snapshot_revision(snap),
-                "compositionRevision": self.composition_revision, "manifestHash": "test"}
+                "compositionRevision": tft_site.ARCHIVED_COMPOSITION_REVISION, "manifestHash": "test"}
 
     def mock_downloads(self, notes=None):
         notes = notes or json.loads((self.active / "patchnotes.json").read_text())
@@ -235,49 +235,43 @@ class TestRefreshPublication(unittest.TestCase):
         self.assertEqual((state["status"], state["activePatch"], state["exit"]), ("ok", "18.1d", 0))
         self.assertEqual(state["computedCells"], 0)
         self.assertEqual(state["computedCompositionScenarios"], 0)
-        self.assertEqual(state["compositionScenariosReady"], 8)
-        self.assertIs(self.comp_warm.call_args.kwargs["snap"], self.snap)
-        self.assertFalse(self.comp_warm.call_args.kwargs["prune"])
-        self.assertEqual(self.comp_warm.call_args.kwargs["workers"], tft_comps.DEFAULT_WARM_WORKERS)
+        self.assertEqual(state["compositionScenariosReady"], 0)
+        self.assertEqual(state["compositionAnalysis"], "archived")
+        for model in self.comp_models.values():
+            model.assert_not_called()
 
-    def test_prepares_both_analyses_and_responses_before_activation(self):
+    def test_prepares_active_analysis_and_responses_before_activation(self):
         events = []
         def warm_builds(**kwargs):
             self.assertIs(kwargs["snap"], self.snap)
             self.assertFalse(self.marker.exists())
             events.append("champions")
             return 3
-        def warm_comps(**kwargs):
-            self.assertIs(kwargs["snap"], self.snap)
-            self.assertFalse(self.marker.exists())
-            events.append("compositions")
-            return 2
         def prepare_site(snap):
             self.assertFalse(self.marker.exists())
             events.append("responses")
             return self.fake_site(snap)
         def fetch(args, **kwargs):
             kwargs["prepare"](self.snap)
-            self.assertEqual(events, ["champions", "compositions", "responses"])
+            self.assertEqual(events, ["champions", "responses"])
             events.append("activate")
             return self.snap
-        self.comp_warm.side_effect = warm_comps
         self.site_prepare.side_effect = prepare_site
         with patch.object(tft, "cmd_fetch", side_effect=fetch), \
              patch.object(tft, "warm", side_effect=warm_builds), \
              patch.object(tft, "cell_ready", return_value={"cell": True}):
             tft.cmd_refresh(self.args)
-        self.assertEqual(events, ["champions", "compositions", "responses", "activate"])
+        self.assertEqual(events, ["champions", "responses", "activate"])
         state = tft.refresh_state()
-        self.assertEqual((state["computedCells"], state["computedCompositionScenarios"]), (3, 2))
+        self.assertEqual((state["computedCells"], state["computedCompositionScenarios"]), (3, 0))
+        self.comp_warm.assert_not_called()
         self.assertEqual(json.loads(self.marker.read_text())["site"], self.fake_site(self.snap))
 
-    def test_composition_failure_preserves_active_archive_and_ready_marker(self):
+    def test_champion_failure_preserves_active_archive_and_ready_marker(self):
         self.mock_downloads()
         before = {p.name: p.read_bytes() for p in self.active.iterdir() if p.is_file()}
         self.marker.write_text('{"previous":true}')
-        self.comp_warm.side_effect = RuntimeError("composition worker failed")
-        with patch.object(tft, "warm", return_value=0), \
+        with patch.object(tft, "warm", side_effect=RuntimeError("champion worker failed")), \
              patch.object(tft, "cell_ready", return_value={"cell": True}):
             with self.assertRaises(SystemExit) as error:
                 tft.cmd_refresh(self.args)
@@ -286,16 +280,15 @@ class TestRefreshPublication(unittest.TestCase):
         self.assertEqual(json.loads(self.marker.read_text()), {"previous": True})
         self.site_prepare.assert_not_called()
 
-    def test_incomplete_compositions_cannot_publish(self):
-        self.comp_ready["c1-clump-mixed"] = False
+    def test_incomplete_champion_calculations_cannot_publish(self):
         with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
              patch.object(tft, "warm", return_value=0), \
-             patch.object(tft, "cell_ready", return_value={"cell": True}):
+             patch.object(tft, "cell_ready", return_value={"cell": False}):
             with self.assertRaises(SystemExit):
                 tft.cmd_refresh(self.args)
         self.assertFalse(self.marker.exists())
         self.site_prepare.assert_not_called()
-        self.assertIn("Some compositions did not finish", tft.refresh_state()["message"])
+        self.assertIn("Some champion builds did not finish", tft.refresh_state()["message"])
 
     def test_response_failure_preserves_active_archive(self):
         self.mock_downloads()
@@ -308,33 +301,63 @@ class TestRefreshPublication(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.active.iterdir() if p.is_file()})
         self.assertFalse(self.marker.exists())
 
-    def test_composition_only_change_signals_a_new_publication(self):
+    def test_archived_composition_changes_do_not_signal_a_new_publication(self):
         with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
              patch.object(tft, "warm", return_value=0), \
              patch.object(tft, "cell_ready", return_value={"cell": True}):
             tft.cmd_refresh(self.args)
             before = json.loads(self.marker.read_text())
-            self.composition_revision = "composition-b"
+            stamp = self.marker.stat().st_mtime_ns
+            for name, value in (("revision", "changed-composition"), ("source_stale", True),
+                                ("cell_ready", {})):
+                self.comp_models[name].side_effect = None
+                self.comp_models[name].return_value = value
+            tft.cmd_refresh(self.args)
+        after = json.loads(self.marker.read_text())
+        self.assertEqual(before, after)
+        self.assertEqual(self.marker.stat().st_mtime_ns, stamp)
+        for model in self.comp_models.values():
+            model.assert_not_called()
+
+    def test_saved_active_response_change_signals_a_new_publication(self):
+        with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
+             patch.object(tft, "warm", return_value=0), \
+             patch.object(tft, "cell_ready", return_value={"cell": True}):
+            tft.cmd_refresh(self.args)
+            before = json.loads(self.marker.read_text())
+            self.site_generation = "prepared-new-response"
             tft.cmd_refresh(self.args)
         after = json.loads(self.marker.read_text())
         self.assertEqual(before["revision"], after["revision"])
-        self.assertNotEqual(before["compositionRevision"], after["compositionRevision"])
+        self.assertEqual(before["compositionRevision"], after["compositionRevision"])
         self.assertNotEqual(before["site"], after["site"])
 
-    def test_waits_for_an_existing_composition_calculation(self):
-        self.comp_warm.side_effect = [None, 0]
+    def test_running_archived_composition_calculation_does_not_delay_refresh(self):
+        self.comp_warm.side_effect = None
+        self.comp_warm.return_value = None
         with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
              patch.object(tft, "warm", return_value=0), \
              patch.object(tft, "cell_ready", return_value={"cell": True}), \
              patch.object(tft.time, "sleep") as sleep:
             tft.cmd_refresh(self.args)
-        self.assertEqual(self.comp_warm.call_count, 2)
+        self.comp_warm.assert_not_called()
+        sleep.assert_not_called()
+        self.assertEqual(tft.refresh_state()["status"], "ok")
+
+    def test_waits_for_an_existing_champion_calculation(self):
+        with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
+             patch.object(tft, "warm", side_effect=[None, 0]) as warm, \
+             patch.object(tft, "cell_ready", return_value={"cell": True}), \
+             patch.object(tft.time, "sleep") as sleep:
+            tft.cmd_refresh(self.args)
+        self.assertEqual(warm.call_count, 2)
         sleep.assert_called_once_with(2)
 
     def test_dashboard_ready_rejects_wrong_prepared_revision(self):
-        with patch.object(tft, "cell_ready", return_value={"cell": True}):
-            with self.assertRaisesRegex(RuntimeError, "do not match"):
-                tft.dashboard_ready(self.snap, prepared_site={**self.fake_site(self.snap), "compositionRevision": "wrong"})
+        for key in ("baselineRevision", "compositionRevision"):
+            with self.subTest(revision=key), patch.object(tft, "cell_ready", return_value={"cell": True}):
+                with self.assertRaisesRegex(RuntimeError, "do not match"):
+                    tft.dashboard_ready(self.snap, prepared_site={**self.fake_site(self.snap), key: "wrong"})
         self.assertFalse(self.marker.exists())
 
     def test_malformed_state_does_not_prevent_the_next_refresh(self):

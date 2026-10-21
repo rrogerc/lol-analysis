@@ -139,6 +139,10 @@ class TestImpactIdentity(unittest.TestCase):
             for primary_hp in (1, 10000):
                 with self.subTest(name=name, primary_hp=primary_hp):
                     spec = fixture(name, hp=(primary_hp, 10000, 10000, 10000))
+                    # Isolate recipient identity from formation: every
+                    # secondary is nearby in this four-target fixture.
+                    for target in spec["dummies"]["slots"]:
+                        target["lane"] = None
                     flat(spec, main, 100)
                     flat(spec, splash, 25)
                     res = result(spec)

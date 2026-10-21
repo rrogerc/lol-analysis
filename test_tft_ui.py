@@ -55,7 +55,7 @@ class TestTftUiMetadata(unittest.TestCase):
             self.assertEqual(dummy["enemyDebuffs"], self.meta["tankDebuffs"])
             self.assertEqual(self.meta["tankDummies"][threat["key"]], dummy)
             self.assertEqual([s["line"] for s in dummy["slots"]],
-                             ["frontline"] * 3 + ["backline"] * 2)
+                             ["frontline"] * 4 + ["backline"] * 2)
         tank_keys = set(tft.unit_scenarios(self.snap.unit("Leona")))
         self.assertIn("s2-clump-bare", tank_keys)
         self.assertIn("s2-clump-bare-physical", tank_keys)
@@ -73,9 +73,9 @@ class TestTftUiMetadata(unittest.TestCase):
                 # All slots retain base defenses; the engine applies the
                 # shared status once, including the rear non-tank target.
                 self.assertEqual([s["armor"] for s in spec["dummies"]["slots"]],
-                                 [110, 45, 45, 40, 40])
+                                 [110, 45, 45, 45, 40, 40])
                 self.assertEqual([s["mr"] for s in spec["dummies"]["slots"]],
-                                 [110, 45, 45, 40, 40])
+                                 [110, 45, 45, 45, 40, 40])
         for threat, dummy in self.meta["tankDummies"].items():
             with self.subTest(threat=threat):
                 self.assertEqual(dummy["targetDebuffs"], {})

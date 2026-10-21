@@ -135,6 +135,60 @@ class TestPatchNotesParser(unittest.TestCase):
         self.assertEqual((document["patch"], document["changes"][0]["section"], document["changes"][0]["update"]),
                          ("18.2", "SEPTEMBER 14", ""))
 
+    def test_real_18_4_h4_ordinal_date_labels_the_b_patch_and_keeps_main_changes_separate(self):
+        # Extracted from Riot's 18.4 article on 2026-10-11:
+        # https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/
+        # The ordinal suffix used to prevent h4 dates from matching, unlike h3 dates.
+        document = tft.patch_notes_document("""
+            <h2 id="patch-midpatch-updates">MID-PATCH UPDATE</h2>
+            <h4 class="change-detail-title">OCTOBER 7TH</h4>
+            <h4 class="change-detail-title">2 COST UNIT</h4><ul>
+              <li>Alistar Spell Damage: 100/150/225 AP ⇒ 180/270/420 AP</li>
+              <li>Gromp AP Form Splash Damage: 160/240/375 AP ⇒ 180/270/435 AP</li>
+            </ul>
+            <h2 id="patch-large-changes">LARGE CHANGES</h2>
+            <h4 class="change-detail-title">UNITS: TIER 2</h4><ul><li>Gromp<ul>
+              <li>Splash damage AP Form: 160/240/360/610 ⇒ 160/240/375/625</li>
+            </ul></li></ul>""", "18.4")
+        self.assertEqual((document["patch"], document["updates"]), ("18.4b", ["OCTOBER 7TH"]))
+        self.assertEqual(document["revisionSource"], "dated mid-patch update sequence")
+        self.assertEqual([(c["what"], c["update"], c["major"]) for c in document["changes"]], [
+            ("Alistar Spell Damage", "OCTOBER 7TH", "MID-PATCH UPDATE"),
+            ("Gromp AP Form Splash Damage", "OCTOBER 7TH", "MID-PATCH UPDATE"),
+            ("Gromp Splash damage AP Form", "", "LARGE CHANGES"),
+        ])
+        # The article puts the hotfix first. Retain this source order and its date,
+        # allowing the reconciler to apply the base 375 value before the hotfix's 435.
+        self.assertEqual([(c["old"], c["new"], c["update"]) for c in document["changes"][1:]], [
+            ("160/240/375 AP", "180/270/435 AP", "OCTOBER 7TH"),
+            ("160/240/360/610", "160/240/375/625", ""),
+        ])
+        self.assertNotIn("OCTOBER 7TH", {n["section"] for n in document["notes"]})
+
+    def test_h4_ordinal_updates_preserve_newest_first_sequence_and_reset_main_scope(self):
+        document = tft.patch_notes_document("""
+            <h2>MID-PATCH UPDATE</h2>
+            <h4>OCTOBER 11TH</h4><h4>UNITS</h4><ul><li>Varus Mana: 20/110 ⇒ 10/100</li></ul>
+            <h4>OCTOBER 7TH</h4><h4>UNITS</h4><ul><li>Varus Mana: 30/120 ⇒ 20/110</li></ul>
+            <h2>LARGE CHANGES</h2><h4>UNITS: TIER 1</h4><ul><li>Varus Mana: 40/130 ⇒ 30/120</li></ul>
+            """, "18.4")
+        self.assertEqual((document["patch"], document["updates"]),
+                         ("18.4c", ["OCTOBER 11TH", "OCTOBER 7TH"]))
+        self.assertEqual([c["update"] for c in document["changes"]], ["OCTOBER 11TH", "OCTOBER 7TH", ""])
+        self.assertEqual(document["changes"][-1]["section"], "UNITS: TIER 1")
+
+    def test_h4_dates_allow_each_ordinal_suffix_without_accepting_longer_words(self):
+        for date in ("OCTOBER 1ST", "OCTOBER 2ND", "OCTOBER 3RD", "october 7th"):
+            with self.subTest(date=date):
+                document = tft.patch_notes_document(f"""
+                    <h2>MID-PATCH UPDATE</h2><h4>{date}</h4><h4>UNITS</h4>
+                    <ul><li>Varus Mana: 30/120 ⇒ 20/110</li></ul>""", "18.4")
+                self.assertEqual((document["patch"], document["updates"]), ("18.4b", [date]))
+        document = tft.patch_notes_document("""
+            <h2>MID-PATCH UPDATE</h2><h4>OCTOBER 7THING</h4>
+            <ul><li>Varus Mana: 30/120 ⇒ 20/110</li></ul>""", "18.4")
+        self.assertEqual((document["patch"], document["updates"]), ("18.4", []))
+
     def test_numeric_ratio_colon_is_kept_for_review_instead_of_becoming_a_label(self):
         parsed = tft.patch_entry_changes(entry("Damage Ratio: 1:2 AD/AP ⇒ 2:3 AD/AP", parent="Champion AP Form"))
         self.assertEqual(len(parsed), 1)

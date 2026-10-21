@@ -246,6 +246,7 @@ trait Actor<'a> {
     fn shield(&mut self, amount: f64, duration: f64) -> f64;
     fn reave(&mut self, amount: f64);
     fn on_hit(&mut self, target: usize);
+    fn take_cleanse(&mut self) -> bool;
     fn finish(&mut self) -> (Vec<Ev>, [(u64, f64, f64); MAX_ACTORS]);
     fn result(&mut self, time: f64) -> ActorResult;
 }
@@ -327,11 +328,15 @@ impl<'a, D: Driver> Actor<'a> for Champion<'a, D> {
     fn receive(&mut self, hit: &CombatHit) -> CombatDamage {
         let before = self.fight.combat_state();
         let raw = if hit.execution { self.fight.combat_execute(hit.target) } else {
-            self.fight.take_with_ignore(hit.amount, hit.dtype, Some(hit.target), hit.attack,
-                hit.armor_ignore + before.armor.max(0.0)*hit.armor_ignore_pct, hit.mr_ignore)
+            self.fight.take_with_events(hit.amount, hit.dtype, Some(hit.target), hit.attack,
+                hit.armor_ignore + before.armor.max(0.0)*hit.armor_ignore_pct, hit.mr_ignore,
+                hit.mode.applies_on_attack || hit.mode.applies_on_spell, hit.mode.proc_hits)
         };
         let state = self.fight.combat_state();
-        let amount = raw.min((before.hp.max(0.0) + before.shield).max(0.0));
+        // Credit consumed pools directly. Subtracting large before/after HP
+        // values would introduce cancellation errors on ordinary small hits.
+        // The recipient settles new lifelines and Edge's floor before healing.
+        let amount = if hit.execution { raw } else { self.fight.last_damage_spent };
         self.received += amount;
         CombatDamage { amount,
                        raw_amount: raw, champion_killed: before.alive && !state.alive, state }
@@ -351,6 +356,7 @@ impl<'a, D: Driver> Actor<'a> for Champion<'a, D> {
     }
     fn reave(&mut self, amount: f64) { self.fight.receive_mana_reave(amount); }
     fn on_hit(&mut self, target: usize) { self.fight.on_hit_effects(Some(target), true); }
+    fn take_cleanse(&mut self) -> bool { self.fight.take_edge_cleanse_request() }
     fn finish(&mut self) -> (Vec<Ev>, [(u64, f64, f64); MAX_ACTORS]) {
         self.fight.combat_flush();
         let mut flat = [(0, 0.0, 0.0); MAX_ACTORS];
@@ -591,6 +597,12 @@ impl<'a> World<'a> {
     }
     fn finish(&self, side: usize, index: usize, actor: &mut dyn Actor<'a>) {
         let (events, flat) = actor.finish();
+        if actor.take_cleanse() {
+            *self.ledgers[side][index].borrow_mut() = Ledger::default();
+            if let Some(sleeps) = &self.sleeps[side] {
+                sleeps.borrow_mut().clear(index, actor.state().generation);
+            }
+        }
         self.publish(side,index,actor.state());
         for (target, (generation, armor, mr)) in flat.into_iter().enumerate().take(self.actors[1-side].len()) {
             if generation == self.state(1-side,target).generation && (armor != 0.0 || mr != 0.0) {

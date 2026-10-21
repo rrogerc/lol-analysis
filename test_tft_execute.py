@@ -106,9 +106,12 @@ class TestGnarRemoval(unittest.TestCase):
 
     def test_ordinary_true_damage_burn_is_not_suppressed_with_execution(self):
         spec = gnar_spec(transform=0, fx=[{"burnOnHit": [0.01, 4]}])
+        for kit in spec["kits"].values():
+            kit["baseAd"] = 1
+            kit["stats"]["ad"] = 1
         _, result = ENGINE.simulate(spec, True)
-        # Attacks keep 1%-maximum-HP burn active: 30 DPS for 4.5 seconds.
-        self.assertEqual(result["total"], 3000 * 0.01 * 4.5)
+        # Five positive attacks keep the 30 DPS burn active for 4.5 seconds.
+        self.assertEqual(result["total"], 5 + 3000 * 0.01 * 4.5)
         self.assertEqual(sum(hit[2] for hit in events(result, "damage", "burn")), 135)
         self.assertEqual(events(result, "damage", "thrown off"), [])
 

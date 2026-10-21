@@ -14,8 +14,38 @@ import tft
 import tft_theory as theory
 from tft_comp_traits import resolve_board_traits
 from tft_unit_profiles import UnitProfiles
+from test_tft_unit_profiles import plain_spec
 from jobs.tft_theory_verify import (assert_close, cases, check_optimizer,
                                    evaluate, run_optimizer, score_order)
+
+
+class TestNativeTheoryScheduler(unittest.TestCase):
+    def test_edge_cleanse_resumes_overdue_cast_without_rewinding_actor_time(self):
+        spec = plain_spec(hp=1000.0, armor=0.0, mr=0.0, incoming_dps=100.0,
+                          fx=[{"api": "DA_EdgeOfNight", "name": "Edge of Night",
+                               "untargetableAtHp": [0.5, 0.25, 0.0]}])
+        spec["driver"] = "Lux"
+        kit = spec["kits"]["base"]
+        kit["stats"].update(mana=20.0, initialMana=15.0)
+        kit["rows"].update(DamageReductionPerUnit=0.0, MinimumFalloffDamageRatio=1.0)
+        kit["calcs"]["MagicDamageCalc1"] = {
+            "dtype": "magic", "terms": [{"type": "scaled", "coef": 100.0,
+                                            "scaling": "AbilityPower", "op": "add"}]}
+        spec["unit"]["timing"] = {
+            "base": {"castAnimation": 2.0, "effectAt": 1.5, "attackDelay": 0.1}}
+        # The t=.1 attack fills mana and queues a 100-damage spell at1.6.
+        # Continuous CC starts at1.0; pressure triggers Edge at half HP,
+        # clearing CC while that spell's original deadline is in the past.
+        # Resume at the current clock: one opening auto, the delayed spell,
+        # and one resumed auto must all settle before the5.75s observation.
+        result = tft.engine().measure_theory_team(
+            [spec], [True], 5.75, 100.0, 1.0, 1.0, 1.5)
+        sample = result["samples"][0]
+        self.assertAlmostEqual(result["elapsed"], 5.75)
+        self.assertAlmostEqual(result["incomingBudget"], 575.0)
+        self.assertAlmostEqual(sample["firstCast"], 0.1)
+        self.assertEqual(sample["casts"], 1)
+        self.assertAlmostEqual(sample["damage"], 300.0)
 
 
 class TestNativeTheoryParity(unittest.TestCase):

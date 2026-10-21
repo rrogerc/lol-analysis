@@ -100,43 +100,45 @@ class TestTargetDebuffs(unittest.TestCase):
                     pct = 0.5 if slot["nearby"] else 0.3
                     self.assertAlmostEqual(hit[2], 170 * 100 / (100 + slot[resist] * (1 - pct)))
 
-    def test_stronger_timed_effect_expires_back_to_baseline(self):
+    def test_stronger_timed_effect_refreshes_only_at_known_native_periods(self):
         for dtype, resist, effect in (("physical", "armor", "sunderOnHit"),
                                       ("magic", "mr", "shredOnHit")):
-            with self.subTest(dtype=dtype):
-                spec = target_spec(duration=2.0, geometry="spread",
-                                   fx=[{effect: [0.6, 0.75]}])
-                kit = spec["kits"]["base"]
-                # One opening cast applies the short debuff; the trail keeps
-                # dealing damage after expiry without reapplying on-hit effects.
-                kit["stats"].update(initialMana=10 ** 6, mana=10 ** 6)
-                kit["stats"]["as"] = 0.01
-                kit["rows"].update(RiftDuration=3.0, MaxHealthDamagePerSecond=0.0)
-                kit["calcs"]["PhysicalDamageCalc2"] = {
-                    "dtype": dtype,
-                    "terms": [{"type": "flat", "value": 170.0, "op": "add"}],
-                }
-                expected = ENGINE.simulate(spec, True)
-                _, res = expected
-                self.assertEqual(res["attacks"], 1)
-                self.assertEqual(res["casts"], 1)
-                hits = events(res, "damage", "trail", target=0)
-                self.assertEqual([e[0] for e in hits], [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0])
-                resistance = spec["dummies"]["slots"][0][resist]
-                for hit in hits:
-                    pct = 0.6 if hit[0] < 1.0 else 0.3
-                    self.assertAlmostEqual(hit[2], 170 * 0.25 * 100
-                                           / (100 + resistance * (1 - pct)))
-                # A redundant item must not donate its longer duration (or
-                # the aura's unlimited duration) to the stronger effect.
-                for pct in (0.15, 0.3):
-                    for extra in ({effect: [pct, 5.0]},
-                                  {effect.replace("OnHit", "Aura"): pct},
-                                  {effect: [pct, 5.0], effect.replace("OnHit", "Aura"): pct}):
-                        with self.subTest(dtype=dtype, extra=extra):
-                            redundant = copy.deepcopy(spec)
-                            redundant["items"].append({"api": "test", "name": "test", **extra})
-                            self.assertEqual(ENGINE.simulate(redundant, True), expected)
+            for known_period in (False, True):
+                with self.subTest(dtype=dtype, known_period=known_period):
+                    spec = target_spec(duration=2.0, geometry="spread",
+                                       fx=[{effect: [0.6, 0.75]}])
+                    kit = spec["kits"]["base"]
+                    # Integration alone cannot refresh a debuff. A known
+                    # half-second trail period can keep the opening one alive.
+                    kit["dotCritPeriods"] = {"trail": 0.5} if known_period else {}
+                    kit["stats"].update(initialMana=10 ** 6, mana=10 ** 6)
+                    kit["stats"]["as"] = 0.01
+                    kit["rows"].update(RiftDuration=3.0, MaxHealthDamagePerSecond=0.0)
+                    kit["calcs"]["PhysicalDamageCalc2"] = {
+                        "dtype": dtype,
+                        "terms": [{"type": "flat", "value": 170.0, "op": "add"}],
+                    }
+                    expected = ENGINE.simulate(spec, True)
+                    _, res = expected
+                    self.assertEqual(res["attacks"], 1)
+                    self.assertEqual(res["casts"], 1)
+                    hits = events(res, "damage", "trail", target=0)
+                    self.assertEqual([e[0] for e in hits], [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0])
+                    resistance = spec["dummies"]["slots"][0][resist]
+                    for hit in hits:
+                        pct = 0.6 if known_period or hit[0] < 1.0 else 0.3
+                        self.assertAlmostEqual(hit[2], 170 * 0.25 * 100
+                                               / (100 + resistance * (1 - pct)))
+                    # A redundant item cannot donate its longer duration or
+                    # the aura's unlimited duration to the stronger effect.
+                    for pct in (0.15, 0.3):
+                        for extra in ({effect: [pct, 5.0]},
+                                      {effect.replace("OnHit", "Aura"): pct},
+                                      {effect: [pct, 5.0], effect.replace("OnHit", "Aura"): pct}):
+                            with self.subTest(dtype=dtype, known_period=known_period, extra=extra):
+                                redundant = copy.deepcopy(spec)
+                                redundant["items"].append({"api": "test", "name": "test", **extra})
+                                self.assertEqual(ENGINE.simulate(redundant, True), expected)
 
     def test_last_whisper_and_void_staff_keep_stats_without_extra_reduction(self):
         for unit, name, effect, stat in (

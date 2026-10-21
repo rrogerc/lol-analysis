@@ -390,7 +390,10 @@ class TestCompositions(unittest.TestCase):
         self.assertEqual(damage["targetDebuffs"], {})
         self.assertEqual(defense["duration"], 60)
         self.assertTrue(defense["immortal"] and defense["pressure"])
-        self.assertEqual(len(defense["dummies"]["slots"]), 5)
+        slots = defense["dummies"]["slots"]
+        self.assertEqual(len(slots), 6)
+        self.assertEqual([slot["nearby"] for slot in slots], [True] * 4 + [False] * 2)
+        self.assertEqual([slot["line"] for slot in slots], ["frontline"] * 4 + ["backline"] * 2)
 
     def test_cinderling_native_burn_is_retained_for_shared_resolution(self):
         evaluator = comps.Evaluator(self.snap, "clump", "mixed")

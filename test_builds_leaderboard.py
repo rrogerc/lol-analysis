@@ -151,6 +151,51 @@ class TestLeaderboard(unittest.TestCase):
                          [("ahri", "PanicException: index out of bounds"),
                           ("annie", "no build was ranked")])
 
+    def test_corrupt_cells_are_reported_without_hiding_healthy_champions(self):
+        damaged = {"ahri": b"", "garen": b'{"rows":[', "zed": b"\xff"}
+        for key in builds_leaderboard.leaderboard_scenarios():
+            with self.subTest(key=key):
+                row = (overall_row((1.0, 2.0, 3.0), 1.82)
+                       if builds.SCENARIOS[key].get("overall") else target_row(1.0))
+                for slug in self.KITS:
+                    self.write(slug, key, [row])
+                for slug, content in damaged.items():
+                    with open(self.paths[(slug, key)], "wb") as f:
+                        f.write(content)
+                board = self.board(key)
+                self.assertEqual([r["champion"] for r in board["rows"]], ["annie", "kayle"])
+                self.assertTrue(board["complete"])
+                self.assertEqual((board["readyCount"], board["expectedCount"]), (5, 5))
+                self.assertEqual(board["pending"], [])
+                self.assertCountEqual([f["champion"] for f in board["failed"]], damaged)
+                for failure in board["failed"]:
+                    self.assertIn("Saved result could not be read:", failure["error"])
+                # A repaired file is read again by the same running process.
+                for slug in damaged:
+                    self.write(slug, key, [row])
+                repaired = self.board(key)
+                self.assertEqual(len(repaired["rows"]), 5)
+                self.assertEqual(repaired["failed"], [])
+
+    def test_cell_removed_between_stat_and_read_is_pending(self):
+        key = "full-squishy"
+        self.write("kayle", key, [target_row(1.0)])
+        self.write("ahri", key, [target_row(2.0)])
+        read = builds_leaderboard._cell_best
+
+        def removed(path, *metadata):
+            if path == self.paths[("ahri", key)]:
+                os.remove(path)
+            return read(path, *metadata)
+
+        with mock.patch.object(builds_leaderboard, "_cell_best", side_effect=removed):
+            board = self.board(key)
+        self.assertEqual([r["champion"] for r in board["rows"]], ["kayle"])
+        self.assertIn("ahri", [p["champion"] for p in board["pending"]])
+        self.assertFalse(board["complete"])
+        self.assertEqual(board["readyCount"], 1)
+        self.assertEqual(board["failed"], [])
+
     def test_a_recomputed_cell_is_read_again(self):
         key = "full-squishy"
         self.write("kayle", key, [target_row(2.0)])

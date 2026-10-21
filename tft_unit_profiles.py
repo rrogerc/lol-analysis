@@ -103,7 +103,7 @@ def _burn_adjusted(spec, item_burn, inferno_burn):
     if not item_burn:
         for key in ("pool", "items"):
             result[key] = [{key: value for key, value in item.items()
-                            if key not in ("burnOnHit", "burnAura", "burnAuraByRange")}
+                            if key not in ("burnOnHit", "burnAura", "burnAuraByRange", "sunfireAura")}
                            for item in spec[key]]
         native = {"TFT18_Cinderling": "BurnDuration", "TFT18_Brambleback": "TraitBurnDuration"}
         duration = native.get(spec["unit"]["api"])

@@ -127,14 +127,17 @@ pub struct ItemFx {
     pub sunder_on_hit: Option<(f64, f64)>,
     pub shred_on_hit: Option<(f64, f64)>,
     pub burn_on_hit: Option<(f64, f64)>,
+    pub burn_requires_attack_or_spell: bool,
     pub sunder_aura: Option<f64>,
     pub shred_aura: Option<f64>,
     pub burn_aura: Option<(f64, f64)>,
+    pub sunfire_aura: Option<(f64, f64, f64, f64)>,
     pub sunder_aura_by_range: Option<(f64, f64)>,
     pub shred_aura_by_range: Option<(f64, f64)>,
     pub burn_aura_by_range: Option<(f64, f64, f64)>,
     pub ionic_spark_by_range: Option<(f64, f64)>,
     pub hp_mult: Option<f64>,
+    pub hp_compound_mult: Option<f64>,
     pub durability: Option<f64>,
     pub durability_by_health: Option<(f64, f64, f64)>,
     pub attack_damage_taken: Option<f64>,
@@ -154,6 +157,17 @@ pub struct ItemFx {
     pub unstoppable_at_max_stacks: bool,
     pub hoj: Option<(f64, f64, f64, f64)>,
     pub note: Option<String>,
+}
+
+/// Copies of one critical-damage item apply the same native buff definition.
+/// The ordinary Flail's AggregateByTarget cap is shared across those copies.
+#[derive(Clone, Debug)]
+pub struct CritAmp {
+    api: String,
+    pub amp: f64,
+    pub duration: f64,
+    pub max_stacks: f64,
+    pub copies: usize,
 }
 
 impl ItemFx {
@@ -193,14 +207,17 @@ impl ItemFx {
             sunder_on_hit: tuple2(d, "sunderOnHit")?,
             shred_on_hit: tuple2(d, "shredOnHit")?,
             burn_on_hit: tuple2(d, "burnOnHit")?,
+            burn_requires_attack_or_spell: truthy(d, "burnRequiresAttackOrSpell")?,
             sunder_aura: getopt(d, "sunderAura")?,
             shred_aura: getopt(d, "shredAura")?,
             burn_aura: tuple2(d, "burnAura")?,
+            sunfire_aura: sunfire_aura(d)?,
             sunder_aura_by_range: range_pair(d, "sunderAuraByRange", true)?,
             shred_aura_by_range: range_pair(d, "shredAuraByRange", true)?,
             burn_aura_by_range: range_burn(d)?,
             ionic_spark_by_range: range_pair(d, "ionicSparkByRange", false)?,
             hp_mult: getopt(d, "hpMult")?,
+            hp_compound_mult: getopt(d, "hpCompoundMult")?,
             durability: getopt(d, "durability")?,
             durability_by_health: tuple3(d, "durabilityByHealth")?,
             attack_damage_taken: getopt(d, "attackDamageTaken")?,
@@ -252,6 +269,18 @@ fn range_burn(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64)>> {
         Some(values) if values.len() == 3 && values.iter().all(|v| v.is_finite() && *v >= 0.0)
             && values[0] <= 1.0 && values[1] > 0.0 => Ok(Some((values[0], values[1], values[2]))),
         Some(_) => Err(pyo3::exceptions::PyValueError::new_err("burnAuraByRange: invalid rate/duration/range")),
+    }
+}
+
+fn sunfire_aura(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64, f64)>> {
+    match vecf(d, "sunfireAura")? {
+        None => Ok(None),
+        Some(values) if values.len() == 4 && values.iter().all(|v| v.is_finite())
+            && (0.0..=1.0).contains(&values[0]) && values[1] > 0.0
+            && values[2] > 0.0 && values[3] >= 0.0 =>
+            Ok(Some((values[0], values[1], values[2], values[3]))),
+        Some(_) => Err(pyo3::exceptions::PyValueError::new_err(
+            "sunfireAura: invalid rate/duration/interval/range")),
     }
 }
 
@@ -430,9 +459,11 @@ pub struct Fx {
     pub crit_dmg: f64,
     pub amp: f64,
     pub hp: f64,
-    /// Ordinary item and trait HP bonuses share one additive percentage pool.
+    /// Additive item and trait HP bonuses share one percentage pool.
     /// Inputs retain factor notation (1.18 means +18%); this is 1 + their sum.
     pub hp_mult: f64,
+    /// Compound modifiers apply after the additive HP percentage pool.
+    pub hp_compound_mult: f64,
     pub armor: f64,
     pub mr: f64,
     pub mana_regen: f64,
@@ -449,17 +480,19 @@ pub struct Fx {
     pub adap_per_attack: Vec<(f64, f64, f64)>,
     pub ap_per_interval: Vec<(f64, f64)>,
     pub ap_after: Vec<(f64, f64)>,
-    pub amp_per_crit: Vec<(f64, f64, f64)>,
+    pub amp_per_crit: Vec<CritAmp>,
     pub as_per_attack_stack: Vec<(f64, f64)>,
     pub ap_per_cast: f64,
     pub spellweaver_ap_per_cast: f64,
     pub sunder_on_hit: Vec<(f64, f64)>,
     pub shred_on_hit: Vec<(f64, f64)>,
-    /// (pct of max hp per second, duration, stacks with the item burn?)
-    pub burn_on_hit: Vec<(f64, f64, bool)>,
+    /// (burn rate, duration, stacks with item burn, requires attack/spell tag)
+    pub burn_on_hit: Vec<(f64, f64, bool, bool)>,
     pub sunder_aura: f64,
     pub shred_aura: f64,
     pub burn_aura: Option<(f64, f64)>,
+    /// One (burn rate, duration, application interval, reach) per equipped copy.
+    pub sunfire_auras: Vec<(f64, f64, f64, f64)>,
     pub amp_after_same_target: Option<(f64, f64)>,
     pub bleed_pct: f64,
     pub bleed_dur: f64,
@@ -502,7 +535,7 @@ impl Default for Fx {
     fn default() -> Fx {
         Fx {
             ad_pct: 0.0, ap: 0.0, as_pct: 0.0, crit: 0.0, crit_dmg: 0.0, amp: 0.0, hp: 0.0,
-            hp_mult: 1.0, armor: 0.0, mr: 0.0, mana_regen: 0.0, mana_per_attack: 0.0,
+            hp_mult: 1.0, hp_compound_mult: 1.0, armor: 0.0, mr: 0.0, mana_regen: 0.0, mana_per_attack: 0.0,
             timed_stats: Vec::new(),
             mana_per_crit: 0.0, mana_mult: 1.0, adap_mult: 1.0, starting_mana: 0.0,
             precision: 0, amp_vs_tank: 0.0,
@@ -510,7 +543,7 @@ impl Default for Fx {
             ap_per_interval: Vec::new(), ap_after: Vec::new(), amp_per_crit: Vec::new(),
             as_per_attack_stack: Vec::new(), ap_per_cast: 0.0, spellweaver_ap_per_cast: 0.0,
             sunder_on_hit: Vec::new(), shred_on_hit: Vec::new(), burn_on_hit: Vec::new(),
-            sunder_aura: 0.0, shred_aura: 0.0, burn_aura: None, amp_after_same_target: None,
+            sunder_aura: 0.0, shred_aura: 0.0, burn_aura: None, sunfire_auras: Vec::new(), amp_after_same_target: None,
             bleed_pct: 0.0, bleed_dur: 0.0, bonus_magic_pct: 0.0, bonus_true_pct: 0.0, ravager: None,
             riftbeast: false, form: None,
             omnivamp: 0.0, durabilities: Vec::new(), durability_while_shielded: Vec::new(),
@@ -602,8 +635,14 @@ impl Fx {
         if let Some(x) = it.ap_after {
             self.ap_after.push(x);
         }
-        if let Some(x) = it.amp_per_crit {
-            self.amp_per_crit.push(x);
+        if let Some((amp, duration, max_stacks)) = it.amp_per_crit {
+            if let Some(effect) = self.amp_per_crit.iter_mut().find(|effect| effect.api == it.api) {
+                effect.copies += 1;
+            } else {
+                self.amp_per_crit.push(CritAmp {
+                    api: it.api.clone(), amp, duration, max_stacks, copies: 1,
+                });
+            }
         }
         if let Some(v) = it.mana_per_attack {
             self.mana_per_attack += v;
@@ -612,10 +651,10 @@ impl Fx {
             self.mana_per_crit += v;
         }
         if let Some(v) = it.mana_mult {
-            self.mana_mult *= v;
+            self.mana_mult += v - 1.0;
         }
         if let Some(v) = it.adap_mult {
-            self.adap_mult *= v;
+            self.adap_mult += v - 1.0;
         }
         if let Some(v) = it.starting_mana {
             self.starting_mana += v;
@@ -630,7 +669,7 @@ impl Fx {
             self.shred_on_hit.push(x);
         }
         if let Some((pct, dur)) = it.burn_on_hit {
-            self.burn_on_hit.push((pct, dur, false));
+            self.burn_on_hit.push((pct, dur, false, it.burn_requires_attack_or_spell));
         }
         if let Some(v) = it.sunder_aura {
             self.sunder_aura = pymax(self.sunder_aura, v);
@@ -643,6 +682,9 @@ impl Fx {
         }
         if let Some(v) = it.hp_mult {
             self.add(StatKey::HpMult, v, false);
+        }
+        if let Some(v) = it.hp_compound_mult {
+            self.hp_compound_mult *= v;
         }
         if let Some(v) = it.durability {
             self.durabilities.push(v);
@@ -729,7 +771,7 @@ impl Fx {
             self.bleed_dur = dur;
         }
         if let Some((pct, dur)) = t.burn_on_hit {
-            self.burn_on_hit.push((pct, dur, true));
+            self.burn_on_hit.push((pct, dur, true, true));
         }
         if let Some(v) = t.bonus_magic_pct {
             self.bonus_magic_pct += v;
@@ -857,6 +899,9 @@ pub(crate) fn build_fx_for(spec: &crate::spec::CellSpec, items: &[&ItemFx]) -> F
         }
         if let Some((rate, duration, reach)) = item.burn_aura_by_range {
             if range <= reach { fx.burn_aura = Some((rate, duration)); }
+        }
+        if let Some(aura @ (_, _, _, reach)) = item.sunfire_aura {
+            if range <= reach { fx.sunfire_auras.push(aura); }
         }
         if let Some((value, reach)) = item.ionic_spark_by_range {
             if range <= reach { fx.ionic_spark += value; }

@@ -1,5 +1,6 @@
 """Core analysis integration: full enumeration, cache and scenario coverage."""
 
+import glob
 import json
 import os
 import tempfile
@@ -130,6 +131,7 @@ class TestCoreCache(unittest.TestCase):
 
     def test_static_export_pins_one_snapshot_for_cells_and_core_contexts(self):
         import webapp
+        import tft_comps
 
         key = "s2-clump-bare"
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
@@ -140,25 +142,61 @@ class TestCoreCache(unittest.TestCase):
                 json.dump(payload, f)
             paths = {("ahri", key): path}
             con = SimpleNamespace(execute=lambda *args: [])
+            early_payload = {"schema": "tft-early-comps-v1", "set": self.snap.set_no,
+                "patch": self.snap.patch, "revision": "early-export-fixture",
+                "baselineRevision": tft.snapshot_revision(self.snap), "complete": True,
+                "variants": [{"key": "level4", "results": [{"score": 55.0}]}]}
             for owner, name, value in (
                     (webapp, "db_connect", con), (webapp, "app_meta", {"jobs": [], "tiers": ["test"]}),
                     (webapp.builds, "api_builds_meta", {}), (webapp.builds, "warm", 0),
                     (webapp.builds, "cell_paths", {}), (webapp.scaling, "db_patches", []),
                     (webapp.scaling, "build_rows", []), (webapp.onetricks, "api_onetricks", {}),
+                    (webapp.builds_leaderboard, "cached_leaderboard", {}),
                     (tft, "cell_paths", paths),
-                    (webapp.tft_comps, "warm", 0),
-                    (webapp.tft_comps, "cached_scenario", {"compositionFixture": True}),
-                    (webapp.tft_comps, "cell_ready", {"c1-clump-mixed": True})):
+                    (webapp.tft_early, "supports", True),
+                    (webapp.tft_early, "revision", early_payload["revision"]),
+                    (webapp.tft_early, "cached_catalog", early_payload)):
                 stack.enter_context(patch.object(owner, name, return_value=value))
+            for name in ("warm", "cached_scenario", "api_meta", "cell_ready", "revision"):
+                stack.enter_context(patch.object(tft_comps, name,
+                    side_effect=AssertionError("export must not use archived compositions")))
+            # The fixture's cell inventory defines its baseline revision.
+            early_payload["baselineRevision"] = tft.snapshot_revision(self.snap)
             # A second lookup could return a newly published patch. The entire
             # export must keep using the snapshot its metadata described.
             loaded = stack.enter_context(patch.object(tft, "load_snapshot", side_effect=[self.snap,
                          AssertionError("export reloaded the active snapshot")]))
             warmed = stack.enter_context(patch.object(tft, "warm", return_value=0))
+            early_warmed = stack.enter_context(patch.object(webapp.tft_early, "warm", return_value=0))
             out = os.path.join(directory, "export")
+            legacy = os.path.join(out, "api", "tft", "compositions")
+            os.makedirs(legacy)
+            legacy_bytes = b'{"savedComposition":true}\n'
+            with open(os.path.join(legacy, "saved.json"), "wb") as f:
+                f.write(legacy_bytes)
             webapp.cmd_export(SimpleNamespace(out=out))
+            self.assertFalse(os.path.exists(os.path.join(out, "api", "tft", "compositions")))
+            archived = glob.glob(os.path.join(out, "archive", "tft-compositions", "*", "saved.json"))
+            self.assertEqual(len(archived), 1)
+            with open(archived[0], "rb") as f:
+                self.assertEqual(f.read(), legacy_bytes)
             loaded.assert_called_once_with()
             warmed.assert_called_once_with(snap=self.snap, prune=False)
+            early_warmed.assert_called_once_with(snap=self.snap)
+            with open(os.path.join(out, "api", "tft", "traits.json")) as f:
+                flex = json.load(f)
+            self.assertEqual((flex["set"], flex["patch"]), (self.snap.set_no, self.snap.patch))
+            self.assertEqual(flex["schema"], "tft-trait-flex-v1")
+            self.assertEqual({unit["api"] for unit in flex["units"]}, set(self.snap.units))
+            self.assertNotIn("items", flex)
+            with open(os.path.join(out, "api", "tft", "early.json")) as f:
+                early = json.load(f)
+            self.assertEqual((early["set"], early["patch"]), (self.snap.set_no, self.snap.patch))
+            self.assertEqual(early["variants"], early_payload["variants"])
+            self.assertEqual(early["baselineRevision"], early_payload["baselineRevision"])
+            self.assertIn("teamPlanner", early)
+            self.assertNotIn("teamPlanner", early_payload)
+            self.assertNotIn("publicationRevision", early_payload)
             records = []
             for name in ("meta.json", "status.json", "ahri/cores.json"):
                 with open(os.path.join(out, "api", "tft", name)) as f:
@@ -174,14 +212,11 @@ class TestCoreCache(unittest.TestCase):
                 self.assertEqual(board["selection"]["key"], board_key)
                 self.assertFalse(board["complete"])
                 self.assertEqual(board["readyCount"], 0)
-            with open(os.path.join(out, "api", "tft", "compositions", "meta.json")) as f:
-                comp_meta = json.load(f)
-            with open(os.path.join(out, "api", "tft", "compositions", "status.json")) as f:
-                comp_status = json.load(f)
-            self.assertEqual(comp_meta["baselineRevision"], records[0]["revision"])
-            self.assertEqual(comp_status["revision"], comp_meta["revision"])
-            with open(os.path.join(out, "api", "tft", "compositions", "c1-clump-mixed.json")) as f:
-                self.assertEqual(json.load(f), {"compositionFixture": True})
+            publication = records[0]["publicationRevision"]
+            self.assertTrue(publication.startswith("g-"))
+            self.assertEqual({record["publicationRevision"] for record in
+                             (records[0], records[1], flex, early)}, {publication})
+            self.assertEqual(flex["teamPlanner"], early["teamPlanner"])
 
 
 if __name__ == "__main__":

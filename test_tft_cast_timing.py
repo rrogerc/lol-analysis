@@ -722,7 +722,7 @@ class TestNoTimeline(unittest.TestCase):
                           10.0, 11.928306135993694, 13.890631390551615, 15.726756310636706,
                           17.46877419058562, 19.110665086482022],
             "aliveTime": 20.0, "firstAttacks": [0.0, 1.111111111111111, 2.1609798775153104, 3.156004753137201],
-            "lockUntil": 20.110665086482022, "castingUntil": 19.360665086482022, "mana": 9.412120342809779},
+            "lockUntil": 20.110665086482022, "castingUntil": 19.360665086482022, "mana": 9.41212034280975},
         ("Rengar", 2, ("Bloodthirster", "Titan's Resolve", "Sterak's Gage"), "spread"): {
             "killTime": None, "total": 3315.4344827586215, "attacks": 21,
             "castTimes": [2.884615384615384, 8.653846153846153, 14.423076923076923], "aliveTime": 20.0,
@@ -768,6 +768,8 @@ class TestNoTimeline(unittest.TestCase):
                       "lockUntil": res["probe"]["lockUntil"], "castingUntil": res["probe"]["castingUntil"],
                       "mana": res["probe"]["mana"]}
 
+    # Nashor's crit mana now settles separately after damage; its operation
+    # order deliberately updates only the Soraka fixture's final mana bits.
     def test_a_spec_without_timelines_reproduces_the_old_engine_exactly(self):
         for case, frozen in self.FROZEN.items():
             with self.subTest(unit=case[0]):
@@ -815,7 +817,7 @@ class TestCritOverflow(unittest.TestCase):
 
 class TestBlueBuff(unittest.TestCase):
     """"Gain 10% additional Attack Damage and Ability Power from all
-    sources": the bonus is multiplied, the base is not (an adopted reading)."""
+    sources": native modifiers preserve the base and add duplicate bonuses."""
 
     def test_blue_buff_and_rabadons(self):
         sheet, _ = ENGINE.simulate(spec_for("Ahri", items=["Blue Buff", "Rabadon's Deathcap"]), False)
@@ -831,9 +833,9 @@ class TestBlueBuff(unittest.TestCase):
         both, _ = ENGINE.simulate(spec_for("Ashe", items=["Blue Buff", "Deathblade"]), False)
         self.assertAlmostEqual(both["ad"], bare["ad"] * (1 + (0.15 + 0.55) * 1.1))
 
-    def test_copies_multiply_each_other(self):
+    def test_copies_add_their_extra_bonus_percentages(self):
         sheet, _ = ENGINE.simulate(spec_for("Ahri", items=["Blue Buff"] * 2 + ["Rabadon's Deathcap"]), False)
-        self.assertAlmostEqual(sheet["ap"], 100 + (15 + 15 + 55) * 1.1 * 1.1)
+        self.assertAlmostEqual(sheet["ap"], 202.0)  # 100 + (15 + 15 + 55) * 1.20
 
     def test_what_a_fight_adds_is_a_gain_too(self):
         # Archangel's stacks while she fights: every stack is worth 10% more
@@ -875,9 +877,9 @@ class TestBlueBuff(unittest.TestCase):
         self.assertEqual(sheet["ap"], 100 + 55.00000000000001)
         self.assertEqual(sheet["ad"], base["ad"] * (1.0 + 0.55))
 
-    def test_the_item_note_says_it_is_an_adopted_reading(self):
+    def test_the_item_note_documents_bonus_scope_and_additive_copies(self):
         note = ITEM_FX["items"]["DA_BlueBuff"]["note"]
-        self.assertIn("not verified", note)
+        self.assertIn("Copies add", note)
         self.assertIn("base", note)
 
 

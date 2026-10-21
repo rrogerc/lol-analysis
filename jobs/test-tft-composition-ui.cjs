@@ -757,11 +757,15 @@ async function checkLevelRenderingAndNavigation() {
   assert.equal(h.refreshes, 0, 'Opening a champion does not recompute or reload the composition');
 
   vm.runInContext(script.slice(script.indexOf('async function setTftMode('), script.indexOf('function renderTftLeaderboardControls(')), ctx);
+  let leaderboardLoads = 0;
+  ctx.loadTftLeaderboard = async () => { ++leaderboardLoads; };
   await ctx.setTftMode('compositions', { focus: true });
   const returned = h.card.querySelector('.tft-comp-upgrade');
-  assert.equal(returned.open, true, 'Returning from a cap restores its expanded roster');
-  assert.equal(h.focused.dataset.unit, legendary.slug, 'Keyboard focus returns to the exact legendary');
-  assert.equal(h.focused.dataset.composition, parent.level9Upgrade.board.id);
+  assert.equal(returned.open, true, 'Archived diagnostics retain their expanded roster');
+  assert.equal(h.champion.mode, 'leaderboard', 'The retired composition route opens the live leaderboard');
+  assert.equal(leaderboardLoads, 1);
+  assert.equal(h.focused.id, 'tft-board-title', 'Keyboard focus follows the live destination');
+  assert.equal(h.refreshes, 0, 'The retired route never reloads archived composition results');
   assert.equal(JSON.stringify(parent), snapshot, 'Rendering and navigation never modify saved boards or item evidence');
   const calls = h.scenarios.length;
   ctx.openTftCompositionUnit({ ...legendary, star: 3 }, parent.level9Upgrade.board);
@@ -1734,8 +1738,8 @@ function checkRefreshMessages() {
     ctx.renderTftRefresh();
     assert.equal(element('tft-refresh-title').textContent, title, `Refresh phase ${phase} has an accurate title`);
     assert(element('tft-refresh-detail').textContent.includes('Saved TFT results for patch 18.1d remain available.'));
-    assert(element('tft-refresh-detail').textContent.includes('Champion builds and compositions update together'),
-      'Refresh messaging includes both published analyses');
+    assert(element('tft-refresh-detail').textContent.includes('TFT results update after the refresh completes.'),
+      'Refresh messaging describes publication of the active results');
   }
   champion.status.refresh = { status: 'failed', exit: 75,
     transport: { exhausted: true, retryable: true },

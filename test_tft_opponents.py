@@ -65,7 +65,15 @@ class TestReferenceOpponents(unittest.TestCase):
                     for actor in actors:
                         spec = actor["spec"]
                         effects = spec["items"] + spec["traits"]
-                        if spec["unit"]["api"] == "TFT18_Cinderling" or any(e.get("burnOnHit") or e.get("burnAura") for e in effects):
+                        # Symmetric actors receive their enemy projection
+                        # at encounter start. A stat-only resolution still
+                        # requires one inert slot in the standalone parser.
+                        stat_spec = dict(spec, dummies={"slots": [
+                            {"hp": 1000.0, "armor": 0.0, "mr": 0.0, "kind": "tank"}]})
+                        resolved = tft.engine().compose_fx(stat_spec)
+                        if (spec["unit"]["api"] == "TFT18_Cinderling"
+                                or any(e.get("burnOnHit") for e in effects)
+                                or resolved["burnAura"] or resolved["sunfireAuras"]):
                             providers.append(spec["unit"]["api"])
                         if any(e["api"] == RIFTBEAST and e.get("riftbeast") for e in spec["traits"]):
                             alphas.append(spec["unit"]["api"])

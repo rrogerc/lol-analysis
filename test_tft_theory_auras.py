@@ -50,10 +50,10 @@ class TestFormAuraProviders(unittest.TestCase):
         enabled = profiles.spec(self.nidalee, 2, [], items)
         disabled = profiles.spec(self.nidalee, 2, [], items, item_burn=False)
         before = deepcopy(enabled)
-        self.assertTrue(any(item.get("burnAuraByRange") for item in enabled["items"]))
-        self.assertFalse(any(item.get("burnAuraByRange") for item in disabled["items"]))
-        self.assertIsNotNone(tft.engine().compose_fx(enabled)["burnAura"])
-        self.assertIsNone(tft.engine().compose_fx(disabled)["burnAura"])
+        self.assertTrue(any(item.get("sunfireAura") for item in enabled["items"]))
+        self.assertFalse(any(item.get("sunfireAura") for item in disabled["items"]))
+        self.assertTrue(tft.engine().compose_fx(enabled)["sunfireAuras"])
+        self.assertEqual(tft.engine().compose_fx(disabled)["sunfireAuras"], [])
         self.assertEqual(enabled, before)
 
     def test_gnar_removal_cannot_inflate_board_capacity_by_changing_probe_health(self):

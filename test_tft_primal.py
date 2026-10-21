@@ -53,10 +53,11 @@ class TestPrimalBear(unittest.TestCase):
                 self.assertEqual(result["total"], expected)
 
     def test_owned_item_burn_can_cross_the_execute_threshold(self):
-        _, result = ENGINE.simulate(finite_attacker(0, duration=1.1,
+        # A positive attack applies the burn; its ticks then cross the threshold.
+        _, result = ENGINE.simulate(finite_attacker(1, duration=1.1,
             effects=[blessing("bear")], fx=[{"burnOnHit": [0.9, 2]}]), True)
         self.assertEqual(result["total"], 100)
-        self.assertEqual([(hit[0], hit[2]) for hit in events(result, "damage", "primal bear")], [(1, 10)])
+        self.assertEqual([(hit[0], hit[2]) for hit in events(result, "damage", "primal bear")], [(1, 9)])
 
     def test_nonprimal_ally_cannot_trigger_a_primal_members_execute_without_their_damage(self):
         for primal_damage, expected in ((0, []), (1, [10])):

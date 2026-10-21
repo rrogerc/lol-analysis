@@ -240,9 +240,9 @@ def main():
     tf = sub.add_parser("tft", help="Teamfight Tactics: optimal items per unit, from first principles")
     tfsub = tf.add_subparsers(dest="tft_cmd", required=True)
 
-    comps = tfsub.add_parser("comps", help="eight-unit composition search")
+    comps = tfsub.add_parser("comps", help="archived composition analysis (manual diagnostics only)")
     comps_sub = comps.add_subparsers(dest="comps_cmd", required=True)
-    sp = comps_sub.add_parser("warm", help="calculate composition candidates and shared item allocations")
+    sp = comps_sub.add_parser("warm", help="calculate archived composition candidates and shared item allocations")
     sp.add_argument("--only", choices=list(tft_comps.scenarios()), help="calculate one composition scenario")
     sp.add_argument("--workers", type=int, choices=range(1, tft_comps.MAX_WARM_WORKERS + 1),
                     default=tft_comps.DEFAULT_WARM_WORKERS,
@@ -259,7 +259,7 @@ def main():
     sp.add_argument("--force", action="store_true", help="refetch even if archived")
     sp.set_defaults(func=tft.cmd_fetch)
 
-    sp = tfsub.add_parser("refresh", help="fetch current patch/hotfix, prepare champion builds and compositions, and publish saved dashboard responses")
+    sp = tfsub.add_parser("refresh", help="fetch current patch/hotfix, prepare active TFT analyses, and publish saved dashboard responses")
     sp.add_argument("--set", type=int, default=tft.DEFAULT_SET)
     sp.add_argument("--patch", help="patch to check (default: latest patch and hotfix)")
     sp.set_defaults(func=tft.cmd_refresh)

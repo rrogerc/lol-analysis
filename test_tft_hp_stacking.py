@@ -1,4 +1,4 @@
-"""Hand-calculated HP budgets for ordinary additive item/trait percentages.
+"""Hand-calculated HP budgets for additive percentages and compound Bramble.
 
 Pinned item and trait packets exercise the production native stat paths.
 Expected HP values are specified independently of the engine's aggregation.
@@ -46,13 +46,13 @@ class TestNativeHealthStacking(unittest.TestCase):
                 spec = self.spec(items=("Warmog's Armor",) * count)
                 self.assert_opening_hp(spec, expected)
 
-    def test_different_health_items_use_the_same_percentage_pool(self):
+    def test_bramble_compounds_after_the_additive_item_percentage_pool(self):
         cases = (
-            # (2160 + 500) × (1 + .18 + .06 + .06).
-            (("Warmog's Armor", "Bramble Vest", "Dragon's Claw"), 3458.0),
-            # Sunfire adds 150 flat HP and 8%; Bramble adds 6%.
-            # (2160 + 500 + 150) × (1 + .18 + .08 + .06).
-            (("Warmog's Armor", "Sunfire Cape", "Bramble Vest"), 3709.2),
+            # (2160 + 500) × (1 + .18 + .06) × 1.06.
+            (("Warmog's Armor", "Bramble Vest", "Dragon's Claw"), 3496.304),
+            # Sunfire adds 150 flat HP and 8%; Bramble compounds by 1.06.
+            # (2160 + 500 + 150) × (1 + .18 + .08) × 1.06.
+            (("Warmog's Armor", "Sunfire Cape", "Bramble Vest"), 3753.036),
         )
         for items, expected in cases:
             for ordered in (items, tuple(reversed(items))):

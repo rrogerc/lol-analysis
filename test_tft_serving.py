@@ -8,10 +8,12 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import tft
 import tft_comps
+import tft_early
+import tft_flex
 import tft_site
 import webapp
 
@@ -48,30 +50,51 @@ class TestTftSavedResponses(unittest.TestCase):
         self.stack.enter_context(patch.object(tft, "CACHE_DIR", str(self.directory)))
         self.stack.enter_context(patch.object(tft, "REFRESH_STATE_FILE", str(self.directory / "refresh.json")))
         for module, names in ((tft, ("load_snapshot", "engine", "api_meta", "warm", "cached_scenario")),
-                              (tft_comps, ("warm", "api_meta", "cached_scenario"))):
+                              (tft_comps, ("warm", "api_meta", "cached_scenario")),
+                              (tft_early, ("warm", "revision", "cached_catalog", "supports")),
+                              (tft_flex, ("catalog",))):
             for name in names:
                 self.stack.enter_context(patch.object(module, name, side_effect=AssertionError("HTTP must not calculate: " + name)))
         self.marker = self.directory / ".dashboard-ready"
         self.marker.write_text(json.dumps({"revision": "base-a", "compositionRevision": "comp-a", "site": {"siteGeneration": "site-a"}}))
         self.statuses = {
             "/api/tft/status.json": {"revision": "base-a", "ready": {"champion/cell": True}, "warmer": "idle"},
-            "/api/tft/compositions/status.json": {"revision": "comp-a", "ready": {"c1-spread-mixed": True}, "warmer": "idle"},
         }
-        self.payload = b'{"revision":"comp-a","results":[1,2,3],"value":-0.0}'
+        self.payload = b'{"revision":"base-a","results":[1,2,3],"value":-0.0}'
         self.identity = self.directory / "response.json"
         self.identity.write_bytes(self.payload)
         self.compressed = self.directory / "response.json.gz"
         self.compressed.write_bytes(gzip.compress(self.payload, mtime=0))
         def asset(url, *, compressed=False):
-            if url not in ("/api/tft/compositions/c1-spread-mixed.json", "/api/tft/meta.json"):
+            if url not in ("/api/tft/compositions/c1-spread-mixed.json", "/api/tft/meta.json",
+                           "/api/tft/traits.json", "/api/tft/early.json"):
                 return None
             path = self.compressed if compressed else self.identity
             return {"path": path, "size": path.stat().st_size,
                     "etag": '"' + hashlib.sha256(path.read_bytes()).hexdigest() + '"',
                     "encoding": "gzip" if compressed else None}
         self.bundle = SimpleNamespace(manifest={"baselineRevision": "base-a", "compositionRevision": "comp-a"},
-                                      json=lambda url: self.statuses[url], asset=asset)
+                                      json=Mock(side_effect=lambda url: self.statuses[url]), asset=asset)
         self.load = self.stack.enter_context(patch.object(tft_site, "load", return_value=self.bundle))
+
+    def test_startup_reads_only_active_status_from_a_pinned_legacy_publication(self):
+        server = webapp.TftResponses()
+        self.assertIs(server.bundle, self.bundle)
+        self.bundle.json.assert_called_once_with("/api/tft/status.json")
+
+    def test_composition_endpoints_return_archived_even_from_legacy_publication(self):
+        server = webapp.TftResponses()
+        with patch.object(self.bundle, "asset", side_effect=AssertionError("archived files must not be served")):
+            for url in ("/api/tft/compositions/meta.json", "/api/tft/compositions/status.json",
+                        "/api/tft/compositions/c1-spread-mixed.json", "/api/tft/compositions/missing.json"):
+                with self.subTest(url=url):
+                    handler = Handler({"Accept-Encoding": "gzip", "If-None-Match": "*"})
+                    server.send(handler, url)
+                    self.assertEqual(handler.code, 410)
+                    payload = json.loads(handler.wfile.getvalue())
+                    self.assertIs(payload["archived"], True)
+                    self.assertIn("archived", payload["message"].lower())
+                    self.assertEqual(handler.sent_headers["Cache-Control"], "no-store")
 
     def test_identity_and_gzip_serve_prebuilt_bytes_without_calculating(self):
         server = webapp.TftResponses()
@@ -102,9 +125,35 @@ class TestTftSavedResponses(unittest.TestCase):
         self.assertEqual(gzip_request.code, 200)
         self.assertNotEqual(tag, gzip_request.sent_headers["ETag"])
 
+    def test_trait_endpoint_reads_saved_bytes_and_revalidates_without_catalog_work(self):
+        server = webapp.TftResponses()
+        handler = Handler({"Accept-Encoding": "gzip"})
+        server.send(handler, "/api/tft/traits.json")
+        self.assertEqual(handler.code, 200)
+        self.assertEqual(gzip.decompress(handler.wfile.getvalue()), self.payload)
+        conditional = Handler({"Accept-Encoding": "gzip", "If-None-Match": handler.sent_headers["ETag"]})
+        server.send(conditional, "/api/tft/traits.json")
+        self.assertEqual(conditional.code, 304)
+        self.assertEqual(conditional.wfile.getvalue(), b"")
+
+    def test_early_endpoint_reads_only_saved_bytes_and_uses_their_etag(self):
+        server = webapp.TftResponses()
+        for accept in ("", "gzip"):
+            with self.subTest(accept=accept):
+                handler = Handler({"Accept-Encoding": accept})
+                server.send(handler, "/api/tft/early.json")
+                self.assertEqual(handler.code, 200)
+                actual = handler.wfile.getvalue()
+                self.assertEqual(gzip.decompress(actual) if accept else actual, self.payload)
+                conditional = Handler({"Accept-Encoding": accept,
+                                       "If-None-Match": handler.sent_headers["ETag"]})
+                server.send(conditional, "/api/tft/early.json")
+                self.assertEqual(conditional.code, 304)
+                self.assertEqual(conditional.wfile.getvalue(), b"")
+
     def test_refresh_status_does_not_change_published_revision_or_readiness(self):
         server = webapp.TftResponses()
-        Path(tft.REFRESH_STATE_FILE).write_text(json.dumps({"status": "running", "phase": "warming-compositions"}))
+        Path(tft.REFRESH_STATE_FILE).write_text(json.dumps({"status": "running", "phase": "warming-builds"}))
         for url, original in self.statuses.items():
             handler = Handler()
             server.send(handler, url)
@@ -119,7 +168,7 @@ class TestTftSavedResponses(unittest.TestCase):
         server = webapp.TftResponses()
         self.marker.write_text(json.dumps({"revision": "base-b", "compositionRevision": "comp-b", "site": {"siteGeneration": "site-b"}}))
         handler = Handler()
-        server.send(handler, "/api/tft/compositions/c1-spread-mixed.json")
+        server.send(handler, "/api/tft/meta.json")
         self.assertEqual(handler.wfile.getvalue(), self.payload)
         self.load.assert_called_once_with({"siteGeneration": "site-a"})
 
@@ -130,6 +179,17 @@ class TestTftSavedResponses(unittest.TestCase):
         server.send(handler, "/api/tft/meta.json")
         self.assertEqual(handler.code, 202)
         self.assertTrue(json.loads(handler.wfile.getvalue())["pending"])
+        self.load.assert_not_called()
+
+    def test_archived_compositions_return_gone_without_an_active_publication(self):
+        self.marker.unlink()
+        server = webapp.TftResponses()
+        for url in ("/api/tft/compositions/status.json", "/api/tft/compositions/c1-spread-mixed.json"):
+            with self.subTest(url=url):
+                handler = Handler()
+                server.send(handler, url)
+                self.assertEqual(handler.code, 410)
+                self.assertIs(json.loads(handler.wfile.getvalue())["archived"], True)
         self.load.assert_not_called()
 
     def test_mismatched_marker_cannot_serve_a_mixed_generation(self):

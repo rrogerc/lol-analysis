@@ -140,7 +140,8 @@ class TestPersistentRetargeting(unittest.TestCase):
         first = tank("a", hp=1000, fx=[{"untargetableAtHp": [0.9, 1, 0]}])
         result = measure([first, tank("b")], order=[0, 1], window=2)
         self.assertEqual([sample["incomingSpent"] for sample in result["samples"]], [500, 1500])
-        self.assertEqual(result["samples"][0]["hp"], 500)
+        # This parameterized Edge effect floors its triggering hit at90%.
+        self.assertEqual(result["samples"][0]["hp"], 900)
         self.assertEqual(result["samples"][1]["hp"], 8500)
         conserved(self, result, 1000)
 
@@ -151,7 +152,9 @@ class TestPersistentRetargeting(unittest.TestCase):
         result = measure([first, second], order=[0, 1], window=0.5, share=0.5)
         # This is still source0, so the second actor's primary-target
         # comparison receives no off-target reduction merely for beingB.
-        self.assertEqual([sample["hp"] for sample in result["samples"]], [750, 750])
+        # Edge's physical triggering hit stops at900; the redirected
+        # magic half still deals its full250 to the second actor.
+        self.assertEqual([sample["hp"] for sample in result["samples"]], [900, 750])
         conserved(self, result, 1000)
 
     def test_untargetable_fronts_deny_then_reacquire_without_losing_budget(self):
@@ -160,10 +163,18 @@ class TestPersistentRetargeting(unittest.TestCase):
         self.assertEqual(during["samples"][0]["incomingSpent"], 500)
         self.assertEqual(during["samples"][0]["denied"], 1500)
         after = measure([spec], order=[0], window=2.5)
-        self.assertTrue(after["collapsed"])
+        # The triggering hit stopped at900; the first500 hit after the
+        # untargetability ends leaves400. The next hit kills it at3s.
+        self.assertFalse(after["collapsed"])
+        self.assertEqual(after["samples"][0]["hp"], 400)
         self.assertEqual(after["samples"][0]["incomingSpent"], 1000)
         self.assertEqual(after["samples"][0]["denied"], 1500)
-        for result in (during, after):
+        lethal = measure([spec], order=[0], window=3)
+        self.assertTrue(lethal["collapsed"])
+        self.assertEqual(lethal["samples"][0]["incomingSpent"], 1400)
+        self.assertEqual(lethal["samples"][0]["denied"], 1500)
+        self.assertEqual(lethal["unspentPressure"], 100)
+        for result in (during, after, lethal):
             conserved(self, result, 1000)
 
     def test_death_bodies_hold_owner_and_same_source_excess_until_exhausted(self):

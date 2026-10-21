@@ -55,6 +55,7 @@ pub struct Draven {
     ratio: RowId,
     stacks: RowId,
     bleed_dur: RowId,
+    mana_refund: RowId,
     chance: CalcId,
     bleed: CalcId,
     axes: CalcId,
@@ -67,6 +68,7 @@ impl Driver for Draven {
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
         Draven { n: 0, ratio: k.row("SpinningAxeDamageRatio"),
                  stacks: k.row("SpinningAxeBleedStacks"), bleed_dur: k.row("BleedDuration"),
+                 mana_refund: k.row("ManaRefund"),
                  chance: k.calc("GenericCalc1"), bleed: k.calc("PhysicalDamageCalc1"),
                  axes: k.calc("PhysicalDamageCalc3"), axes2: k.calc("GenericCalc2") }
     }
@@ -88,6 +90,15 @@ impl Driver for Draven {
 
     fn cast(f: &mut Fight<Self>) {
         let tg = f.aoe_all();
+        if tg.len() == 0 {
+            // The miss refund is spell mana, including all-source bonuses.
+            // The row is optional only because older patches predate it.
+            if f.drv.mana_refund != RowId::MISSING {
+                let refund = f.sheet.mana_max * f.row(f.drv.mana_refund);
+                f.gain_mana_opt(refund, false);
+            }
+            return;
+        }
         for d in tg.iter() {
             f.hit_ability(f.drv.axes, Some(d), "giant axes", 1.0);
             if !f.d(d).alive {

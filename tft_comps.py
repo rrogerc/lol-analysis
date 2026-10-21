@@ -228,6 +228,8 @@ def _burn_adjusted(spec, item_burn, inferno_burn):
         for item in spec["pool"] + spec["items"]:
             item.pop("burnOnHit", None)
             item.pop("burnAura", None)
+            item.pop("burnAuraByRange", None)
+            item.pop("sunfireAura", None)
         # These native effects call the same non-stacking burn path as
         # items. Preserve their attacks, other Alpha bonuses and healing.
         native = {"TFT18_Cinderling": "BurnDuration", "TFT18_Brambleback": "TraitBurnDuration"}
@@ -327,7 +329,7 @@ class Evaluator:
         specs = [damage_spec["pool"][self.pool.index(item)] for item in items]
         inferno = any(trait["api"] == "DA_18_Inferno" and trait.get("burnOnHit") for trait in effects)
         native = api == "TFT18_Cinderling" or (api == "TFT18_Brambleback" and alpha)
-        burn = native or any(item.get("burnOnHit") or item.get("burnAura") for item in specs)
+        burn = native or any(item.get("burnOnHit") or item.get("burnAura") or item.get("sunfireAura") for item in specs)
         return {"items": tuple(sorted(items)), "count": len(items), "dps": dmg["total"] / DAMAGE_WINDOW,
                 "frontline": 100 * defense["aliveTime"] / FRONT_WINDOW if defense else 0.0,
                 "stress": (defense["stressAliveTime"] or 0) if defense else 0.0,
@@ -379,7 +381,7 @@ class Evaluator:
                 dmg = self.fight(damage_spec, items)
                 defense = self.fight(defense_spec, items) if front else None
                 specs = [item_specs[item] for item in items]
-                has_burn = native_burn or any(item.get("burnOnHit") or item.get("burnAura") for item in specs)
+                has_burn = native_burn or any(item.get("burnOnHit") or item.get("burnAura") or item.get("sunfireAura") for item in specs)
                 options.append({"items": items, "count": count,
                                 "dps": dmg["total"] / DAMAGE_WINDOW,
                                 "frontline": 100 * defense["aliveTime"] / FRONT_WINDOW if defense else 0.0,
@@ -413,7 +415,7 @@ class Evaluator:
 def _utility_mask(specs):
     return (int(any(spec.get("sunderOnHit") or spec.get("sunderAura") for spec in specs))
             | 2 * int(any(spec.get("shredOnHit") or spec.get("shredAura") for spec in specs))
-            | 4 * int(any(spec.get("burnOnHit") or spec.get("burnAura") for spec in specs)))
+            | 4 * int(any(spec.get("burnOnHit") or spec.get("burnAura") or spec.get("sunfireAura") for spec in specs)))
 
 
 def _pareto(rows, damage_key, front_key, *, limit, tie):

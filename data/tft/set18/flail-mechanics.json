@@ -1,0 +1,818 @@
+{
+  "sourcePatch": "18.3",
+  "currentItemDataPatch": "18.4b",
+  "nativeItemSource": {
+    "patch": "18.3",
+    "build": "rls-18.3.0.5599856.Set18.Shipping.live",
+    "manifestId": "85BF576176126CA2",
+    "decodeFile": ".cache/tft/flail-audit/native-items.json",
+    "decodeSHA256": "38c9752423a6632cc32574db41ba7f78f9d1f0ae985d8d976198124ae2f53ba5",
+    "packageCount": 8,
+    "exportCount": 44,
+    "packageFailures": 0,
+    "exportFailures": 0,
+    "warnings": 0,
+    "diagnostics": 0,
+    "exactObjectReads": 13,
+    "exactCurveReads": 2,
+    "newDownloadedCompressedBytes": 1525082,
+    "oldSourceFilesModified": false,
+    "patchLimitation": "Native mechanics are from matched18.3 shipping files, not an18.4 executable. Current18.4b lookup/CD item stats and wording agree, but runtime18.4 footage was not checked."
+  },
+  "nativeExecutableSource": {
+    "patch": "18.3",
+    "build": "rls-18.3.0.5599856.Set18.Shipping.live",
+    "manifestId": "85BF576176126CA2",
+    "path": ".cache/tft/soraka-audit/windows-18.3/files/TFT/Binaries/Win64/TFTClient-Win64-Shipping.exe",
+    "bytes": 193927624,
+    "sha256": "5b7835a2272111c4823e27f29987bab1f3607e57001f214493877c576ababd4a",
+    "reflectionFile": ".cache/tft/soraka-audit/tools/reflection/windows-18.3-schema.json"
+  },
+  "stackBehavior": [
+    {
+      "topic": "native default",
+      "confidence": "direct static source",
+      "proof": "Class registration inner passes1456ecb20 as ClassConstructor; constructor clears byte[this+58]. bDenyOverflowApplication generated property setter sets exactly byte[this+58] to1. The decoded Flail stack component does not override the property, so false is inherited."
+    },
+    {
+      "topic": "target grouping",
+      "confidence": "direct static source, same definition pointer",
+      "proof": "Consumer1456f4330 skips instigator equality check at43c1 when StackingType2 AggregateByTarget. It iterates target active effects and increments count only when incomingSpec.Def equals existingEffect.Spec.Def at44c0-44da. There is no item-copy identifier or source check on this branch. Two ordinary copies referencing the same FlailBuff definition share a limit of4."
+    },
+    {
+      "topic": "overflow lifecycle",
+      "confidence": "direct static source",
+      "proof": "During matching-effect iteration it selects minimum start time via1446de6e0\u2192144734a80 (start fieldactive+2d8, duration fieldactive+68). On count>=limit with deny=false, computescurrentWorldTime\u2212minimumStart and callsASCvirtual770 with oldesthandle. Slot770 is1446e4570\u219214473c430; it adds the delta tostart fields+2d8/+2d0 and resets expiration checking, without changingduration+68. Thus only oldestinstance gets a fresh full duration; new incoming application is rejected, preserving4instances."
+    },
+    {
+      "topic": "duplicate listeners",
+      "confidence": "not completely established here",
+      "proof": "Target-wide cap is established. Each equipped item references GA_StrikersFlail in its own AbilityRef, suggesting each copy delivers a proc to the shared group; exact grant/dedup lifecycle per item was not disassembled in this bounded review."
+    }
+  ],
+  "nativeFunctions": [
+    {
+      "name": "stack_registration_inner",
+      "start": "0x1456e6350",
+      "endExclusive": "0x1456e63fe",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x1456e6350",
+          "endExclusive": "0x1456e63fe"
+        }
+      ],
+      "bytes": 174,
+      "sha256": "0b41fef97fb32da8345c9bab364a0445739a076e0c0adc4a26c30a33f0eee008"
+    },
+    {
+      "name": "stack_instance_constructor",
+      "start": "0x1456ecb20",
+      "endExclusive": "0x1456ecb69",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x1456ecb20",
+          "endExclusive": "0x1456ecb69"
+        }
+      ],
+      "bytes": 73,
+      "sha256": "bf9244b6bf79b4d57e449c8d5e0876d8c2684e103512e255326fe7ccc2e1dbf2"
+    },
+    {
+      "name": "denyoverflow_property_setter",
+      "start": "0x141873970",
+      "endExclusive": "0x141873975",
+      "bounds": "manually bounded leaf/jump thunk ending before following padding/function",
+      "unwindFragments": [],
+      "bytes": 5,
+      "sha256": "2736bd715cabb518af5a83987953ecb3afa80a9fc33ad400899ae6838567963e"
+    },
+    {
+      "name": "stack_can_apply_consumer",
+      "start": "0x1456f4330",
+      "endExclusive": "0x1456f4621",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x1456f4330",
+          "endExclusive": "0x1456f4564"
+        },
+        {
+          "start": "0x1456f4564",
+          "endExclusive": "0x1456f45a3"
+        },
+        {
+          "start": "0x1456f45a3",
+          "endExclusive": "0x1456f4621"
+        }
+      ],
+      "bytes": 753,
+      "sha256": "68e64ae8b4cbbcc9f9178008814475e66975025ae370afd076dc6e19fcc86ad9"
+    },
+    {
+      "name": "effect_start_duration_bridge",
+      "start": "0x1446de6e0",
+      "endExclusive": "0x1446de6ec",
+      "bounds": "manually bounded leaf/jump thunk ending before following padding/function",
+      "unwindFragments": [],
+      "bytes": 12,
+      "sha256": "c77802c503532dc8a51dc7d051d7473cc645125ebb100d1304848acbb371bee0"
+    },
+    {
+      "name": "effect_start_duration",
+      "start": "0x144734a80",
+      "endExclusive": "0x144734bdc",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x144734a80",
+          "endExclusive": "0x144734bdc"
+        }
+      ],
+      "bytes": 348,
+      "sha256": "630dc403d6fa49446af6610c0a16b7f18ffcf4ea0dd0800c9e19ccbd597df039"
+    },
+    {
+      "name": "get_container_world_time",
+      "start": "0x144735a30",
+      "endExclusive": "0x144735a7b",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x144735a30",
+          "endExclusive": "0x144735a7b"
+        }
+      ],
+      "bytes": 75,
+      "sha256": "0772cb15ad7df92a3d9219c22282e886c550f9c4dabeb779c1146512aa80553b"
+    },
+    {
+      "name": "asc_registration_inner",
+      "start": "0x1456e4b10",
+      "endExclusive": "0x1456e4bbe",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x1456e4b10",
+          "endExclusive": "0x1456e4bbe"
+        }
+      ],
+      "bytes": 174,
+      "sha256": "42538cc7da1bf1dec59bb585113759adf9c138fdf06f83e41d207f0d87b3b7ac"
+    },
+    {
+      "name": "asc_instance_ctor_wrapper",
+      "start": "0x1456ec2b0",
+      "endExclusive": "0x1456ec2c4",
+      "bounds": "manually bounded leaf/jump thunk ending before following padding/function",
+      "unwindFragments": [],
+      "bytes": 20,
+      "sha256": "7f837e22b3db20335eb5e90f860c049af31ed5f602958ab5a64adfed0fc46f28"
+    },
+    {
+      "name": "asc_instance_constructor",
+      "start": "0x1456edbc0",
+      "endExclusive": "0x1456ede14",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x1456edbc0",
+          "endExclusive": "0x1456ede14"
+        }
+      ],
+      "bytes": 596,
+      "sha256": "c5cb7b4e1e1172e9915c5c486b77d1929d3068df5d49b48edc323d3790445025"
+    },
+    {
+      "name": "modify_start_bridge",
+      "start": "0x1446e4570",
+      "endExclusive": "0x1446e457c",
+      "bounds": "manually bounded leaf/jump thunk ending before following padding/function",
+      "unwindFragments": [],
+      "bytes": 12,
+      "sha256": "169af22d9d490de5d717202e4e29a45de08a46f85ff1df386b58689beea4be17"
+    },
+    {
+      "name": "modify_start_implementation",
+      "start": "0x14473c430",
+      "endExclusive": "0x14473c4cd",
+      "bounds": "Contiguous PE .pdata unwind fragments through final return",
+      "unwindFragments": [
+        {
+          "start": "0x14473c430",
+          "endExclusive": "0x14473c4cd"
+        }
+      ],
+      "bytes": 157,
+      "sha256": "85b4ab916e7fbe0ec533987f3c3c6c384415f50f5259e79671ca62de23d2a88a"
+    }
+  ],
+  "criticalDamageHook": "GA_StrikersFlail requires Damage.Result.WasCrit with no attack-only exclusion and applies its buff in PostApply.",
+  "periodicCritCadences": {
+    "TFT18_Ashe": {
+      "trail": 0.5
+    },
+    "TFT18_Cassiopeia": {
+      "poison": 0.5
+    },
+    "TFT18_Draven": {
+      "bleed axes": 0.5
+    },
+    "TFT18_Fiddlesticks": {
+      "drain": {
+        "row": "DamageTickFrequency"
+      }
+    },
+    "TFT18_Gromp": {
+      "cloud": 1.0
+    },
+    "TFT18_Karma": {
+      "tether": {
+        "row": "TetherTickRate"
+      }
+    },
+    "TFT18_KogMaw": {
+      "acid": 0.5
+    },
+    "TFT18_Morgana": {
+      "withering zone": {
+        "row": "TickRate"
+      }
+    },
+    "TFT18_ElderDragon": {
+      "ignite": 0.5
+    }
+  },
+  "nativePeriodicSource": {
+    "source": "Verified18.3 native champion effect components",
+    "records": [
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/030.json",
+        "batchSHA256": "8ad5b15c7a5151b3721f450809cf65abde53b9588ea8ac668452e399b92a6fde",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Karma/GE_Karma18_DamageTetherTick.uasset",
+        "exportIndex": 2,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 1.0,
+          "Curve": {
+            "CurveTable": {
+              "ObjectName": "CurveTable'CT_Karma18'",
+              "ObjectPath": "/Set_18/Champions/Karma/CT_Karma18.0"
+            },
+            "RowName": "TetherTickRate"
+          }
+        },
+        "durationPolicy": null,
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_Karma18'",
+                "ObjectPath": "/Set_18/Champions/Karma/CT_Karma18.0"
+              },
+              "RowName": "TetherDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/030.json",
+        "batchSHA256": "8ad5b15c7a5151b3721f450809cf65abde53b9588ea8ac668452e399b92a6fde",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Kennen/Effects/GE_Kennen18_FirestormDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AOE",
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/030.json",
+        "batchSHA256": "8ad5b15c7a5151b3721f450809cf65abde53b9588ea8ac668452e399b92a6fde",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/KogMaw/Effects/GE_18_KogMaw_APDamageDoT.uasset",
+        "exportIndex": 4,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 0.5
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::HasDuration",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_KogMaw18'",
+                "ObjectPath": "/Set_18/Champions/KogMaw/Data/CT_KogMaw18.0"
+              },
+              "RowName": "APBonusDOTDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/028.json",
+        "batchSHA256": "5d3216ff512f9eb649f8add8bc76d97dadea35df973e90e515d437bcdc24f93b",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Fiddlesticks/GE_Fiddlesticks18_Damage.uasset",
+        "exportIndex": 2,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 1.0,
+          "Curve": {
+            "CurveTable": {
+              "ObjectName": "CurveTable'CT_Fiddlesticks18'",
+              "ObjectPath": "/Set_18/Champions/Fiddlesticks/CT_Fiddlesticks18.0"
+            },
+            "RowName": "DamageTickFrequency"
+          }
+        },
+        "durationPolicy": null,
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_Fiddlesticks18'",
+                "ObjectPath": "/Set_18/Champions/Fiddlesticks/CT_Fiddlesticks18.0"
+              },
+              "RowName": "CastDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/028.json",
+        "batchSHA256": "5d3216ff512f9eb649f8add8bc76d97dadea35df973e90e515d437bcdc24f93b",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Gromp/Effects/GE_Gromp18_SecondaryDamage_AP.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 1.0
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::HasDuration",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_Gromp18'",
+                "ObjectPath": "/Set_18/Champions/Gromp/CT_Gromp18.0"
+              },
+              "RowName": "PoisonDurationAP"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/026.json",
+        "batchSHA256": "d81efa64557f490dbdbdc5a09ee4e25abd4f8df58738f61948dfb654ad778a82",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Cassiopeia/Effect/GE_18_Cassiopeia_PoisonDamage.uasset",
+        "exportIndex": 5,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 0.5
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::HasDuration",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_18_Cassiopeia'",
+                "ObjectPath": "/Set_18/Champions/Cassiopeia/CT_18_Cassiopeia.0"
+              },
+              "RowName": "Duration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/026.json",
+        "batchSHA256": "d81efa64557f490dbdbdc5a09ee4e25abd4f8df58738f61948dfb654ad778a82",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Cinderling/Effects/GE_Cinderling18_SpellDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/033.json",
+        "batchSHA256": "f278bc6b04f3ade1c3c4a6cba6aedf0af8642d470c01b93cfad03146ee43616c",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Sentry/Effect/GE_18_Sentry_BeamDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 0.25
+        },
+        "durationPolicy": null,
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 60.0
+          }
+        },
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/031.json",
+        "batchSHA256": "5df50a4d7f5ba66e3ce7dd6a39851b9ea3249a3b4790cefb7107af1b4cf93ae1",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Maokai/Effect/GE_18_Maokai_SaplingDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit.Summon"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/027.json",
+        "batchSHA256": "b8c5f6321917c776a407b881959e1ff979583c2b169fdf4d15816e2c26d76748",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Draven/GE_Draven18_Bleed.uasset",
+        "exportIndex": 4,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 0.5
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::HasDuration",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_Draven18'",
+                "ObjectPath": "/Set_18/Champions/Draven/CT_Draven18.0"
+              },
+              "RowName": "BleedDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": false,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/027.json",
+        "batchSHA256": "b8c5f6321917c776a407b881959e1ff979583c2b169fdf4d15816e2c26d76748",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/ElderDragon/Effects/GE_ElderDragon18_IgniteDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 0.5
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::HasDuration",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_18_ElderDragon'",
+                "ObjectPath": "/Set_18/Champions/ElderDragon/CT_18_ElderDragon.0"
+              },
+              "RowName": "IgniteDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": false,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.DOT",
+              "Damage.Specifiers.AppliesOnSpell"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/027.json",
+        "batchSHA256": "b8c5f6321917c776a407b881959e1ff979583c2b169fdf4d15816e2c26d76748",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/ElderDragon/Effects/GE_ElderDragon18_IgniteDamage_Continuous.uasset",
+        "exportIndex": 2,
+        "component": "TFTDamageEffectComponent_0",
+        "period": {
+          "Value": 1.0
+        },
+        "durationPolicy": "EGameplayEffectDurationType::EGameplayEffectDurationType::Infinite",
+        "durationMagnitude": {
+          "ScalableFloatMagnitude": {
+            "Value": 1.0,
+            "Curve": {
+              "CurveTable": {
+                "ObjectName": "CurveTable'CT_18_ElderDragon'",
+                "ObjectPath": "/Set_18/Champions/ElderDragon/CT_18_ElderDragon.0"
+              },
+              "RowName": "GroundBurnDuration"
+            }
+          }
+        },
+        "executePeriodicOnApplicationSerialized": false,
+        "totalDamageOverDurationSerialized": true,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.DOT",
+              "Damage.Specifiers.AppliesOnSpell"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/034.json",
+        "batchSHA256": "7e50303ab791a279bac85a03e235aa0282888b194b7660566d06fd2c92e088a1",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Soraka/Effects/GE_18_Soraka_DamageSmall.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/032.json",
+        "batchSHA256": "a7d793ed50e0f63f4dd1343dc0ede26fc1f7f016587805dea99451a514c56e84",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Morgana/Effects/GE_18_Morgana_TickDamage.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.AOE",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      },
+      {
+        "batch": ".cache/tft/roster-audit-18.3/batches-final/025.json",
+        "batchSHA256": "7004ec9fa92a2b1505d90ac3ffaf3ee22bf405f03e09884c3213203b44b6818c",
+        "package": "TFT/Plugins/GameFeatures/Set_18/Content/Champions/Ashe/Effect/GE_18_Ashe_RiftDamageTick.uasset",
+        "exportIndex": 3,
+        "component": "TFTDamageEffectComponent_0",
+        "period": null,
+        "durationPolicy": null,
+        "durationMagnitude": null,
+        "executePeriodicOnApplicationSerialized": null,
+        "totalDamageOverDurationSerialized": null,
+        "applications": [
+          {
+            "damageCritCondition": {
+              "TagName": "Damage.CritCondition.RollIfCanSpellCrit"
+            },
+            "tags": [
+              "Damage.Specifiers.AppliesOnSpell",
+              "Damage.Specifiers.AOE",
+              "Damage.Specifiers.DOT"
+            ],
+            "damageSource": {
+              "TagName": "Damage.Source.Unit"
+            }
+          }
+        ],
+        "warningsRetained": []
+      }
+    ],
+    "additionalCadence": {
+      "AsheManualRiftTimer": {
+        "source": ".cache/tft/roster-audit-18.3/batches-final/025.json",
+        "ability": "GA_18_Ashe_Spell",
+        "RiftPeriod": 0.5,
+        "evidence": ".cache/tft/roster-audit-18.3/mechanics-review/Ashe.txt lines360-365 and706: DoTTickCount=floor(RiftDuration/RiftPeriod), timer usesRiftPeriod, TickAOE callsDealDOTDamage. Native defaults setRiftPeriod.5."
+      }
+    },
+    "limitation": "Per-source serialized cadence, not an engine-wide DOTcrit frequency. Missing period means cadence must be established from ability timer/source or native inherited defaults. These do not certify per-cast vsper-target RNG correlation or periodicapplication-first-pulse timing whennot serialized. Synthetic quarter-second damageintegration steps are not native crit opportunities."
+  },
+  "modelPolicy": {
+    "critExpectation": "Each eligible damage event contributes a crit-chance share of a stack. This is a deterministic approximation, not an exact stochastic capped-stack expectation.",
+    "copies": "Ordinary copies share the same four-instance buff cap. Each equipped copy attempts an application on a critical event; native ability-listener grant multiplicity remains unverified.",
+    "overflow": "Refresh only the oldest live stack at the cap. Fractional procs refresh the equivalent oldest fractional amp budget.",
+    "periodicDamage": "Damage integration stays at 0.25 seconds. Verified source periods define logical hit opportunities for every item listener, independently of whether Flail is equipped. Terms of one known periodic hit are combined before settlement so a lethal first term cannot lose or duplicate its accepted-hit proc.",
+    "periodicFirstHit": "The proc clock starts after one period. This matches the explicit false execute-on-application flags on Draven bleed and finite Elder Dragon Ignite; immediate initial execution remains unverified for effects without a serialized flag.",
+    "unknownSchedule": "Kennen firestorm has Chrono-driven damage anchors without a verified interval; integration alone grants no extra item-hit or critical procs.",
+    "versionLimit": "Mechanics decoded from matched 18.3 shipping assets. Current 18.4b item stats and wording agree; no live-game runtime capture.",
+    "damageSourceTags": "Unit, Item and Trait source identity is separate from attack/spell applicability. Giant Slayer, Gunblade, Morellonomicon, Last Whisper and Void Staff listen to Unit-sourced damage; native Bramble retaliation is Unit-sourced without attack/spell tags. Red Buff additionally requires attack or spell applicability. Nashor critical mana requires attack applicability and an eligible crit; Titan incoming stacks require attack or spell applicability.",
+    "regressionTests": [
+      "test_tft_flail",
+      "test_tft_item_damage_fixes"
+    ]
+  },
+  "itemDamageTagEvidence": {
+    "sourcePatch": "18.3",
+    "decodeFile": ".cache/tft/item-audit-2026-10-11/native-items.json",
+    "decodeSHA256": "80c8ce48c3dbc4481ef9b3cf264e812a9e39c1652fa89fa070714e1f1c5ec849",
+    "redBuffDecodeFile": ".cache/tft/item-audit-2026-10-11/mana-stacks/central/red-buff-native.json",
+    "redBuffDecodeSHA256": "fd4ff1c92de4d4aa034538a2cbe6cb67d0645e548433b393db9e0b2150370274",
+    "redBuffGrant": "GE_RedBuff imports GA_RedBuff from package14852739023656267930; its separate post-damage listeners require Unit+AppliesOnAttack and Unit+AppliesOnSpell. The unchanged strict decoder resolves the grant when the previously omitted package is available.",
+    "bramble": "GE_BrambleVest_DamageWhenHit.TFTDamageEffectComponent export3 serializes DamageSource.Unit and DamageTags=[]; Unit-source listeners must not blanket-exclude it.",
+    "scuttleLimit": "The passive copies LaunchAttack InstigatorTags into a PassInCritResult damage spec. The shared crit-result producer is unresolved, so the existing Precision damage gate is retained while attack applicability is modeled.",
+    "versionLimit": "Native mechanics use the verified18.3 shipping archive; current18.4b item values and descriptions are loaded separately. No matched18.4 runtime capture was used."
+  }
+}

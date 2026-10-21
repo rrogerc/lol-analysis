@@ -351,17 +351,15 @@ impl Driver for Scuttlecrab {
                       dance: k.calc("PhysicalDamageCalc1"), heal: k.calc("HealthCalc1") }
     }
 
-    fn attack(f: &mut Fight<Self>, target: usize) {
-        // ability damage in the attack's place: on-hit effects on the target,
-        // crit only with Precision (the convention for every attack replacement)
+    fn attack(f: &mut Fight<Self>, _target: usize) {
+        // The native dance passes the launch payload's crit result and carries
+        // AppliesOnAttack. Keep the existing Precision gate until the launch
+        // producer's crit roll is established, while tagging every area hit.
         let tg = f.within(f.row(f.drv.radius), None, false);
         for d in tg.iter() {
-            if d == target {
-                f.hit_ability(f.drv.dance, Some(d), "dance", 1.0);
-            } else {
-                let amount = f.calc(f.drv.dance);
-                f.deal(amount, DType::Physical, Some(d), "dance", Deal::ABILITY);
-            }
+            let amount = f.calc(f.drv.dance);
+            f.deal(amount, DType::Physical, Some(d), "dance",
+                   Deal { applies_on_attack: true, applies_on_spell: false, ..Deal::ABILITY });
         }
     }
 

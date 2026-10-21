@@ -127,7 +127,8 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("critDmg", fx.crit_dmg)?;
     d.set_item("amp", fx.amp)?;
     d.set_item("hp", fx.hp)?;
-    d.set_item("hpMult", fx.hp_mult)?;
+    d.set_item("hpMult", fx.hp_mult * fx.hp_compound_mult)?;
+    d.set_item("hpCompoundMult", fx.hp_compound_mult)?;
     d.set_item("armor", fx.armor)?;
     d.set_item("mr", fx.mr)?;
     d.set_item("manaRegen", fx.mana_regen)?;
@@ -143,15 +144,23 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("adapPerAttack", fx.adap_per_attack.clone())?;
     d.set_item("apPerInterval", fx.ap_per_interval.clone())?;
     d.set_item("apAfter", fx.ap_after.clone())?;
-    d.set_item("ampPerCrit", fx.amp_per_crit.clone())?;
+    let crit_amp: Vec<_> = fx.amp_per_crit.iter().flat_map(|effect|
+        std::iter::repeat_n((effect.amp, effect.duration, effect.max_stacks), effect.copies)).collect();
+    d.set_item("ampPerCrit", crit_amp)?;
     d.set_item("asPerAttackStack", fx.as_per_attack_stack.clone())?;
     d.set_item("apPerCast", fx.ap_per_cast)?;
     d.set_item("sunderOnHit", fx.sunder_on_hit.clone())?;
     d.set_item("shredOnHit", fx.shred_on_hit.clone())?;
-    d.set_item("burnOnHit", fx.burn_on_hit.clone())?;
+    let burn_on_hit: Vec<_> = fx.burn_on_hit.iter()
+        .map(|&(pct, duration, stacks, _)| (pct, duration, stacks)).collect();
+    d.set_item("burnOnHit", burn_on_hit)?;
+    let burn_requires_tags: Vec<_> = fx.burn_on_hit.iter()
+        .map(|&(_, _, _, requires_tag)| requires_tag).collect();
+    d.set_item("burnRequiresTags", burn_requires_tags)?;
     d.set_item("sunderAura", fx.sunder_aura)?;
     d.set_item("shredAura", fx.shred_aura)?;
     d.set_item("burnAura", fx.burn_aura)?;
+    d.set_item("sunfireAuras", fx.sunfire_auras.clone())?;
     d.set_item("ampAfterSameTarget", fx.amp_after_same_target)?;
     d.set_item("bleedPct", fx.bleed_pct)?;
     d.set_item("bleedDur", fx.bleed_dur)?;
