@@ -1,5 +1,5 @@
 //! The cell spec: everything one unit's fights need, resolved by Python
-//! (tft.cell_spec) into plain numbers — the unit and its kits per form,
+//! (tft.cell_spec) into plain numbers: the unit and its kits per form,
 //! the dummies, the role's and the traits' contributions, the item pool
 //! (or, for a single fight, the build's items).
 
@@ -138,7 +138,6 @@ impl CastTiming {
 }
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]   // api and range name the unit in the spec; the gates that read them run in Python
 pub struct UnitSpec {
     pub api: String,
     pub name: String,

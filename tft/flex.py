@@ -5,7 +5,6 @@ combat model. It does not choose items, resolve combat effects, or simulate,
 and never imports the combat engine.
 """
 
-import argparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -528,18 +527,3 @@ def cmd_fetch_lobby_stats(args):
     for limitation in document["limitations"]:
         print(f"  Limitation: {limitation}")
     return 0
-
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Cache patch-matched Tactics.tools public-page final-board population stats.")
-    add_fetch_lobby_stats_args(parser)
-    args = parser.parse_args(argv)
-    return cmd_fetch_lobby_stats(args)
-
-
-if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except (ValueError, OSError) as exc:
-        print(f"Cannot save lobby statistics: {exc}", file=sys.stderr)
-        raise SystemExit(1)

@@ -241,7 +241,7 @@ impl Driver for Alune {
 
 /// Moonlight's Onslaught: swipes spread evenly over the two seconds (more
 /// with bonus attack speed), every third one an attack for on-hit purposes
-/// and the per-attack stacks, then — when the onslaught ends — a blast
+/// and the per-attack stacks, then (when the onslaught ends) a blast
 /// split among the dummies in reach.
 #[derive(Clone)]
 pub struct Aphelios {
@@ -373,7 +373,7 @@ impl Driver for Caitlyn {
 }
 
 /// Solar Judgement: no mana; each star level unlocks another passive on
-/// her attacks — bonus magic damage, then shred, then waves that hit
+/// her attacks: bonus magic damage, then shred, then waves that hit
 /// everyone else.
 #[derive(Clone)]
 pub struct Kayle {
@@ -407,7 +407,7 @@ impl Driver for Kayle {
         }
         if star >= 2 && f.d(target).alive {
             let (pct, dur) = (f.row(f.drv.shred_level) / 100.0, f.row(f.drv.shred_dur));
-            if f.team_mode {
+            if f.combat_bridge.is_some() {
                 f.shred(target, pct, dur);
             } else {
                 let t = f.t;
@@ -429,8 +429,8 @@ impl Driver for Kayle {
 }
 
 /// Last Rites: the active heals him and strikes the target. On death a
-/// Spirit Walker with the ghoul's health — multiplied by the Summoner trait
-/// when it is active — taunts and holds the dummies; its resists are the
+/// Spirit Walker with the ghoul's health (multiplied by the Summoner trait
+/// when it is active) taunts and holds the dummies; its resists are the
 /// summon's own stats.
 #[derive(Clone)]
 pub struct Yorick {
@@ -462,7 +462,7 @@ impl Driver for Yorick {
     }
 }
 
-/// Defensive Ball Curl: a shield and heavy resists for a few seconds — the
+/// Defensive Ball Curl: a shield and heavy resists for a few seconds; the
 /// taunt is already the model, the dummies have nobody else to hit. If the
 /// shield is spent rather than expiring the ball uncurls, and the burst
 /// scales with the armour and magic resist he has at that moment. The same

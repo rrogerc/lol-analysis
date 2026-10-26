@@ -6,7 +6,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { loadDashboard, plain } = require("../../web/tests/harness.cjs");
+const { INDEX_HTML, STYLES_CSS, loadDashboard, plain } = require("../../web/tests/harness.cjs");
 
 let passedSuites = 0;
 
@@ -841,13 +841,67 @@ async function checkBuildsLeaderboard() {
   ++passedSuites;
 }
 
+async function checkChampionTabRemoved() {
+  assert(!INDEX_HTML.includes('data-view="champion"'), "Champion nav button is absent from index.html");
+  assert(!INDEX_HTML.includes('id="view-champion"'), "Champion view section is absent from index.html");
+  assert(!INDEX_HTML.includes('id="champ-search"'), "Champion search input is absent from index.html");
+  assert(!STYLES_CSS.includes(".chartwrap"), "Champion chart CSS is absent");
+  assert(!STYLES_CSS.includes("#tbl tbody tr { cursor: pointer"), "Overview row pointer CSS is absent");
+
+  const meta = {
+    tiers: ["soloq_masters_plus"],
+    defaultTier: "soloq_masters_plus",
+    platforms: ["na1"],
+    inventory: [],
+  };
+  const overview = {
+    patches: ["16.1"],
+    totalGames: 2750,
+    rows: [
+      { c: "kayle", l: "top", wr: [44, 45, 48, 51, 54, 56, 58], g: [50, 200, 300, 300, 200, 200, 1500], total: 2750 },
+    ],
+  };
+
+  const h = loadDashboard({
+    initialHash: "#view=champion&name=kayle",
+    api: async url => {
+      assert(!url.startsWith("api/champion"), `Retired champion endpoint requested: ${url}`);
+      if (url === "api/meta.json") return meta;
+      if (url === "api/rows/soloq_masters_plus.json") return overview;
+      if (url === "api/inventory.json") return { tiers: [], jobs: [], services: [] };
+      throw new Error(`Unexpected API request: ${url}`);
+    },
+  });
+
+  assert.equal(h.element("view-champion"), null);
+  assert.equal(h.query('nav button[data-view="champion"]'), null);
+  await h.context.init();
+  assert.equal(h.context.state.view, "overview");
+  assert(h.element("view-overview").classList.contains("active"));
+  assert.equal(h.location.hash, "#tab=overview&tier=soloq_masters_plus");
+
+  await h.setHash("#tab=champion&name=kayle");
+  assert.equal(h.context.state.view, "overview");
+  assert(!h.location.hash.includes("champion"));
+  assert(!h.location.hash.includes("name="));
+
+  const row = h.query("#tbl tbody tr");
+  assert.ok(row, "Overview table rendered a champion row");
+  row.click();
+  assert.equal(h.context.state.view, "overview");
+  assert.equal(h.location.hash, "#tab=overview&tier=soloq_masters_plus");
+
+  ++passedSuites;
+}
+
 (async () => {
+  await checkChampionTabRemoved();
   checkOnetricks();
   checkBuildsItems();
   await checkBuildsGenerated();
   checkBuildsSurvival();
   await checkBuildsLeaderboard();
-  console.log(`LoL UI tests passed (${passedSuites} suites: onetricks, items, generated, survival, leaderboard).`);
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, survival, leaderboard).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);

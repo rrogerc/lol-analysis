@@ -153,33 +153,9 @@ def ally(name="Ashe", *, driver="Driver", hp=1000.0, ad=0.0,
     return {"spec": spec, "frontline": frontline, "lane": lane, "priority": priority}
 
 
-def enemy(**changes):
-    return {"name": "Synthetic enemy", "hp": 10000.0, "armor": 0.0, "mr": 0.0,
-            "kind": "tank", "frontline": True, "lane": 3, "streams": 1,
-            "ad": 0.0, "as": 0.0, "ability": 0.0, "physicalShare": 1.0,
-            "manaMax": 0.0, **changes}
-
-
 def flat_calc(member, name, amount):
     member["spec"]["kits"]["base"]["calcs"][name]["terms"] = [
         {"type": "flat", "value": float(amount), "op": "add"}]
-
-
-def fight(allies, enemies, duration=3.0, geometry="clump"):
-    return ENGINE.simulate_team({"allies": allies, "enemies": enemies,
-                                 "duration": duration, "geometry": geometry,
-                                 "critEv": 1.0, "burnWound": 0.33}, True)
-
-
-def team_trace(result, kind=None, *, source=None, target=None, name=None):
-    return [event for event in result["trace"]
-            if (kind is None or event["kind"] == kind)
-            and (source is None or event["source"] == source)
-            and (target is None or event["target"] == target)
-            and (name is None or event.get("sourceName") == name)]
-
-
-trace = team_trace
 
 
 def match(allies, enemies, duration=3.0, initiative=0, **options):

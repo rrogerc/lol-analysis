@@ -265,12 +265,7 @@ def cmd_export(args):
     for tier in meta["tiers"]:
         patches = ladder.db_patches(con, tier)
         dump(f"api/rows/{tier}.json", ladder.build_rows(con, tier, patches))
-        names = [r[0] for r in con.execute(
-            "SELECT DISTINCT champion FROM stats WHERE tier=? ORDER BY champion", (tier,))]
-        dump(f"api/champions/{tier}.json", names)
-        for name in names:
-            dump(f"api/champion/{tier}/{name}.json", ladder.api_champion(con, tier, name))
-        files += 2 + len(names)
+        files += 1
     print(f"Exported static site to {out}/ ({files} API files, tiers: {', '.join(meta['tiers'])})")
 
 
@@ -488,13 +483,6 @@ def cmd_serve(args):
                         self._json({"error": f"no data for tier {tier}"}, 404)
                         return
                     self._json(ladder.build_rows(con, tier, patches))
-                elif m := re.fullmatch(r"/api/champions/([a-z0-9_]+)\.json", u.path):
-                    names = [r[0] for r in con.execute(
-                        "SELECT DISTINCT champion FROM stats WHERE tier=? ORDER BY champion",
-                        (m.group(1),))]
-                    self._json(names)
-                elif m := re.fullmatch(r"/api/champion/([a-z0-9_]+)/([a-z0-9]+)\.json", u.path):
-                    self._json(ladder.api_champion(con, m.group(1), m.group(2)))
                 else:
                     self._json({"error": "not found"}, 404)
             except BrokenPipeError:

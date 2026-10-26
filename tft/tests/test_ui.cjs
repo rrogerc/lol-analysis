@@ -68,7 +68,6 @@ async function runCompositionsRetirementSuite() {
   const makeResponder = url => {
     if (url === "api/meta.json") return meta;
     if (url.startsWith("api/rows/")) return { patches: ["15.1"], rows: [], totalGames: 0 };
-    if (url.startsWith("api/champions")) return [];
     if (url === "api/builds/meta.json") return { champions: [], scenarios: [] };
     if (url === "api/tft/meta.json") return tftMeta;
     if (url === "api/tft/status.json") return { revision: "fixture-v1", publicationRevision: "site-v1", patch: "18.3" };
@@ -79,7 +78,7 @@ async function runCompositionsRetirementSuite() {
     return { pending: true };
   };
 
-  // Verify #view=tft&tftview=compositions normalizes cleanly to leaderboard on init
+  // Verify #view=tft&tftview=compositions falls back cleanly to builds on init
   const h1 = loadDashboard({ initialHash: "#view=tft&tftview=compositions", api: async url => makeResponder(url) });
   assert.equal(h1.element("tft-compositions-panel"), null);
   assert.equal(h1.element("tft-composition-back"), null);
@@ -89,33 +88,35 @@ async function runCompositionsRetirementSuite() {
     ["builds", "leaderboard", "early", "traits"]
   );
   await h1.context.init();
-  await until(() => !h1.context.tstate.opening, "Initial TFT leaderboard load completes");
+  await until(() => !h1.context.tstate.opening, "Initial TFT builds load completes");
   assert.equal(h1.context.state.view, "tft");
-  assert.equal(h1.context.tstate.mode, "leaderboard");
-  assert.equal(h1.element("view-tft").dataset.mode, "leaderboard");
-  assert.equal(h1.element("tft-leaderboard-panel").hidden, false);
-  assert.equal(h1.element("tft-champion-panel").hidden, true);
+  assert.equal(h1.context.tstate.mode, "builds");
+  assert.equal(h1.element("view-tft").dataset.mode, "builds");
+  assert.equal(h1.element("tft-champion-panel").hidden, false);
+  assert.equal(h1.element("tft-leaderboard-panel").hidden, true);
   const params1 = Object.fromEntries(new URLSearchParams(h1.location.hash.slice(1)));
   assert.equal(params1.tab, "tft");
-  assert.equal(params1.tftview, "leaderboard");
+  assert.equal(params1.tftview, undefined);
   assert(!h1.location.hash.includes("compositions"));
   assert(!h1.location.hash.includes("tcomp"));
 
-  // Verify #tab=tft&tftview=compositions and setTftMode("compositions") also normalize to leaderboard
-  await h1.context.setTftMode("builds", { load: false });
-  assert.equal(h1.context.tstate.mode, "builds");
+  // Verify #tab=tft&tftview=compositions and setTftMode("compositions") also fall back to builds
+  await h1.context.setTftMode("leaderboard", { load: false });
+  assert.equal(h1.context.tstate.mode, "leaderboard");
   await h1.setHash("#tab=tft&tftview=compositions");
   await until(() => !h1.context.tstate.opening, "Hash navigation to retired compositions settles");
   assert.equal(h1.context.state.view, "tft");
-  assert.equal(h1.context.tstate.mode, "leaderboard");
-  assert.equal(h1.element("tft-leaderboard-panel").hidden, false);
+  assert.equal(h1.context.tstate.mode, "builds");
+  assert.equal(h1.element("tft-champion-panel").hidden, false);
+  assert.equal(h1.element("tft-leaderboard-panel").hidden, true);
   assert(!h1.location.hash.includes("compositions"));
 
-  await h1.context.setTftMode("builds", { load: false });
+  await h1.context.setTftMode("leaderboard", { load: false });
   await h1.context.setTftMode("compositions", { load: false });
-  assert.equal(h1.context.tstate.mode, "leaderboard");
-  assert.equal(h1.element("view-tft").dataset.mode, "leaderboard");
-  assert.equal(h1.element("tft-leaderboard-panel").hidden, false);
+  assert.equal(h1.context.tstate.mode, "builds");
+  assert.equal(h1.element("view-tft").dataset.mode, "builds");
+  assert.equal(h1.element("tft-champion-panel").hidden, false);
+  assert.equal(h1.element("tft-leaderboard-panel").hidden, true);
 
   ++passedSuites;
 }
@@ -4570,10 +4571,8 @@ async function runNavigationUiSuite() {
     };
     context.openBuilds = async () => {};
     context.loadOverview = async () => {};
-    context.loadChampionList = async () => {};
     context.loadInventory = async () => {};
     context.loadOnetricks = async () => {};
-    context.loadChampion = async () => {};
     context.checkItemHealth = () => {};
     context.loadBuildsView = async () => {};
     context.loadTftFlex = async () => true;

@@ -78,7 +78,6 @@ import hashlib
 import itertools
 import json
 import math
-import multiprocessing as mp
 import os
 import re
 import statistics
@@ -93,13 +92,12 @@ from datetime import datetime, timezone
 from html import unescape
 from html.parser import HTMLParser
 
-from web.db import BASE_DIR, OPS_STATE_DIR, patch_key
+from web.db import BASE_DIR, OPS_STATE_DIR
 from tft import update as tft_update
 
 TFT_DATA_DIR = os.path.join(BASE_DIR, "tft", "data")
 TFT_ENGINE_DIR = os.path.join(BASE_DIR, "tft", "engine")
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "tft")
-SCENARIO_CACHE_DIR = CACHE_DIR   # the name server's warmer expects
 REFRESH_STATE_FILE = os.path.join(OPS_STATE_DIR, "refresh-tft.json")
 REFRESH_HISTORY_LIMIT = 10
 # Match the user service's RestartSec; longer server delays use the stored guard.
@@ -118,7 +116,6 @@ USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) lol-analysis/0.1 (+github.com/rrog
 # --- the rules of the set that are not in the data ------------------------
 AD_PER_STAR = 1.5      # attack damage multiplies by this per star above one
 HP_PER_STAR = 1.8      # max health likewise
-BASE_AP = 100.0        # every unit's ability power before items
 AS_CAP = 5.0           # attacks per second, soft cap
 # Crit chance over 100% becomes crit damage at this rate: Riot's patch 12.23
 # introduced the conversion "at a 2:1 ratio" (0.5), patch 13.18 raised it
@@ -126,7 +123,6 @@ AS_CAP = 5.0           # attacks per second, soft cap
 # page says x0.5 and the wiki's stale wording reads as 1:1 (this constant's
 # old value). Unverified for Set 18; the engine's fight.rs carries the number.
 CRIT_EXCESS_TO_DAMAGE = 0.8
-PRECISION_EXTRA_CRIT_DAMAGE = 0.10  # a second source of Precision
 # The flat cast rules, for the units cast-timing.json has no timeline for
 # (the manaless kits, summons, synthetic fixtures) and for the dummies:
 MANA_LOCK_S = 1.0      # no mana for a second after a cast starts
@@ -152,7 +148,6 @@ TANK_MANA_PER_POSTMIT = 0.03
 TANK_MANA_PER_HIT_CAP = 42.5
 # assassins "take 15% less damage from all enemies except the current target"
 ASSASSIN_OFFTARGET_REDUCTION = 0.15
-TANK_ROLE_TAG = "Role.Tank"
 PRISMATIC_STYLE = 5    # trait breakpoint styles at or above this are chase tiers
 
 FIGHT_DURATION = 30.0  # carries and frontliners: six finite targets
@@ -497,10 +492,6 @@ def latest_patch_slug(set_no):
     return max(slugs, key=lambda s: int(s.split("-")[1]))
 
 
-def parse_patch_notes(html):
-    return patch_notes_document(html, "0.0")["changes"]
-
-
 def fetch_source(url):
     response = _fetch_response(url)
     raw = response.body
@@ -573,9 +564,8 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
     patch = notes["patch"]
     report(phase="fetching", targetPatch=patch, message=f"Downloading data for {patch}.")
     if automatic and tft_patch_key(patch) < tft_patch_key(previous.patch):
-        from tft import update as tft_update
-        ReviewRequired = tft_update.ReviewRequired
-        raise ReviewRequired(f"The source reports older patch {patch}; keeping {previous.patch} and retrying on the next check.")
+        raise tft_update.ReviewRequired(
+            f"The source reports older patch {patch}; keeping {previous.patch} and retrying on the next check.")
     if requested and requested not in (base_patch, patch):
         raise ValueError(f"the current sources describe {patch}, not requested {requested}; "
                          "use an archived snapshot for historical patches")
@@ -653,10 +643,8 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
         candidate = Snapshot(set_no, patch, directory=staging)
         needs_review = unsettled(candidate)
         if automatic and (not candidate.audit or needs_review):
-            from tft import update as tft_update
-            reconcile = tft_update.reconcile
             try:
-                overrides, audit = reconcile(candidate, previous, notes)
+                overrides, audit = tft_update.reconcile(candidate, previous, notes)
                 audit.setdefault("baselineReviewedAt", previous.audit.get("checkedAt"))
                 audit["checkedAt"] = meta["fetchedAt"]
                 for name, content in (("overrides.json", overrides), ("audit.json", audit)):
@@ -824,10 +812,8 @@ class Snapshot:
         for api in self.overrides["units"]:
             if api not in self.units and api not in self.extras:
                 print(f"Warning: overrides.json names unknown unit {api}", file=sys.stderr)
-        self.units_by_name = {u["name"]: u for u in self.units.values()}
         self.items = {i["apiName"]: self._item(i) for i in self.raw["items"]}
         self.traits = {t["apiName"]: self._trait(t) for t in self.raw["traits"]}
-        self.traits_by_name = {t["name"]: t for t in self.traits.values()}
         # A running dashboard keeps this loaded generation until reload.
         # Re-reading replaced files here would pair old stats with new caches.
         self._input_hash = json_hash([self.raw, self.bins, self.overrides])
@@ -920,7 +906,7 @@ class Snapshot:
         # Adaptor forms: the AD and AP kits (Lux's extra abilities are her
         # Avatar trait variants, not forms)
         forms = {}
-        for key, v in (u.get("extraAbilities") or {}).items():
+        for v in (u.get("extraAbilities") or {}).values():
             if v.get("variant") not in ("AD", "AP"):
                 continue
             fov = (ov.get("forms") or {}).get(v["variant"]) or {}
@@ -1620,10 +1606,6 @@ def item_spec(snap, api, item_fx, unit):
             if unit.get("forms") or rng <= rv(aura["hexes"]):
                 out["sunfireAura"] = [rv(aura["pct"]), rv(aura["duration"]),
                                       rv(aura["interval"]), rv(aura["hexes"])]
-        elif unit.get("forms") and "hexes" in aura:
-            out["burnAuraByRange"] = [rv(aura["pct"]), rv(aura["duration"]), rv(aura["hexes"])]
-        elif "hexes" not in aura or rng <= rv(aura["hexes"]):
-            out["burnAura"] = [rv(aura["pct"]), rv(aura["duration"])]
     for k in ("hpMult", "hpCompoundMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct", "ccImmuneDuration"):
         if k in spec:
             out[k] = rv(spec[k])
@@ -1670,7 +1652,7 @@ def item_spec(snap, api, item_fx, unit):
     return out
 
 
-def trait_spec(snap, api, col, trait_fx, unit):
+def trait_spec(snap, api, col, trait_fx):
     """One trait at breakpoint column `col` for the engine, per
     trait-effects.json, every row read at that column."""
     t = snap.traits[api]
@@ -1895,7 +1877,7 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
         "targetDebuffs": dummy_spec.get("targetDebuffs", target_debuffs(snap)) if not board else {},
         "dummies": {"critEv": dummy_spec.get("critEv", 1.1), "slots": slots},
         "role": role,
-        "traits": [trait_spec(snap, api, col, trait_fx, unit) for api, col in ctx_traits],
+        "traits": [trait_spec(snap, api, col, trait_fx) for api, col in ctx_traits],
         "pool": [item_spec(snap, api, item_fx, unit) for api in pool],
         "items": [item_spec(snap, api, item_fx, unit) for api in items],
         "driver": driver or driver_name(unit),
@@ -1915,7 +1897,7 @@ def simulate(snap, unit, star, item_apis, geometry, ctx_traits, dummy_spec, dura
 
 
 def enumerate_builds(snap, unit, star, geometry, ctx_traits, dummy_spec, pool, duration=None,
-                     top=None, workers=0, item_fx=None, trait_fx=None, log=None, *, include_scores=False):
+                     top=None, workers=0, item_fx=None, trait_fx=None, *, include_scores=False):
     """Every multiset of three pool items (unique items at most once),
     simulated on every core and sorted best first (rank_key, ties by the
     build's api names): ([(combo, sheet, result), ...] for the top rows,
@@ -2494,7 +2476,7 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
     return rows
 
 
-def compute_cell(snap, unit, key, paths, log=None, prune=True):
+def compute_cell(snap, unit, key, paths, prune=True):
     sc = unit_scenarios(unit)[key]
     t0 = time.time()
     item_fx = load_item_effects(snap.set_no)
@@ -2505,7 +2487,7 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
     pool = pool_items(snap, item_fx)
     duration = fight_duration(unit)
     out, count, scores = enumerate_builds(snap, unit, sc["star"], sc["geometry"],
-                                          ctx_traits, dummy, pool, duration, log=log, include_scores=True)
+                                          ctx_traits, dummy, pool, duration, include_scores=True)
     pair_scores = None
     if scores and unit["objective"] != "tank":
         spec = cell_spec(snap, unit, sc["star"], sc["geometry"], ctx_traits, dummy, duration,
@@ -2578,14 +2560,6 @@ def warm_lock():
     return f
 
 
-def warm_running():
-    lock = warm_lock()
-    if lock is None:
-        return True
-    lock.close()
-    return False
-
-
 def _say(line):
     print(line, flush=True)
 
@@ -2615,7 +2589,7 @@ def warm(log=_say, only=None, *, snap=None, prune=True):
         done = 0
         for n, (u, key) in enumerate(cold, 1):
             log(f"[{n}/{len(cold)}] {u['name']} {key} …")
-            out = compute_cell(snap, u, key, paths, log=log, prune=prune)
+            out = compute_cell(snap, u, key, paths, prune=prune)
             best = out["rows"][0] if out["rows"] else None
             score = "" if not best else (
                 f" (held {best['aliveTime']}s{'+' if best['survivalCapped'] else ''})" if out["objective"] == "tank"
@@ -2705,7 +2679,7 @@ def write_json_atomic(path, content):
 
 def dashboard_ready(snap=None, *, prepared_site=None):
     """Activate a complete TFT publication, retaining the previous generation."""
-    from tft import early as tft_early, site as tft_site  # noqa: F401
+    from tft import site as tft_site
 
     snap = snap or load_snapshot()
     rev = snapshot_revision(snap)
@@ -2740,7 +2714,7 @@ def dashboard_ready(snap=None, *, prepared_site=None):
 
 def prepare_dashboard(snap, *, log=_say, progress=None):
     """Prepare active TFT analyses and saved responses before activation."""
-    from tft import early as tft_early, site as tft_site  # noqa: F401
+    from tft import site as tft_site
 
     report = progress or (lambda **fields: None)
 
@@ -2978,7 +2952,7 @@ def trait_description(trait):
 
 def trait_bonus_notes(snap, unit, api, column, trait_fx):
     """Describe the same resolved values supplied to the combat engine."""
-    fx = trait_spec(snap, api, column, trait_fx, unit)
+    fx = trait_spec(snap, api, column, trait_fx)
     number = ui_number
     percent = lambda value: number(value * 100) + "%"
     notes = []
@@ -3055,8 +3029,6 @@ def trait_bonus_notes(snap, unit, api, column, trait_fx):
             notes.append(f"+{percent(bonuses[own[0]] - 1)} {own[1]}.")
         if unit["api"] == "TFT18_Zyra":
             notes.append(f"Plants make {number(bonuses['extraAttacks'])} additional attacks.")
-        if unit["api"] in ("TFT18_Azir", "TFT18_Zyra", "TFT18_Krug") and bonuses.get("extraSummons", 1) > 1:
-            notes.append(f"+{number(bonuses['extraSummons'] - 1)} additional summon.")
     notes.extend(trait_notes(snap, [(api, column)], trait_fx))
     return notes
 
@@ -3505,7 +3477,7 @@ def cmd_top(args):
     unit = snap.unit(args.name)
     item_fx = load_item_effects(snap.set_no)
     trait_fx = load_trait_effects(snap.set_no)
-    contexts, unmodeled = unit_trait_contexts(snap, unit, trait_fx)
+    contexts, _ = unit_trait_contexts(snap, unit, trait_fx)
     pool = pool_items(snap, item_fx)
     dummy = dummies_for(snap, threat=getattr(args, "threat", "mixed")
                         if unit["objective"] == "tank" else None)
@@ -3518,7 +3490,7 @@ def cmd_top(args):
         print(f"  {dummy['threat']['label']} · {dummy['boardSize']} attackers · "
               f"{dummy['boardPressureDps']:.0f} pre-mitigation DPS · continuous heal cut, Sunder and Shred")
     previous_key, previous_rank = None, None
-    for n, (combo, sheet, res) in enumerate(out[:args.top], 1):
+    for n, (combo, _sheet, res) in enumerate(out[:args.top], 1):
         key = rank_key(res, unit["objective"])
         rank = previous_rank if unit["objective"] == "tank" and key == previous_key else n
         previous_key, previous_rank = key, rank

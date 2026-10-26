@@ -1,7 +1,5 @@
 "use strict";
-const BUCKETS = ["0–15", "15–20", "20–25", "25–30", "30–35", "35–40", "40+"];
 const SLOTS = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
-const LANE_SLOT = { top: 0, jungle: 1, middle: 2, bottom: 3, support: 4, main: 0 };
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const fmtInt = n => n.toLocaleString("en-US");
 // 95% CI half-width in percentage points for a win rate over n games.
@@ -16,137 +14,7 @@ function api(path, options) {
 
 let META = null;
 let DATA = { rows: [], patches: [], totalGames: 0, totalMatches: null, tier: null };
-const state = { tier: null, view: "overview", champion: null };
-
-// ---------------- generic line chart ----------------
-// series: [{name, color, values:[..], games:[..]}]; values may contain nulls.
-function lineChart(svg, tooltip, series, xLabels, emptyMsg) {
-  const W = svg.clientWidth || 800, H = +svg.getAttribute("height");
-  const M = { top: 16, right: 24, bottom: 28, left: 44 };
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
-  const n = xLabels.length;
-  const xs = i => M.left + iw * i / Math.max(1, n - 1);
-
-  let lo = 46, hi = 56;
-  const vals = series.flatMap(s => s.values.filter(v => v != null));
-  if (vals.length) {
-    lo = Math.floor(Math.min(...vals, 49) - 1);
-    hi = Math.ceil(Math.max(...vals, 51) + 1);
-  }
-  const ys = v => M.top + ih * (1 - (v - lo) / (hi - lo));
-  const ns = "http://www.w3.org/2000/svg";
-  const el = (tag, attrs) => {
-    const e = document.createElementNS(ns, tag);
-    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-    return e;
-  };
-  svg.replaceChildren();
-
-  const step = (hi - lo) <= 8 ? 2 : (hi - lo) <= 16 ? 4 : 5;
-  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
-    svg.append(el("line", { x1: M.left, x2: W - M.right, y1: ys(v), y2: ys(v),
-                            stroke: css("--grid"), "stroke-width": 1 }));
-    const t = el("text", { x: M.left - 8, y: ys(v) + 4, "text-anchor": "end",
-                           fill: css("--muted"), "font-size": 11 });
-    t.textContent = v + "%";
-    svg.append(t);
-  }
-  if (lo <= 50 && 50 <= hi)
-    svg.append(el("line", { x1: M.left, x2: W - M.right, y1: ys(50), y2: ys(50),
-                            stroke: css("--baseline"), "stroke-width": 1 }));
-  const labelEvery = Math.ceil(n / 14);
-  xLabels.forEach((b, i) => {
-    if (i % labelEvery) return;
-    const t = el("text", { x: xs(i), y: H - 8, "text-anchor": "middle",
-                           fill: css("--muted"), "font-size": 11 });
-    t.textContent = b;
-    svg.append(t);
-  });
-
-  for (const s of series) {
-    const pts = s.values.map((v, i) => v == null ? null : [xs(i), ys(v)]);
-    let d = "", started = false;
-    pts.forEach(p => {
-      if (!p) { started = false; return; }
-      d += (started ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
-      started = true;
-    });
-    svg.append(el("path", { d, fill: "none", stroke: s.color, "stroke-width": 2,
-                            "stroke-linecap": "round", "stroke-linejoin": "round" }));
-    pts.forEach(p => {
-      if (!p) return;
-      svg.append(el("circle", { cx: p[0], cy: p[1], r: 5.5, fill: css("--surface-1") }));
-      svg.append(el("circle", { cx: p[0], cy: p[1], r: 4, fill: s.color }));
-    });
-  }
-
-  if (!series.length) {
-    const t = el("text", { x: W / 2, y: H / 2, "text-anchor": "middle",
-                           fill: css("--muted"), "font-size": 13 });
-    t.textContent = emptyMsg || "No data";
-    svg.append(t);
-  }
-
-  svg.onpointermove = ev => {
-    if (!series.length) return;
-    const rect = svg.getBoundingClientRect();
-    const x = ev.clientX - rect.left;
-    const i = Math.max(0, Math.min(n - 1, Math.round((x - M.left) / (iw / Math.max(1, n - 1)))));
-    svg.querySelector(".xhair")?.remove();
-    svg.append(el("line", { class: "xhair", x1: xs(i), x2: xs(i), y1: M.top, y2: H - M.bottom,
-                            stroke: css("--baseline"), "stroke-width": 1 }));
-    tooltip.replaceChildren();
-    const title = document.createElement("div");
-    title.className = "tt-title";
-    title.textContent = xLabels[i];
-    tooltip.append(title);
-    series.slice().sort((a, b) => (b.values[i] ?? -1) - (a.values[i] ?? -1)).forEach(s => {
-      const row = document.createElement("div");
-      row.className = "tt-row";
-      const key = document.createElement("span");
-      key.className = "tt-key";
-      key.style.background = s.color;
-      const val = document.createElement("span");
-      val.className = "tt-val";
-      val.textContent = s.values[i] == null ? "—" : s.values[i].toFixed(1) + "%";
-      if (s.values[i] != null && s.games && s.games[i]) {
-        const c = document.createElement("span");
-        c.className = "tt-ci";
-        c.textContent = "±" + ci95(s.values[i], s.games[i]).toFixed(1);
-        val.append(" ", c);
-      }
-      const name = document.createElement("span");
-      name.className = "tt-name";
-      name.textContent = s.name;
-      const games = document.createElement("span");
-      games.className = "tt-games";
-      games.textContent = s.games ? fmtCompact(s.games[i] || 0) : "";
-      row.append(key, val, name, games);
-      tooltip.append(row);
-    });
-    tooltip.style.display = "block";
-    const tw = tooltip.offsetWidth;
-    tooltip.style.left = Math.min(xs(i) + 12, W - tw - 8) + "px";
-    tooltip.style.top = M.top + 8 + "px";
-  };
-  svg.onpointerleave = () => {
-    tooltip.style.display = "none";
-    svg.querySelector(".xhair")?.remove();
-  };
-}
-
-function renderLegend(box, series) {
-  box.replaceChildren(...series.map(s => {
-    const k = document.createElement("span");
-    k.className = "key";
-    const sw = document.createElement("span");
-    sw.className = "swatch";
-    sw.style.background = s.color;
-    k.append(sw, document.createTextNode(s.name));
-    return k;
-  }));
-}
+const state = { tier: null, view: "overview" };
 
 // ---------------- overview ----------------
 const rid = r => r.c + "/" + r.l;
@@ -154,11 +22,6 @@ const rid = r => r.c + "/" + r.l;
 // is wukong (Riot-internal monkeyking).
 const iconUrl = c =>
   `https://cdn.communitydragon.org/latest/champion/${c === "wukong" ? "monkeyking" : c}/square`;
-function openChampion(name) {
-  showView("champion");
-  document.getElementById("champ-search").value = name;
-  loadChampion(name);
-}
 // A table cell with the champion's icon and slug.
 function champCell(c) {
   const icon = document.createElement("img");
@@ -227,7 +90,6 @@ function renderTable() {
       metricCell(r.wr[rankBucket].toFixed(2) + "%",
                  ci95(r.wr[rankBucket], r.g[rankBucket])),
       cell(fmtInt(gamesOf(r))));
-    tr.addEventListener("click", () => openChampion(r.c));
     return tr;
   }));
   document.querySelectorAll("#bucket-seg button").forEach((btn, i) =>
@@ -247,7 +109,7 @@ function initBucketSeg() {
 }
 async function loadOverview() {
   DATA = await api(`api/rows/${encodeURIComponent(state.tier)}.json`);
-  // "synced" is when lol.db last pulled from the crawl — the date that can
+  // "synced" is when lol.db last pulled from the crawl: the date that can
   // go stale. The request date always looks fresh and hid a 10-day gap once.
   const synced = DATA.synced
     ? "synced " + new Date(DATA.synced).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
@@ -262,49 +124,6 @@ async function loadOverview() {
                               : "≈" + fmtCompact(Math.round(DATA.totalGames / 10));
   document.getElementById("kpi-patches").textContent = DATA.patches.length;
   renderTable();
-}
-
-// ---------------- champion view ----------------
-async function loadChampion(name) {
-  state.champion = name;
-  updateHash();
-  let d;
-  try {
-    d = await api(`api/champion/${encodeURIComponent(state.tier)}/${encodeURIComponent(name)}.json`);
-  } catch (e) {
-    document.getElementById("champ-title").textContent =
-      `No data for "${name}" at ${state.tier} — names are lowercase slugs, e.g. missfortune`;
-    return;
-  }
-  document.getElementById("champ-title").textContent =
-    `${d.name} — win rate by game length (${d.tier})`;
-  const laneNames = Object.keys(d.lanes)
-    .sort((a, b) => (LANE_SLOT[a] ?? 9) - (LANE_SLOT[b] ?? 9));
-  const curveSeries = laneNames.map(l => ({
-    name: l, color: css(SLOTS[LANE_SLOT[l] ?? 5]),
-    values: d.lanes[l].wr, games: d.lanes[l].g,
-  }));
-  lineChart(document.getElementById("champ-chart"), document.getElementById("champ-tt"),
-            curveSeries, BUCKETS, "No data for this champion");
-  renderLegend(document.getElementById("champ-legend"), curveSeries);
-
-  const patchSeries = laneNames.map(l => ({
-    name: l, color: css(SLOTS[LANE_SLOT[l] ?? 5]),
-    values: d.patches.map(p => d.perPatch[l]?.[p]?.wr ?? null),
-    games: d.patches.map(p => d.perPatch[l]?.[p]?.g ?? 0),
-  }));
-  lineChart(document.getElementById("patch-chart"), document.getElementById("patch-tt"),
-            patchSeries, d.patches, "No data");
-  renderLegend(document.getElementById("patch-legend"), patchSeries);
-}
-
-async function loadChampionList() {
-  const names = await api(`api/champions/${encodeURIComponent(state.tier)}.json`);
-  document.getElementById("champ-list").replaceChildren(...names.map(n => {
-    const o = document.createElement("option");
-    o.value = n;
-    return o;
-  }));
 }
 
 // ---------------- one-tricks view ----------------
@@ -551,7 +370,7 @@ async function loadInventory() {
 // serve reads these with `systemctl show`; the static export drops them
 // entirely, since frozen unit state could only ever be a lie once viewed.
 // Restarts are the signal worth watching: a service that cannot bind its
-// port restarts forever, and nothing else here would reveal it — the page
+// port restarts forever, and nothing else here would reveal it: the page
 // you are reading is served by whichever process did get the port.
 function svcState(s) {
   if (!s.loaded) return { text: "not found", cls: "neg" };
@@ -572,9 +391,9 @@ function relTime(ts) {
 }
 
 function svcWhen(s) {
-  if (!s.loaded) return "—";
+  if (!s.loaded) return "-";
   if (!s.unit.endsWith(".timer"))
-    return s.since ? `up ${relTime(s.since)}` : "—";
+    return s.since ? `up ${relTime(s.since)}` : "-";
   const parts = [s.last ? `last ${relTime(s.last)}` : "never run"];
   if (s.running) parts.push("running now");
   else if (s.result && s.result !== "success") parts.push(s.result);
@@ -597,17 +416,17 @@ function jobStatus(j) {
     if (date && Date.now() - date.getTime() > 18 * 3.6e6) return { text: `no recent check${when}`, cls: "amber" };
     if (j.status === "ok") return { text: `ok${when}${message ? ` · ${message}` : ""}`, cls: "pos" };
   }
-  if (j.lastRun == null) return { text: "—" };
+  if (j.lastRun == null) return { text: "-" };
   const hrs = (Date.now() - Date.parse(j.lastRun)) / 3.6e6;
   const when = hrs < 1.5 ? "just now" : hrs < 48 ? Math.round(hrs) + "h ago"
                                                  : Math.round(hrs / 24) + "d ago";
   if (j.lastExit !== 0) return { text: `failed ${when} (exit ${j.lastExit})`, cls: "neg" };
-  if (hrs > 48) return { text: `last ran ${when} — timer may be dead`, cls: "neg" };
+  if (hrs > 48) return { text: `last ran ${when}; timer may be dead`, cls: "neg" };
   return { text: `ok, ran ${when}`, cls: "pos" };
 }
 
 // Outcome check, independent of the job: is the newest snapshot the live
-// patch? Grace period so patch day shows a heads-up, not an alarm — this
+// patch? Grace period so patch day shows a heads-up, not an alarm: this
 // browser remembers when it first saw the mismatch.
 async function checkItemHealth() {
   const el = document.getElementById("health");
@@ -617,11 +436,11 @@ async function checkItemHealth() {
   try {
     const versions = await api("https://ddragon.leagueoflegends.com/api/versions.json");
     live = versions[0].split(".").slice(0, 2).join(".");
-  } catch { return; }   // offline — no verdict, say nothing
+  } catch { return; }   // offline: no verdict, say nothing
   const showHealth = (cls, msg) => { el.className = cls; el.textContent = msg; el.hidden = false; };
   if (live === snap.patch) {
     if (!snap.merakiItems)
-      showHealth("warn", `Patch ${snap.patch} item snapshot has no meraki stats yet — the daily job should fill them in.`);
+      showHealth("warn", `Patch ${snap.patch} item snapshot has no meraki stats yet; the daily job should fill them in.`);
     return;
   }
   const key = "itemsMismatchSince:" + live;
@@ -635,7 +454,7 @@ async function checkItemHealth() {
       `${snap.patch} (fetched ${snap.fetchedAt.slice(0, 10)}). Check the refresh job: ` +
       `journalctl --user -u lol-items-refresh`);
   else
-    showHealth("warn", `New patch ${live} is live — item snapshot still on ${snap.patch}; ` +
+    showHealth("warn", `New patch ${live} is live, while item snapshot is still on ${snap.patch}; ` +
       `the daily job should catch up shortly.`);
 }
 
@@ -659,7 +478,6 @@ function renderTierDesc() {
 function updateHash(push = false) {
   if (restoringHash) return;
   const parts = [`tab=${state.view}`, `tier=${state.tier}`];
-  if (state.view === "champion" && state.champion) parts.push(`name=${state.champion}`);
   if (state.view === "builds" && bstate.champion) parts.push(`champ=${bstate.champion}`);
   if (state.view === "builds" && bstate.scenario) parts.push(`sc=${bstate.scenario}`);
   if (state.view === "builds" && bstate.mode === "leaderboard") {
@@ -734,7 +552,6 @@ function showView(v, push = true) {
   if (v === "data") loadInventory().catch(() => {});
   if (v === "onetricks") loadOnetricks();
 }
-const setView = showView;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearTimeout(tstate.timer);
   else if (state.view === "tft") openTft();
@@ -746,8 +563,7 @@ document.getElementById("tier").addEventListener("change", async e => {
   state.tier = e.target.value;
   updateHash(true);
   renderTierDesc();
-  await Promise.all([loadOverview(), loadChampionList()]);
-  if (state.champion) loadChampion(state.champion);
+  await loadOverview();
 });
 ["search", "lane", "mingames"].forEach(id =>
   document.getElementById(id).addEventListener("input", renderTable));
@@ -766,16 +582,12 @@ document.querySelectorAll("#otbl th").forEach(th =>
     renderOnetricks();
   }));
 initBucketSeg();
-document.getElementById("champ-search").addEventListener("change", e => {
-  const v = e.target.value.trim().toLowerCase();
-  if (v) loadChampion(v);
-});
 
 function restoreHash() {
   if (!META) return;
   const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
   const tab = hash.tab || hash.view;
-  const view = ["overview", "champion", "onetricks", "builds", "tft", "data"].includes(tab) ? tab : "overview";
+  const view = ["overview", "onetricks", "builds", "tft", "data"].includes(tab) ? tab : "overview";
   const previousTier = state.tier;
   restoringHash = true;
   try {
@@ -799,8 +611,7 @@ function restoreHash() {
       if (hash.lbs) { bboard.sortKey = hash.lbs; bboard.sortDir = hash.lbd === "d" ? -1 : 1; }
     }
     if (tab === "tft") {
-      const mode = hash.tftview === "compositions" ? "leaderboard"
-        : ["leaderboard", "early", "traits"].includes(hash.tftview) ? hash.tftview : "builds";
+      const mode = ["leaderboard", "early", "traits"].includes(hash.tftview) ? hash.tftview : "builds";
       if (tstate.mode === "traits") cancelTftFlex();
       if (tstate.mode === "early") cancelTftEarly();
       ++tboard.req;
@@ -817,19 +628,13 @@ function restoreHash() {
       if (mode === "traits") restoreTftFlexHash(hash);
       setTftMode(mode, { load: false });
     }
-    if (view === "champion") state.champion = hash.name || null;
     showView(view, false);
-    if (view === "champion" && state.champion) {
-      document.getElementById("champ-search").value = state.champion;
-      loadChampion(state.champion);
-    }
   } finally {
     restoringHash = false;
   }
   updateHash();
   if (state.tier !== previousTier) {
     loadOverview();
-    loadChampionList();
   }
 }
 
@@ -853,7 +658,7 @@ async function init() {
   }));
   tierSel.value = state.tier;
   renderTierDesc();
-  await Promise.all([loadOverview(), loadChampionList(), loadInventory()]);
+  await Promise.all([loadOverview(), loadInventory()]);
   checkItemHealth();
   restoreHash();
 }

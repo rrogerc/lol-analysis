@@ -662,9 +662,7 @@ function createWorkerClass() {
 
 const BRIDGE_SCRIPT = new vm.Script(`
 Object.defineProperties(globalThis, {
-  BUCKETS: { get: () => BUCKETS, configurable: true },
   SLOTS: { get: () => SLOTS, configurable: true },
-  LANE_SLOT: { get: () => LANE_SLOT, configurable: true },
   SRC_COLOR: { get: () => SRC_COLOR, configurable: true },
   META: { get: () => META, set: v => { META = v; }, configurable: true },
   DATA: { get: () => DATA, set: v => { DATA = v; }, configurable: true },
@@ -885,10 +883,6 @@ function loadDashboard(options = {}) {
   };
 }
 
-async function flushMicrotasks(turns = 8) {
-  for (let i = 0; i < turns; ++i) await Promise.resolve();
-}
-
 async function until(condition, message = "Condition timed out", maxAttempts = 1000) {
   for (let i = 0; i < maxAttempts && !condition(); ++i) {
     await new Promise(resolve => setTimeout(resolve, 1));
@@ -909,6 +903,5 @@ module.exports = {
   createDom,
   createWorkerClass,
   loadDashboard,
-  flushMicrotasks,
   until,
 };

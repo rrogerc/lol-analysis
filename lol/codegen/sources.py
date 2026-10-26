@@ -22,8 +22,6 @@ by this script.
   score  <slug>              recall of a dossier against the hand-encoded kit
                              lol/data/builds/kits/<slug>.json (pilot evaluation only)
   primitives                 print the closed list of rotation primitives
-  wiki-all [--patch P]       archive every champion's ability templates, for
-                             the triage pass (lol/data/builds/sources/<patch>/_triage/)
 
 Does not import lol.builds at module load time (no compiled engine needed).
 """
@@ -49,7 +47,6 @@ KITS_DIR = os.path.join(BUILDS_DATA_DIR, "kits")
 CHAMPIONS_DIR = os.path.join(BUILDS_DATA_DIR, "champions")
 SOURCES_DIR = os.path.join(BUILDS_DATA_DIR, "sources")
 DOSSIERS_DIR = os.path.join(BUILDS_DATA_DIR, "dossiers")
-CACHE_DIR = os.path.join(BASE_DIR, ".cache", "kit-sources")
 ITEMS_DIR = items.ITEMS_DATA_DIR
 
 DDRAGON_VERSIONS = "https://ddragon.leagueoflegends.com/api/versions.json"
@@ -764,39 +761,6 @@ def cmd_fetch(args):
             print(f"  warning: {w}")
 
 
-def cmd_wiki_all(args):
-    """Every champion's ability templates, fields only, for the triage pass."""
-    patch = args.patch or default_patch()
-    lua = wiki_query([WIKI_CHAMPION_DATA])[WIKI_CHAMPION_DATA]["wikitext"]
-    cdata = champion_data(lua)
-    titles = {}
-    for api, rec in cdata.items():
-        for slot in SLOTS:
-            for name in rec["skills"][slot]:
-                titles[f"Template:Data {rec['wikiName']}/{name}"] = (api, slot, name)
-    print(f"{len(cdata)} champions, {len(titles)} ability templates")
-    pages = wiki_query(list(titles))
-    keep = ("description", "leveling", "cooldown", "cost", "costtype", "cast time", "recharge",
-            "static", "damagetype", "spelleffects", "onhiteffects")
-    out = {}
-    for title, (api, slot, name) in titles.items():
-        page = pages.get(title)
-        champ = out.setdefault(api, {"wikiName": cdata[api]["wikiName"],
-                                     "resource": cdata[api].get("resource"),
-                                     "rangetype": cdata[api].get("rangetype"),
-                                     "abilities": {s: [] for s in SLOTS}})
-        if page is None:
-            champ["abilities"][slot].append({"name": name, "missing": True})
-            continue
-        fields = template_fields(page["wikitext"])
-        champ["abilities"][slot].append(
-            {"name": name, **{k: v for k, v in fields.items()
-                              if v and any(k == p or re.fullmatch(p + r"\d*", k) for p in keep)}})
-    path = os.path.join(SOURCES_DIR, patch, "_triage", "abilities.json")
-    write_json(path, out)
-    print(f"-> {os.path.relpath(path, BASE_DIR)} ({os.path.getsize(path) // 1024} KB)")
-
-
 # ---------------------------------------------------------------------------
 # sheet (the human- and model-readable numbers sheet)
 # ---------------------------------------------------------------------------
@@ -1019,7 +983,7 @@ def seq_match(a, b):
 class Checker:
     def __init__(self, slug, dossier, src):
         self.slug, self.d, self.src = slug, dossier, src
-        self.errors, self.warnings, self.info = [], [], []
+        self.errors, self.warnings = [], []
         self.spells = {}  # script name -> sheet spell
         self.slot_of = {}
         for slot, sps in src["sheet"]["slots"].items():
@@ -1491,9 +1455,6 @@ def main():
     sp.set_defaults(func=cmd_init)
     sp = sub.add_parser("primitives")
     sp.set_defaults(func=cmd_primitives)
-    sp = sub.add_parser("wiki-all")
-    sp.add_argument("--patch")
-    sp.set_defaults(func=cmd_wiki_all)
     for name, func in (("sheet", cmd_sheet), ("check", cmd_check), ("score", cmd_score)):
         sp = sub.add_parser(name)
         sp.add_argument("slug")

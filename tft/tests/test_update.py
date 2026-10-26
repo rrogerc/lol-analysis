@@ -29,8 +29,6 @@ from urllib.error import HTTPError, URLError
 from tft import sim as tft, site as tft_site, update as tft_update
 from tft.update import ReviewRequired, reconcile
 
-tft_http = tft_update
-
 
 class Clock:
     def __init__(self):
@@ -72,7 +70,7 @@ class TestGet(unittest.TestCase):
         self.clock = Clock()
 
     def get(self, opener, **kwargs):
-        return tft_http.get(self.URL, opener=opener, sleep=self.clock.sleep,
+        return tft_update.get(self.URL, opener=opener, sleep=self.clock.sleep,
                             monotonic=self.clock.monotonic, wall_time=lambda: 1700000000,
                             **kwargs)
 
@@ -162,7 +160,7 @@ class TestGet(unittest.TestCase):
                       OSError(errno.EACCES, "denied"), ValueError("invalid opener configuration")):
             with self.subTest(error=type(error).__name__):
                 opener = Mock(side_effect=error)
-                with self.assertRaises(tft_http.FetchError) as caught:
+                with self.assertRaises(tft_update.FetchError) as caught:
                     self.get(opener)
                 self.assertIn("permanent failure", str(caught.exception))
                 self.assertEqual(opener.call_count, 1)
@@ -186,7 +184,7 @@ class TestGet(unittest.TestCase):
             self.clock.now += timeout
             raise TimeoutError("request timeout")
 
-        with self.assertRaises(tft_http.FetchError) as caught:
+        with self.assertRaises(tft_update.FetchError) as caught:
             self.get(fail, max_attempts=4, total_timeout=5, attempt_timeout=4, backoff=0.25)
         self.assertEqual(timeouts, [4, 0.75])
         self.assertEqual(self.clock.sleeps, [0.25])
@@ -198,7 +196,7 @@ class TestGet(unittest.TestCase):
             self.clock.now += 6
             return Reply()
 
-        with self.assertRaises(tft_http.FetchError) as caught:
+        with self.assertRaises(tft_update.FetchError) as caught:
             self.get(late, total_timeout=5)
         self.assertEqual(caught.exception.attempts, 1)
         self.assertIn("deadline", str(caught.exception))
@@ -222,8 +220,8 @@ class TestGet(unittest.TestCase):
             raise queue.Empty
 
         try:
-            with patch.object(tft_http.queue.Queue, "get", side_effect=deadline):
-                with self.assertRaises(tft_http.FetchError) as caught:
+            with patch.object(tft_update.queue.Queue, "get", side_effect=deadline):
+                with self.assertRaises(tft_update.FetchError) as caught:
                     self.get(blocked, max_attempts=1)
             self.assertIn("TimeoutError", str(caught.exception))
             self.assertFalse(reply.closed)
@@ -268,9 +266,9 @@ class TestGet(unittest.TestCase):
         for error in failures:
             with self.subTest(error=type(error).__name__):
                 try:
-                    tft_http.get(url, opener=Mock(side_effect=error), max_attempts=1,
+                    tft_update.get(url, opener=Mock(side_effect=error), max_attempts=1,
                                  monotonic=self.clock.monotonic, sleep=self.clock.sleep)
-                except (HTTPError, tft_http.FetchError) as terminal:
+                except (HTTPError, tft_update.FetchError) as terminal:
                     rendered = "".join(traceback.format_exception(terminal))
                     self.assertIn("https://example.invalid/source.json", str(terminal))
                     self.assertEqual(terminal.source_url, "https://example.invalid/source.json")
@@ -293,8 +291,8 @@ class TestGet(unittest.TestCase):
             self.assertEqual(self.clock.sleeps, [])
 
     def test_injected_default_opener_patch_point(self):
-        with patch.object(tft_http.urllib.request, "urlopen", return_value=Reply()) as opener:
-            self.assertEqual(tft_http.get(self.URL).body, b"ok")
+        with patch.object(tft_update.urllib.request, "urlopen", return_value=Reply()) as opener:
+            self.assertEqual(tft_update.get(self.URL).body, b"ok")
         self.assertEqual(opener.call_count, 1)
 
     def test_transient_classification_survives_terminal_error_wrapping(self):
@@ -303,16 +301,16 @@ class TestGet(unittest.TestCase):
                                  (HTTPError(self.URL, 404, "missing", {}, None), False),
                                  (ssl.SSLCertVerificationError(1, "certificate"), False)):
             with self.subTest(error=type(error).__name__, retryable=retryable):
-                self.assertEqual(tft_http.is_transient(error), retryable)
+                self.assertEqual(tft_update.is_transient(error), retryable)
                 with self.assertRaises(URLError) as caught:
                     self.get(Mock(side_effect=error), max_attempts=1)
-                self.assertEqual(tft_http.is_transient(caught.exception), retryable)
+                self.assertEqual(tft_update.is_transient(caught.exception), retryable)
 
     def test_retry_callback_has_sanitized_context_and_excludes_permanent_errors(self):
         url = "https://user:password@example.invalid/source?token=secret#private"
         callback = Mock()
         opener = Mock(side_effect=[HTTPError(url, 503, "secret", {"Retry-After": "2"}, None), Reply()])
-        tft_http.get(url, opener=opener, monotonic=self.clock.monotonic,
+        tft_update.get(url, opener=opener, monotonic=self.clock.monotonic,
                      sleep=self.clock.sleep, on_retry=callback)
         callback.assert_called_once_with({"url": "https://example.invalid/source", "attempt": 1,
             "nextAttempt": 2, "maxAttempts": 4, "delay": 2, "elapsed": 0,
@@ -351,7 +349,7 @@ class TestGet(unittest.TestCase):
             return original_get(outcome, *args, **kwargs)
 
         try:
-            with patch.object(tft_http.queue.Queue, "get", new=wait):
+            with patch.object(tft_update.queue.Queue, "get", new=wait):
                 result = self.get(opener, max_attempts=2)
             self.assertEqual(result.body, b"winner")
         finally:
@@ -400,10 +398,10 @@ class TestGet(unittest.TestCase):
             raise queue.Empty
 
         try:
-            with patch.object(tft_http, "_worker_slots", NonblockingSlots()), \
-                 patch.object(tft_http.queue.Queue, "get", side_effect=deadline):
+            with patch.object(tft_update, "_worker_slots", NonblockingSlots()), \
+                 patch.object(tft_update.queue.Queue, "get", side_effect=deadline):
                 for _ in range(5):
-                    with self.assertRaises(tft_http.FetchError):
+                    with self.assertRaises(tft_update.FetchError):
                         self.get(blocked, max_attempts=1)
                 self.assertEqual(len(calls), 2)
         finally:
@@ -431,7 +429,7 @@ class TestTftFetchIntegration(unittest.TestCase):
         try:
             with patch.object(tft.urllib.request, "urlopen", side_effect=[
                     URLError(socket.gaierror(socket.EAI_NONAME, "temporary name lookup")), Reply(b"original bytes")]) as opener, \
-                 patch.object(tft_http.time, "sleep") as sleep, patch("builtins.print") as logged:
+                 patch.object(tft_update.time, "sleep") as sleep, patch("builtins.print") as logged:
                 self.assertEqual(tft.fetch_bytes(url), b"original bytes")
         finally:
             tft._FETCH_PROGRESS.reset(token)
@@ -456,7 +454,7 @@ class TestTftFetchIntegration(unittest.TestCase):
 
     def test_fetch_source_json_failure_is_not_retried(self):
         with patch.object(tft.urllib.request, "urlopen", return_value=Reply(b"not JSON")) as opener, \
-             patch.object(tft_http.time, "sleep") as sleep:
+             patch.object(tft_update.time, "sleep") as sleep:
             with self.assertRaises(json.JSONDecodeError):
                 tft.fetch_source("https://example.invalid/source")
         self.assertEqual(opener.call_count, 1)
@@ -3103,7 +3101,7 @@ class TestRefreshPublication(unittest.TestCase):
         with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
              patch.object(tft.urllib.request, "urlopen", side_effect=URLError(
                  socket.gaierror(socket.EAI_NONAME, "DNS failure with token=secret"))) as opener, \
-             patch.object(tft_http.time, "sleep"), patch.object(tft, "warm") as warm:
+             patch.object(tft_update.time, "sleep"), patch.object(tft, "warm") as warm:
             with self.assertRaises(SystemExit) as caught:
                 tft.cmd_refresh(self.args)
         self.assertEqual(caught.exception.code, 75)
@@ -3153,7 +3151,7 @@ class TestRefreshPublication(unittest.TestCase):
         self.assertEqual((blocker["targetPatch"], blocker["failedPhase"]), ("18.2", "validating"))
         with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
              patch.object(tft.urllib.request, "urlopen", side_effect=URLError(TimeoutError("network"))), \
-             patch.object(tft_http.time, "sleep"):
+             patch.object(tft_update.time, "sleep"):
             with self.assertRaises(SystemExit):
                 tft.cmd_refresh(self.args)
         state = tft.refresh_state()
@@ -3208,7 +3206,7 @@ class TestRefreshPublication(unittest.TestCase):
         with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
              patch.object(tft.urllib.request, "urlopen", side_effect=HTTPError(
                  "https://example.invalid/source", 429, "limited", {"Retry-After": "600"}, None)) as opener, \
-             patch.object(tft_http.time, "sleep") as sleep:
+             patch.object(tft_update.time, "sleep") as sleep:
             with self.assertRaises(SystemExit) as caught:
                 tft.cmd_refresh(self.args)
         state = tft.refresh_state()

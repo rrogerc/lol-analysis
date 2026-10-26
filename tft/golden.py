@@ -179,7 +179,7 @@ def gen_fights(snap, cached):
     return cases
 
 
-def gen_cells(snap, cached):
+def gen_cells(cached):
     out = {}
     for (slug, key), cell in sorted(cached.items()):
         out[f"{slug}/{key}"] = {
@@ -215,7 +215,7 @@ def cmd_gen(args):
                       f, separators=(",", ":"))
         print(f"fights.json: {len(cases)} fights in {time.time() - t0:.1f}s")
     if args.only in (None, "cells"):
-        cells = gen_cells(snap, cached)
+        cells = gen_cells(cached)
         cell_prov = with_history(prov, "cells.json")
         with open(os.path.join(GOLDEN_DIR, "cells.json"), "w") as f:
             json.dump({"kind": "tft-cells", "provenance": cell_prov, "cells": cells},

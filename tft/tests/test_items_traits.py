@@ -21,9 +21,7 @@ from tft.tests.helpers import (
     ally,
     carry_result,
     caster,
-    enemy,
     events,
-    fight,
     fixture,
     flat,
     flat_calc,
@@ -34,12 +32,7 @@ from tft.tests.helpers import (
     plain_spec,
     rows,
     spec_for,
-    trace,
 )
-
-champion_match = match
-match_events = combat_events
-solo_events = events
 
 
 def controlled_brambleback(*, duration=1.1, incoming=0, interval=1,
@@ -432,12 +425,14 @@ class TestCompositionTraits(unittest.TestCase):
         self.assertEqual(self.trait(board, "Spellweaver")["coverage"], "partial")
         self.assertTrue(any("opening member AP" in note for note in self.trait(board, "Spellweaver")["coverageNotes"]))
         self.assertGreater(self.effect(board, "Karma", "Spellweaver")["apPerCast"], 0)
-        for name, omission in (("Flora Fatalis", "contribute zero"),
-                               ("Thornmaiden", "six plants")):
-            trait = self.trait(board, name)
-            self.assertTrue(trait["modeled"])
-            self.assertEqual(trait["coverage"], "partial")
-            self.assertTrue(any(omission in note for note in trait["coverageNotes"]))
+        flora = self.trait(board, "Flora Fatalis")
+        self.assertTrue(flora["modeled"])
+        self.assertEqual(flora["coverage"], "supported")
+        self.assertEqual(flora["coverageNotes"], [])
+        thornmaiden = self.trait(board, "Thornmaiden")
+        self.assertTrue(thornmaiden["modeled"])
+        self.assertEqual(thornmaiden["coverage"], "partial")
+        self.assertTrue(any("six plants" in note for note in thornmaiden["coverageNotes"]))
         self.assertEqual(self.trait(board, "Greenfather")["coverage"], "unmodeled")
         self.assertTrue(any("cultivated hexes" in note for note in self.trait(board, "Greenfather")["coverageNotes"]))
         specials = self.board("Elder Dragon", "Draven")
@@ -535,8 +530,6 @@ class TestFormDependentItemSpecs(unittest.TestCase):
             with self.subTest(unit=name):
                 spec = tft.item_spec(SNAP, "DA_SunfireCape", effects, SNAP.unit(name))
                 self.assertEqual(spec["sunfireAura"], [0.01, 10.0, 2.0, 2.0])
-                self.assertNotIn("burnAura", spec)
-                self.assertNotIn("burnAuraByRange", spec)
         ranged = tft.item_spec(SNAP, "DA_SunfireCape", effects, SNAP.unit("Ashe"))
         self.assertNotIn("sunfireAura", ranged)
 
@@ -566,7 +559,7 @@ class TestProfileAndCellForms(unittest.TestCase):
     def test_malformed_deferred_aura_fields_fail_during_parsing(self):
         unit = SNAP.unit("Nidalee")
         for field, value in (("sunderAuraByRange", [1]), ("shredAuraByRange", [1.1, 2]),
-                             ("burnAuraByRange", [.01, 0, 2]), ("ionicSparkByRange", [1, math.nan])):
+                             ("ionicSparkByRange", [1, math.nan])):
             spec = tft.cell_spec(SNAP, unit, 2, "clump", [], tft.dummies_for(SNAP), pressure=False)
             spec["items"] = [{"api": "invalid-aura", "name": "invalid-aura", "unique": False,
                               "stats": [], "adds": [], field: value}]
@@ -1645,7 +1638,6 @@ class TestItemStatsFixes(unittest.TestCase):
                     self.assertEqual(item["sunfireAura"], [0.01, 10.0, 2.0, 2.0])
                 fx = self.engine.compose_fx(spec)
                 self.assertEqual(fx["sunfireAuras"], [(0.01, 10.0, 2.0, 2.0)] * count)
-                self.assertIsNone(fx["burnAura"])
 
     def test_sunfire_range_uses_equipped_adaptor_form(self):
         for item, form, enabled in (("DA_Deathblade", "AD", True),
@@ -1671,14 +1663,6 @@ class TestItemStatsFixes(unittest.TestCase):
                 spec = self.spec("Sett", items=("DA_SunfireCape",))
                 spec["items"][0]["sunfireAura"] = deepcopy(values)
                 self.engine.compose_fx(spec)
-
-    def test_legacy_synthetic_burn_aura_remains_supported(self):
-        spec = self.spec("Sett")
-        spec["items"].append({"api": "synthetic-aura", "name": "Synthetic aura",
-                              "stats": [], "burnAura": [0.01, 3.0]})
-        fx = self.engine.compose_fx(spec)
-        self.assertEqual(fx["burnAura"], (0.01, 3.0))
-        self.assertEqual(fx["sunfireAuras"], [])
 
     def test_red_buff_requires_attack_or_spell_while_morello_accepts_unit_damage(self):
         for api, requires_tags in (("DA_RedBuff", True), ("DA_Morellonomicon", False)):
@@ -1799,36 +1783,31 @@ class TestChampionManaReave(unittest.TestCase):
 class TestDummyManaReave(unittest.TestCase):
     def test_low_mana_dummy_pays_the_full_increase_then_returns_to_base_cost(self):
         result = dummy_fight(sentinel())
-        self.assertEqual([hit[0] for hit in solo_events(result, "take", "magic")],
+        self.assertEqual([hit[0] for hit in events(result, "take", "magic")],
                          [4.0, 7.0])
 
     def test_empty_dummy_bar_keeps_reave(self):
         result = dummy_fight(sentinel(), first_attack=1, duration=5.1)
-        self.assertEqual([hit[0] for hit in solo_events(result, "take", "magic")], [5.0])
+        self.assertEqual([hit[0] for hit in events(result, "take", "magic")], [5.0])
 
     def test_full_dummy_bar_and_ionic_use_next_cost_once(self):
         result = dummy_fight(sentinel(land=0, spark=True), initial=20,
                              first_attack=0.5, duration=4.6)
-        self.assertEqual([hit[0] for hit in solo_events(result, "take", "magic")],
+        self.assertEqual([hit[0] for hit in events(result, "take", "magic")],
                          [1.5, 4.5])
         self.assertEqual([(hit[0], hit[2]) for hit in
-                          solo_events(result, "damage", "ionic spark")],
+                          events(result, "damage", "ionic spark")],
                          [(1.5, 30.0), (4.5, 20.0)])
 
     def test_repeated_dummy_reaves_do_not_accumulate_cost(self):
         result = dummy_fight(sentinel(repeat=True), duration=4.1)
-        self.assertEqual([hit[0] for hit in solo_events(result, "take", "magic")], [4.0])
-        self.assertEqual([hit[0] for hit in solo_events(result, "cast")],
+        self.assertEqual([hit[0] for hit in events(result, "take", "magic")], [4.0])
+        self.assertEqual([hit[0] for hit in events(result, "cast")],
                          [0.0, 1.0, 2.0, 3.0, 4.0])
 
     def test_fixed_interval_fixtures_keep_their_declared_spell_times(self):
         result = dummy_fight(sentinel(repeat=True), periodic=True, duration=4.6)
-        self.assertEqual([hit[0] for hit in solo_events(result, "take", "magic")],
-                         [0.5, 2.5, 4.5])
-        shared = fight([sentinel(repeat=True)], [
-            enemy(ability=100, physicalShare=0, manaMax=20,
-                  castInterval=2, castStart=0.5)], duration=4.6)
-        self.assertEqual([hit["time"] for hit in trace(shared, "enemySpell")],
+        self.assertEqual([hit[0] for hit in events(result, "take", "magic")],
                          [0.5, 2.5, 4.5])
 
 
@@ -1880,18 +1859,19 @@ class TestPrimalBear(unittest.TestCase):
             with self.subTest(primal_damage=primal_damage):
                 member = ally("Vi", ad=primal_damage)
                 member["spec"]["traits"] = [blessing("bear")]
-                result = fight([ally("Ashe", ad=89), member], [enemy(hp=100)], duration=0.1)
-                self.assertEqual([hit["amount"] for hit in trace(result, "damage", name="primal bear")], expected)
-                self.assertTrue(all(hit["source"] == 1 for hit in trace(result, "damage", name="primal bear")))
+                result = match([ally("Ashe", ad=89), member], [ally(hp=100)], duration=0.1)
+                hits = combat_events(result, "damage", name="primal bear")
+                self.assertEqual([hit["amount"] for hit in hits], expected)
+                self.assertTrue(all(hit["source"] == 1 for hit in hits))
 
     def test_execute_bypasses_new_shield_without_crediting_unused_shield_health(self):
         member = ally("Vi", ad=89)
         member["spec"]["traits"] = [blessing("bear")]
         target = ally("Leona", hp=100, fx=[{"shieldAtHp": [0.15, 1, 10, False]}])
-        result = champion_match([member], [target], duration=0.1)
+        result = match([member], [target], duration=0.1)
         self.assertEqual(result["damage"], 100)
         self.assertFalse(result["enemies"][0]["alive"])
-        self.assertEqual([hit["amount"] for hit in match_events(result, "damage", name="primal bear")], [11])
+        self.assertEqual([hit["amount"] for hit in combat_events(result, "damage", name="primal bear")], [11])
 
 
 
@@ -1994,7 +1974,7 @@ class TestAuditedClassTraits(unittest.TestCase):
         raw = next(trait for trait in self.snap.raw["traits"] if trait["apiName"] == api)
         self.assertIn("while Shielded", raw["effects"][2]["desc"])
         for column, shield, durability in ((1, .18, 0), (2, .32, 0), (3, .42, .05)):
-            effect = tft.trait_spec(self.snap, api, column, self.hand, self.snap.unit("Rakan"))
+            effect = tft.trait_spec(self.snap, api, column, self.hand)
             self.assertNotIn("durability", effect)
             self.assertAlmostEqual(effect["durabilityWhileShielded"], durability)
             self.assertEqual(effect["shieldAtStart"], [shield, 10])
@@ -2032,7 +2012,7 @@ class TestHunterDamageAmp(unittest.TestCase):
     def test_stable_primary_grants_amp_to_secondary_ability_damage_after_four_seconds(self):
         snap = tft.load_snapshot(18, "18.1d")
         unit = snap.unit("Sivir")
-        effect = tft.trait_spec(snap, "DA_18_Hunter", 1, tft.load_trait_effects(18), unit)
+        effect = tft.trait_spec(snap, "DA_18_Hunter", 1, tft.load_trait_effects(18))
         dummy = generic_targets(target_count=3)
         spec = tft.cell_spec(snap, unit, 2, "clump", [], dummy, pressure=False)
         spec["traits"] = [effect]
@@ -2100,7 +2080,7 @@ def spellweaver_member(api, *, points=1.0, tagged=True, fast=False):
 class TestSharedSpellweaver(unittest.TestCase):
     def test_actual_casts_grant_self_once_and_every_other_member_once(self):
         for points in (1.0, 2.0):
-            for mode in ("standalone", "team", "symmetric"):
+            for mode in ("standalone", "symmetric"):
                 with self.subTest(points=points, mode=mode):
                     members = [spellweaver_member("TFT18_Ahri", points=points),
                                spellweaver_member("TFT18_Karma", points=points)]
@@ -2110,43 +2090,25 @@ class TestSharedSpellweaver(unittest.TestCase):
                         _, result = ENGINE.simulate(spec, True)
                         self.assertEqual(result["total"], 100 + points)
                         continue
-                    if mode == "team":
-                        result = fight(members, [enemy(hp=100000)], duration=0.4)
-                        amounts = [row["damage"] for row in result["allies"]]
-                    else:
-                        result = champion_match(members, [ally(hp=100000)], duration=0.4)
-                        amounts = [row["damage"] for row in result["allies"]]
+                    result = match(members, [ally(hp=100000)], duration=0.4)
+                    amounts = [row["damage"] for row in result["allies"]]
                     self.assertEqual(amounts, [100 + 2 * points] * 2)
 
     def test_generic_own_cast_ap_is_neither_a_spellweaver_emitter_nor_recipient(self):
         members = [spellweaver_member("TFT18_Ahri"), spellweaver_member("TFT18_Karma"),
                    spellweaver_member("TFT18_Leona", tagged=False)]
-        for mode in ("team", "symmetric"):
-            with self.subTest(mode=mode):
-                if mode == "team":
-                    result = fight(members, [enemy(hp=100000)], duration=0.4)
-                    amounts = [row["damage"] for row in result["allies"]]
-                else:
-                    result = champion_match(members, [ally(hp=100000)], duration=0.4)
-                    amounts = [row["damage"] for row in result["allies"]]
-                self.assertEqual(amounts, [102, 102, 101])
+        result = match(members, [ally(hp=100000)], duration=0.4)
+        amounts = [row["damage"] for row in result["allies"]]
+        self.assertEqual(amounts, [102, 102, 101])
 
     def test_unequal_cast_cadences_share_actual_events_without_a_time_estimate(self):
         members = [spellweaver_member("TFT18_Ahri", fast=True),
                    spellweaver_member("TFT18_Karma")]
-        for mode in ("team", "symmetric"):
-            with self.subTest(mode=mode):
-                if mode == "team":
-                    result = fight(members, [enemy(hp=100000)], duration=1.6)
-                    casts = trace(result, "cast", source=0)
-                    self.assertEqual([row["time"] for row in casts], [0, 1.25])
-                    amounts = [row["damage"] for row in result["allies"]]
-                else:
-                    result = champion_match(members, [ally(hp=100000)], duration=1.6)
-                    casts = match_events(result, "cast", source=0)
-                    self.assertEqual([row["time"] for row in casts], [0, 1.25])
-                    amounts = [row["damage"] for row in result["allies"]]
-                self.assertEqual(amounts, [102 + 103, 102])
+        result = match(members, [ally(hp=100000)], duration=1.6)
+        casts = combat_events(result, "cast", source=0)
+        self.assertEqual([row["time"] for row in casts], [0, 1.25])
+        amounts = [row["damage"] for row in result["allies"]]
+        self.assertEqual(amounts, [102 + 103, 102])
 
     def test_dead_spellweaver_receives_no_later_cast_bonus(self):
         members = [spellweaver_member("TFT18_Ahri", fast=True),
@@ -2154,10 +2116,12 @@ class TestSharedSpellweaver(unittest.TestCase):
         recipient = members[1]
         recipient["lane"] = 0
         recipient["spec"]["kits"]["base"]["hpStar"] = 1
-        result = fight(members, [enemy(ad=10, lane=0, **{"as": 1}, attackStart=0.1)], duration=1.6)
+        attacker = ally(ad=10, lane=0, attack_speed=1)
+        attacker["spec"]["unit"]["timing"] = {"base": {"attackDelay": 0.1}}
+        result = match(members, [attacker], duration=1.6)
         self.assertFalse(result["allies"][1]["alive"])
-        self.assertEqual([row["time"] for row in trace(result, "traitAP", source=1)], [0])
-        self.assertEqual([row["time"] for row in trace(result, "cast", source=0)], [0, 1.25])
+        self.assertEqual([row["time"] for row in combat_events(result, "traitAP", source=1)], [0])
+        self.assertEqual([row["time"] for row in combat_events(result, "cast", source=0)], [0, 1.25])
 
 
 def solar_member(*, mr=100, magic=0.2, true=0.2, amp=0.0, hp=100000):
@@ -2176,18 +2140,15 @@ class TestSolarTrueConversion(unittest.TestCase):
         for mr in (0, 100):
             for amp in (0.0, 0.5):
                 expected = 100 * (1 + amp) * (1 + 0.2 * 100 / (100 + mr) + 0.2)
-                for mode in ("standalone", "team", "symmetric"):
+                for mode in ("standalone", "symmetric"):
                     with self.subTest(mr=mr, amp=amp, mode=mode):
                         member = solar_member(mr=mr, amp=amp)
                         if mode == "standalone":
                             _, result = ENGINE.simulate(member["spec"], True)
                             total = result["total"]
                             self.assertEqual(set(result["breakdown"]), {"auto", "solar", "solar true"})
-                        elif mode == "team":
-                            result = fight([member], [enemy(mr=mr, hp=100000)], duration=0.1)
-                            total = result["damage"]
                         else:
-                            result = champion_match([member], [ally(mr=mr, hp=100000)], duration=0.1)
+                            result = match([member], [ally(mr=mr, hp=100000)], duration=0.1)
                             total = result["damage"]
                         self.assertAlmostEqual(total, expected)
 
@@ -2209,10 +2170,10 @@ class TestSolarTrueConversion(unittest.TestCase):
                         self.assertFalse(events(result, "damage", target=1))
                         true_total = sum(row[2] for row in events(result, "damage", "solar true"))
                     else:
-                        result = champion_match([member], [ally(hp=hp, mr=mr), ally(hp=100000)], duration=0.1)
+                        result = match([member], [ally(hp=hp, mr=mr), ally(hp=100000)], duration=0.1)
                         self.assertEqual(result["damage"], hp)
-                        self.assertFalse([row for row in match_events(result, "damage") if row["target"] == 1])
-                        true_total = sum(row["amount"] for row in match_events(result, "damage", name="solar true"))
+                        self.assertFalse([row for row in combat_events(result, "damage") if row["target"] == 1])
+                        true_total = sum(row["amount"] for row in combat_events(result, "damage", name="solar true"))
                     self.assertEqual(true_total, expected_true)
 
     def test_absent_and_zero_true_fraction_preserve_existing_standalone_output(self):
@@ -2231,8 +2192,8 @@ class TestSolarTrueConversion(unittest.TestCase):
 PRIMAL = "DA_Primal18"
 
 
-def trait(api, column, name="Cinderling"):
-    return tft.trait_spec(SNAP, api, column, tft.load_trait_effects(SNAP.set_no), SNAP.unit(name))
+def trait(api, column):
+    return tft.trait_spec(SNAP, api, column, tft.load_trait_effects(SNAP.set_no))
 
 
 class TestTraitTimingResolution(unittest.TestCase):
@@ -2271,14 +2232,14 @@ class TestNativeTraitTiming(unittest.TestCase):
         spec["kits"]["base"]["stats"].update(mana=10**9, initialMana=0)
         ordinary = ENGINE.simulate(spec, False)
         marked = deepcopy(spec)
-        marked["traits"] = [trait(RIFTBEAST, 1, "Sentinel")]
+        marked["traits"] = [trait(RIFTBEAST, 1)]
         self.assertTrue(marked["traits"][0]["riftbeast"])
         self.assertEqual(ENGINE.simulate(marked, False), ordinary)
 
 
     def test_tiger_speed_has_no_early_uptime_and_triggers_once_at_six_seconds(self):
         spec = plain_spec()
-        spec["traits"] = [trait(PRIMAL, 1, "Sivir")]
+        spec["traits"] = [trait(PRIMAL, 1)]
         spec["duration"] = 15.1
         opening, result = ENGINE.simulate(spec, True)
         self.assertEqual(opening["as"], 1.0)
@@ -2302,7 +2263,7 @@ class TestNativeTraitTiming(unittest.TestCase):
 
     def test_shared_match_uses_the_same_delayed_trait_clock(self):
         member = ally(ad=100, attack_speed=1)
-        member["spec"]["traits"] = [trait(PRIMAL, 1, "Sivir")]
+        member["spec"]["traits"] = [trait(PRIMAL, 1)]
         before = deepcopy(member)
         result = match([member], [ally(hp=10000)], duration=6.8)
         attacks = [event for event in result["trace"] if event["side"] == "ally" and event["kind"] == "damage"

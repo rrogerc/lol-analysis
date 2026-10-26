@@ -69,7 +69,6 @@ BUILDS_DATA_DIR = os.path.join(BASE_DIR, "lol", "data", "builds")
 KITS_DIR = os.path.join(BUILDS_DATA_DIR, "kits")
 CHAMPIONS_DIR = os.path.join(BUILDS_DATA_DIR, "champions")
 ITEM_EFFECTS_FILE = os.path.join(BUILDS_DATA_DIR, "item-effects.json")
-ITEM_EFFECTS_PATH = ITEM_EFFECTS_FILE
 
 DDRAGON_CHAMP_INDEX = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json"
 DDRAGON_CHAMP = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion/{cid}.json"
@@ -2016,13 +2015,6 @@ def _cut(lst, keep, order):
     del lst[keep:]
 
 
-def _keep_best(lst, keep, order):
-    """Bound a running result list: sort and cut it to `keep` once it has
-    grown past 4x that, so memory stays flat over millions of builds."""
-    if len(lst) > 4 * keep:
-        _cut(lst, keep, order)
-
-
 class _Bounds:
     """Every result list's keep-th best row, flattened into a table of
     doubles (a list, or a multiprocessing.RawArray the workers inherit).
@@ -2072,11 +2064,6 @@ class _Bounds:
     def target(self, i):
         base = i * self.WIDTH
         return self.table[base], self.table[base + 1], self.table[base + 2]
-
-    def overall_bound(self, i):
-        base = i * self.WIDTH
-        ids = [int(self.table[base + 2 + j]) for j in range(6)]
-        return self.table[base], self.table[base + 1], [x for x in ids if x]
 
 
 # (the slack on the kill-time cuts, where a stopped fight must belong to a

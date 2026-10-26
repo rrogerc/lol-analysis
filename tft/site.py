@@ -110,14 +110,9 @@ def _endpoints(inventory):
     """Validate the inventory and derive its complete API surface."""
     required = {"baselineCells", "leaderboardSelections"}
     optional = {"traitFlex", "earlyComps"}
-    legacy = {"compositionArchived", "compositionContexts"}
     if (not isinstance(inventory, dict) or not required <= set(inventory)
-            or not set(inventory) <= required | optional | legacy
+            or not set(inventory) <= required | optional
             or any(key in inventory and inventory[key] is not True for key in optional)):
-        raise ValueError("invalid TFT site inventory")
-    if "compositionArchived" in inventory and inventory["compositionArchived"] is not True:
-        raise ValueError("invalid TFT site inventory")
-    if "compositionContexts" in inventory and inventory["compositionContexts"] != []:
         raise ValueError("invalid TFT site inventory")
     cells = inventory["baselineCells"]
     leaderboards = inventory["leaderboardSelections"]
@@ -126,7 +121,7 @@ def _endpoints(inventory):
     for pair in cells:
         if (not isinstance(pair, list) or len(pair) != 2
                 or not isinstance(pair[0], str) or not _SLUG.fullmatch(pair[0])
-                or pair[0] in ("compositions", "leaderboard")
+                or pair[0] == "leaderboard"
                 or not isinstance(pair[1], str) or not _KEY.fullmatch(pair[1])
                 or pair[1] == "cores"):
             raise ValueError("invalid TFT champion endpoint")
@@ -187,8 +182,6 @@ def _load(descriptor, *, directory=None):
     required = ("siteGeneration", "baselineRevision", "manifestHash")
     if any(not isinstance(descriptor.get(key), str) for key in required):
         raise ValueError("incomplete TFT site descriptor")
-    if "compositionRevision" in descriptor and not isinstance(descriptor["compositionRevision"], str):
-        raise ValueError("invalid TFT site descriptor")
     if not re.fullmatch(r"g-[0-9a-f]{64}", descriptor["siteGeneration"]):
         raise ValueError("invalid TFT site generation")
     if not _HASH.fullmatch(descriptor["manifestHash"]):
@@ -206,8 +199,6 @@ def _load(descriptor, *, directory=None):
     if (not isinstance(manifest, dict) or manifest.get("schema") != SCHEMA
             or manifest.get("siteGeneration") != descriptor["siteGeneration"]
             or manifest.get("baselineRevision") != descriptor["baselineRevision"]
-            or ("compositionRevision" in descriptor and "compositionRevision" in manifest
-                and manifest.get("compositionRevision") != descriptor["compositionRevision"])
             or not isinstance(manifest.get("publisherHash"), str)
             or not _HASH.fullmatch(manifest["publisherHash"])):
         raise ValueError("TFT site manifest identity does not match its publication")
@@ -215,16 +206,8 @@ def _load(descriptor, *, directory=None):
     if "presentationHash" in manifest and (
             not isinstance(presentation, str) or not _HASH.fullmatch(presentation)):
         raise ValueError("invalid TFT site presentation hash")
-    if "compositionRevision" in manifest:
-        if not isinstance(manifest["compositionRevision"], str):
-            raise ValueError("TFT site manifest identity does not match its publication")
-        legacy_inputs = [manifest["baselineRevision"], manifest["compositionRevision"], manifest["publisherHash"]]
-        if presentation is not None:
-            legacy_inputs.append(presentation)
-        expected_generation = "g-" + hashlib.sha256(_json_bytes(legacy_inputs)).hexdigest()
-    else:
-        expected_generation = _generation(manifest["baselineRevision"],
-                                          manifest["publisherHash"], presentation)
+    expected_generation = _generation(manifest["baselineRevision"],
+                                      manifest["publisherHash"], presentation)
     if expected_generation != descriptor["siteGeneration"]:
         raise ValueError("TFT site generation does not match its inputs")
     expected = _endpoints(manifest.get("inventory"))

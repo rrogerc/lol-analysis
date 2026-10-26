@@ -1,7 +1,7 @@
 //! The builds engine: stat sheets, the combat simulation and the
 //! enumeration's inner loop, compiled. builds.py keeps the data loading,
 //! the parent process of the enumeration, the cache and the CLI, and calls
-//! in here through `simulate`, `resolve_sheet`, `geo_mean` and `Ctx` — and,
+//! in here through `simulate`, `resolve_sheet`, `geo_mean` and `Ctx`, and,
 //! for the Survival tier (a build that takes the damage), `survive` and
 //! `SurvCtx`.
 //!
@@ -34,7 +34,7 @@ fn ranks_of(d: &Bound<'_, PyDict>) -> PyResult<Ranks> {
     Ok(Ranks { q: reqi(d, "Q")?, w: reqi(d, "W")?, e: reqi(d, "E")?, r: reqi(d, "R")? })
 }
 
-/// One fight vs a stat dummy — see builds.simulate for the contract.
+/// One fight vs a stat dummy: see builds.simulate for the contract.
 #[pyfunction]
 #[allow(clippy::too_many_arguments)]
 #[pyo3(signature = (sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr, duration,
@@ -91,13 +91,6 @@ fn geo_mean(xs: Vec<f64>) -> f64 {
     fsum::geo_mean(&xs)
 }
 
-/// Correctly rounded sum, math.fsum's bits.
-#[pyfunction]
-#[pyo3(name = "fsum")]
-fn fsum_py(xs: Vec<f64>) -> f64 {
-    fsum::fsum(xs)
-}
-
 /// The tank kits whose defensive mechanics defense.rs models (the Survival
 /// tier's defenders): a kit with "role": "tank" needs its slug here.
 const DEFENDERS: [&str; 1] = ["drmundo"];
@@ -107,7 +100,6 @@ fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(simulate, m)?)?;
     m.add_function(wrap_pyfunction!(resolve_sheet, m)?)?;
     m.add_function(wrap_pyfunction!(geo_mean, m)?)?;
-    m.add_function(wrap_pyfunction!(fsum_py, m)?)?;
     m.add_class::<enumerate::Ctx>()?;
     m.add_function(wrap_pyfunction!(survive::survive, m)?)?;
     m.add_class::<survive::SurvCtx>()?;
@@ -125,6 +117,5 @@ fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
         }
     }
     m.add("GENERATED_HASHES", generated)?;
-    m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

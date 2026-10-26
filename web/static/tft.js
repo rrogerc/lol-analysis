@@ -25,9 +25,9 @@ const tflex = { catalog: null, metaReq: 0, metaLoading: null, controller: null, 
                 lobbyProfile: null, lobbyPlayers: 7, lobbyDevelopment: 0.5, lobbyOverrides: {}, lobbySearch: "", lobbyReq: 0,
                 lobbySwapBoards: new Map(),
                 cards: new Map(), openBoards: new Set(), pending: false, error: null };
-const TFT_CLASS = { all: "every unit", carry: "carries: marksmen, casters and specialists — the dummies never hit back",
-                    fighter: "fighters and assassins — the dummies hit back, ranked by kill time then damage before dying",
-                    tank: "tanks — the dummies hit back, ranked by how long the unit holds them" };
+const TFT_CLASS = { all: "every unit", carry: "carries: marksmen, casters and specialists; the dummies never hit back",
+                    fighter: "fighters and assassins: the dummies hit back, ranked by kill time then damage before dying",
+                    tank: "tanks: the dummies hit back, ranked by how long the unit holds them" };
 function tftThreatFor(unit, requested = tstate.threat) {
   return unit?.objective === "tank" && tstate.meta?.tankThreats?.some(t => t.key === requested)
     ? requested : "mixed";
@@ -87,7 +87,7 @@ function tftChampionTooltip(unit, entry = null) {
   const subtitle = [entry && `${entry.star}★`, `${unit.cost} cost`, entry?.form && `${entry.form} form`,
     entry?.role || unit.role, entry && Number.isFinite(entry.range) && `${entry.range} range`].filter(Boolean).join(" · ");
   return [tftTooltipHead(unit.icon, unit.name, subtitle),
-    tftText("p", `Ability: ${unit.ability || "—"}`),
+    tftText("p", `Ability: ${unit.ability || "\u2014"}`),
     ...tftUnitTraits(unit).map(trait => {
       const row = document.createElement("div");
       row.className = "tft-tooltip-trait";
@@ -291,7 +291,7 @@ function renderTftFight(unit, scenario = null, build = null) {
     : `${formation.slots.length} test targets: ${summary}. ` +
       (mainCount ? `${mainCount === 1 ? "The main tank has" : "The main tanks have"} fixed benchmark HP and resistances. ` : "") +
       `${medianNote} ${coverage}`;
-  const number = n => Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
+  const number = n => Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "\u2014";
   const statRow = (label, value) => {
     const row = document.createElement("div");
     row.className = "tft-dummy";
@@ -507,7 +507,7 @@ function tftLeaderboardGap(entry) {
   const comparable = p?.status === "comparable" && p.metric in labels
     && Number.isFinite(p.lossPct) && p.lossPct >= 0;
   const percent = comparable ? p.lossPct === 0 ? "0.0%"
-    : p.lossPct < .1 ? "<0.1%" : `${p.lossPct.toFixed(1)}%` : "—";
+    : p.lossPct < .1 ? "<0.1%" : `${p.lossPct.toFixed(1)}%` : "\u2014";
   const unavailable = { noClear: "Does not clear", shortSurvival: "Below regular limit",
     belowCap: "Below best limit", unavailable: "Unavailable" };
   const detail = comparable ? labels[p.metric] : unavailable[p?.status] || "Unavailable";
@@ -555,8 +555,7 @@ function renderTftMode() {
 }
 
 async function setTftMode(mode, { load = true, focus = false } = {}) {
-  if (mode === "compositions") mode = "leaderboard";
-  if (!["builds", "leaderboard", "early", "traits"].includes(mode)) return;
+  mode = ["builds", "leaderboard", "early", "traits"].includes(mode) ? mode : "builds";
   if (mode !== tstate.mode) tstate.opening = null;
   if (mode !== "builds" && tstate.mode === "builds") ++tstate.req;
   if (mode !== "leaderboard" && tstate.mode === "leaderboard") {
@@ -689,7 +688,7 @@ function renderTftLeaderboard() {
     if (label === "2nd BIS gap") th.title = "Performance lost when using this champion’s second-best distinct three-item build instead of BIS.";
     return th;
   }));
-  const number = value => Number.isFinite(value) ? Math.round(value).toLocaleString("en-US") : "—";
+  const number = value => Number.isFinite(value) ? Math.round(value).toLocaleString("en-US") : "\u2014";
   document.querySelector("#tft-board-table tbody").replaceChildren(...rows.map(r => {
     const row = document.createElement("tr"), unit = units.get(r.unit), p = r.performance;
     row.dataset.unit = r.unit;
@@ -861,7 +860,7 @@ async function tftCopyTeamCode(code) {
   }
 }
 
-function tftCompositionCopyButton(composition, planner = tflex.catalog?.teamPlanner || tflex.data?.teamPlanner || tearly.data?.teamPlanner || null) {
+function tftCompositionCopyButton(composition, planner = tstate.meta?.teamPlanner || tearly.data?.teamPlanner || tflex.catalog?.teamPlanner || null) {
   const control = document.createElement("div");
   control.className = "tft-comp-copy";
   const button = tftText("button", "Copy to TFT");
@@ -2364,7 +2363,7 @@ function cancelTftEarly() {
 
 // ---------------- early comps: interface ----------------
 const tftEarlyNumber = (value, digits = 0) => Number.isFinite(value)
-  ? value.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—";
+  ? value.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "\u2014";
 const tftEarlyTime = value => `${tftEarlyNumber(value, 1)}s`;
 const tftEarlyWins = board => `${board.metrics.benchmarkWins} / ${board.metrics.benchmarkCount}`;
 function tftEarlyTitle(board) {
@@ -2719,7 +2718,7 @@ const STAT_LABEL = { adPct: v => `+${Math.round(v * 100)}% AD`, ap: v => `+${Mat
 function renderTftPool() {
   const m = tstate.meta;
   document.getElementById("tpool-title").textContent =
-    `Item pool — ${m.items.length} craftable completed items (set ${m.set}, patch ${m.patch})`;
+    `Item pool: ${m.items.length} craftable completed items (set ${m.set}, patch ${m.patch})`;
   document.getElementById("tpool-chips").replaceChildren(...m.items.map(it => {
     const s = document.createElement("span");
     s.className = "chip" + (it.modeled.length ? "" : " dim");
@@ -2731,7 +2730,7 @@ function renderTftPool() {
       s.append(t);
     }
     const stats = Object.entries(it.stats).map(([k, v]) => STAT_LABEL[k] ? STAT_LABEL[k](v) : `${k} ${v}`);
-    s.title = stats.join(", ") + (it.note ? ` — ${it.note}` : "");
+    s.title = stats.join(", ") + (it.note ? `: ${it.note}` : "");
     return s;
   }));
   const note = document.getElementById("tpool-note");
@@ -2972,7 +2971,7 @@ function tftCoreLoss(p) {
 }
 
 function tftCoreOutcome(p) {
-  if (!p) return "—";
+  if (!p) return "\u2014";
   if (["aliveTime", "stressAliveTime", "capped"].includes(p.metric)) {
     const duration = tstate.data?.scenario?.duration || 60;
     const held = (time, capped) => !capped && Number.isFinite(time) && time < duration && time.toFixed(1) === duration.toFixed(1)
@@ -2993,18 +2992,6 @@ function tftCoreRequirement(requiredFor, secondCopy = false) {
   const benchmark = { clear: "clear all enemies", survivalLimit: "reach the regular survival limit",
     bothSurvivalLimits: "reach both survival limits" }[requiredFor];
   return benchmark ? `${secondCopy ? "Second copy needed" : "Needed"} to ${benchmark}` : null;
-}
-
-function tftCoreExclusionVerdict(item, threshold, secondCopy = false) {
-  const build = secondCopy ? item.fewerCopies : item.without;
-  if (!build) return "No legal alternative to compare";
-  const required = tftCoreRequirement(secondCopy ? item.copiesRequiredFor : item.requiredFor, secondCopy);
-  if (required) return `${required} · percentage cost unknown`;
-  if (secondCopy ? item.copiesEssential : item.essential)
-    return secondCopy ? `Replacing the second copy loses more than ${threshold}%` : `Essential here: more than ${threshold}% to replace`;
-  if (tftCoreNear(build.performance, threshold))
-    return secondCopy ? "Second copy can be replaced within the range" : "Can be replaced within the range";
-  return "No comparable replacement cost";
 }
 
 function tftCoreTable(headers, rows, label) {
@@ -3314,7 +3301,7 @@ async function loadTftScenario({ preserve = false, navigate = false } = {}) {
   const formation = tstate.geo === "clump" ? "clumped" : "spread";
   const traitLabel = { bare: "no traits", low: "first trait breakpoint", high: "max non-prismatic traits" }[tstate.traits];
   const threat = unit.objective === "tank" && tstate.meta.tankThreats?.find(t => t.key === tstate.threat);
-  document.getElementById("tft-title").textContent = `${unit.name} — ${tstate.star}★ builds · ${formation} · ${traitLabel}${threat ? ` · ${threat.label}` : ""}`;
+  document.getElementById("tft-title").textContent = `${unit.name}: ${tstate.star}★ builds · ${formation} · ${traitLabel}${threat ? ` · ${threat.label}` : ""}`;
   const desc = document.getElementById("tft-desc");
   const summary = document.getElementById("tft-result-summary");
   summary.textContent = previous ? `Updating ${unit.name}'s builds…` : `Loading ${unit.name}'s builds…`;
@@ -3409,7 +3396,7 @@ function showTftPending(req) {
 }
 
 function tftHeldTime(time, capped, duration = tstate.data?.scenario?.duration || 60) {
-  if (!Number.isFinite(time)) return "—";
+  if (!Number.isFinite(time)) return "\u2014";
   return capped ? `${duration}s+` : `${time.toFixed(1)}s`;
 }
 
@@ -3458,7 +3445,7 @@ function tftColumns() {
     td: r => cell(tftHeldTime(r.stressAliveTime, r.stressCapped)),
   }] : [];
   const ehp = { th: "EHP Phys/Magic", title: "Opening effective HP against physical / magic ability damage, after enemy sunder and shred. Includes starting durability; excludes healing, shields and attack-only protection.",
-    td: r => cell(r.physicalEhp != null && r.magicEhp != null ? `${fmtInt(r.physicalEhp)} / ${fmtInt(r.magicEhp)}` : "—") };
+    td: r => cell(r.physicalEhp != null && r.magicEhp != null ? `${fmtInt(r.physicalEhp)} / ${fmtInt(r.magicEhp)}` : "\u2014") };
   const dmg = { th: "Damage", td: r => cell(fmtInt(r.total)) };
   const dps = { th: "DPS", td: r => cell(fmtInt(r.dps)) };
   const stats = [
@@ -3468,16 +3455,16 @@ function tftColumns() {
     { th: "Crit", td: r => cell(r.crit + "%" + (r.precision ? " ✦" : "")) },
   ];
   const body = [
-    { th: "HP", title: "Max health with items and traits", td: r => cell(Number.isFinite(r.hp) ? fmtInt(r.hp) : "—") },
+    { th: "HP", title: "Max health with items and traits", td: r => cell(Number.isFinite(r.hp) ? fmtInt(r.hp) : "\u2014") },
     { th: "Armor/MR", title: objective === "tank" ? "Opening armor and MR after enemy sunder and shred" : "Armor and magic resist",
-      td: r => cell(Number.isFinite(r.armor) && Number.isFinite(r.mr) ? `${fmtInt(r.armor)}/${fmtInt(r.mr)}` : "—") },
+      td: r => cell(Number.isFinite(r.armor) && Number.isFinite(r.mr) ? `${fmtInt(r.armor)}/${fmtInt(r.mr)}` : "\u2014") },
     { th: "Dur", title: "Durability: post-mitigation damage prevented", td: r => cell(r.durability ? r.durability + "%" : "–") },
   ];
   const soak = [
-    { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(Number.isFinite(r.absorbed) ? fmtInt(r.absorbed) : "—") },
+    { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(Number.isFinite(r.absorbed) ? fmtInt(r.absorbed) : "\u2014") },
     { th: "Healed", title: objective === "tank" ? "Health actually restored after enemy heal cut; excludes overhealing" : "Health actually restored; excludes overhealing",
-      td: r => cell(Number.isFinite(r.healed) ? fmtInt(r.healed) : "—") },
-    { th: "Shielded", title: "Damage that landed on shields", td: r => cell(Number.isFinite(r.shielded) ? fmtInt(r.shielded) : "—") },
+      td: r => cell(Number.isFinite(r.healed) ? fmtInt(r.healed) : "\u2014") },
+    { th: "Shielded", title: "Damage that landed on shields", td: r => cell(Number.isFinite(r.shielded) ? fmtInt(r.shielded) : "\u2014") },
     { th: "Denied", title: "Damage the dummies could not land while stunned or the unit was untargetable",
       td: r => cell(fmtInt(r.denied)) },
   ];
@@ -3540,7 +3527,7 @@ function renderTftBreakdown(r) {
       `${unit.cost} cost · ${r.role || unit.role} · ${r.form ? `${r.form} form · ${r.range} range` : unit.ability}`;
   }
   document.getElementById("tbd-title").textContent =
-    `${tank ? "Build details" : "Damage breakdown"} — #${r.rank}: ${r.items.join(", ")}`;
+    `${tank ? "Build details" : "Damage breakdown"}: #${r.rank}: ${r.items.join(", ")}`;
   const fight = r.killTime != null ? `all enemies defeated at ${r.killTime.toFixed(2)}s`
                                    : `the dummies survive with ${r.left.map(fmtInt).join(" / ")} HP left`;
   const body = r.aliveTime == null ? "" :

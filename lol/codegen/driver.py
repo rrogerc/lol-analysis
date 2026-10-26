@@ -47,7 +47,6 @@ ENGINE_DIR = str(ENGINE)
 GEN_DIR = ENGINE / "src" / "generated"
 GENERATED_DIR = str(GEN_DIR)
 GUIDE = Path(__file__).resolve().parent / "driver-guide.md"
-GUIDE_PATH = str(GUIDE)
 KITS_DIR = ks.KITS_DIR
 DOSSIERS_DIR = ks.DOSSIERS_DIR
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "kit-driver")
@@ -106,9 +105,6 @@ def write_registry(gen_dir=GENERATED_DIR):
     with open(os.path.join(gen_dir, "mod.rs"), "w") as f:
         f.write(registry_text(names))
     return names
-
-
-write_mod_rs = write_registry
 
 
 def is_manaless(slug):
@@ -673,17 +669,9 @@ def user_prompt(slug, name=None):
         for slot in ks.SLOTS for a in src["wiki"]["abilities"][slot])
     attack = attack_block(slug)
     display = src["sheet"]["ddragon"]["name"]
-    hint = ""
-    tri = os.path.join(ks.SOURCES_DIR, ks.default_patch(), "_triage", "triage.json")
-    if os.path.exists(tri):
-        with open(tri) as f:
-            t = json.load(f)["results"].get(slug)
-        if t:
-            hint = (f"An earlier triage judged most of this champion's damage to come from: "
-                    f"{t.get('damageFrom')}.\n")
     return (f'Champion: {display}. Write the kit with "champion": "{name}" and the driver.\n'
             f"Base attack: windup fraction {attack['windupFraction']}, "
-            f"{'ranged' if attack['ranged'] else 'melee'} (the script fills `attack`).\n{hint}\n"
+            f"{'ranged' if attack['ranged'] else 'melee'} (the script fills `attack`).\n\n"
             f"## Dossier\n\n{json.dumps(dossier, ensure_ascii=False)}\n\n"
             f"## Numbers sheet (Riot's game file)\n\n{ks.sheet_text(src)}\n\n"
             f"## Wiki templates\n\n{wiki}\n")
@@ -937,17 +925,9 @@ def admitted(name):
 
 
 def all_slugs():
-    """Every champion with a dossier and no hand-written driver, the simplest
-    kits first (the triage's primitive count; champion-specific logic last)."""
+    """Every champion with a dossier and no hand-written driver."""
     slugs = sorted(f[:-5] for f in os.listdir(DOSSIERS_DIR) if f.endswith(".json"))
-    slugs = [s for s in slugs if s not in HAND_WRITTEN + RESERVED and s != "jax"]
-    tri = os.path.join(ks.SOURCES_DIR, ks.default_patch(), "_triage", "triage.json")
-    if os.path.exists(tri):
-        with open(tri) as f:
-            results = json.load(f)["results"]
-        slugs.sort(key=lambda s: (int(bool(results.get(s, {}).get("needsBespoke", True))),
-                                  len(results.get(s, {}).get("primitives") or [0] * 99), s))
-    return slugs
+    return [s for s in slugs if s not in HAND_WRITTEN + RESERVED and s != "jax"]
 
 
 def cmd_write(args):

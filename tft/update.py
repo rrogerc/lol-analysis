@@ -5,8 +5,6 @@ deadline watchdog; parsing belongs to callers. Reconciliation validates staged
 snapshots against explicit patch-note checks, bound reviews, and source stats.
 """
 
-from __future__ import annotations
-
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from email.message import Message
@@ -27,9 +25,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-
-EXIT_TEMPORARY_FAILURE = 75
-DEFAULT_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) lol-analysis/0.1 (+github.com/rrogerc/lol-analysis)"
 
 RETRY_STATUSES = frozenset((429, 500, 502, 503, 504))
 MAX_ACTIVE_ATTEMPTS = 4
@@ -267,20 +262,6 @@ def get(url, *, headers=None, opener=None, max_attempts=4, total_timeout=90.0,
                 sleep(delay)
     raise _terminal(last, url, attempts, max_attempts, monotonic() - started,
                     "total retry deadline exhausted") from None
-
-TemporaryFetchError = FetchError
-
-
-def fetch_bytes(url, *, headers=None, opener=None, on_retry=None):
-    merged = {"User-Agent": DEFAULT_USER_AGENT, "Accept": "*/*"}
-    if headers:
-        merged.update(headers)
-    return get(url, headers=merged, opener=opener, on_retry=on_retry).body
-
-
-def fetch_json(url, *, headers=None, opener=None, on_retry=None):
-    return json.loads(fetch_bytes(url, headers=headers, opener=opener, on_retry=on_retry))
-
 
 
 class ReviewRequired(ValueError):
@@ -870,7 +851,7 @@ def _row_semantics(row):
     return {name for name, words in names.items() if tokens & words}
 
 
-def _discover(change, previous, current):
+def _discover(change, previous):
     from tft import sim as tft
     label = _label(change["what"])
     units = [u for u in previous.units.values() if label.startswith(_norm(u["name"]))]
@@ -1623,7 +1604,7 @@ def _reconcile(candidate, previous, notes, review_document=None):
         if not matching:
             if category == 'outside':
                 _fail(f"{change['what']}: this category needs a scoped review disposition")
-            matching = _discover(change, previous, working)
+            matching = _discover(change, previous)
             if category and any(c['target']['kind'] != category for c in matching):
                 _fail(f"{change['what']}: note category does not match the inferred target")
         if any(c.get('manualOnly') for c in matching):

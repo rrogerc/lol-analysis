@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Champion kit dossiers and rotation-primitive triage.
+"""Champion kit dossier builder and checker.
 
-Consolidates dossier writing (one model call per part, validated against
-archived Riot bin + wiki sources) and roster triage (classifying champions by
-rotation primitives).
+Writes and validates champion kit dossiers (one model call per ability part,
+checked against archived Riot bin + wiki sources).
 
   build <slug>...   write and validate dossiers for the named champions
-  build-all         write and validate dossiers for every champion, simplest first
+  build-all         write and validate dossiers for every champion
   check <slug>      validate lol/data/builds/dossiers/<slug>.json
-  status            report archived sources, passing dossiers, kits, and triage
-  triage batches    split wiki-all abilities into per-champion inputs and batches
-  triage check      validate one batch's triage outputs (_triage/out/<slug>.json)
-  triage merge      validate and merge _triage/out/*.json into triage.json
+  status            report archived sources, passing dossiers, and kits
 """
 
 import argparse
@@ -32,13 +28,11 @@ from web.db import BASE_DIR
 
 CODEGEN_DIR = Path(__file__).resolve().parent
 PROMPT_PATH = CODEGEN_DIR / "dossier-prompt.md"
-TRIAGE_PROMPT_PATH = CODEGEN_DIR / "triage-prompt.md"
 DOSSIERS_DIR = ks.DOSSIERS_DIR
 KITS_DIR = ks.KITS_DIR
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "kit-dossier")
 
 PARTS = ks.SLOTS + ("top",)
-FREE = {"defensive-only"}  # never needs driver support
 
 _print_lock = threading.Lock()
 _stop = threading.Event()  # the plan's usage limit was hit, or the CLI is logged out
@@ -87,11 +81,6 @@ def prompt_sections():
     for m in re.finditer(r"^## (.+?)\n(.*?)(?=^## |\Z)", text, re.M | re.S):
         out[m.group(1).strip()] = m.group(2).strip()
     return out
-
-
-def triage_prompt():
-    """Full text of triage-prompt.md."""
-    return TRIAGE_PROMPT_PATH.read_text()
 
 
 def system_prompt(part):
@@ -209,6 +198,19 @@ def run_champion(args, slug, cwd):
     t0 = time.time()
     src = ks.load_sources(slug)
     pdir = ks.parts_dir(slug)
+    dossier_path = os.path.join(DOSSIERS_DIR, f"{slug}.json")
+    if not args.force and not os.path.isdir(pdir) and os.path.exists(dossier_path):
+        with open(dossier_path) as f:
+            chk = ks.Checker(slug, json.load(f), src)
+        chk.run()
+        if not chk.errors:
+            return {"slug": slug, "ok": True, "stopped": False, "errors": 0,
+                    "warnings": len(chk.warnings), "calls": 0,
+                    "seconds": round(time.time() - t0, 1),
+                    "tokensIn": 0, "tokensOut": 0, "costEquivalentUsd": 0,
+                    "model": args.model, "effort": [args.effort, args.top_effort]}
+    if not os.path.isdir(pdir):
+        ks.cmd_init(argparse.Namespace(slug=slug, patch=None, force=False))
     calls = []
     for part in PARTS:
         path = os.path.join(pdir, f"{part}.json")
@@ -275,6 +277,8 @@ def run_champion(args, slug, cwd):
     if summary["stopped"]:
         say(f"{slug}: interrupted after {len(calls)} calls; its finished parts are kept")
         return summary
+    if not chk.errors:
+        shutil.rmtree(pdir, ignore_errors=True)
     say(f"{slug}: {'OK' if summary['ok'] else 'FAILED'} - {summary['errors']} errors, "
         f"{summary['warnings']} warnings; {summary['calls']} calls, {summary['seconds']} s, "
         f"{summary['tokensIn']} in / {summary['tokensOut']} out tokens, "
@@ -283,23 +287,10 @@ def run_champion(args, slug, cwd):
 
 
 def all_slugs():
-    """Every champion of ddragon's list for the patch; the simplest kits first
-    when a triage exists (fewest primitives, champion-specific logic last), so
-    an interrupted run has finished as many as it could."""
+    """Every champion of ddragon's list for the patch."""
     patch = ks.default_patch()
     _, index = ks.ddragon_index(patch)
-    slugs = sorted(cid.lower() for cid in index)
-    tri_path = os.path.join(ks.SOURCES_DIR, patch, "_triage", "triage.json")
-    if os.path.exists(tri_path):
-        with open(tri_path) as f:
-            results = json.load(f)["results"]
-
-        def weight(slug):
-            r = results.get(slug)
-            return (1, 99, slug) if r is None else \
-                (int(bool(r.get("needsBespoke"))), len(r.get("primitives") or []), slug)
-        slugs.sort(key=weight)
-    return slugs
+    return sorted(cid.lower() for cid in index)
 
 
 def guarded(args, slug, cwd):
@@ -329,8 +320,11 @@ def _run_build(args, slugs):
                         ks.source_dir(slug)
                     except SystemExit:
                         ks.cmd_fetch(argparse.Namespace(slugs=[slug], patch=None, offline=False))
-                    if args.force or not os.path.isdir(ks.parts_dir(slug)):
+                    if args.force:
                         ks.cmd_init(argparse.Namespace(slug=slug, patch=None, force=True))
+                    elif (not os.path.isdir(ks.parts_dir(slug))
+                          and not os.path.exists(os.path.join(DOSSIERS_DIR, f"{slug}.json"))):
+                        ks.cmd_init(argparse.Namespace(slug=slug, patch=None, force=False))
                 except (SystemExit, Exception) as e:
                     say(f"{slug}: skipped, no sources: {e}")
                     skipped.append(slug)
@@ -398,176 +392,10 @@ def cmd_status(args):
                 passing += 1
         except SystemExit:
             failing.append(slug)
-    tri_path = os.path.join(ks.SOURCES_DIR, patch, "_triage", "triage.json")
-    triage_info = "none"
-    if os.path.exists(tri_path):
-        with open(tri_path) as f:
-            tri = json.load(f)
-        triage_info = f"{tri.get('champions', 0)} triaged ({len(tri.get('needsBespoke', []))} bespoke)"
     print(f"patch {patch}: {n_sources} archived sources, "
           f"{passing}/{len(dossiers)} dossiers passing"
           + (f" (failing: {', '.join(failing)})" if failing else "")
-          + f", {len(kits)} kits, triage: {triage_info}")
-
-
-# ---------------------------------------------------------------------------
-# triage (consolidated from kit_triage.py)
-# ---------------------------------------------------------------------------
-
-def triage_dir(patch=None):
-    return os.path.join(ks.SOURCES_DIR, patch or ks.default_patch(), "_triage")
-
-
-def cmd_triage_batches(args):
-    """Deal every champion that has no result yet into N batches. A result
-    whose input has changed since it was written is stale: it is removed and
-    the champion is dealt again."""
-    tdir = triage_dir(args.patch)
-    with open(os.path.join(tdir, "abilities.json")) as f:
-        champs = json.load(f)
-    os.makedirs(os.path.join(tdir, "in"), exist_ok=True)
-    os.makedirs(os.path.join(tdir, "out"), exist_ok=True)
-    todo = []
-    for slug in sorted(champs):
-        in_path = os.path.join(tdir, "in", f"{slug}.json")
-        out_path = os.path.join(tdir, "out", f"{slug}.json")
-        old = None
-        if os.path.exists(in_path):
-            with open(in_path) as f:
-                old = json.load(f)
-        if old != {slug: champs[slug]}:
-            ks.write_json(in_path, {slug: champs[slug]})
-            if os.path.exists(out_path):
-                os.remove(out_path)
-                print(f"{slug}: input changed, stale result removed")
-        if not os.path.exists(out_path):
-            todo.append(slug)
-    for name in os.listdir(os.path.join(tdir, "in")):
-        if name.startswith("batch-"):
-            os.remove(os.path.join(tdir, "in", name))
-    # deal champions round-robin by size so the batches weigh about the same
-    by_size = sorted(todo, key=lambda s: -len(json.dumps(champs[s])))
-    batches = [[] for _ in range(args.n)]
-    for i, slug in enumerate(by_size):
-        batches[i % args.n if (i // args.n) % 2 == 0 else args.n - 1 - i % args.n].append(slug)
-    for i, batch in enumerate(batches, 1):
-        path = os.path.join(tdir, "in", f"batch-{i}.txt")
-        with open(path, "w") as f:
-            f.write("\n".join(sorted(batch)) + "\n")
-        print(f"{os.path.relpath(path, BASE_DIR)}: {len(batch)} champions")
-    print(f"{len(champs) - len(todo)} champions already have a result")
-
-
-def batch_slugs(tdir, n):
-    with open(os.path.join(tdir, "in", f"batch-{n}.txt")) as f:
-        return [line.strip() for line in f if line.strip()]
-
-
-def load_results(tdir, slugs):
-    """({slug: result}, errors) from _triage/out/<slug>.json."""
-    merged, errors = {}, []
-    for slug in slugs:
-        path = os.path.join(tdir, "out", f"{slug}.json")
-        if not os.path.exists(path):
-            errors.append(f"{slug}: no result file out/{slug}.json")
-            continue
-        try:
-            with open(path) as f:
-                r = json.load(f)
-        except json.JSONDecodeError as e:
-            errors.append(f"{slug}: out/{slug}.json is not valid JSON: {e}")
-            continue
-        merged[slug] = r.get(slug, r) if isinstance(r, dict) else r
-    return merged, errors
-
-
-def validate(result, expected=None):
-    errors = []
-    if not isinstance(result, dict):
-        return ["the result must be a JSON object keyed by champion slug"]
-    if expected is not None:
-        for slug in sorted(set(expected) - set(result)):
-            errors.append(f"{slug}: missing")
-        for slug in sorted(set(result) - set(expected)):
-            errors.append(f"{slug}: not in this batch")
-    for slug, r in result.items():
-        if not isinstance(r, dict):
-            errors.append(f"{slug}: must be an object")
-            continue
-        prims = r.get("primitives")
-        if not isinstance(prims, list) or not prims:
-            errors.append(f"{slug}: primitives must be a non-empty list")
-            prims = []
-        for p in prims:
-            if not isinstance(p, dict) or p.get("id") not in ks.PRIMITIVES:
-                errors.append(f"{slug}: unknown primitive {p.get('id') if isinstance(p, dict) else p!r}")
-            elif not isinstance(p.get("abilities"), list) or not p["abilities"] \
-                    or not set(p["abilities"]) <= set(ks.SLOTS):
-                errors.append(f"{slug}: {p['id']}: abilities must be a non-empty list of P/Q/W/E/R")
-        if not isinstance(r.get("needsBespoke"), bool):
-            errors.append(f"{slug}: needsBespoke must be true or false")
-        if not isinstance(r.get("why"), str) or not r.get("why"):
-            errors.append(f"{slug}: why must say what decides needsBespoke")
-        if r.get("confidence") not in ("high", "medium", "low"):
-            errors.append(f"{slug}: confidence must be high, medium or low")
-        if r.get("damageFrom") not in ("attacks", "abilities", "mixed"):
-            errors.append(f"{slug}: damageFrom must be attacks, abilities or mixed")
-    return errors
-
-
-def cmd_triage_check(args):
-    tdir = triage_dir(args.patch)
-    slugs = batch_slugs(tdir, args.batch)
-    merged, errors = load_results(tdir, slugs)
-    errors += validate(merged)
-    for e in errors:
-        print(f"ERROR   {e}")
-    print(f"batch {args.batch}: {len(merged)}/{len(slugs)} champions, {len(errors)} errors - "
-          f"{'OK' if not errors else 'FAILED'}")
-    sys.exit(1 if errors else 0)
-
-
-def cmd_triage_merge(args):
-    tdir = triage_dir(args.patch)
-    with open(os.path.join(tdir, "abilities.json")) as f:
-        everyone = sorted(json.load(f))
-    merged, errors = load_results(tdir, everyone)
-    errors += validate(merged)
-    for e in errors:
-        print(f"ERROR   {e}")
-    needs = {slug: {p["id"] for p in r.get("primitives", []) if isinstance(p, dict)} - FREE
-             for slug, r in merged.items()}
-    bespoke = sorted(s for s, r in merged.items() if r.get("needsBespoke"))
-    fits = {s: n for s, n in needs.items() if s not in bespoke}
-    freq = {}
-    for n in needs.values():
-        for p in n:
-            freq[p] = freq.get(p, 0) + 1
-    # greedy order: the next primitive is the one that completes the most
-    # champions, ties broken by how many champions use it at all
-    supported, order = set(), []
-    remaining = set(freq)
-    while remaining:
-        def gain(p):
-            s2 = supported | {p}
-            return (sum(1 for n in fits.values() if n <= s2), freq[p])
-        best = max(sorted(remaining), key=gain)
-        supported.add(best)
-        remaining.discard(best)
-        order.append({"primitive": best, "usedBy": freq[best],
-                      "covered": sum(1 for n in fits.values() if n <= supported)})
-    out = {"champions": len(merged), "needsBespoke": bespoke, "order": order, "results": merged}
-    ks.write_json(os.path.join(tdir, "triage.json"), out)
-    print(f"{len(merged)} champions; {len(bespoke)} flagged as needing bespoke logic")
-    print(f"{'primitive':28} {'used by':>8} {'champions fully covered':>24}")
-    for row in order:
-        print(f"{row['primitive']:28} {row['usedBy']:>8} {row['covered']:>24}")
-    sys.exit(1 if errors else 0)
-
-
-# Keep aliases matching legacy kit_triage names
-cmd_batches = cmd_triage_batches
-cmd_merge = cmd_triage_merge
+          + f", {len(kits)} kits")
 
 
 def _runner_args(sp):
@@ -587,7 +415,7 @@ def main():
 
     sp = sub.add_parser("build", help="write and check dossiers for named champions")
     sp.add_argument("slugs", nargs="*")
-    sp.add_argument("--all", action="store_true", help="every champion, simplest kits first")
+    sp.add_argument("--all", action="store_true", help="every champion")
     _runner_args(sp)
     sp.set_defaults(func=cmd_build)
 
@@ -604,27 +432,9 @@ def main():
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_check)
 
-    sp = sub.add_parser("status", help="summarize archived sources, dossiers, kits, and triage")
+    sp = sub.add_parser("status", help="summarize archived sources, dossiers, and kits")
     sp.add_argument("--patch")
     sp.set_defaults(func=cmd_status)
-
-    tri = sub.add_parser("triage", help="triage champions by rotation primitives")
-    tri.add_argument("--patch")
-    trisub = tri.add_subparsers(dest="triage_cmd", required=True)
-
-    sp = trisub.add_parser("batches")
-    sp.add_argument("--patch")
-    sp.add_argument("--n", type=int, default=9)
-    sp.set_defaults(func=cmd_triage_batches)
-
-    sp = trisub.add_parser("check")
-    sp.add_argument("--patch")
-    sp.add_argument("--batch", type=int, required=True)
-    sp.set_defaults(func=cmd_triage_check)
-
-    sp = trisub.add_parser("merge")
-    sp.add_argument("--patch")
-    sp.set_defaults(func=cmd_triage_merge)
 
     args = ap.parse_args()
     args.func(args)

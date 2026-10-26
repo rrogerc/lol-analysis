@@ -1,14 +1,12 @@
 //! Drivers of this slice: ported from tft_kits.py (see mod.rs for the list).
-//! The second frontline batch — tanks and fighters whose dummies hit back,
+//! The second frontline batch: tanks and fighters whose dummies hit back,
 //! so bodies, shields, heals and the damage they block all count.
 
-#![allow(unused_imports)]
 use crate::driver::Driver;
 use crate::drivers::helpers::*;
-use crate::fight::{Deal, Fight, Sel};
-use crate::fx::Form;
-use crate::kit::{CalcId, DType, Kit, RowId, Runtime};
-use crate::pyf::{pyint, pymax, pymin, pyround};
+use crate::fight::Fight;
+use crate::kit::{CalcId, Kit, RowId};
+use crate::pyf::{pyint, pymax};
 use crate::spec::UnitSpec;
 
 /// Spirit of Dread: armour and magic resist while the heal trickles in over
@@ -64,9 +62,9 @@ impl Driver for Hecarim {
 }
 
 /// Rock and Roll: bonus max health, then a roll into the target. On death he
-/// splits into Kruglettes ("two" is in the text, and the Summoner trait would
-/// add more) that taunt with the Kruglette's own resists; with the Riftbeast
-/// Alpha Mark the Slate Buff shields an ally on the way out.
+/// splits into Kruglettes ("two" is in the text) that taunt with the
+/// Kruglette's own resists; with the Riftbeast Alpha Mark the Slate Buff
+/// shields an ally on the way out.
 #[derive(Clone)]
 pub struct Krug {
     mini_armor: f64,
@@ -98,9 +96,7 @@ impl Driver for Krug {
     fn died(f: &mut Fight<Self>) {
         let (armor, mr) = (f.drv.mini_armor, f.drv.mini_mr);
         let hp = f.calc(f.drv.mini_hp);
-        // the Summoner row is a total where 1 is the normal count
-        let n = pyint(2.0 + pymax(0.0, f.fx.summoner_get(|s| s.extra_summons, 1.0) - 1.0));
-        for _ in 0..n {
+        for _ in 0..2 {
             f.add_body(hp, armor, mr, "kruglette");
         }
         if f.fx.riftbeast {
@@ -115,7 +111,7 @@ impl Driver for Krug {
 /// heals a lump, then attack speed (a multiplier row) and durability for a
 /// few seconds; the same window prevents incoming crowd control and holds
 /// her mana (TFTraits: "The mana lock lasts the 3.00 s the effect runs.
-/// Attacks continue." — third party, adopted like Azir's lock, not verified
+/// Attacks continue.", third party, adopted like Azir's lock, not verified
 /// in game; the three seconds are the kit's own SpellDuration).
 #[derive(Clone)]
 pub struct Vi {

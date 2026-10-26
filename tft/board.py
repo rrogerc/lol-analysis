@@ -7,11 +7,8 @@ https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/enchanted-w
 
 from collections import Counter, OrderedDict
 from copy import deepcopy
-from fractions import Fraction
-import hashlib
 from itertools import combinations
 import math
-from pathlib import Path
 
 from tft import sim as tft
 
@@ -21,10 +18,8 @@ RIFTBEAST = "DA_Riftbeast18"
 APEX_PREDATOR = "DA_18_ApexPredator"
 SOLAR = "DA_18_Solar"
 LUNAR = "DA_18_Lunar"
-ECLIPSE = "DA_18_Eclipse"
 PRIMAL = "DA_Primal18"
 
-DEFAULT_BOARD_SLOTS = 8
 MAX_BOARD_SLOTS = 9
 DURATION = 30.0
 PREPARED_ACTOR_CACHE_LIMIT = 4096
@@ -35,7 +30,11 @@ LANE_ORDER = (3, 1, 5, 2, 4, 0, 6)
 # Ordering breaks exact ties only; it adds no preference to the score.
 PRIMAL_BLESSINGS = ("tiger", "turtle", "bear", "phoenix")
 
-SOURCE_HASH = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+_PRIMAL_LIMITATIONS = {
+    "tiger": "The current interpretation treats the Primal amount as its total; whether it also receives the team share remains unverified.",
+    "turtle": "Only effective healing is credited, after Wound and missing-health limits.",
+    "phoenix": "Persistent takedowns and acquired components are outside this fixed-item-budget comparison; economy value is unmeasured here.",
+}
 
 
 def unit_slots(api):
@@ -56,36 +55,12 @@ def trait_counts(snap, roster):
     return counts
 
 
-def primal_catalog(snap):
-    curve = snap.traits[PRIMAL]["curve"]
-    value = lambda row: tft.curve_at(curve[row], 1)
-    return [
-        {"key": "tiger", "name": "Tiger",
-         "description": f"After {value('TigerDelay'):g}s, Primals gain {(value('TigerAttackSpeedPrimal') - 1) * 100:g}% attack speed and other allies gain {(value('TigerAttackSpeedTeam') - 1) * 100:g}%.",
-         "scoreLimitation": "The current interpretation treats the Primal amount as its total; whether it also receives the team share remains unverified."},
-        {"key": "turtle", "name": "Turtle",
-         "description": f"Each living ally heals {value('TurtleMaxHealthRatio') * 100:g}% of its maximum health every {value('TurtlePeriod'):g}s.",
-         "scoreLimitation": "Only effective healing is credited, after Wound and missing-health limits."},
-        {"key": "bear", "name": "Bear",
-         "description": f"Primal damage executes enemies below {value('BearExecuteThreshold') * 100:g}% health.",
-         "scoreLimitation": "Executes work in finite combat, but cannot trigger on the immortal targets used by composition scoring; their value is unmeasured here."},
-        {"key": "phoenix", "name": "Phoenix",
-         "description": f"Every {value('PhoenixTakedownsPerComponent'):g} Primal takedowns grants a component, up to four.",
-         "scoreLimitation": "Persistent takedowns and acquired components are outside this fixed-item-budget comparison; economy value is unmeasured here."},
-    ]
-
-
-def primal_options(snap, members, required=None):
-    if (required is not None and (not isinstance(required, (list, tuple)) or len(required) > 2
-            or any(key not in PRIMAL_BLESSINGS for key in required) or len(set(required)) != len(required))):
-        raise ValueError("retained Primal blessings must be distinct known choices")
+def primal_options(snap, members):
     if PRIMAL not in snap.traits:
         return [()]
     count = trait_counts(snap, members)[PRIMAL]
     choices = sum(count >= threshold for threshold in snap.traits[PRIMAL]["levels"] if threshold > 0)
-    options = list(combinations(PRIMAL_BLESSINGS, choices)) if choices else [()]
-    retained = set((required or ())[:choices])
-    return [option for option in options if retained <= set(option)]
+    return list(combinations(PRIMAL_BLESSINGS, choices)) if choices else [()]
 
 
 def primal_selection(snap, members, selected=None):
@@ -115,17 +90,6 @@ def primal_effect(snap, unit_api, selected):
     if "bear" in selected and member:
         effect["executeBelowHp"] = value("BearExecuteThreshold")
     return effect
-
-
-def with_primal_effects(snap, members, effects, selected):
-    selected = primal_selection(snap, members, selected)
-    updated = deepcopy(effects)
-    for member in members:
-        api = member["api"]
-        updated[api] = [effect for effect in updated[api] if effect.get("api") != PRIMAL]
-        if selected:
-            updated[api].append(primal_effect(snap, api, selected))
-    return updated
 
 
 # Nonmembers receive only the team share. Member trait_spec entries already
@@ -161,18 +125,12 @@ _UNMODELED_NOTES = {
     "DA_DravenUniqueTrait18": "bounty progress and rewards affect economy and are outside the fixed-board combat score",
 }
 
-_THEORY_COVERAGE_NOTES = {
+_COVERAGE_NOTES = {
     "DA_18_Adaptor": ["form is fixed from equipped bonus AD/AP before other traits; live tie rules and trait-driven form changes are not verified"],
     "DA_18_Battlemage": ["attacker count follows assigned generic pressure sources independently of outgoing area coverage; actual enemy targeting is not represented"],
     "DA_18_Executioner": ["bleed excludes true/raw damage and stops being measured after the holder dies; exact live proc eligibility is not verified"],
-    "DA_18_Hunter": ["immortal targets usually keep the primary target fixed, so actual retargeting and damage-amp uptime are not represented"],
-    "DA_18_Inferno": ["Wound has no value against generic targets that never heal; the nonstacking trait burn uses one provider"],
     "DA_18_Invoker": ["Invoker mana regeneration is interpreted as the team amount plus InvokerManaBonus; the archived wording does not unambiguously establish the member total"],
-    "DA_18_Slayer": ["generic targets stay at full Health, so the stronger damage amplification below half Health is not credited"],
     "DA_18_Spellweaver": ["opening member AP is interpreted as TeamwideAP plus SpellweaverAP; the archived wording does not unambiguously establish whether the member row is additional or total"],
-    "DA_18_Summoner": ["Zyra plant attacks use an assumed one-second cadence; live plant attack timing is not verified"],
-    "DA_FloraFatalis18": ["generic targets never die, so takedown mana and healing contribute zero to this score"],
-    RIFTBEAST: ["Alpha team effects remain incomplete: Sentinel cast mana regeneration and Scuttlecrab healing are absent; Krug ally shields are uncredited and Elder executes cannot trigger on immortal targets. Applied Mama Beak flat armor reductions are shared."],
 }
 
 
@@ -262,8 +220,8 @@ def resolve_board_traits(snap, members, alpha_holder=None, *, primal_blessings=N
             for unit_api in sorted(selected):
                 effects[unit_api].append(primal_effect(snap, unit_api, blessings))
             entry["blessings"] = list(blessings)
-            limitations.extend("Primal: " + option["scoreLimitation"] for option in primal_catalog(snap)
-                               if option["key"] in blessings)
+            limitations.extend("Primal: " + _PRIMAL_LIMITATIONS[key]
+                               for key in blessings if key in _PRIMAL_LIMITATIONS)
             continue
 
         if api not in hand:
@@ -273,16 +231,17 @@ def resolve_board_traits(snap, members, alpha_holder=None, *, primal_blessings=N
 
         for unit_api, unit in sorted(selected.items()):
             if api in unit["traitApis"]:
-                effect = tft.trait_spec(snap, api, column, hand, unit)
+                effect = tft.trait_spec(snap, api, column, hand)
                 if api == RIFTBEAST:
                     effect["riftbeast"] = unit_api == alpha_holder
                     effect.pop("note", None)
                 effects[unit_api].append(deepcopy(effect))
             elif api in _TEAM_EFFECTS:
-                effects[unit_api].append(tft.trait_spec(
-                    snap, api, column, _TEAM_EFFECTS, unit))
+                effects[unit_api].append(tft.trait_spec(snap, api, column, _TEAM_EFFECTS))
 
         if api == RIFTBEAST:
+            if alpha_holder == "TFT18_Scuttlecrab":
+                limitations.append("Riftbeast: Scuttlecrab's Alpha team healing is not modeled")
             if entry["breakpoint"] >= 5:
                 limitations.append("Riftbeast: overrun shops are not modeled")
             if entry["breakpoint"] >= 10:
@@ -303,7 +262,9 @@ def resolve_board_traits(snap, members, alpha_holder=None, *, primal_blessings=N
     for entry in traits:
         prefix = entry["name"] + ": "
         if entry["active"]:
-            limitations.extend(prefix + note for note in _THEORY_COVERAGE_NOTES.get(entry["api"], ()))
+            limitations.extend(prefix + note for note in _COVERAGE_NOTES.get(entry["api"], ()))
+            if entry["api"] == "DA_18_Summoner" and "TFT18_Zyra" in selected:
+                limitations.append(prefix + "Zyra plant attacks use an assumed one-second cadence; live plant attack timing is not verified")
         notes = sorted({note[len(prefix):] for note in limitations if note.startswith(prefix)})
         entry["coverageNotes"] = notes
         entry["coverage"] = ("structural" if entry["api"] == APEX_PREDATOR else
@@ -316,42 +277,9 @@ def resolve_board_traits(snap, members, alpha_holder=None, *, primal_blessings=N
             "primalBlessings": list(blessings)}
 
 
-board_trait_effects = resolve_board_traits
-
-
 def _frontline(spec):
     unit = spec["unit"]
     return unit["objective"] in ("tank", "fighter") or unit["kind"] == "Assassin"
-
-
-def _reference_positions(roster, roles):
-    """Keep authored positions, relocating only units whose form changes row."""
-    positions = {}
-    occupied = {True: set(), False: set()}
-    for unit in roster:
-        api = unit["api"]
-        front = roles[api]["frontline"]
-        if unit["frontline"] == front:
-            positions[api] = {**roles[api], "lane": unit["lane"], "priority": unit["priority"]}
-            occupied[front].add(unit["lane"])
-    for unit in sorted(roster, key=lambda value: (value["priority"], value["api"])):
-        api = unit["api"]
-        if api in positions:
-            continue
-        front = roles[api]["frontline"]
-        free = [lane for lane in LANE_ORDER if lane not in occupied[front]]
-        if not free:
-            raise ValueError("reference form changes require an available lane in the effective row")
-        lane = min(free, key=lambda value: (abs(value - unit["lane"]), LANE_ORDER.index(value)))
-        positions[api] = {**roles[api], "lane": lane, "priority": unit["priority"]}
-        occupied[front].add(lane)
-    return [dict(unit, **positions[unit["api"]]) for unit in roster]
-
-
-def rank_key(result):
-    """Only win rate ranks results; equal rates remain genuine outcome ties."""
-    metrics = result.get("metrics", result)
-    return (-Fraction(metrics["benchmarkWins"], metrics["benchmarkCount"]),)
 
 
 def summarize(results, labels, *, details=True):
@@ -387,15 +315,12 @@ def summarize(results, labels, *, details=True):
 
 
 class Evaluator:
-    """Resolve champion specs, combat layouts, and prepared actors for symmetric fights."""
+    """Resolve champion specs and prepared actors for symmetric fights."""
 
-    def __init__(self, snap, geometry="clump", threat="mixed", *, prepared=True, workers=1):
-        if geometry not in tft.GEOMETRIES or threat not in ("mixed", "physical", "magic"):
+    def __init__(self, snap, geometry="clump"):
+        if geometry not in tft.GEOMETRIES:
             raise ValueError("unknown symmetric reference context")
-        if type(workers) is not int or not 1 <= workers <= 8:
-            raise ValueError("match workers must be between 1 and 8")
-        self.snap, self.geometry, self.threat = snap, geometry, threat
-        self.prepared, self.workers = prepared, workers
+        self.snap, self.geometry = snap, geometry
         self.item_fx = tft.load_item_effects(snap.set_no)
         self.templates, self.items = {}, {}
         self._forms = OrderedDict()
@@ -450,28 +375,13 @@ class Evaluator:
 
     def _combat_specs(self, members, effects, selected):
         if (not 1 <= len(members) <= MAX_BOARD_SLOTS
-                or len({member["api"] for member in members}) != len(members)
-                or slots_used(members) > MAX_BOARD_SLOTS):
+            or len({member["api"] for member in members}) != len(members)
+            or slots_used(members) > MAX_BOARD_SLOTS):
             raise ValueError("candidate boards require one to nine distinct champions using at most nine slots")
         return {member["api"]: self.spec(member["api"], member["star"], effects[member["api"]],
                                          selected[member["api"]]["items"],
                                          bool(selected[member["api"]].get("alpha")))
                 for member in members}
-
-    def combat_layout(self, members, effects, selected, carry, tank):
-        """Resolved form, role and position for each member's actual loadout."""
-        specs = self._combat_specs(members, effects, selected)
-
-        def ability(api):
-            unit = self.snap.units[api]
-            form = specs[api]["unit"]["form"]
-            return (unit.get("forms") or {}).get(form, {}).get("name") or unit["ability"]["name"]
-
-        return {member["api"]: {"form": specs[member["api"]]["unit"]["form"],
-                                "kind": specs[member["api"]]["unit"]["kind"],
-                                "abilityName": ability(member["api"]),
-                                "frontline": front, "lane": lane, "priority": priority}
-                for member, front, lane, priority in self._placements(members, carry, tank, specs)}
 
     def allies(self, members, effects, selected, carry, tank, *, prepared=False):
         allies = []

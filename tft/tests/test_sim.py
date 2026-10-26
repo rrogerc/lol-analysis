@@ -25,9 +25,8 @@ from tft.tests.helpers import (
     ally,
     body_spec,
     caster,
-    enemy,
     events,
-    fight,
+    flat,
     fx_of,
     immortal,
     item,
@@ -1923,10 +1922,10 @@ class TestEffectLongLocks(unittest.TestCase):
 
 
 class TestSharedSchedulers(unittest.TestCase):
-    """The team, symmetric and theory fights share `Fight`: the same unit
-    follows the same timeline whichever scheduler drives it."""
+    """The symmetric and theory fights share `Fight`: the same unit follows
+    the same timeline whichever scheduler drives it."""
 
-    def test_team_and_symmetric_timelines_equal_the_standalone_one(self):
+    def test_symmetric_timeline_equals_the_standalone_one(self):
         _, solo = ENGINE.simulate(timed("Soraka", duration=12.0), True)
         attacks = [e[0] for e in events(solo, "attack")]
         casts = [e[0] for e in events(solo, "cast")]
@@ -1935,9 +1934,6 @@ class TestSharedSchedulers(unittest.TestCase):
         def member():
             return {"spec": spec_for("Soraka", pressure=True, timed=True), "frontline": False,
                     "lane": 3, "priority": 0}
-        team = fight([member()], [enemy(hp=10 ** 7)], duration=12.0)
-        self.assertEqual([e["time"] for e in team["trace"] if e["kind"] == "attack"], attacks)
-        self.assertEqual([e["time"] for e in team["trace"] if e["kind"] == "cast"], casts)
         duel = match([member()], [ally(hp=10 ** 7)], duration=12.0)
         self.assertEqual([e["time"] for e in match_events(duel, "attack")], attacks)
         self.assertEqual([e["time"] for e in match_events(duel, "cast")], casts)
@@ -2298,12 +2294,6 @@ def chain_fixture(name, *, hp=(1000, 1000, 1000), delay=0.5, form=None,
         for calc in kit["calcs"].values():
             calc["terms"] = [{"type": "flat", "value": 0, "op": "add"}]
     return spec
-
-
-def flat(spec, name, damage):
-    for kit in spec["kits"].values():
-        if name in kit["calcs"]:
-            kit["calcs"][name]["terms"] = [{"type": "flat", "value": damage, "op": "add"}]
 
 
 def akali(**kwargs):
@@ -4594,22 +4584,6 @@ class TestTankFormation(unittest.TestCase):
                 self.assertEqual([e[3] for e in sparks], [0, 1, 2])
                 self.assertEqual([e[2] for e in sparks], [100.0] * 3)
                 self.assertEqual({e[3] for e in events(res, "take", "magic")}, set(range(5)))
-
-    def test_local_burn_aura_does_not_follow_a_remote_primary_target(self):
-        for nearby in (True, False):
-            with self.subTest(nearby=nearby):
-                spec = body_spec(hp=10 ** 6, duration=1.1,
-                                 dummy=formation_sources(pre=0.0, ability=0.0),
-                                 fx=[{"burnAura": [0.01, 3.0]}])
-                for slot in spec["dummies"]["slots"]:
-                    slot["nearby"] = nearby
-                _, res = ENGINE.simulate(spec, True)
-                burns = events(res, "damage", "burn")
-                if nearby:
-                    self.assertTrue(burns)
-                    self.assertEqual({e[3] for e in burns}, {0})
-                else:
-                    self.assertEqual(burns, [])
 
     def test_optional_nearby_defaults_to_legacy_all_nearby(self):
         # A null lane opts the board out of the formation, so this exercises

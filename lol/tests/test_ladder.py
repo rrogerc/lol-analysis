@@ -47,6 +47,7 @@ class TestRows(unittest.TestCase):
         con = stats_db([("ahri", "middle", 6, 499, 250), ("ahri", "middle", 7, 500, 275),
                         ("garen", "top", 3, 499, 250)])
         (row,) = self.rows(con)
+        self.assertEqual(set(row), {"c", "l", "wr", "g", "total"})
         self.assertEqual((row["c"], row["l"], row["total"]), ("ahri", "middle", 999))
         self.assertEqual(row["g"], [0, 0, 0, 0, 0, 499, 500])
         self.assertEqual(row["wr"], [None] * 6 + [55.0])

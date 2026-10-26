@@ -16,9 +16,7 @@ from tft.tests.helpers import (
     SNAP,
     ally,
     carry_result,
-    enemy,
     events,
-    fight,
     fixture,
     flat,
     flat_calc,
@@ -28,7 +26,6 @@ from tft.tests.helpers import (
     one_hitter,
     rows,
     spec_for,
-    trace,
 )
 
 
@@ -155,9 +152,9 @@ class TestIndependentTargeting(unittest.TestCase):
             with self.subTest(form=form):
                 caster = {"spec": independent_cast("Kog'Maw", form=form),
                           "frontline": False, "lane": 6, "priority": 0}
-                result = fight([caster], [enemy(lane=0), enemy(lane=2), enemy(lane=6)],
-                               duration=0.4, geometry="spread")
-                hits = trace(result, "damage", source=0, name="ability")
+                result = champion_match([caster], [ally(lane=0), ally(lane=2), ally(lane=6)],
+                                        duration=0.4, geometry="spread")
+                hits = match_events(result, "damage", source=0, name="ability")
                 self.assertEqual(len(hits), 2)
                 self.assertEqual(hits[0]["target"], 2)
                 self.assertEqual(len({hit["target"] for hit in hits}), 2)
@@ -709,116 +706,43 @@ class TestSharedLilliaSleep(unittest.TestCase):
         self.assertEqual(match_events(result, "damage", name="wake-up"), [])
         self.assertFalse(result["enemies"][0]["alive"])
 
-    def test_shared_scheduled_spell_resumes_when_awakened(self):
-        result = fight([lullaby_member(), ally("Ashe", hp=10000, ad=600, attack_speed=2)],
-                       [enemy(ability=10, physicalShare=0, castStart=0.5, castInterval=10)], duration=1.2)
-        self.assertEqual([hit["time"] for hit in trace(result, "enemySpell")], [1.0])
-
-    def test_refreshed_shared_sleep_resumes_an_already_pending_spell_on_wake(self):
-        first = lullaby_member()
-        second = lullaby_member()
-        first["spec"]["unit"]["castTime"] = 0.25
-        second["spec"]["unit"]["castTime"] = 0.75
-        result = fight([first, second, ally("Ashe", hp=10000, ad=500, attack_speed=2)],
-                       [enemy(ability=10, physicalShare=0, castStart=0.5, castInterval=10)], duration=2.1)
-        self.assertEqual([hit["time"] for hit in trace(result, "sleep")], [0.25, 0.75])
-        self.assertEqual([(hit["time"], hit["source"]) for hit in trace(result, "wake")], [(1.5, 1)])
-        # The enemy became ready at .5 under the first Sleep (expiry 2.0).
-        # The refreshed Sleep expires at 2.5 but is broken at 1.5; retaining
-        # either expiry would suppress a spell whose pending cast is ready.
-        self.assertEqual([hit["time"] for hit in trace(result, "enemySpell")], [1.5])
-
-    def test_shared_wake_preserves_a_future_spell_timer_matching_sleep_expiry(self):
-        result = fight([lullaby_member(), ally("Ashe", hp=10000, ad=600, attack_speed=2)],
-                       [enemy(ability=10, physicalShare=0, castStart=2.0, castInterval=10)], duration=2.1)
-        self.assertEqual([hit["time"] for hit in trace(result, "wake")], [1.0])
-        self.assertEqual([hit["time"] for hit in trace(result, "enemySpell")], [2.0])
-
-    def test_shorter_shared_sleep_refresh_updates_pending_spell_without_a_damage_wake(self):
-        for extra_stun, expected in ((False, 1.75), (True, 3.25)):
-            with self.subTest(independent_stun=extra_stun):
-                first = lullaby_member()
-                first["spec"]["unit"]["castTime"] = 0.25
-                first["spec"]["kits"]["base"]["rows"]["SleepDuration"] = 4.0
-                second = lullaby_member()
-                second["spec"]["unit"]["castTime"] = 0.75
-                second["spec"]["kits"]["base"]["rows"]["SleepDuration"] = 1.0
-                members = [first, second]
-                if extra_stun:
-                    stunner = ally("Leona", driver="Leona", hp=10000, cast=True)
-                    flat_calc(stunner, "GenericCalc1", 0)
-                    flat_calc(stunner, "MagicDamageCalc1", 0)
-                    stunner["spec"]["kits"]["base"]["rows"]["StunDuration"] = 3.0
-                    members.append(stunner)
-                result = fight(members, [enemy(ability=10, physicalShare=0,
-                                              castStart=0.5, castInterval=10)], duration=3.5)
-                # Synthetic durations exercise the declared refresh rule:
-                # the old 4.25 expiry becomes 1.75. No threshold is crossed,
-                # and an independent stun may still delay readiness to 3.25.
-                self.assertEqual([hit["time"] for hit in trace(result, "sleep")], [0.25, 0.75])
-                self.assertEqual(trace(result, "wake"), [])
-                self.assertEqual([hit["time"] for hit in trace(result, "enemySpell")], [expected])
-
-    def test_allied_attacks_awaken_once_and_credit_lillia_in_both_shared_modes(self):
-        for mode in ("dummy", "champion"):
-            with self.subTest(mode=mode):
-                members = [lullaby_member(), ally("Ashe", hp=10000, ad=600, attack_speed=2)]
-                if mode == "dummy":
-                    result = fight(members, [enemy()], duration=2.1)
-                    wakes = trace(result, "damage", name="wake-up")
-                else:
-                    result = champion_match(members, [ally("Leona", hp=10000)], duration=2.1)
-                    wakes = match_events(result, "damage", name="wake-up")
-                self.assertEqual([(hit["time"], hit["source"], hit["amount"]) for hit in wakes],
-                                 [(1.0, 0, 1000)])
-                self.assertAlmostEqual(result["allies"][0]["damage"], 135 + 1000)
+    def test_allied_attacks_awaken_once_and_credit_lillia(self):
+        members = [lullaby_member(), ally("Ashe", hp=10000, ad=600, attack_speed=2)]
+        result = champion_match(members, [ally("Leona", hp=10000)], duration=2.1)
+        wakes = match_events(result, "damage", name="wake-up")
+        self.assertEqual([(hit["time"], hit["source"], hit["amount"]) for hit in wakes],
+                         [(1.0, 0, 1000)])
+        self.assertAlmostEqual(result["allies"][0]["damage"], 135 + 1000)
 
     def test_shared_item_burn_damage_counts_toward_threshold(self):
-        for mode in ("dummy", "champion"):
-            with self.subTest(mode=mode):
-                members = [lullaby_member(), ally("Ashe", hp=10000, ad=1,
-                                                 fx=[{"burnOnHit": [0.2, 3]}])]
-                if mode == "dummy":
-                    result = fight(members, [enemy()], duration=2.1)
-                    wakes = trace(result, "damage", name="wake-up")
-                else:
-                    result = champion_match(members, [ally("Leona", hp=10000)], duration=2.1)
-                    wakes = match_events(result, "damage", name="wake-up")
-                self.assertEqual(len(wakes), 1)
-                self.assertEqual((wakes[0]["source"], wakes[0]["amount"]), (0, 1000))
+        members = [lullaby_member(), ally("Ashe", hp=10000, ad=1,
+                                         fx=[{"burnOnHit": [0.2, 3]}])]
+        result = champion_match(members, [ally("Leona", hp=10000)], duration=2.1)
+        wakes = match_events(result, "damage", name="wake-up")
+        self.assertEqual(len(wakes), 1)
+        self.assertEqual((wakes[0]["source"], wakes[0]["amount"]), (0, 1000))
 
     def test_awakening_keeps_an_independent_longer_stun(self):
-        for mode in ("dummy", "champion"):
-            with self.subTest(mode=mode):
-                stunner = ally("Leona", driver="Leona", hp=10000, cast=True)
-                flat_calc(stunner, "GenericCalc1", 0)
-                flat_calc(stunner, "MagicDamageCalc1", 0)
-                stunner["spec"]["kits"]["base"]["rows"]["StunDuration"] = 3
-                members = [lullaby_member(), stunner,
-                           ally("Ashe", hp=10000, ad=600, attack_speed=2)]
-                if mode == "dummy":
-                    result = fight(members, [enemy(ad=10, **{"as": 2}, attackStart=0.5)], duration=3.6)
-                    wakes = trace(result, "damage", name="wake-up")
-                    attacks = trace(result, "enemyAttack")
-                else:
-                    result = champion_match(members, [ally("Ornn", hp=10000, ad=10,
-                                                          attack_speed=2)], duration=3.6)
-                    wakes = match_events(result, "damage", name="wake-up")
-                    attacks = [hit for hit in match_events(result, "attack", side="enemy")
-                               if hit["time"] > 0]
-                self.assertEqual(len(wakes), 1)
-                self.assertTrue(attacks)
-                self.assertTrue(all(hit["time"] >= 3.25 for hit in attacks))
+        stunner = ally("Leona", driver="Leona", hp=10000, cast=True)
+        flat_calc(stunner, "GenericCalc1", 0)
+        flat_calc(stunner, "MagicDamageCalc1", 0)
+        stunner["spec"]["kits"]["base"]["rows"]["StunDuration"] = 3
+        members = [lullaby_member(), stunner,
+                   ally("Ashe", hp=10000, ad=600, attack_speed=2)]
+        result = champion_match(members, [ally("Ornn", hp=10000, ad=10,
+                                              attack_speed=2)], duration=3.6)
+        wakes = match_events(result, "damage", name="wake-up")
+        attacks = [hit for hit in match_events(result, "attack", side="enemy")
+                   if hit["time"] > 0]
+        self.assertEqual(len(wakes), 1)
+        self.assertTrue(attacks)
+        self.assertTrue(all(hit["time"] >= 3.25 for hit in attacks))
 
-    def test_sleep_expiry_has_no_bonus_in_either_shared_mode(self):
-        for mode in ("dummy", "champion"):
-            with self.subTest(mode=mode):
-                members = [lullaby_member()]
-                result = (fight(members, [enemy()], duration=2.1) if mode == "dummy" else
-                          champion_match(members, [ally("Leona", hp=10000)], duration=2.1))
-                wakes = (trace(result, "damage", name="wake-up") if mode == "dummy" else
-                         match_events(result, "damage", name="wake-up"))
-                self.assertEqual(wakes, [])
+    def test_sleep_expiry_has_no_bonus(self):
+        members = [lullaby_member()]
+        result = champion_match(members, [ally("Leona", hp=10000)], duration=2.1)
+        wakes = match_events(result, "damage", name="wake-up")
+        self.assertEqual(wakes, [])
 
 
 class TestAzirProtectorsVow(unittest.TestCase):

@@ -32,7 +32,7 @@ pub(crate) struct CombatState {
     pub generation: u64,
     pub hp: f64, pub max_hp: f64, pub champion_max_hp: f64,
     pub alive: bool, pub holding: bool, pub armor: f64, pub mr: f64,
-    pub shield: f64, pub untargetable_until: f64, pub stunned_until: f64,
+    pub untargetable_until: f64, pub stunned_until: f64,
     pub mana_max: f64, pub tank: bool, pub sunder_aura: f64,
     pub shred_aura: f64, pub ionic_spark: f64,
     pub cc_immune: bool,
@@ -59,7 +59,6 @@ pub(crate) trait CombatBridge {
     fn primary(&self) -> Option<usize>;
     fn damage_heals(&self, alive: bool, source: &str) -> bool;
     fn record(&self, event: Ev);
-    fn deferred_on_hit(&self, target: usize, generation: u64);
 }
 
 #[derive(Clone)]
@@ -245,7 +244,6 @@ trait Actor<'a> {
     fn heal(&mut self, amount: f64) -> f64;
     fn shield(&mut self, amount: f64, duration: f64) -> f64;
     fn reave(&mut self, amount: f64);
-    fn on_hit(&mut self, target: usize);
     fn take_cleanse(&mut self) -> bool;
     fn finish(&mut self) -> (Vec<Ev>, [(u64, f64, f64); MAX_ACTORS]);
     fn result(&mut self, time: f64) -> ActorResult;
@@ -282,7 +280,6 @@ impl<'a, D: Driver> Champion<'a, D> {
         // Match-only geometry, horizon and target count belong to each
         // world. The prepared input can be reused across all combinations.
         fight.duration = duration; fight.clump = clump;
-        fight.team_mode = true;
         if trace { fight.trace = Some(Vec::new()); }
         D::init(&mut fight);
         Self { fight, clock: prepared.clock.clone(), received: 0.0 }
@@ -316,7 +313,7 @@ impl<'a, D: Driver> Actor<'a> for Champion<'a, D> {
                 if f.cur == index { f.target_since = time; }
             }
             target.alive = state.alive;
-            target.team_focus(state.focused);
+            target.targeting_streams = usize::from(state.focused);
         }
         let primary = primary.unwrap_or(usize::MAX);
         if f.cur != primary { f.target_since = time; }
@@ -355,7 +352,6 @@ impl<'a, D: Driver> Actor<'a> for Champion<'a, D> {
         if self.fight.shield(amount, duration, "ally shield", false).is_some() { amount } else { 0.0 }
     }
     fn reave(&mut self, amount: f64) { self.fight.receive_mana_reave(amount); }
-    fn on_hit(&mut self, target: usize) { self.fight.on_hit_effects(Some(target), true); }
     fn take_cleanse(&mut self) -> bool { self.fight.take_edge_cleanse_request() }
     fn finish(&mut self) -> (Vec<Ev>, [(u64, f64, f64); MAX_ACTORS]) {
         self.fight.combat_flush();
@@ -391,7 +387,6 @@ enum Deferred {
     Support { side: usize, source: usize, target: usize, amount: f64, duration: Option<f64> },
     Proc { side: usize, source: usize, target: usize, amount: f64, dtype: DType, name: &'static str },
     Reave { side: usize, target: usize, amount: f64 },
-    OnHit { side: usize, source: usize, target: usize, generation: u64 },
     Wake { side: usize, wake: crate::fight::SleepWake },
     SpellweaverCast { side: usize, target: usize },
 }
@@ -431,10 +426,6 @@ impl CombatBridge for Link<'_> {
     fn record(&self, event: Ev) {
         let world = self.world.upgrade().unwrap();
         if world.trace { world.traces.borrow_mut().push(Trace { side: self.side, source: self.source, event }); }
-    }
-    fn deferred_on_hit(&self, target: usize, generation: u64) {
-        self.world.upgrade().unwrap().pending.borrow_mut().push_back(
-            Deferred::OnHit { side: self.side, source: self.source, target, generation });
     }
 }
 
@@ -673,13 +664,6 @@ impl<'a> World<'a> {
                     let mut actor = self.actors[side][target].borrow_mut();
                     actor.reave(amount);
                     self.publish(side, target, actor.state());
-                }
-                Deferred::OnHit { side, source, target, generation } => {
-                    if self.state(1-side,target).generation != generation { continue; }
-                    let mut actor = self.actors[side][source].borrow_mut();
-                    actor.sync(&self.context(side,source));
-                    actor.on_hit(target);
-                    self.finish(side,source,actor.as_mut());
                 }
                 Deferred::Proc { side, source, target, amount, dtype, name } => {
                     let mut actor = self.actors[side][source].borrow_mut();

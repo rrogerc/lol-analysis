@@ -1,8 +1,8 @@
 //! Everything items, traits and the role add to a unit for one fight (the
 //! port of tft.Fx / apply_item / apply_trait / build_fx). Python resolves
-//! every number — an item's stat line as (key, value) pairs in the line's
+//! every number (an item's stat line as (key, value) pairs in the line's
 //! order, its passive as plain numbers with the range and role gates
-//! already applied, a trait's bonus at the breakpoint being simulated —
+//! already applied, a trait's bonus at the breakpoint being simulated)
 //! and this composes them per build in exactly the order the Python engine
 //! did, so every sum has the same bits.
 
@@ -130,11 +130,9 @@ pub struct ItemFx {
     pub burn_requires_attack_or_spell: bool,
     pub sunder_aura: Option<f64>,
     pub shred_aura: Option<f64>,
-    pub burn_aura: Option<(f64, f64)>,
     pub sunfire_aura: Option<(f64, f64, f64, f64)>,
     pub sunder_aura_by_range: Option<(f64, f64)>,
     pub shred_aura_by_range: Option<(f64, f64)>,
-    pub burn_aura_by_range: Option<(f64, f64, f64)>,
     pub ionic_spark_by_range: Option<(f64, f64)>,
     pub hp_mult: Option<f64>,
     pub hp_compound_mult: Option<f64>,
@@ -210,11 +208,9 @@ impl ItemFx {
             burn_requires_attack_or_spell: truthy(d, "burnRequiresAttackOrSpell")?,
             sunder_aura: getopt(d, "sunderAura")?,
             shred_aura: getopt(d, "shredAura")?,
-            burn_aura: tuple2(d, "burnAura")?,
             sunfire_aura: sunfire_aura(d)?,
             sunder_aura_by_range: range_pair(d, "sunderAuraByRange", true)?,
             shred_aura_by_range: range_pair(d, "shredAuraByRange", true)?,
-            burn_aura_by_range: range_burn(d)?,
             ionic_spark_by_range: range_pair(d, "ionicSparkByRange", false)?,
             hp_mult: getopt(d, "hpMult")?,
             hp_compound_mult: getopt(d, "hpCompoundMult")?,
@@ -263,15 +259,6 @@ fn range_pair(d: &Bound<'_, PyDict>, key: &str, fraction: bool) -> PyResult<Opti
     }
 }
 
-fn range_burn(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64)>> {
-    match vecf(d, "burnAuraByRange")? {
-        None => Ok(None),
-        Some(values) if values.len() == 3 && values.iter().all(|v| v.is_finite() && *v >= 0.0)
-            && values[0] <= 1.0 && values[1] > 0.0 => Ok(Some((values[0], values[1], values[2]))),
-        Some(_) => Err(pyo3::exceptions::PyValueError::new_err("burnAuraByRange: invalid rate/duration/range")),
-    }
-}
-
 fn sunfire_aura(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64, f64)>> {
     match vecf(d, "sunfireAura")? {
         None => Ok(None),
@@ -289,9 +276,7 @@ fn sunfire_aura(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64, f64)>>
 pub struct Summoner {
     pub damage_mult: Option<f64>,
     pub health_mult: Option<f64>,
-    pub extra_summons: Option<f64>,
     pub extra_attacks: Option<f64>,
-    pub summon_power: Option<f64>,
     /// Azir's own row from 18.2b on; absent before, when his soldiers read
     /// `damage_mult` like Mama Beak's summons.
     pub azir_damage_mult: Option<f64>,
@@ -344,7 +329,6 @@ impl TimedStats {
 
 #[derive(Clone, Debug, Default)]
 pub struct TraitFx {
-    #[allow(dead_code)]
     pub api: String,
     pub name: String,
     pub stats: Vec<(StatKey, f64)>,
@@ -398,9 +382,7 @@ impl TraitFx {
             Some(s) => Some(Summoner {
                 damage_mult: getopt(&s, "damageMult")?,
                 health_mult: getopt(&s, "healthMult")?,
-                extra_summons: getopt(&s, "extraSummons")?,
                 extra_attacks: getopt(&s, "extraAttacks")?,
-                summon_power: getopt(&s, "summonPower")?,
                 azir_damage_mult: getopt(&s, "azirDamageMult")?,
             }),
             None => None,
@@ -490,7 +472,6 @@ pub struct Fx {
     pub burn_on_hit: Vec<(f64, f64, bool, bool)>,
     pub sunder_aura: f64,
     pub shred_aura: f64,
-    pub burn_aura: Option<(f64, f64)>,
     /// One (burn rate, duration, application interval, reach) per equipped copy.
     pub sunfire_auras: Vec<(f64, f64, f64, f64)>,
     pub amp_after_same_target: Option<(f64, f64)>,
@@ -543,7 +524,7 @@ impl Default for Fx {
             ap_per_interval: Vec::new(), ap_after: Vec::new(), amp_per_crit: Vec::new(),
             as_per_attack_stack: Vec::new(), ap_per_cast: 0.0, spellweaver_ap_per_cast: 0.0,
             sunder_on_hit: Vec::new(), shred_on_hit: Vec::new(), burn_on_hit: Vec::new(),
-            sunder_aura: 0.0, shred_aura: 0.0, burn_aura: None, sunfire_auras: Vec::new(), amp_after_same_target: None,
+            sunder_aura: 0.0, shred_aura: 0.0, sunfire_auras: Vec::new(), amp_after_same_target: None,
             bleed_pct: 0.0, bleed_dur: 0.0, bonus_magic_pct: 0.0, bonus_true_pct: 0.0, ravager: None,
             riftbeast: false, form: None,
             omnivamp: 0.0, durabilities: Vec::new(), durability_while_shielded: Vec::new(),
@@ -676,9 +657,6 @@ impl Fx {
         }
         if let Some(v) = it.shred_aura {
             self.shred_aura = pymax(self.shred_aura, v);
-        }
-        if let Some(x) = it.burn_aura {
-            self.burn_aura = Some(x);
         }
         if let Some(v) = it.hp_mult {
             self.add(StatKey::HpMult, v, false);
@@ -896,9 +874,6 @@ pub(crate) fn build_fx_for(spec: &crate::spec::CellSpec, items: &[&ItemFx]) -> F
         }
         if let Some((value, reach)) = item.shred_aura_by_range {
             if range <= reach { fx.shred_aura = pymax(fx.shred_aura, value); }
-        }
-        if let Some((rate, duration, reach)) = item.burn_aura_by_range {
-            if range <= reach { fx.burn_aura = Some((rate, duration)); }
         }
         if let Some(aura @ (_, _, _, reach)) = item.sunfire_aura {
             if range <= reach { fx.sunfire_auras.push(aura); }

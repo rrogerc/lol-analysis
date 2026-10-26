@@ -30,7 +30,7 @@ web/                Dashboard server, static exporter, frontend, and operations
   db.py             SQLite schema, connection helper, and shared repo paths
   server.py         Local HTTP server (`serve`) and static snapshot builder (`export`)
   static/           Buildless HTML, CSS, JS, and Trait Flex Web Worker
-  ops/              Engine build script, scheduled timer scripts, systemd reference config
+  ops/              Engine build script and scheduled timer scripts
   tests/            Shared Node VM/DOM harness for UI suites
 ```
 

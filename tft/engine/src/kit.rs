@@ -1,6 +1,6 @@
 //! A unit's numbers for one star level and one form, resolved by Python
 //! (tft.kit_spec): the stats, every curve row at that star, and the
-//! ability's calculations with the star's coefficients — plus the
+//! ability's calculations with the star's coefficients, plus the
 //! calculation folding itself (tft.calc_value's port).
 //!
 //! Drivers resolve the rows and calcs they read into ids once, in
@@ -114,12 +114,9 @@ pub struct Calc {
 /// The base stats of the unit in this form (tft.Sheet's `stats`); the
 /// star-scaled health and attack damage are the kit's `hp_star` and
 /// `base_ad`, computed by Python so the engine never raises a float to a
-/// power. Every field is kept for the drivers (Gnar reads `mana`).
+/// power.
 #[derive(Clone, Debug, Default)]
-#[allow(dead_code)]
 pub struct Stats {
-    pub hp: f64,
-    pub ad: f64,
     pub as_: f64,
     pub armor: f64,
     pub mr: f64,
@@ -132,9 +129,9 @@ pub struct Stats {
 
 impl Stats {
     pub fn from_py(d: &Bound<'_, PyDict>) -> PyResult<Stats> {
+        let _ = getf(d, "hp", 0.0)?;
+        let _ = getf(d, "ad", 0.0)?;
         Ok(Stats {
-            hp: getf(d, "hp", 0.0)?,
-            ad: getf(d, "ad", 0.0)?,
             as_: getf(d, "as", 0.7)?,
             armor: getf(d, "armor", 0.0)?,
             mr: getf(d, "mr", 0.0)?,

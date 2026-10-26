@@ -342,17 +342,15 @@ class TestTftSite(unittest.TestCase):
         updated, _ = self.prepare()
         self.assertNotEqual(current["siteGeneration"], updated["siteGeneration"])
 
-    def test_early_inventory_requires_complete_endpoint_and_accepts_older_flags(self):
+    def test_early_inventory_requires_complete_endpoint_and_optional_flags(self):
         clean = {"baselineCells": [["ahri", "s1-clump-bare"]],
                  "leaderboardSelections": ["best-clump-bare"]}
-        archived = clean | {"compositionContexts": [], "compositionArchived": True}
-        for inventory in (clean, archived):
-            for flags in ({}, {"traitFlex": True}, {"earlyComps": True}, {"traitFlex": True, "earlyComps": True}):
-                with self.subTest(inventory=inventory, flags=flags):
-                    urls = tft_site._endpoints(inventory | flags)
-                    self.assertEqual("/api/tft/traits.json" in urls, bool(flags.get("traitFlex")))
-                    self.assertEqual("/api/tft/early.json" in urls, bool(flags.get("earlyComps")))
-                    self.assertFalse(any(url.startswith("/api/tft/compositions/") for url in urls))
+        for flags in ({}, {"traitFlex": True}, {"earlyComps": True}, {"traitFlex": True, "earlyComps": True}):
+            with self.subTest(flags=flags):
+                urls = tft_site._endpoints(clean | flags)
+                self.assertEqual("/api/tft/traits.json" in urls, bool(flags.get("traitFlex")))
+                self.assertEqual("/api/tft/early.json" in urls, bool(flags.get("earlyComps")))
+                self.assertFalse(any(url.startswith("/api/tft/compositions/") for url in urls))
         for flags in ({"earlyComps": False}, {"earlyComps": 1}, {"other": True}):
             with self.subTest(flags=flags), self.assertRaisesRegex(ValueError, "invalid TFT site inventory"):
                 tft_site._endpoints(clean | flags)
@@ -457,32 +455,6 @@ class TestTftSite(unittest.TestCase):
                 (self.directory / "team-planner.json").write_text(json.dumps(value))
                 with self.subTest(code=bad), self.assertRaisesRegex(ValueError, "Team Planner catalog"):
                     self.prepare()
-
-    def test_v1_publication_with_legacy_composition_fields_remains_readable(self):
-        _, bundle = self.prepare()
-        manifest = deepcopy(bundle.manifest)
-        manifest.pop("presentationHash")
-        manifest["compositionRevision"] = "archived-v1"
-        manifest["inventory"]["compositionArchived"] = True
-        manifest["inventory"]["compositionContexts"] = []
-        manifest["siteGeneration"] = "g-" + hashlib.sha256(tft_site._json_bytes(
-            [manifest["baselineRevision"], manifest["compositionRevision"], manifest["publisherHash"]])).hexdigest()
-        for url in ("/api/tft/meta.json", "/api/tft/status.json"):
-            payload = bundle.json(url)
-            payload.pop("publicationRevision")
-            tft_site._write(bundle.directory, url, payload)
-            manifest["entries"][url] = tft_site._compress(bundle.directory, url)
-        raw = tft_site._json_bytes(manifest)
-        (bundle.directory / "manifest.json").write_bytes(raw)
-        legacy = tft_site._descriptor(manifest, raw)
-        os.rename(bundle.directory, self.site / legacy["siteGeneration"])
-        loaded = tft_site.load(legacy)
-        self.assertNotIn("presentationHash", loaded.manifest)
-        self.assertEqual(loaded.json("/api/tft/meta.json"), self.meta)
-        self.assertNotIn("publicationRevision", loaded.json("/api/tft/status.json"))
-        next_descriptor, _ = self.prepare()
-        self.assertNotEqual(next_descriptor["siteGeneration"], legacy["siteGeneration"])
-        self.assertEqual(tft_site.load(legacy).json("/api/tft/meta.json"), self.meta)
 
     def test_presentation_hash_is_validated_and_bound_to_generation(self):
         descriptor, bundle = self.prepare()

@@ -18,7 +18,6 @@ mod kit;
 mod pyf;
 mod pyget;
 mod spec;
-mod team;
 mod symmetric;
 
 use pyo3::exceptions::PyKeyError;
@@ -157,7 +156,6 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("burnRequiresTags", burn_requires_tags)?;
     d.set_item("sunderAura", fx.sunder_aura)?;
     d.set_item("shredAura", fx.shred_aura)?;
-    d.set_item("burnAura", fx.burn_aura)?;
     d.set_item("sunfireAuras", fx.sunfire_auras.clone())?;
     d.set_item("ampAfterSameTarget", fx.amp_after_same_target)?;
     d.set_item("bleedPct", fx.bleed_pct)?;
@@ -192,7 +190,7 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("manaOnTakedown", fx.mana_on_takedown)?;
     d.set_item("faeHeal", fx.fae_heal)?;
     d.set_item("summoner", fx.summoner.map(|s| {
-        (s.damage_mult, s.health_mult, s.extra_summons, s.extra_attacks, s.summon_power, s.azir_damage_mult)
+        (s.damage_mult, s.health_mult, s.extra_attacks, s.azir_damage_mult)
     }))?;
     d.set_item("caustic", fx.caustic)?;
     d.set_item("notes", fx.notes.clone())?;
@@ -326,7 +324,6 @@ fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(analyze_cell, m)?)?;
     m.add_function(wrap_pyfunction!(score_pairs, m)?)?;
     m.add_function(wrap_pyfunction!(simulate, m)?)?;
-    m.add_function(wrap_pyfunction!(team::simulate_team, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::simulate_match, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::prepare_actor, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::simulate_matches, m)?)?;
@@ -340,6 +337,5 @@ fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("DRIVERS", drivers)?;
     m.add("NAMES", drivers::NAMES.to_vec())?;
     m.add("SOURCE_HASH", env!("LOL_TFT_SOURCE_HASH"))?;
-    m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

@@ -19,7 +19,6 @@
 
 <nav>
   <button data-view="overview" class="active">Overview</button>
-  <button data-view="champion">Champion</button>
   <button data-view="onetricks">One-tricks</button>
   <button data-view="builds">Builds</button>
   <button data-view="tft">TFT</button>
@@ -29,9 +28,9 @@
 <!-- ============================ Overview ============================ -->
 <section class="view active" id="view-overview">
   <div class="kpis">
-    <div class="tile"><div class="label">Champion-roles</div><div class="value" id="kpi-roles">—</div></div>
-    <div class="tile" title="Distinct matches at this tier across the shown patches (≈ means estimated — re-run scaling sync for exact counts)"><div class="label">Matches analyzed</div><div class="value" id="kpi-games">—</div></div>
-    <div class="tile"><div class="label">Patches</div><div class="value" id="kpi-patches">—</div></div>
+    <div class="tile"><div class="label">Champion-roles</div><div class="value" id="kpi-roles">-</div></div>
+    <div class="tile" title="Distinct matches at this tier across the shown patches (≈ means estimated: re-run scaling sync for exact counts)"><div class="label">Matches analyzed</div><div class="value" id="kpi-games">-</div></div>
+    <div class="tile"><div class="label">Patches</div><div class="value" id="kpi-patches">-</div></div>
   </div>
 
   <div class="controls">
@@ -52,7 +51,7 @@
 
   <div class="card">
     <h2>Rankings</h2>
-    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval — differences inside it are noise. Click a row to open its champion page.</div>
+    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval: differences inside it are noise.</div>
     <div class="seg" id="bucket-seg"></div>
     <div class="tablewrap">
       <table id="tbl">
@@ -66,32 +65,6 @@
         <tbody></tbody>
       </table>
     </div>
-  </div>
-</section>
-
-<!-- ============================ Champion ============================ -->
-<section class="view" id="view-champion">
-  <div class="controls">
-    <input id="champ-search" type="search" list="champ-list" placeholder="Type a champion (e.g. kayle)..." aria-label="Champion">
-    <datalist id="champ-list"></datalist>
-  </div>
-  <div class="card">
-    <h2 id="champ-title">Pick a champion</h2>
-    <div class="hint">Win rate by game length, one line per lane (lanes with data at this tier).</div>
-    <div class="chartwrap">
-      <svg id="champ-chart" width="100%" height="320" role="img" aria-label="Champion win rate by game length"></svg>
-      <div class="tooltip" id="champ-tt"></div>
-    </div>
-    <div class="legend" id="champ-legend"></div>
-  </div>
-  <div class="card">
-    <h2>Win rate by patch</h2>
-    <div class="hint">Overall win rate per patch (all game lengths), one line per lane.</div>
-    <div class="chartwrap">
-      <svg id="patch-chart" width="100%" height="320" role="img" aria-label="Champion win rate by patch"></svg>
-      <div class="tooltip" id="patch-tt"></div>
-    </div>
-    <div class="legend" id="patch-legend"></div>
   </div>
 </section>
 
@@ -121,13 +94,13 @@
 <!-- ============================ Builds ============================ -->
 <section class="view" id="view-builds">
   <div class="card">
-    <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
+    <h2 id="builds-title">Ranked builds: theoretical damage model</h2>
     <div class="seg" id="builds-mode-seg" role="group" aria-label="Builds view">
       <button data-key="champion" aria-pressed="true" class="active">Champion builds</button>
       <button data-key="leaderboard" aria-pressed="false">Leaderboard</button>
     </div>
-    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest — or, overall, that do best on all three at once. Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. Select a column heading to sort by it, and again to reverse: a target's column orders the champions by how the build shown does in that one fight (that target's own scenario ranks each champion's best build against it instead), and # stays the scenario's rank whatever the order. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
-    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
+    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest (or, overall, that do best on all three at once). Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. Select a column heading to sort by it, and again to reverse: a target's column orders the champions by how the build shown does in that one fight (that target's own scenario ranks each champion's best build against it instead), and # stays the scenario's rank whatever the order. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit, no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target; real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times: each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
     <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
     <div id="champion-more" hidden style="margin:0 0 10px">
@@ -171,8 +144,8 @@
   <div class="card">
     <h2 id="pool-title">Item pool</h2>
     <div class="hint" id="pool-notes" hidden></div>
-    <div class="hint" id="pool-hint-damage">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced — no build carries two of a group.</div>
-    <div class="hint" id="pool-hint-survival" hidden>Every ranked build is one boots choice plus five of these: every item that does something for its holder while it takes damage — health, armor or magic resist, or a modeled defensive effect. An item that only adds damage can't make a tankiest build. In-game "Limited to 1" groups (Lifeline, Immolate, Annul, Hydra, Spellblade ...) are enforced.</div>
+    <div class="hint" id="pool-hint-damage">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated: anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced: no build carries two of a group.</div>
+    <div class="hint" id="pool-hint-survival" hidden>Every ranked build is one boots choice plus five of these: every item that does something for its holder while it takes damage (health, armor or magic resist, or a modeled defensive effect). An item that only adds damage can't make a tankiest build. In-game "Limited to 1" groups (Lifeline, Immolate, Annul, Hydra, Spellblade ...) are enforced.</div>
     <div class="chips" id="pool-chips"></div>
     <div class="hint" style="margin:10px 0 0">Boots (one per build):</div>
     <div class="chips" id="boots-chips"></div>
@@ -520,7 +493,7 @@
   <div class="card" id="services-card">
     <h2>Services</h2>
     <div class="hint">The systemd units that run this repo, declared in
-      <code>dotfiles/nixos/configuration.nix</code> — that file is where to change them.
+      <code>dotfiles/nixos/configuration.nix</code>: that file is where to change them.
       A restart count climbing on a continuous unit means it is crash-looping:
       <code>journalctl -u &lt;unit&gt;</code> has the reason.</div>
     <table id="services">

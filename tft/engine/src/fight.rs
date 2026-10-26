@@ -11,12 +11,12 @@
 //! only the nearby current target spread out); `f.adjacent(attacker)` the same for
 //! melee-range effects; `f.d(i)` / `f.dm(i)` the dummy itself.
 //!
-//! Damage: `f.hit_ability(calc, target, src, mult)` (and `_typed` /
-//! `_rt` variants for an explicit damage type or runtime values) resolves
-//! the calc at the unit's current stats; `f.hit_attack(target, mult, src)`
-//! is a basic attack with on-hits; `f.dot_ability(calc, target, duration,
-//! src, mult)` spreads it over time; `f.deal(amount, dtype, target, src,
-//! Deal::…)` is raw. `f.calc(id)` / `f.row(id)` read the unit's numbers.
+//! Damage: `f.hit_ability(calc, target, src, mult)` (and `_typed` for an
+//! explicit damage type) resolves the calc at the unit's current stats;
+//! `f.hit_attack(target, mult, src)` is a basic attack with on-hits;
+//! `f.dot_ability(calc, target, duration, src, mult)` spreads it over time;
+//! `f.deal(amount, dtype, target, src, Deal::...)` is raw.
+//! `f.calc(id)` / `f.row(id)` read the unit's numbers.
 //! `f.stun(&targets, seconds)`, `f.sunder(d, pct, dur)`, `f.shred`, `f.burn`.
 //!
 //! The unit's body: `f.hp`, `f.max_hp()`, `f.hp_frac()`, `f.alive_unit`;
@@ -36,18 +36,18 @@
 //! (`lock_until`) for the cast animation and any channel; a fresh attack
 //! starts when that window ends. The engine writes both fields at the start
 //! of the cast, before calling `cast_started`/`cast`, and never overrules
-//! what a driver writes afterwards — a driver owns them from then on
+//! what a driver writes afterwards: a driver owns them from then on
 //! (Pebbles' drain releases `lock_until` and moves `casting_until` every
 //! tick; Azir, Murkwolf and Nidalee hold `lock_until = 1e9` and release it
 //! at the last empowered attack). A lock that lasts as long as an EFFECT is
 //! written from the effect's own clock, which starts when the ability lands
 //! (`f.t` inside `cast`), not from the start of the cast: the barrier, the
 //! flock and Frenzy all begin there, so the lock ends with them. It
-//! therefore outlasts the figure TFTraits prints — which is measured from
-//! the cast — by the effect time, at most the cast animation.
+//! therefore outlasts the figure TFTraits prints (which is measured from
+//! the cast) by the effect time, at most the cast animation.
 
-use std::cell::{Cell, RefCell};
-use std::collections::{HashMap, VecDeque};
+use std::cell::Cell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 
 use crate::driver::Driver;
@@ -144,8 +144,8 @@ impl Sheet {
     }
 
     /// Blue Buff's "10% additional Attack Damage and Ability Power from all
-    /// sources" (`adap_mult`) multiplies what the unit gains — items, traits
-    /// and every stack a fight adds — never the base it starts with: an
+    /// sources" (`adap_mult`) multiplies what the unit gains (items, traits
+    /// and every stack a fight adds), never the base it starts with: an
     /// native bonus-only modifier, with baseline cancellation after its
     /// evaluation channel. Copies add their extra percentage together. A
     /// sheet without the item keeps the plain expression, bit for bit.
@@ -193,8 +193,8 @@ pub struct Dot {
     pub next_crit: f64,
 }
 
-/// tft.Dummy: a health pool with resists — and, when the fight has the
-/// dummies hitting back, its group's median attacks and ability.
+/// tft.Dummy: a health pool with resists, and (when the fight has the
+/// dummies hitting back) its group's median attacks and ability.
 #[derive(Clone, Debug)]
 pub struct Dummy {
     pub(crate) generation: u64,
@@ -328,18 +328,10 @@ impl Dummy {
         self.targeting_streams
     }
 
-    pub(crate) fn team_focus(&mut self, focused: bool) {
-        self.targeting_streams = usize::from(focused);
-        self.n_streams = 0;
-        self.mana = 0.0;
-        self.mana_per_attack = 0.0;
-        self.mana_from_damage = false;
-    }
-
     #[inline]
     fn next_event(&self) -> f64 {
         let mut t = FAR;
-        // Python: min(self.next_attacks) — the first minimal value
+        // Python: min(self.next_attacks), the first minimal value
         for i in 0..self.n_streams {
             let x = self.next_attacks[i];
             if i == 0 || x < t {
@@ -634,8 +626,6 @@ impl SleepTracker {
     }
 }
 
-pub(crate) type SharedSleep = Rc<RefCell<SleepTracker>>;
-
 #[derive(Clone)]
 pub(crate) struct TeamClock {
     next_tick: f64,
@@ -661,8 +651,8 @@ pub struct Fight<'a, D: Driver> {
     pub unit_cast_time: Option<f64>,
     /// The equipped form's cast timeline; None keeps the flat rules.
     timing: Option<CastTiming>,
-    /// A new attack is starting from zero — the fight's first, or the first
-    /// after a cast window: it lands its attack delay after the unit is
+    /// A new attack is starting from zero (the fight's first, or the first
+    /// after a cast window): it lands its attack delay after the unit is
     /// free, whatever the period-based `next_attack` says.
     fresh_attack: bool,
     /// Set by `default_cast_time`: whether the driver's `cast_time` was the
@@ -749,20 +739,15 @@ pub struct Fight<'a, D: Driver> {
     thorns_ready: Vec<f64>,
     pub drv: D,
     pub trace: Option<Vec<Ev>>,
-    pub(crate) team_mode: bool,
     pub(crate) team_effects: Vec<TeamEffect>,
-    pub(crate) sleeps: Option<SharedSleep>,
-    pub(crate) sleep_source: usize,
-    pub(crate) external_sleep: bool,
+    sleeps: Option<SleepTracker>,
     pub(crate) combat_bridge: Option<Rc<dyn crate::symmetric::CombatBridge + 'a>>,
     pub(crate) combat_stunned_until: f64,
     pub(crate) combat_armor_flat: f64,
     pub(crate) combat_mr_flat: f64,
     pub cc_immune_until: f64,
     pub armor_ignore_buffs: Vec<(f64, f64)>,
-    combat_last_deferred: bool,
     combat_generation: u64,
-    combat_last_target_generation: u64,
 }
 
 impl<'a, D: Driver> Fight<'a, D> {
@@ -870,20 +855,15 @@ impl<'a, D: Driver> Fight<'a, D> {
             thorns_ready,
             drv,
             trace: None,
-            team_mode: false,
             team_effects: Vec::new(),
             sleeps: None,
-            sleep_source: 0,
-            external_sleep: false,
             combat_bridge: None,
             combat_stunned_until: 0.0,
             combat_armor_flat: 0.0,
             combat_mr_flat: 0.0,
             cc_immune_until: 0.0,
             armor_ignore_buffs: Vec::new(),
-            combat_last_deferred: false,
             combat_generation: 0,
-            combat_last_target_generation: 0,
         };
         let sunder_aura = f.fx.sunder_aura;
         let shred_aura = f.fx.shred_aura;
@@ -1056,9 +1036,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn target(&self) -> Option<usize> {
         if self.combat_bridge.is_some() {
             return if self.cur < self.targets.len() && self.targets[self.cur].alive { Some(self.cur) } else { None };
-        }
-        if self.team_mode && self.cur < self.targets.len() && self.targets[self.cur].alive {
-            return Some(self.cur);
         }
         self.targets.iter().position(|d| d.alive)
     }
@@ -1242,10 +1219,6 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.sheet.attack_speed(extra)
     }
 
-    pub fn amp(&self, target: usize) -> f64 {
-        self.damage_amp(target, DamageSource::Unit)
-    }
-
     fn damage_amp(&self, target: usize, source: DamageSource) -> f64 {
         let tg = &self.targets[target];
         let mut a = self.fx.amp + self.amp_extra;
@@ -1350,18 +1323,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub(crate) fn take_with_events(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
                                   attack: bool, armor_ignore: f64, mr_ignore: f64,
                                   eligible_item_hit: bool, hit_opportunities: usize) -> f64 {
-        self.take_from_source(amount, dtype, attacker, attack, armor_ignore, mr_ignore,
-                              attacker, eligible_item_hit, hit_opportunities)
-    }
-
-    // Most callers use the same index for source identity and local
-    // attacker-relative procs. Theory's incoming sources are independent
-    // of its outgoing target probes, so it supplies those separately.
-    #[allow(clippy::too_many_arguments)]
-    fn take_from_source(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
-                        attack: bool, armor_ignore: f64, mr_ignore: f64,
-                        source: Option<usize>, eligible_item_hit: bool,
-                        hit_opportunities: usize) -> f64 {
         self.last_damage_spent = 0.0;
         if amount <= 0.0 || !self.holding() {
             return 0.0;
@@ -1395,7 +1356,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             return amount;
         }
         if self.sheet.kind == Kind::Assassin {
-            if let Some(a) = source {
+            if let Some(a) = attacker {
                 if a != self.cur {
                     amount *= 1.0 - ASSASSIN_OFFTARGET_REDUCTION;
                 }
@@ -1622,21 +1583,21 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn heal_ally(&mut self, amount: f64) {
         if amount > 0.0 {
             self.ally_heal += amount;
-            if self.team_mode { self.team_effects.push(TeamEffect::Heal(amount)); }
+            if self.combat_bridge.is_some() { self.team_effects.push(TeamEffect::Heal(amount)); }
         }
     }
 
     pub fn heal_allies(&mut self, amount: f64, count: usize) {
         if amount > 0.0 {
             self.ally_heal += amount * count as f64;
-            if self.team_mode { self.team_effects.push(TeamEffect::HealAllies(amount, count)); }
+            if self.combat_bridge.is_some() { self.team_effects.push(TeamEffect::HealAllies(amount, count)); }
         }
     }
 
     pub fn shield_ally_for(&mut self, amount: f64, duration: f64) {
         if amount > 0.0 {
             self.ally_shield += amount;
-            if self.team_mode && duration > 0.0 {
+            if self.combat_bridge.is_some() && duration > 0.0 {
                 self.team_effects.push(TeamEffect::Shield(amount, duration));
             }
         }
@@ -1658,15 +1619,15 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub fn sleep(&mut self, targets: &Sel, duration: f64, threshold: f64, fraction: f64) {
         if self.combat_bridge.is_none() && self.sleeps.is_none() {
-            self.sleeps = Some(Rc::new(RefCell::new(SleepTracker::new(self.targets.len()))));
+            self.sleeps = Some(SleepTracker::new(self.targets.len()));
         }
         for target in targets.iter() {
             if !self.targets[target].alive || duration <= 0.0 { continue; }
             if self.combat_bridge.is_some() {
                 self.team_effects.push(TeamEffect::Sleep(target, duration, threshold, fraction));
-            } else if let Some(sleeps) = &self.sleeps {
-                sleeps.borrow_mut().apply(target, self.sleep_source, self.targets[target].generation,
-                                           self.t, duration, threshold, fraction);
+            } else if let Some(sleeps) = &mut self.sleeps {
+                sleeps.apply(target, 0, self.targets[target].generation,
+                             self.t, duration, threshold, fraction);
             }
             if self.targets[target].cast_pending {
                 // Refreshing one condition can also shorten its expiry.
@@ -1681,7 +1642,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     fn target_control_until(&self, target: usize) -> f64 {
         let dummy = &self.targets[target];
         dummy.stunned_until.max(self.sleeps.as_ref().map_or(0.0, |sleeps|
-            sleeps.borrow().until(target, dummy.generation, self.t)))
+            sleeps.until(target, dummy.generation, self.t)))
     }
 
     pub(crate) fn wake_sleep(&mut self, wake: SleepWake) {
@@ -1762,7 +1723,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     /// abilities crit only with Precision.
     pub fn deal(&mut self, amount: f64, dtype: DType, target: Option<usize>, src: &'static str,
                 mode: Deal) -> f64 {
-        self.combat_last_deferred = false;
         let target = match target {
             Some(i) if amount > 0.0 && self.targets[i].alive => i,
             _ => return 0.0,
@@ -1784,12 +1744,8 @@ impl<'a, D: Driver> Fight<'a, D> {
             if let Some(damage) = bridge.hit(hit.clone()) {
                 let dealt = damage.amount;
                 self.combat_credit(&hit, damage);
-                self.combat_last_deferred = false;
-                self.combat_last_target_generation = hit.generation;
                 return dealt;
             }
-            self.combat_last_deferred = true;
-            self.combat_last_target_generation = hit.generation;
             return 0.0; // A reciprocal proc settles after the current action.
         }
         let pre = amount;
@@ -1944,25 +1900,17 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.record("kill", 0.0, Some(target), src);
             D::kill(self, target);
         }
-        if let Some(sleeps) = self.sleeps.clone() {
+        if let Some(sleeps) = &mut self.sleeps {
             let victim = &self.targets[target];
-            sleeps.borrow_mut().damage(target, victim.generation, t, amount, victim.alive);
-            if !self.external_sleep {
-                loop {
-                    let wake = sleeps.borrow_mut().wakes.pop_front();
-                    let Some(wake) = wake else { break; };
-                    self.wake_sleep(wake);
-                }
-            }
+            sleeps.damage(target, victim.generation, t, amount, victim.alive);
+        }
+        while let Some(wake) = self.sleeps.as_mut().and_then(|sleeps| sleeps.wakes.pop_front()) {
+            self.wake_sleep(wake);
         }
         self.try_trait_execute(target, amount, src);
     }
 
     /// Sunder, shred and burns that attacks and ability damage apply.
-    pub fn on_hit_effects(&mut self, target: Option<usize>, _ability: bool) {
-        self.on_hit_effects_for(target, Deal::ABILITY);
-    }
-
     fn on_hit_effects_for(&mut self, target: Option<usize>, mode: Deal) {
         let target = match target {
             Some(i) if self.targets[i].alive => i,
@@ -1991,7 +1939,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn sunder(&mut self, target: usize, pct: f64, dur: f64) {
         let t = self.t;
         let d = &mut self.targets[target];
-        if self.team_mode {
+        if self.combat_bridge.is_some() {
             self.team_effects.push(TeamEffect::Reduction(target, pct, dur, false));
             if t >= d.sunder_until || pct > d.sunder { d.sunder = pct; d.sunder_until = t + dur; }
             else if pct == d.sunder { d.sunder_until = pymax(d.sunder_until, t + dur); }
@@ -2011,7 +1959,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn shred(&mut self, target: usize, pct: f64, dur: f64) {
         let t = self.t;
         let d = &mut self.targets[target];
-        if self.team_mode {
+        if self.combat_bridge.is_some() {
             self.team_effects.push(TeamEffect::Reduction(target, pct, dur, true));
             if t >= d.shred_until || pct > d.shred { d.shred = pct; d.shred_until = t + dur; }
             else if pct == d.shred { d.shred_until = pymax(d.shred_until, t + dur); }
@@ -2027,7 +1975,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     pub fn burn(&mut self, target: usize, pct: f64, dur: f64, stacks: bool) {
-        if self.team_mode {
+        if self.combat_bridge.is_some() {
             self.team_effects.push(TeamEffect::Burn(target, pct, dur, stacks));
         }
         let t = self.t;
@@ -2096,16 +2044,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     pub fn hit_ability_typed(&mut self, calc: CalcId, target: Option<usize>, src: &'static str,
                              mult: f64, dtype: DType) -> f64 {
         let dmg = self.deal(self.calc(calc) * mult, dtype, target, src, Deal::ABILITY);
-        dmg
-    }
-
-    /// `hit_ability` with runtime values for the calc's runtime terms (no
-    /// Set 18 driver needs one; the terms exist in the data).
-    #[allow(dead_code)]
-    pub fn hit_ability_rt(&mut self, calc: CalcId, target: Option<usize>, src: &'static str,
-                          mult: f64, runtime: Runtime<'_>) -> f64 {
-        let dtype = self.kit.calc_dtype(calc);
-        let dmg = self.deal(self.calc_rt(calc, runtime) * mult, dtype, target, src, Deal::ABILITY);
         dmg
     }
 
@@ -2356,12 +2294,12 @@ impl<'a, D: Driver> Fight<'a, D> {
             if burn_stack != 0.0 && now <= bsu {
                 pct += burn_stack;
             }
-            if pct != 0.0 && !self.team_mode {
+            if pct != 0.0 && self.combat_bridge.is_none() {
                 self.deal(pct * max_hp * TICK_S, DType::True, Some(di), "burn", Deal::PLAIN);
             }
             if !self.targets[di].dots.is_empty() {
                 // Python walks the live list, so a bleed this tick's own damage
-                // queues (Executioner) is visited too — at span 0, and kept.
+                // queues (Executioner) is visited too, at span 0, and kept.
                 let mut keep = Vec::with_capacity(self.targets[di].dots.len());
                 let mut k = 0;
                 while k < self.targets[di].dots.len() {
@@ -2396,15 +2334,6 @@ impl<'a, D: Driver> Fight<'a, D> {
             }
         }
         self.sunfire_due();
-        if let Some((pct, dur)) = self.fx.burn_aura {
-            if self.alive_unit {
-                if let Some(tgt) = self.target() {
-                    if self.targets[tgt].nearby {
-                        self.burn(tgt, pct, dur, false);
-                    }
-                }
-            }
-        }
         // per-second stacking attack speed (Guinsoo, Quicksilver)
         if now >= next_second - 1e-9 {
             for &(pct, until) in &self.fx.as_per_second {
@@ -2464,7 +2393,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                 }
             }
         }
-        if !self.team_mode || self.alive_unit { D::tick(self); }
+        if self.combat_bridge.is_none() || self.alive_unit { D::tick(self); }
         if self.alive_unit && self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0
             && self.t >= self.casting_until && self.t >= self.combat_stunned_until && self.kill_time.is_none() {
             self.cast();
@@ -2653,7 +2582,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
     }
 
-    /// Fight._cast: a cast begins now. Every start comes through here — the
+    /// Fight._cast: a cast begins now. Every start comes through here: the
     /// attack that fills the bar (by way of its unlock point), the tick, a
     /// reposition's arrival; public so the tests can start one by hand.
     pub fn cast(&mut self) {
@@ -2664,7 +2593,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.cast_times.push(self.t);
         self.record("cast", self.mana, None, "");
         let mana_cost = self.mana_cost();
-        if self.team_mode {
+        if self.combat_bridge.is_some() {
             self.team_effects.push(TeamEffect::Cast(mana_cost, self.fx.spellweaver_ap_per_cast > 0.0));
         }
         let overflow = pymax(0.0, self.mana - mana_cost);
@@ -2728,7 +2657,6 @@ impl<'a, D: Driver> Fight<'a, D> {
         crate::symmetric::CombatState { hp, max_hp, champion_max_hp: self.max_hp(),
             generation: self.combat_generation,
             alive: self.alive_unit, holding: self.holding(), armor, mr,
-            shield: self.shields.iter().filter(|s| !s.dead && s.until > self.t).map(|s| s.remaining_at(self.t)).sum(),
             untargetable_until: self.untargetable_until, stunned_until: self.combat_stunned_until,
             mana_max: self.mana_cost(), tank: self.sheet.kind == Kind::Tank,
             sunder_aura: self.fx.sunder_aura, shred_aura: self.fx.shred_aura,
@@ -3015,7 +2943,3 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
     }
 }
-
-/// Unused import guard: HashMap is handy for callers building kits.
-#[allow(dead_code)]
-type _Map = HashMap<String, f64>;

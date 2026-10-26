@@ -1,17 +1,15 @@
 //! Drivers of this slice: ported from tft_kits.py (see mod.rs for the list).
 
-#![allow(unused_imports)]
 use crate::driver::Driver;
-use crate::drivers::helpers::*;
-use crate::fight::{Deal, Fight, Sel};
+use crate::fight::Fight;
 use crate::fx::Form;
-use crate::kit::{CalcId, DType, Kit, RowId, Runtime};
-use crate::pyf::{pyint, pymax, pymin, pyround};
+use crate::kit::{CalcId, Kit, RowId};
+use crate::pyf::{pyint, pymax};
 use crate::spec::UnitSpec;
 
 /// Primordial Burst: one blast on the target, the bigger calc instead when
 /// it stands below a share of its max health. Every kill permanently adds
-/// ability power — the row is written as a share of the 100 ability power
+/// ability power: the row is written as a share of the 100 ability power
 /// every unit starts with, so it is added as that many points.
 #[derive(Clone)]
 pub struct Veigar {
@@ -98,8 +96,7 @@ impl Driver for Zyra {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        let n = pyint(f.row(f.drv.n_plants))
-            + (pyint(f.fx.summoner_get(|s| s.extra_summons, 1.0)) - 1).max(0);
+        let n = pyint(f.row(f.drv.n_plants));
         let shots = pyint(f.row(f.drv.n_attacks)
                           + f.fx.summoner_get(|s| s.extra_attacks, 0.0));
         let t = f.t;
@@ -245,10 +242,10 @@ impl Driver for KogMaw {
 /// that scales with ability power in the data); while they stand, every
 /// attack of hers lands the whole flock's damage on the same target, and
 /// her mana is locked (TFTraits: "The mana lock lasts the 5.00 s the effect
-/// runs. Attacks continue. The effect's duration scales with Ability Power"
-/// — third party, adopted like Azir's lock, not verified in game). With
-/// the Riftbeast Alpha Mark (Orange Buff) each physical hit — hers and every
-/// beak's — strips flat armor.
+/// runs. Attacks continue. The effect's duration scales with Ability Power",
+/// third party, adopted like Azir's lock, not verified in game). With
+/// the Riftbeast Alpha Mark (Orange Buff) each physical hit (hers and every
+/// beak's) strips flat armor.
 #[derive(Clone)]
 pub struct MamaBeak {
     beaks_until: f64,
@@ -291,7 +288,7 @@ impl Driver for MamaBeak {
 }
 
 /// Arise!: attack speed and soldiers for the next few attacks, each of which
-/// becomes a command — the basic attack is replaced by every soldier's
+/// becomes a command: the basic attack is replaced by every soldier's
 /// strike, its ability-hit effects still landing. Summoner multiplies their
 /// damage. The adopted model locks mana until all commands are spent.
 #[derive(Clone)]
@@ -315,8 +312,7 @@ impl Driver for Azir {
 
     fn cast(f: &mut Fight<Self>) {
         let commands = pyint(f.row(f.drv.n_attacks));
-        let soldiers = pyint(f.row(f.drv.n_soldiers))
-            + (pyint(f.fx.summoner_get(|s| s.extra_summons, 1.0)) - 1).max(0);
+        let soldiers = pyint(f.row(f.drv.n_soldiers));
         f.drv.commands = commands;
         f.drv.soldiers = soldiers;
         f.as_extra = f.row(f.drv.attack_speed) - 1.0;
@@ -351,10 +347,10 @@ impl Driver for Azir {
 }
 
 /// Javelin Toss / Prowler's Pounce. Ability-power form: attack speed for the
-/// next few attacks, which become javelins — every third one is thrown at
+/// next few attacks, which become javelins; every third one is thrown at
 /// the farthest dummy for the bigger calc ("the 3rd attack" is Riot's own
 /// wording, with no row). Mana stays locked until the last javelin is thrown
-/// (TFTraits: "it lasts 3 empowered attacks" — third party, adopted like
+/// (TFTraits: "it lasts 3 empowered attacks", third party, adopted like
 /// Azir's lock, not verified in game); without that she refilled her bar on
 /// her own javelins and never left them. Attack-damage form: a swipe that
 /// ignores a share of the target's armor, and every third cast a heal capped

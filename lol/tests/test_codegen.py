@@ -1,7 +1,7 @@
 """Tests for the kit-dossier and machine-written driver pipeline
 (lol/codegen/sources.py, lol/codegen/dossier.py, lol/codegen/driver.py):
 numbers sheets from Riot's bin, wiki template parsing, dossier checking,
-triage validation, driver registry, static lints, Jax reference driver,
+driver registry, static lints, Jax reference driver,
 and cast-time / enumeration checks. Hermetic: no model is called."""
 
 import copy
@@ -268,18 +268,6 @@ class TestRunner(unittest.TestCase):
         self.assertTrue(dossier.untouched("Q", {"values": [{"role": None}], "mechanics": [],
                                                 "binUnused": []}))
         self.assertFalse(dossier.untouched("Q", {"values": [], "filledBy": "sonnet"}))
-
-
-class TestTriage(unittest.TestCase):
-    def test_validate(self):
-        ok = {"jax": {"primitives": [{"id": "plain-cast", "abilities": ["Q"]}],
-                      "needsBespoke": False, "why": "x", "confidence": "high",
-                      "damageFrom": "mixed"}}
-        self.assertEqual(dossier.validate(ok), [])
-        bad = copy.deepcopy(ok)
-        bad["jax"]["primitives"][0]["id"] = "made-up"
-        bad["jax"]["confidence"] = "certain"
-        self.assertEqual(len(dossier.validate(bad)), 2)
 
 
 # ---------------------------------------------------------------------------

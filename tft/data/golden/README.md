@@ -1,4 +1,4 @@
-# Golden fixtures — compiled TFT benchmark, Set 18 patch 18.1d
+# Golden fixtures: compiled TFT benchmark, Set 18 patch 18.1d
 
 `fights.json` and `cells.json` pin the **exact** output of the compiled
 Rust/PyO3 engine. The latest generation uses engine `a0cc14674fde`, adding the
@@ -7,10 +7,10 @@ damage tests. Attack cooldowns overlap movement; melee cross-target chains
 resume at arrival. Zero-delay replay preserves all 7,670 preceding fight
 cases exactly. The regenerated 1,770 ranked cells contain 216 changes and
 1,554 identical results. Independent timing and continuation regressions are
-in `test_tft_movement.py` and `test_tft_movement_chains.py`; see the
+in `tft/tests/test_sim.py` and `tft/tests/test_drivers.py`; see the
 [movement record](../set18/melee-movement.md) for assumptions and sensitivity.
-The complete 918-test TFT suite passes with one existing skip, plus eight
-Rust tests. These fixtures do not publish a new dashboard generation.
+The complete TFT suite passes, plus the Rust engine unit tests.
+These fixtures do not publish a new dashboard generation.
 
 The preceding generation uses engine `cfe721d84f2e`, adopting
 one additive percentage-HP pool for ordinary items and traits. Before
@@ -18,7 +18,7 @@ regeneration, all 7,670 previous fight inputs were replayed: all 6,053 cases
 with at most one percentage-HP bonus stayed identical; the 1,617 cases with
 multiple bonuses changed. The rebuilt ranked cells contain 1,079 changes and
 691 identical results out of 1,770. Independent hand-calculated opening and
-timed-growth regressions are in `test_tft_hp_stacking.py`; see
+timed-growth regressions are in `tft/tests/test_items_traits.py`; see
 [the HP stacking record](../set18/hp-stacking.md) for the adopted formula and
 its remaining live-game verification limit.
 
@@ -26,7 +26,7 @@ The preceding generation used engine `6bef32c46ca7`, adding
 persistent incoming source targets to composition scoring. All 7,670 previous
 standalone fights and all 1,770 ranked cells remain exactly unchanged after
 regeneration; the fixtures record the new compiled source identity. Targeting
-has separate regressions in `test_tft_persistent_targets.py`; see
+has separate regressions in `tft/tests/test_encounters.py`; see
 [the pressure model report](../set18/pressure-targeting.md).
 
 The preceding generation used engine `4116bc4251fd`, adding
@@ -43,7 +43,7 @@ damage-threshold sleep and pending-spell handling, Pebbles' complete channel
 accounting, Kha'Zix's multiplied mana refund, Sivir's initial-kill extensions
 and Elder's cast-start protection. Before regeneration, all 7,670 original
 inputs were replayed: **7,085 stayed bit-identical and 585 changed**, only for
-repaired champions. The new `test_tft_audit_*.py` regressions check explicit
+repaired champions. The driver regressions in `tft/tests/test_drivers.py` check explicit
 target identities, arithmetic and event times independently of these fixtures.
 Theory's three-target population and shared flat resistance reductions have
 separate composition regressions. No unverified Android coefficients or timing
@@ -60,9 +60,9 @@ standalone inputs were replayed: 7,649 remained bit-identical and 21 changed,
 all Nidalee. Per-build role, form, range and pressure metadata are now recorded
 in finite result rows. The experimental damage curves were removed; the
 finite leaderboard is restored while these corrections remain.
-`test_tft_equipped_forms` and `test_tft_theory_auras` cover form-dependent
+`tft/tests/test_sim.py` and `tft/tests/test_encounters.py` cover form-dependent
 exposure and shared provider accounting.
-`test_tft_execute` independently checks that immortal probes grant no damage
+`tft/tests/test_drivers.py` independently checks that immortal probes grant no damage
 or healing for Gnar's last-enemy removal, while finite removal, normal throws
 and ordinary true damage remain valid. That correction affects abstract
 response measurements; the archived finite fight values remain unchanged.
@@ -73,8 +73,8 @@ interpretation**. The pinned tooltip establishes its magnitude and duration,
 but available sources do not establish overlapping stacks or a mana lock
 through the full duration. The generic mana lock remains unchanged.
 Before regeneration, all 7,670 previous standalone inputs were replayed:
-7,622 stayed bit-identical and 48 changed, all Brambleback. Five focused tests
-in `test_tft_brambleback.py` check the refresh/expiry policy, real triple-Rageblade
+7,622 stayed bit-identical and 48 changed, all Brambleback. Focused tests
+in `tft/tests/test_drivers.py` check the refresh/expiry policy, real triple-Rageblade
 AD bound, per-copy time-based attack speed, and effective Alpha healing.
 The shared frontline-pressure composition scorer has separate analytic and
 native regressions; these fixtures record standalone champion benchmarks.
@@ -94,14 +94,12 @@ During Frenzy, his armor ignore applies to the armor remaining after Sunder;
 it does not reduce armor for teammates. Before regeneration, the same
 recorded inputs changed 52 of 7,670 fights, all Brambleback, and his 12 ranked
 cells. The other champions' standalone results were unchanged. Symmetric
-composition combat has separate regressions in `test_tft_symmetric.py` and
-`test_tft_symmetric_regressions.py`.
+composition combat has separate regressions in `tft/tests/test_encounters.py`.
 
 Scuttlecrab's confirmed burrow attack lock is retained.
 The heal and durability start at ability land; attacks and recasts remain
 blocked for the resolved burrow duration. The existing one-second mana lock
-is retained. Shared composition fights have separate deterministic regressions
-in `test_tft_team_engine.py`; their new API preserves other standalone results.
+is retained.
 
 Murkwolf's previously corrected leap is retained. His AD and AP
 contributions each apply once, following the archived ability footer. The
@@ -148,27 +146,27 @@ the checkout's HEAD; `worktreeDirty` makes clear when HEAD alone does not
 identify the generating sources. The source and input hashes identify
 those inputs directly.
 
-- `fights.json`: 7,670 cases, one per (unit, scenario cell, build) — the cell's two
+- `tft/data/golden/fights.json`: 7,670 cases, one per (unit, scenario cell, build) (the cell's two
   best cached builds, two drawn with a fixed seed from every legal 3-item
-  multiset, and the empty build in the bare trait context — with the opening
+  multiset, and the empty build in the bare trait context), with the opening
   sheet numbers (`sheet`) and the unrounded `simulate` result (`result`).
   Floats are stored as Python `repr`, which round-trips exactly; a
   non-finite value would be the string `"inf"` / `"-inf"` / `"nan"` (none
   occur today).
-- `cells.json`: the top 20 rows of all 1,770 cells as the dashboard shows them
+- `tft/data/golden/cells.json`: the top 20 rows of all 1,770 cells as the dashboard shows them
   (rounded), plus the build count and the driver's name, so the
   enumeration's order and the row formatting are pinned too.
 
-`test_tft.TestGolden` and `jobs/tft_compare.py` replay the recorded set,
+`tft/tests/test_sim.py` (`TestGolden`) and `python3 -m tft.golden compare` replay the recorded set,
 patch and dummy specification. The tests also require that the archived
 dummy specification matches the current benchmark. Every fight is compared
 bit for bit (an int and a float of equal value count as the same number);
 the default test run recomputes a sample of cells. Run
-`TFT_GOLDEN_ALL=1 python3 -m unittest test_tft` to recompute all 1,770.
+`TFT_GOLDEN_ALL=1 python3 -m unittest tft/tests/test_sim.py` to recompute all 1,770.
 
 After an authorized deliberate model change and a complete warm cache,
-regenerate with `python3 jobs/gen_tft_golden.py --reason 'Describe the model change'`.
+regenerate with `python3 -m tft.golden gen --reason 'Describe the model change'`.
 **A deliberate model change must regenerate these files in the same
 commit.** Routine data refreshes keep these fixtures anchored to their
 recorded patch; data corrections have separate regression tests in
-`test_tft_data.py`.
+`tft/tests/test_sim.py`.

@@ -28,7 +28,7 @@ Engineering reference for `lol-analysis`. The repository is organized into three
   - `db.py`: SQLite schema (`lol.db`), `db_connect()`, `patch_key()`, and repo path constants.
   - `server.py`: `cmd_serve` and `cmd_export` exposing identical `/api/*` JSON shapes, `AutoWarm` for cold LoL build cells, and `TftResponses` for zero-compute TFT serving.
   - `static/`: `index.html`, `styles.css`, `tft-flex-worker.js`, `app.js`, `lol.js`, `tft.js`.
-  - `ops/`: `build-engine.sh`, scheduled timer scripts (`refresh-items.sh`, `refresh-tft.sh`, `sync-scaling.sh`), and `systemd/` drop-in reference.
+  - `ops/`: `build-engine.sh` and scheduled timer scripts (`refresh-items.sh`, `refresh-tft.sh`, `sync-scaling.sh`).
   - `tests/`: `harness.cjs` shared VM/DOM test harness.
 
 ## Tooling and Environment

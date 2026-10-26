@@ -23,7 +23,7 @@ import subprocess
 import sys
 import time
 
-from lol import builds as B, items  # noqa: F401
+from lol import builds as B
 
 GOLDEN_DIR = os.path.join(B.BUILDS_DATA_DIR, "golden")
 NONFINITE = {}

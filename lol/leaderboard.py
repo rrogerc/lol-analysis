@@ -14,7 +14,6 @@ import os
 from functools import lru_cache
 
 from lol import builds
-from web.db import BASE_DIR
 
 INF = float("inf")
 

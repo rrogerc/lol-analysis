@@ -1,7 +1,7 @@
 //! Item effects: the hand-curated overlay (data/builds/item-effects.json)
 //! parsed once per item into typed structs, and the merge of a build's items
-//! into one `Fx` — builds.py's merge_effects: list-valued effects concatenate
-//! in item order, same-named unique passives keep the first.
+//! into one `Fx` (builds.py's merge_effects: list-valued effects concatenate
+//! in item order, same-named unique passives keep the first).
 
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -337,7 +337,6 @@ pub struct ItemFx {
     pub haste_from_bonus_ad: Option<(f64, f64)>, // (base, perBonusAdPct)
     /// Warmog's Vitality: bonus health, this % of the health items grant.
     pub hp_from_item_hp_pct: f64,
-    pub needs_mana: bool,
     // fight side, list-valued
     pub onhit: Vec<OnHit>,
     pub onhit_current_hp: Option<OnHitCurrent>,
@@ -651,7 +650,6 @@ impl ItemFx {
             ultimate_ability_haste: getf(d, "ultimateAbilityHaste", 0.0)?,
             haste_from_bonus_ad: haste,
             hp_from_item_hp_pct: getf(d, "hpFromItemHpPct", 0.0)?,
-            needs_mana: truthy(d, "needsMana")?,
             onhit,
             onhit_current_hp: match getd(d, "onhitCurrentHp")? { Some(x) => Some(parse_onhit_current(&x)?), None => None },
             dmg_amp: match getd(d, "dmgAmp")? { Some(x) => Some(parse_dmg_amp(&x)?), None => None },

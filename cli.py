@@ -82,15 +82,6 @@ def main():
     slice_args(sp)
     sp.set_defaults(func=ladder.cmd_champion)
 
-    sp = scsub.add_parser("dashboard", help="generate a self-contained HTML dashboard")
-    slice_args(sp)
-    sp.add_argument("--out", default="dashboard.html")
-    sp.add_argument("--min-games", type=int, default=1000,
-                    help="drop champion-roles with fewer total games")
-    sp.add_argument("--min-bucket-games", type=int, default=1000,
-                    help="blank out chart points backed by fewer games (1000 ~= +/-3pp at 95%%)")
-    sp.set_defaults(func=ladder.cmd_dashboard)
-
     sp = scsub.add_parser("sync",
                           help="refresh all three soloq tiers from ../lol-quant in one go")
     quant_args(sp)

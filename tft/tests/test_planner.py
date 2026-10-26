@@ -113,7 +113,7 @@ class TestEarlyComps(unittest.TestCase):
         allies = combat.allies(config["members"], config["resolved"]["effects"], config["selected"], candidate[1], candidate[2])
         reference = early.load_pool(self.snap)["boards"][0]
         members = early.members_for(self.snap, reference["roster"])
-        resolved = early.finite_traits(self.snap, members, reference["alphaApi"])
+        resolved = tft_board.resolve_board_traits(self.snap, members, reference["alphaApi"])
         selected = {m["api"]: {"items": (), "alpha": m["api"] == reference["alphaApi"]} for m in members}
         enemies = combat.allies(members, resolved["effects"], selected, reference["carryApi"], reference["tankApi"])
         for initiative in (0, 1):
@@ -141,15 +141,15 @@ class TestEarlyComps(unittest.TestCase):
                    self.apis("Caitlyn", "Cinderling", "Camille", "Elise"),
                    self.apis("Fiddlesticks", "Karma", "Veigar", "Yorick", "Ornn")]
         for roster in rosters:
-            resolved = early.finite_traits(self.snap, early.members_for(self.snap, roster))
+            resolved = tft_board.resolve_board_traits(self.snap, early.members_for(self.snap, roster))
             notes = " ".join(resolved["limitations"])
             self.assertNotIn("generic targets", notes)
             self.assertNotIn("immortal targets", notes)
         roster = self.apis("Gromp", "Scuttlecrab", "Pebbles", "Cinderling")
-        resolved = early.finite_traits(self.snap, early.members_for(self.snap, roster), self.apis("Scuttlecrab")[0])
+        resolved = tft_board.resolve_board_traits(self.snap, early.members_for(self.snap, roster), self.apis("Scuttlecrab")[0])
         self.assertIn("Riftbeast: Scuttlecrab's Alpha team healing is not modeled", resolved["limitations"])
         self.assertNotIn("Krug ally shields are uncredited", " ".join(resolved["limitations"]))
-        elder = early.finite_traits(self.snap, early.members_for(self.snap, self.apis("Xayah", "Ornn", "Alistar", "LeBlanc")))
+        elder = tft_board.resolve_board_traits(self.snap, early.members_for(self.snap, self.apis("Xayah", "Ornn", "Alistar", "LeBlanc")))
         self.assertTrue(any("plants" in note for note in elder["limitations"]))
 
     def test_actual_fixture_validates_and_purchase_gold_is_copies_only(self):

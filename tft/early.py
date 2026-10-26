@@ -71,10 +71,6 @@ def revision(snap=None):
                           hashlib.sha256(pool_path(snap).read_bytes()).hexdigest()])
 
 
-def star_for(unit):
-    return 1
-
-
 def legal_roster(snap, roster, level, max_three=None, *, complete=True):
     if level not in (4, 5) or max_three not in (None, 0, 1):
         return False
@@ -91,30 +87,7 @@ def legal_roster(snap, roster, level, max_three=None, *, complete=True):
 
 
 def members_for(snap, roster):
-    return [{"api": api, "star": star_for(snap.units[api])} for api in sorted(roster)]
-
-
-def finite_traits(snap, members, alpha=None, *, primal_blessings=None):
-    """Keep shared effects while replacing notes specific to immortal probes."""
-    resolved = tft_board.resolve_board_traits(snap, members, alpha, primal_blessings=primal_blessings)
-    probe_only = {"DA_18_Hunter", "DA_18_Inferno", "DA_18_Slayer", "DA_FloraFatalis18", tft_board.RIFTBEAST}
-    if not any(member["api"] == "TFT18_Zyra" for member in members):
-        probe_only.add("DA_18_Summoner")
-    removed = {f"{snap.traits[api]['name']}: {note}" for api in probe_only
-               for note in tft_board._THEORY_COVERAGE_NOTES.get(api, ())}
-    removed.update(note for note in resolved["limitations"]
-                   if note.startswith("Primal: Executes work in finite combat"))
-    resolved["limitations"] = [note for note in resolved["limitations"] if note not in removed]
-    for trait in resolved["traits"]:
-        trait["coverageNotes"] = [note for note in trait["coverageNotes"]
-                                  if f"{trait['name']}: {note}" not in removed]
-        if trait["api"] == tft_board.RIFTBEAST and alpha == "TFT18_Scuttlecrab":
-            note = "Scuttlecrab's Alpha team healing is not modeled"
-            trait["coverageNotes"].append(note)
-            resolved["limitations"].append(f"{trait['name']}: {note}")
-        if trait["coverage"] == "partial" and not trait["coverageNotes"]:
-            trait["coverage"] = "supported"
-    return resolved
+    return [{"api": api, "star": 1} for api in sorted(roster)]
 
 
 def load_pool(snap):
@@ -157,7 +130,7 @@ class Combat(tft_board.Evaluator):
             raise ValueError("early board size must be four or five")
         if type(workers) is not int or not 1 <= workers <= 8:
             raise ValueError("early match workers must be between one and eight")
-        self.snap, self.geometry, self.prepared, self.workers = snap, "clump", True, workers
+        self.snap, self.geometry, self.workers = snap, "clump", workers
         self.item_fx, self.templates, self.items = {}, {}, {}
         self._forms, self._prepared_actors = OrderedDict(), OrderedDict()
         self.stats = Counter()
@@ -168,7 +141,7 @@ class Combat(tft_board.Evaluator):
         for row in self.references["boards"]:
             roster = row["roster"] if level == 4 else tuple(sorted((*row["roster"], row["fifthApi"])))
             members = members_for(snap, roster)
-            resolved = finite_traits(snap, members, row["alphaApi"])
+            resolved = tft_board.resolve_board_traits(snap, members, row["alphaApi"])
             selected = {api: {"items": (), "alpha": api == row["alphaApi"]} for api in roster}
             actors = self.allies(members, resolved["effects"], selected, row["carryApi"], row["tankApi"])
             public = {"id": row["id"], "label": row["label"], "screen": row["screen"],
@@ -226,7 +199,7 @@ class Combat(tft_board.Evaluator):
             choices = []
             for alpha in alpha_options:
                 for blessings in tft_board.primal_options(self.snap, members):
-                    resolved = finite_traits(self.snap, members, alpha, primal_blessings=blessings)
+                    resolved = tft_board.resolve_board_traits(self.snap, members, alpha, primal_blessings=blessings)
                     selected = {api: {"items": (), "alpha": api == alpha} for api in roster}
                     actors = self.allies(members, resolved["effects"], selected, carry, tank, prepared=True)
                     choices.append({"members": members, "resolved": resolved, "selected": selected,
@@ -413,7 +386,7 @@ def validate_catalog(snap, result):
             wanted = declared["roster"] if variant["level"] == 4 else (*declared["roster"], declared["fifthApi"])
             units = reference.get("units", [])
             if (not isinstance(units, list) or sorted(unit.get("api", "") for unit in units) != sorted(wanted)
-                    or any(unit.get("star") != star_for(snap.units[unit["api"]])
+                    or any(unit.get("star") != 1
                            or unit.get("cost") != snap.units[unit["api"]]["cost"] for unit in units)):
                 raise ValueError("early reference unit costs or upgrades differ from the declared pool")
             reference_units[reference["id"]] = {unit["api"]: unit for unit in units}
@@ -429,7 +402,7 @@ def validate_catalog(snap, result):
             signature = tuple(sorted(roster))
             if (signature in signatures
                     or board.get("id") in ids or not isinstance(board.get("id"), str)
-                    or any(type(unit.get("star")) is not int or unit["star"] != star_for(snap.units[unit["api"]])
+                    or any(type(unit.get("star")) is not int or unit["star"] != 1
                            or type(unit.get("cost")) is not int or unit["cost"] != snap.units[unit["api"]]["cost"] for unit in units)
                     or any(board.get(field) != variant["level"] for field in ("level", "boardSlots", "unitCount", "slotsUsed"))
                     or board.get("itemCount") != 0
