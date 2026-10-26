@@ -177,12 +177,11 @@ async function loadOnetricks() {
   // line rather than ending a sentence.
   const when = t => new Date(t).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
   hint.replaceChildren(
-    `A player one-tricks a champion in a role when it is more than ${OT.minShare}% of ` +
-    `their ranked solo games in that role this season (${OT.firstPatch}–${OT.lastPatch}), ` +
+    `A player one-tricks a champion when it is more than ${OT.minShare}% of ` +
+    `their ranked solo games across all roles this season (${OT.firstPatch}–${OT.lastPatch}), ` +
     `with at least ${OT.minGames} games on it. Of the ${fmtInt(OT.ladderPlayers)} players ` +
     `on the Master+ ladders of ${OT.platforms.map(regionName).join(", ")}, ` +
-    `${fmtInt(OT.onetrickPlayers)} one-trick at least one champion. Someone who ` +
-    "one-tricks a champion in two roles counts once under One-tricks and in both role columns.",
+    `${fmtInt(OT.onetrickPlayers)} one-trick a champion, each counted once under their most-played role on it.`,
     document.createElement("br"),
     (OT.ladderAt ? `Ladder as of ${when(OT.ladderAt)} · ` : "") + `synced ${when(OT.synced)}`);
   renderOnetricks();
@@ -463,7 +462,7 @@ async function checkItemHealth() {
 const TIER_DESC = {
   soloq_masters_plus: "All crawled Masters+ solo-queue games.",
   soloq_mastery: "Only games where the pilot has ≥ 20 season games on the champion.",
-  soloq_otp: "One-tricks only: the champion is ≥ 80% of the pilot's games in that role.",
+  soloq_otp: "One-tricks only: the champion is ≥ 80% of the pilot's ranked solo games.",
 };
 const regionName = p => p.replace(/\d+$/, "").toUpperCase();
 let restoringHash = false;

@@ -3,8 +3,8 @@
 Owns the `stats`, `match_counts`, `onetricks`, and `onetrick_sync` tables in
 lol.db, plus the lol/data/scaling/ JSON archive. Scaling tracks every lane
 above 10% play rate across seven game-length intervals (0-15 ... 40+ minutes).
-One-tricks counts Master+ ladder players whose ranked solo games in a role are
-more than 85% on one champion with at least 20 games this season.
+One-tricks counts Master+ ladder players whose ranked solo games across all
+roles are more than 85% on one champion with at least 20 games this season.
 """
 
 import argparse
@@ -26,8 +26,8 @@ BUCKET_LABELS = {
 EARLY_BUCKETS = (1, 2)   # 0-20 min
 LATE_BUCKETS = (6, 7)    # 35+ min
 
-MIN_SHARE_PCT = 85  # strictly more than this share of the role's games
-MIN_GAMES = 20      # games on the champion in the role, as soloq_otp requires
+MIN_SHARE_PCT = 85  # strictly more than this share of the player's ranked solo games
+MIN_GAMES = 20      # minimum season games on the champion across all roles
 APEX_TIERS = {"MASTER", "GRANDMASTER", "CHALLENGER"}
 LANES = ("top", "jungle", "middle", "bottom", "support")
 
@@ -337,18 +337,18 @@ def _sum_by_key(keys, counts):
 
 
 def _player_games(snapshot, filt):
-    """Games per (puuid, role, champion) over a snapshot's rows: the counts a
+    """Games per (puuid, champion) over a snapshot's rows: the counts a
     group_by over every row would give, taken a chunk at a time on integer
     codes, since the crawl's tens of millions of distinct player keys do not
     fit in memory as 78-character puuid strings.
 
-    Returns {"keys": sorted puuid << 24 | role << 16 | champion codes,
-    "games": their counts, "names": {column: the strings the codes index},
-    "rows": rows read}. The mastery and one-trick tiers both filter on it."""
+    Returns {"keys": sorted puuid << 16 | champion codes, "games": their
+    counts, "names": {column: the strings the codes index}, "rows": rows read}.
+    The mastery and one-trick tiers both filter on it."""
     import numpy as np
     import pyarrow as pa
 
-    puuids, roles, champs = _Codes(), _Codes(), _Codes()
+    puuids, champs = _Codes(), _Codes()
     keys, counts = np.empty(0, np.int64), np.empty(0, np.int32)
     pending, rows = [], 0
 
@@ -362,13 +362,11 @@ def _player_games(snapshot, filt):
         _release_memory()
 
     for chunk in crawl_chunks(snapshot):
-        table = chunk.to_table(columns=["puuid", "role", "champion"], filter=filt)
+        table = chunk.to_table(columns=["puuid", "champion"], filter=filt)
         rows += table.num_rows
-        # key = puuid << 24 | role << 16 | champion
-        key = (puuids.encode(table["puuid"]) << 24 | roles.encode(table["role"]) << 16
-               | champs.encode(table["champion"]))
-        if len(roles.names) > 0xFF or len(champs.names) > 0xFFFF:
-            sys.exit("Too many distinct roles or champions to pack into a key.")
+        key = puuids.encode(table["puuid"]) << 16 | champs.encode(table["champion"])
+        if len(champs.names) > 0xFFFF:
+            sys.exit("Too many distinct champions to pack into a key.")
         unique, n = np.unique(key, return_counts=True)
         pending.append((unique, n.astype(np.int32)))
         if sum(len(k) for k, _ in pending) > 16_000_000:
@@ -376,38 +374,33 @@ def _player_games(snapshot, filt):
     merge()
     return {"keys": keys, "games": counts, "rows": rows,
             "names": {"puuid": pa.array(puuids.names, pa.string()),
-                      "role": pa.array(roles.names, pa.string()),
                       "champion": pa.array(champs.names, pa.string())}}
 
 
 def _player_filter(players, args):
-    """The keys a mastery or one-trick tier keeps, (puuid, champion) or
-    (puuid, role, champion), as a table to inner-join the rows with, from
-    the counts of _player_games."""
+    """The (puuid, champion) pairs a mastery or one-trick tier keeps, as a
+    table to inner-join the rows with, from the counts of _player_games."""
     import numpy as np
     import pyarrow as pa
 
     keys, games = players["keys"], players["games"]
     if args.otp_share:
-        # One-tricks: the champion makes up >= X% of the player's games in the
-        # role, with a floor on champion games so tiny samples do not qualify.
+        # One-tricks: the champion makes up >= X% of all the player's ranked
+        # solo games across roles, with a floor on champion games.
         floor = args.min_champ_games or 20
-        # keys are sorted, so each (puuid, role) is one run of them
-        player_role = keys >> 16
-        starts = np.flatnonzero(np.r_[True, player_role[1:] != player_role[:-1]])
-        del player_role
-        role_games = (np.repeat(np.add.reduceat(games, starts), np.diff(np.r_[starts, len(keys)]))
-                      if len(keys) else games)
-        share = games.astype(np.float64) / role_games.astype(np.float64)
+        # keys are sorted, so each puuid is one contiguous run
+        player = keys >> 16
+        starts = np.flatnonzero(np.r_[True, player[1:] != player[:-1]])
+        del player
+        total_games = (np.repeat(np.add.reduceat(games, starts), np.diff(np.r_[starts, len(keys)]))
+                       if len(keys) else games)
+        share = games.astype(np.float64) / total_games.astype(np.float64)
         kept = keys[(share >= args.otp_share / 100) & (games >= floor)]
-        del starts, role_games, share
-        cols = {"puuid": kept >> 24, "role": kept >> 16 & 0xFF, "champion": kept & 0xFFFF}
+        del starts, total_games, share
     else:
         # Keep only games where the pilot has >= N season games on that champion.
-        pairs, pair_games = _sum_by_key(keys >> 24 << 16 | keys & 0xFFFF, games)
-        kept = pairs[pair_games >= args.min_champ_games]
-        del pairs, pair_games
-        cols = {"puuid": kept >> 16, "champion": kept & 0xFFFF}
+        kept = keys[games >= args.min_champ_games]
+    cols = {"puuid": kept >> 16, "champion": kept & 0xFFFF}
     return pa.table({name: players["names"][name].take(pa.array(c))
                      for name, c in cols.items()})
 
@@ -496,9 +489,9 @@ def cmd_import_soloq(args, crawl=None):
         }).group_by(stat_keys).aggregate([("win", "sum"), ("win", "count")]))
 
     if args.otp_share:
-        print(f"One-trick filter (>= {args.otp_share:g}% of role games, "
+        print(f"One-trick filter (>= {args.otp_share:g}% of ranked solo games, "
               f">= {args.min_champ_games or 20} champion games): kept {kept:,} of "
-              f"{read:,} rows ({keep.num_rows:,} player-champion-roles)")
+              f"{read:,} rows ({keep.num_rows:,} player-champions)")
     elif args.min_champ_games:
         print(f"Mastery filter (>= {args.min_champ_games} games on champion): "
               f"kept {kept:,} of {read:,} rows")
@@ -565,7 +558,7 @@ def cmd_sync(args):
     The tier definitions live here so every refresh uses the same thresholds:
     soloq_masters_plus is every game, soloq_mastery requires season games on
     the champion, soloq_otp requires the champion to dominate the player's
-    role games.
+    ranked solo games across all roles.
     """
     presets = [
         ("soloq_masters_plus", 0, 0),
@@ -659,7 +652,7 @@ def api_meta(con):
 
 
 # ---------------------------------------------------------------------------
-# One-tricks: Master+ ladder population and per-role share counting
+# One-tricks: Master+ ladder population and whole-account share counting
 # ---------------------------------------------------------------------------
 
 def _records(path):
@@ -734,7 +727,12 @@ def count(quant_dir, players):
     of matching rows nor every file's parquet footer sit in memory at once.
     The season is the crawl's patches of the newest major version: the crawl
     keeps earlier seasons' games, which would otherwise mix in after a
-    rollover."""
+    rollover.
+
+    A player qualifies when one champion accounts for strictly more than
+    MIN_SHARE_PCT of all their ranked solo games across roles this season (with
+    at least MIN_GAMES on that champion), and is attributed once to the role
+    where they played that champion most."""
     try:
         import pyarrow as pa
         import pyarrow.acero as ac
@@ -768,29 +766,39 @@ def count(quant_dir, players):
         & pc.field("role").isin(list(SOLOQ_ROLE_MAP))
         & pc.field("patch").isin(pa.array(season, pa.string()))))
 
-    role_games = games.group_by(["puuid", "role"]).aggregate([("games", "sum")])
-    joined = games.join(role_games, keys=["puuid", "role"])
+    player_games = games.group_by(["puuid"]).aggregate([("games", "sum")]).rename_columns(
+        {"games_sum": "total_games"})
+    champ_games = games.group_by(["puuid", "champion"]).aggregate(
+        [("games", "sum")]).rename_columns({"games_sum": "champ_games"})
+    joined = champ_games.join(player_games, keys=["puuid"])
     tricks = joined.filter(pc.and_(
-        pc.greater(pc.multiply(joined["games"], 100),
-                   pc.multiply(joined["games_sum"], MIN_SHARE_PCT)),
-        pc.greater_equal(joined["games"], MIN_GAMES)))
+        pc.greater(pc.multiply(joined["champ_games"], 100),
+                   pc.multiply(joined["total_games"], MIN_SHARE_PCT)),
+        pc.greater_equal(joined["champ_games"], MIN_GAMES)))
+    trick_roles = games.join(tricks.select(["puuid", "champion"]),
+                             keys=["puuid", "champion"], join_type="inner")
 
     def slug(name):
         s = name.lower()
         return SOLOQ_SLUG_FIXES.get(s, s)
 
     # Every champion the ladder played this season gets a row, zeros too.
-    per = {slug(c): {"players": set(), **dict.fromkeys(LANES, 0)}
+    per = {slug(c): {"players": 0, **dict.fromkeys(LANES, 0)}
            for c in pc.unique(games["champion"]).to_pylist()}
-    for row in tricks.select(["puuid", "role", "champion"]).to_pylist():
-        champ = per[slug(row["champion"])]
-        champ["players"].add(row["puuid"])
-        # Over 85% of a role's games: a player-role has at most one champion.
-        champ[SOLOQ_ROLE_MAP[row["role"]]] += 1
+    lane_rank = {lane: i for i, lane in enumerate(LANES)}
+    primary = {}
+    for row in trick_roles.select(["puuid", "role", "champion", "games"]).to_pylist():
+        lane = SOLOQ_ROLE_MAP[row["role"]]
+        cand = (row["games"], -lane_rank[lane], slug(row["champion"]), lane)
+        prev = primary.get(row["puuid"])
+        if prev is None or cand > prev:
+            primary[row["puuid"]] = cand
+    for _, _, champ_slug, lane in primary.values():
+        per[champ_slug]["players"] += 1
+        per[champ_slug][lane] += 1
     return {
-        "champions": {c: {"players": len(v["players"]), **{l: v[l] for l in LANES}}
-                      for c, v in per.items()},
-        "onetrick_players": len(set(tricks["puuid"].to_pylist())),
+        "champions": per,
+        "onetrick_players": len(primary),
         "games": pc.sum(games["games"]).as_py() or 0,
         "patches": season,
     }
@@ -843,7 +851,7 @@ def cmd_onetricks_sync(args):
     patches = result["patches"]
     span = f"{patches[0]}-{patches[-1]}" if patches else "no patches"
     print(f"{span}: {result['games']:,} player-games, {result['onetrick_players']:,} players "
-          f"one-trick a champion in a role (> {MIN_SHARE_PCT}% of the role's games, "
+          f"one-trick a champion (> {MIN_SHARE_PCT}% of ranked solo games, "
           f">= {MIN_GAMES} games on it)")
     top = sorted(result["champions"].items(), key=lambda kv: (-kv[1]["players"], kv[0]))
     for champ, v in top[:10]:

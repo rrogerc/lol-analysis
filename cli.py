@@ -88,7 +88,7 @@ def main():
     sp.add_argument("--min-champ-games", type=int, default=20,
                     help="soloq_mastery threshold: season games on the champion (default 20)")
     sp.add_argument("--otp-share", type=float, default=80,
-                    help="soloq_otp threshold: champion's share of the player's role games in %% (default 80)")
+                    help="soloq_otp threshold: champion's share of the player's ranked solo games in %% (default 80)")
     sp.add_argument("--db-only", action="store_true",
                     help="refresh lol.db but leave the lol/data/scaling JSON archive untouched (used by web/ops/sync-scaling.sh)")
     sp.set_defaults(func=ladder.cmd_sync)
@@ -103,7 +103,7 @@ def main():
     sp.add_argument("--min-champ-games", type=int, default=0,
                     help="only count games where the player has at least this many season games on the champion (default: off)")
     sp.add_argument("--otp-share", type=float, default=0,
-                    help="one-trick filter: champion must be at least this %% of the player's games in the role (e.g. 80)")
+                    help="one-trick filter: champion must be at least this %% of the player's ranked solo games (e.g. 80)")
     sp.add_argument("--db-only", action="store_true",
                     help="refresh lol.db but leave the lol/data/scaling JSON archive untouched")
     sp.set_defaults(func=ladder.cmd_import_soloq)

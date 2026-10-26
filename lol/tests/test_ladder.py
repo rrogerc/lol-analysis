@@ -1,5 +1,5 @@
 """Ladder tests: scaling rankings payload, page min-games options, Master+
-one-trick population, per-role share rule, and DB sync."""
+one-trick population, whole-account share rule, and DB sync."""
 
 import argparse
 import gzip
@@ -14,6 +14,7 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 import pyarrow as pa
+import pyarrow.dataset as pads
 import pyarrow.parquet as pq
 
 from lol import ladder
@@ -76,22 +77,29 @@ def games(puuid, role, champion, n, patch="16.1"):
 # Each player isolates one edge of the rule.
 PARTICIPANTS = {
     "kr": [
-        # 20/23 = 87% of mid: an Ahri one-trick. The Zed games also carry the
+        # 20/23 = 87% overall: an Ahri one-trick. The Zed games also carry the
         # latest patch, which sorts after 16.2 only numerically.
         *games("mid", "MIDDLE", "Ahri", 20), *games("mid", "MIDDLE", "Zed", 3, "16.10"),
         # Exactly 85% is not over 85%; 35 of 41 (85.4%) is.
         *games("exact", "UTILITY", "Lux", 34), *games("exact", "UTILITY", "Nami", 6),
         *games("over", "UTILITY", "Lux", 35), *games("over", "UTILITY", "Nami", 6),
-        # Every top game on Garen, but only 19 of them.
+        # Every game on Garen, but only 19 of them.
         *games("floor", "TOP", "Garen", 19),
-        # Jhin is every bottom game but 25 of 55 overall: the role decides.
-        *games("role", "BOTTOM", "Jhin", 25), *games("role", "MIDDLE", "Ahri", 10),
-        *games("role", "MIDDLE", "Zed", 10), *games("role", "MIDDLE", "Syndra", 10),
+        # Jhin is 100% of bottom games (25/25) yet 25/55 (45.5%) overall:
+        # an off-role pocket pick is NOT a one-trick.
+        *games("pocket", "BOTTOM", "Jhin", 25), *games("pocket", "MIDDLE", "Ahri", 10),
+        *games("pocket", "MIDDLE", "Zed", 10), *games("pocket", "MIDDLE", "Syndra", 10),
+        # Multi-role true one-trick (12 top + 18 support = 30/32 = 93.8%):
+        # qualifies even though neither role alone hits 20, and counts once
+        # under their primary role (support).
+        *games("flex", "TOP", "Pantheon", 12), *games("flex", "UTILITY", "Pantheon", 18),
+        *games("flex", "MIDDLE", "Ahri", 2),
         # Unassigned-role games never count.
         *games("norole", "", "Teemo", 30),
     ],
     "na1": [
-        # One champion in two roles: one player, in both role columns.
+        # Equal games on one champion in two roles (20 top + 20 support):
+        # counted once, tie broken deterministically in LANES order (top).
         *games("two", "TOP", "Pantheon", 20), *games("two", "UTILITY", "Pantheon", 20),
         # Not on any ladder.
         *games("off", "MIDDLE", "Katarina", 30),
@@ -102,7 +110,7 @@ PARTICIPANTS = {
     ],
 }
 LADDER = {
-    "kr": ["mid", "exact", "over", "floor", "role", "norole", "two"],
+    "kr": ["mid", "exact", "over", "floor", "pocket", "flex", "norole", "two"],
     "na1": ["two", "old", "wukong"],
 }
 LADDER_TS = 1789792374  # 2026-09-19T04:32:54Z
@@ -169,43 +177,45 @@ class TestCount(unittest.TestCase):
     def result(self):
         players, platforms, ladder_at = ladder.ladder_players(self.root)
         self.assertEqual((platforms, ladder_at), (["kr", "na1"], LADDER_TS))
-        self.assertEqual(len(players), 9, "a player on two ladders is one player")
+        self.assertEqual(len(players), 10, "a player on two ladders is one player")
         return ladder.count(self.root, players)
 
-    def test_role_share_rule(self):
+    def test_whole_account_share_and_primary_role(self):
         r = self.result()
         zero = dict.fromkeys(("players", *ladder.LANES), 0)
         self.assertEqual(r["champions"], {
             "ahri": {**zero, "players": 1, "middle": 1},
             "lux": {**zero, "players": 1, "support": 1},
-            "jhin": {**zero, "players": 1, "bottom": 1},
-            "pantheon": {**zero, "players": 1, "top": 1, "support": 1},
+            "pantheon": {**zero, "players": 2, "top": 1, "support": 1},
             "wukong": {**zero, "players": 1, "jungle": 1},
-            # Played by the ladder this season, one-tricked by no one.
-            "zed": zero, "nami": zero, "garen": zero, "syndra": zero, "yone": zero,
+            # Played by the ladder this season, one-tricked by no one (including Jhin off-role).
+            "jhin": zero, "zed": zero, "nami": zero, "garen": zero, "syndra": zero, "yone": zero,
         })  # No katarina (off-ladder), yasuo (last season), teemo (no role).
         self.assertEqual(r["onetrick_players"], 5)
-        self.assertEqual(r["games"], 23 + 40 + 41 + 19 + 55 + 40 + 5 + 22)
+        self.assertEqual(sum(v["players"] for v in r["champions"].values()), r["onetrick_players"])
+        for champ, v in r["champions"].items():
+            self.assertEqual(v["players"], sum(v[lane] for lane in ladder.LANES), champ)
+        self.assertEqual(r["games"], 23 + 40 + 41 + 19 + 55 + 32 + 40 + 5 + 22)
         self.assertEqual(r["patches"], ["16.1", "16.2", "16.10"])
 
     def test_store_and_payload(self):
         con = sqlite3.connect(":memory:")
         con.executescript(db.SCHEMA)
         self.assertEqual(ladder.api_onetricks(con), {"synced": None, "rows": []})
-        ladder.store(con, self.result(), ["kr", "na1"], 9, LADDER_TS)
+        ladder.store(con, self.result(), ["kr", "na1"], 10, LADDER_TS)
         # A second sync replaces the first rather than adding to it.
-        ladder.store(con, self.result(), ["kr", "na1"], 9, LADDER_TS)
+        ladder.store(con, self.result(), ["kr", "na1"], 10, LADDER_TS)
         p = ladder.api_onetricks(con)
         self.assertEqual([r["c"] for r in p["rows"]],
-                         ["ahri", "jhin", "lux", "pantheon", "wukong",
-                          "garen", "nami", "syndra", "yone", "zed"])
-        self.assertEqual(p["rows"][3], {"c": "pantheon", "n": 1, "top": 1, "jungle": 0,
+                         ["pantheon", "ahri", "lux", "wukong",
+                          "garen", "jhin", "nami", "syndra", "yone", "zed"])
+        self.assertEqual(p["rows"][0], {"c": "pantheon", "n": 2, "top": 1, "jungle": 0,
                                         "middle": 0, "bottom": 0, "support": 1})
         self.assertRegex(p.pop("synced"), r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
         p.pop("rows")
         self.assertEqual(p, {
-            "ladderAt": "2026-09-19T04:32:54Z", "ladderPlayers": 9, "onetrickPlayers": 5,
-            "games": 245, "firstPatch": "16.1", "lastPatch": "16.10",
+            "ladderAt": "2026-09-19T04:32:54Z", "ladderPlayers": 10, "onetrickPlayers": 5,
+            "games": 277, "firstPatch": "16.1", "lastPatch": "16.10",
             "minShare": 85, "minGames": 20, "platforms": ["kr", "na1"]})
 
     def test_sync_command(self):
@@ -222,6 +232,42 @@ class TestCount(unittest.TestCase):
                          {"pantheon": 1, "wukong": 1, "yone": 0})
         with self.assertRaisesRegex(SystemExit, "No ladder ledger for euw"):
             ladder.cmd_onetricks_sync(argparse.Namespace(quant_dir=self.root, platforms=["euw"]))
+
+
+class TestPlayerFilter(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = tmp.name
+        make_crawl(self.root)
+        snapshot = ladder.crawl_snapshot(self.root)
+        filt = pads.field("role").isin(list(ladder.SOLOQ_ROLE_MAP))
+        self.players = ladder._player_games(snapshot, filt)
+
+    def pairs(self, min_champ_games=0, otp_share=0):
+        args = argparse.Namespace(min_champ_games=min_champ_games, otp_share=otp_share)
+        tbl = ladder._player_filter(self.players, args)
+        return set(zip(tbl["puuid"].to_pylist(), tbl["champion"].to_pylist()))
+
+    def test_otp_share_uses_whole_account_games(self):
+        # "pocket" is 25/25 on Jhin in BOTTOM yet 25/55 overall: excluded.
+        # "flex" is 12 TOP + 18 UTILITY = 30/32 (93.8%) on Pantheon: included.
+        self.assertEqual(self.pairs(otp_share=80), {
+            ("mid", "Ahri"),
+            ("exact", "Lux"),
+            ("over", "Lux"),
+            ("flex", "Pantheon"),
+            ("two", "Pantheon"),
+            ("off", "Katarina"),
+            ("old", "Yasuo"),
+            ("wukong", "MonkeyKing"),
+        })
+
+    def test_mastery_keeps_any_20_game_champion_including_off_role(self):
+        # Mastery requires >= 20 games on the champion regardless of share, so
+        # "pocket"'s 25 Jhin games DO qualify for soloq_mastery.
+        self.assertIn(("pocket", "Jhin"), self.pairs(min_champ_games=20))
+        self.assertNotIn(("floor", "Garen"), self.pairs(min_champ_games=20))
 
 
 if __name__ == "__main__":
