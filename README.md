@@ -1,246 +1,92 @@
-# LoL Analysis
+# lol-analysis
 
-Monorepo for League of Legends analysis. One CLI (`lol.py`), one SQLite
-database (`lol.db`), one web dashboard — with each analysis domain as its own
-module and committed JSON archive:
+League of Legends and Teamfight Tactics analytics, combat simulators, and dashboard. One CLI (`cli.py`), one SQLite database (`lol.db`), two native Rust combat engines, and a buildless static web frontend.
 
-- **scaling** (`scaling.py`, `data/scaling/`) — which champions scale into the
-  late game: win rates by game length, aggregated from the Riot-API soloq
-  crawl in `../lol-quant`. Champions are tracked per role: every lane with
-  more than 10% play rate gets its own entry, so flex picks like Gragas have
-  separate top/jungle/mid stats.
-- **onetricks** (`onetricks.py`) — how many one-tricks every champion has,
-  from the same crawl. A player one-tricks a champion in a role when it is
-  more than 85% of their ranked solo games *in that role* this season (at
-  least 20 games on it), not of all their games as onetricks.gg counts, so
-  one-tricks who also fill other roles still count. The players are
-  everyone on each crawled region's latest Master+ ladder, whose whole
-  season the crawl collects. Counts only, in lol.db; nothing is archived.
-- **items** (`items.py`, `data/items/`) — static item data for build math.
-  `lol.py items fetch` snapshots the current patch's Summoner's Rift items
-  from three sources: Riot's Data Dragon (canonical, but key offensive stats
-  only live in description text), Meraki Analytics (every stat fully
-  structured — lethality, % pen, haste, crit damage), and Riot's raw item
-  bin via CommunityDragon, distilled to `groups.json` ("Limited to 1"
-  ownership groups, currency-gated and retired items). Meraki serves only
-  the latest patch, so the committed per-patch snapshots are the historical
-  archive. A systemd user timer on the home server runs
-  `jobs/refresh-items.sh` daily and pushes when a new patch lands, so the
-  local checkout is always current (the Data tab lists all such jobs).
-- **builds** (`builds.py`, `data/builds/`) — theoretical build math, no match
-  data: resolve champion + items into exact stat sheets with the real in-game
-  rules (growth curve, AS ratio and cap, pen ordering, Rabadon multiplier).
-  Champion base stats are snapshotted per patch via
-  `lol.py builds fetch-champion <name>` (ddragon canonical, meraki for AS
-  ratio/windup — and for AD growth, which ddragon has published as 0 for
-  every champion since 16.5 while Riot's game files still carry it);
-  text-only item passives live in the hand-curated
-  `data/builds/item-effects.json`, and ability kits in hand-encoded
-  `data/builds/<champ>.json` — Kayle, Vladimir, Twitch and Kassadin so far, each paired
-  with a rotation driver (`engine/src/drivers.rs`) that says what the
-  champion does with its attacks and abilities; the engine itself is
-  champion-agnostic (clock, target, item procs, damage pipeline). On top:
-  a deterministic expected-value combat engine (`builds sim` — event
-  timeline, on-hit procs, Guinsoo phantom hits, pen ordering, EV crit;
-  compiled Rust in `engine/`, driven from `builds.py`)
-  and a build enumerator (`builds optimize` — ranks every item-pool
-  combination against a stat dummy; `--budget`/`--require` for partial
-  builds). A kit can rule items out of its pool (Vladimir has no mana,
-  so the Tear items never enter his enumeration) or
-  declare that the champion never auto-attacks (Vladimir, as played:
-  on-hit, crit and spellblade items then rank on their raw stats).
-  The enumeration pool covers every mage, marksman, assassin, and
-  bruiser damage item (75 items + the 7 boots gold can buy; the Feats of
-  Strength upgrades are not) — AP, on-hit, crit, executes,
-  burns, Energized, shreds, spellblades, item actives, fully-stacked tear
-  items; the few items whose passives can't be modeled yet (plus
-  support/tank items, and Actualizer, which Roger keeps out by choice)
-  are excluded rather than misranked on stats alone, each with its
-  reason recorded under `"excluded"` in `item-effects.json`. Four
-  scenarios, all full builds at level 16: vs
-  a squishy, a bruiser and a tank stat dummy, plus *overall*. The three
-  targets are simulated in one pass, which also fills the overall cell:
-  every build ranked on all three at once, by the geometric mean of its
-  expected kill times (each target counts equally in percentage terms; a
-  build must kill every target to rank above one that leaves any
-  standing). That pass ranks ~107M legal builds — every tier-2 boots
-  with every legal five-item combination from the 75-item pool (93M for a
-  champion with no mana, whose kit drops the two Tear items) — against
-  each target. The enumerator fans out across CPU cores in blocks and
-  prunes exactly: it publishes every cell's running 500th-best in shared
-  memory, drops results that can't place, and stops a fight the moment
-  its clock passes the point where the build can no longer place on that
-  target's list nor on the overall one (a survivor ranks below every
-  killer, and a kill still to come lands later than the clock), so the
-  lists come out exactly as an unpruned pass ranks them (a test checks
-  that). Boots that fight alike share one simulation: Mercury's Treads,
-  Plated Steelcaps and Gluttonous Greaves always; Boots of Swiftness too
-  unless the build carries an Energized item, since move speed only
-  charges those; Berserker's Greaves too for a champion who never
-  attacks. A previous result's rows are scored first, so the bounds are
-  tight from the start. The sheet, the fight and that inner loop are
-  compiled (`engine/`, Rust through PyO3, imported as `lol_engine`; build
-  it with `jobs/build-engine.sh`): a champion takes 5–11 s on 16 cores (the
-  whole warm about 17 s), where the pure-Python engine it replaced took
-  half an hour. Its output
-  is pinned bit for bit by the fixtures in `data/builds/golden`
-  (`test_builds.TestGolden`; regenerate with `jobs/gen_golden.py` only
-  after a deliberate model change). Progress lines land in
-  `.cache/builds/warm.log`.
-  The dashboard never simulates on request: `lol.py builds warm`
-  precomputes every (champion, scenario) cell — its
-  top 500 builds, each with its fight against every target — into
-  `.cache/builds/` (gitignored) under a hash of every input, and `serve`
-  runs it in the background whenever a cell is cold, so a code or data
-  change just makes cells recompute. Runes are not modeled yet.
-  Tanks rank on the other side of the fight: the **Survival tier**
-  (`builds survive`, `data/builds/drmundo.json`, `engine/src/defense.rs`)
-  turns a tank's build into the target and lets the modeled carries attack
-  it with their current best overall builds — Kayle and Kassadin so far,
-  each run exactly as against a dummy — ranking every build of a 45-item
-  tank pool (every item with health, armor, magic resist or a modeled
-  defensive effect) by how long it lasts. The defender's items act on the
-  damage on its way in (Steelcaps, Randuin's, shields and lifelines,
-  Death's Dance's delay, Jak'Sho and Force of Nature's growing resists,
-  Guardian Angel and Zhonya's stasis, Frozen Heart's slow on the
-  attacker, Spirit Visage, Unending Despair), and its kit's defenses run
-  on its own clock (Dr. Mundo's regeneration, Heart Zapper, and Maximum
-  Dosage at the health threshold that keeps him alive longest). The tank
-  never fights back: lifesteal and omnivamp count for nothing. Dr. Mundo's
-  7.6M builds take about 21 s on 16 cores.
-  Math is pinned by hand-computed tests: `python3 -m unittest
-  test_builds`.
+## Layout
 
-Shared plumbing lives in `common.py` (DB, paths, patch ordering) and
-`webapp.py` (the serve/export web shell).
+```text
+cli.py              Unified CLI entrypoint
+lol/                Summoner's Rift analytics and build simulator
+  ladder.py         Champion game-length scaling and Master+ one-trick aggregation
+  items.py          Patch item snapshots (Data Dragon + Meraki + CommunityDragon shop rules)
+  builds.py         Stat sheets, fight/survival simulation, exhaustive build optimizer
+  leaderboard.py    Cross-champion DPS and survival leaderboards
+  codegen/          Champion kit dossier and Rust driver generation pipeline
+  engine/           Rust PyO3 combat engine (builds to lol/lol_engine.abi3.so)
+  data/             Committed scaling, item, and champion kit/golden archives
+  tests/            LoL Python unittest suite and Node UI suite
+tft/                Teamfight Tactics Set 18 simulator and planners
+  sim.py            Snapshot loader, unit build/core enumeration, leaderboards, refresh
+  board.py          Board geometry, trait breakpoints/emblems, symmetric team encounters
+  early.py          Levels 4 to 7 early-game board planner
+  flex.py           Trait Flex graph solver and empirical lobby play-rate fetcher
+  update.py         Bounded HTTP retries, patch-note reconciliation, bound patch reviews
+  site.py           Immutable pre-compressed HTTP publication bundles
+  golden.py         Golden fight fixture generator and verifier
+  engine/           Rust PyO3 TFT combat engine (builds to tft/lol_tft.abi3.so)
+  data/             Committed Set 18 snapshots, patch reviews, and golden fixtures
+  tests/            TFT Python unittest suite and Node UI/solver suite
+web/                Dashboard server, static exporter, frontend, and operations
+  db.py             SQLite schema, connection helper, and shared repo paths
+  server.py         Local HTTP server (`serve`) and static snapshot builder (`export`)
+  static/           Buildless HTML, CSS, JS, and Trait Flex Web Worker
+  ops/              Engine build script, scheduled timer scripts, systemd reference config
+  tests/            Shared Node VM/DOM harness for UI suites
+```
 
 ## Setup
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-jobs/build-engine.sh   # the builds engine (Rust); uses cargo, or nix-shell -p cargo rustc
-```
-
-If you're starting from a fresh checkout (no `lol.db`), rebuild it from the
-committed JSON archive:
+Build both Rust combat extensions (`lol/lol_engine.abi3.so` and `tft/lol_tft.abi3.so`):
 
 ```bash
-.venv/bin/python lol.py import-json
+./web/ops/build-engine.sh
 ```
 
-## Getting data
-
-Scaling data comes from the `../lol-quant` Riot-API crawl, read in place —
-nothing is copied between the repos, but `lol.db` is an aggregate that has
-to be rebuilt from the crawl's parquet. On the home server a systemd user
-timer runs `jobs/sync-scaling.sh` every six hours (`scaling sync
---db-only`, then `onetricks sync`), so the Scaling and One-tricks tabs
-follow the crawler on its own and show when they last synced. To refresh by
-hand:
+Populate `lol.db` from the committed `lol/data/scaling` archive (or sync directly from a sibling `../lol-quant` checkout):
 
 ```bash
-python3 lol.py scaling sync
-python3 lol.py onetricks sync   # ~20 s, ~8 GB peak (the crawl's parquet metadata)
+python3 cli.py import-json
+# or, when ../lol-quant is present:
+python3 cli.py scaling sync --db-only
+python3 cli.py onetricks sync
 ```
 
-`scaling sync` refreshes all three tiers with their canonical definitions:
-
-- `soloq_masters_plus` — every game
-- `soloq_mastery` — pilot has ≥ 20 season games on the champion
-- `soloq_otp` — one-tricks: champion is ≥ 80% of the player's role games
-
-A hand-run sync also mirrors JSON to `data/scaling/<patch>/<tier>/` —
-commit that when you want a checkpoint the archive on GitHub can rebuild
-the DB from via `import-json` (the timer skips it: an 8 MB rewrite four
-times a day would bloat the repo). For a one-off custom slice (other thresholds, specific
-platforms, a different tier name), use `lol.py scaling import-soloq`
-directly.
-
-## The dashboard (recommended)
+## Common Commands
 
 ```bash
-.venv/bin/python lol.py serve
+# Web dashboard and static export
+python3 cli.py serve --port 8399 --no-open
+python3 cli.py export --out _site
+
+# Summoner's Rift: scaling, one-tricks, items, and builds
+python3 cli.py status
+python3 cli.py scaling report --scaling
+python3 cli.py scaling champion kayle
+python3 cli.py items fetch
+python3 cli.py builds sim kayle --items "Nashor's Tooth" "Rabadon's Deathcap"
+python3 cli.py builds optimize kayle --slots 6
+python3 cli.py builds warm
+
+# Teamfight Tactics: unit builds, early comps, trait flex, and scheduled refresh
+python3 cli.py tft status
+python3 cli.py tft units
+python3 cli.py tft sim ashe --star 2 --items "Guinsoo's Rageblade" "Infinity Edge" "Kraken's Fury"
+python3 cli.py tft top ashe --star 2
+python3 cli.py tft warm
+python3 cli.py tft refresh
+python3 cli.py tft fetch-lobby-stats
 ```
 
-Opens `http://127.0.0.1:8321` — an interactive local dashboard.
-
-On the home server nobody runs that command: the NixOS system unit
-`lol-dashboard.service` (declared in `dotfiles/nixos/configuration.nix`)
-runs it on :8321 with `Restart=always`, and `lol-dashboard-reload.path`
-restarts it about 10 s after every commit or pull of this repo. A serve
-started by hand there either fails to bind or, if it got there first,
-squats the port and leaves the unit failed while it answers — so use
-another port for experiments (`--port 8399`), restart with a commit or
-`sudo systemctl restart lol-dashboard`, and read `systemctl status
-lol-dashboard` / `journalctl -u lol-dashboard` for its state. The same
-notes live in `CLAUDE.md` for anyone (or anything) working here.
-
-The tabs:
-
-- **Overview** — win-rate-by-game-length chart + sortable per-bucket rankings,
-  with tier/lane/min-games filters. Click table rows to chart champions.
-- **Champion** — any champion's win-rate curve per lane, plus their win rate
-  across patches.
-- **One-tricks** — one table: every champion's number of one-tricks on the
-  Master+ ladder, and how many of them in each role (someone who one-tricks
-  a champion in two roles counts once in the total and in both roles).
-- **Builds** — the theoretical damage model's ranked full builds per
-  champion, vs a squishy, a bruiser, a tank, or overall. Every row shows
-  the build's expected kill time against each target and how far behind
-  that target's best it is; the overall scenario ranks by the geometric
-  mean of those times. Click a build for its damage-source breakdown
-  against each target. The top 10 builds of each scenario number their
-  items in a suggested buy order (boots early): the order whose partial
-  builds, fought at earlier levels against earlier-game targets, kill
-  fastest along the way, each stage weighted by the gold to the next item.
-  Every scenario is precomputed (`lol.py builds
-  warm`, which
-  `serve` runs in the background whenever something is cold — `--no-warm`
-  turns that off); a cell that isn't computed yet says so and fills in
-  when it lands. A tank (Dr. Mundo) shows the Survival tier instead:
-  every build's time to die against each attacker's best build, the
-  overall ranking by their geometric mean, and a breakdown of what hit
-  it and what kept it up. Restart serve after editing `builds.py` or `engine/`
-  (rebuild first; on the server: commit, or `sudo systemctl restart
-  lol-dashboard`) — the tab tells you when it is running older code than
-  is on disk. The **Leaderboard** view compares champions: each one's best
-  build under the selected scenario (the top row of its own ranking), ranked
-  by the same metric, equal times sharing a rank. It reads the saved cells
-  only (`builds_leaderboard.py`, `/api/builds/leaderboard/<scenario>.json`).
-  Most kits are machine-written drafts, tagged *unreviewed* with a filter to
-  hide them; a kill at 0.00s marks a draft that lands its whole combo in the
-  fight's first instant.
-- **Data** — systemd unit health, automation job status, and what's in the
-  database, per tier and patch.
-
-## CLI equivalents
+## Tests
 
 ```bash
-# Ranked win-rate tables per game-length bucket (0-15 ... 40+ min)
-.venv/bin/python lol.py scaling report --top 10 --min-games 5000
+# Python unit and golden suites (LoL + TFT)
+python3 -m unittest
 
-# Rank by scaling instead: late-game WR (35+ min) minus early WR (0-20 min)
-.venv/bin/python lol.py scaling report --scaling
+# Frontend and Web Worker solver suites
+node lol/tests/test_ui.cjs
+node tft/tests/test_ui.cjs
 
-# One champion's win-rate curve, per lane
-.venv/bin/python lol.py scaling champion kayle
-
-# Self-contained interactive HTML dashboard (chart + sortable table)
-.venv/bin/python lol.py scaling dashboard && open dashboard.html
-
-# What's in the database
-.venv/bin/python lol.py status
+# Rust crate unit tests
+nix-shell -p cargo rustc --run "cargo test --manifest-path lol/engine/Cargo.toml --no-default-features && cargo test --manifest-path tft/engine/Cargo.toml --no-default-features"
 ```
-
-Analysis commands default to the most recently imported tier and all of its
-patches; narrow with `--tier`, `--patches`, `--lane`, `--min-games`. Add
-`--csv out.csv` to a report to export it.
-
-## Notes
-
-- Champion names are lowercase slugs (`missfortune`, `aurelionsol`).
-- `data/scaling/platforms.json` records which regions the crawl covers
-  (written by `scaling sync`, shown in the UI next to the tier description).
-- `lol.db` is gitignored; the `data/` JSON tree is the committed archive and
-  can rebuild the DB via `import-json` at any time.

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# name: Sync scaling and one-trick data
+# schedule: every 6h at :30 (systemd user timer on the home server)
+# Re-aggregates the ../lol-quant crawl's parquet into lol.db so the Scaling
+# and One-tricks tabs follow the crawler without anyone running `cli.py
+# scaling sync` or `cli.py onetricks sync` by hand. --db-only leaves the
+# committed lol/data/scaling archive to deliberate hand-run syncs (an 8 MB
+# rewrite four times a day would bloat the repo).
+# Logs: journalctl --user -u lol-scaling-sync
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+# Unbuffered, so the journal keeps each step's progress even when a step dies.
+export PYTHONUNBUFFERED=1
+
+# Heartbeat for the dashboard's health indicator: record when this job last
+# finished and how, whatever the outcome. .cache/ is gitignored.
+mkdir -p .cache/ops
+trap 'rc=$?; printf "{\"finishedAt\":\"%s\",\"exit\":%d}\n" \
+  "$(date -u +%FT%TZ)" "$rc" > ".cache/ops/$(basename "$0" .sh).json"' EXIT
+
+python3 cli.py scaling sync --db-only
+python3 cli.py onetricks sync

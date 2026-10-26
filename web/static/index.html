@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoL Scaling</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>LoL Scaling</h1>
+  <label class="sub">Tier
+    <select id="tier" aria-label="Tier"></select>
+  </label>
+  <span class="sub" id="subtitle"></span>
+</header>
+<div class="sub" id="tier-desc"></div>
+<div id="health" hidden></div>
+
+<nav>
+  <button data-view="overview" class="active">Overview</button>
+  <button data-view="champion">Champion</button>
+  <button data-view="onetricks">One-tricks</button>
+  <button data-view="builds">Builds</button>
+  <button data-view="tft">TFT</button>
+  <button data-view="data">Data</button>
+</nav>
+
+<!-- ============================ Overview ============================ -->
+<section class="view active" id="view-overview">
+  <div class="kpis">
+    <div class="tile"><div class="label">Champion-roles</div><div class="value" id="kpi-roles">—</div></div>
+    <div class="tile" title="Distinct matches at this tier across the shown patches (≈ means estimated — re-run scaling sync for exact counts)"><div class="label">Matches analyzed</div><div class="value" id="kpi-games">—</div></div>
+    <div class="tile"><div class="label">Patches</div><div class="value" id="kpi-patches">—</div></div>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search champion..." aria-label="Search champion">
+    <select id="lane" aria-label="Lane filter">
+      <option value="">All lanes</option>
+      <option>top</option><option>jungle</option><option>middle</option>
+      <option>bottom</option><option>support</option>
+    </select>
+    <select id="mingames" aria-label="Minimum games">
+      <option value="500">≥ 500 games</option>
+      <option value="1000" selected>≥ 1,000 games</option>
+      <option value="2500">≥ 2,500 games</option>
+      <option value="5000">≥ 5,000 games</option>
+      <option value="20000">≥ 20,000 games</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <h2>Rankings</h2>
+    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval — differences inside it are noise. Click a row to open its champion page.</div>
+    <div class="seg" id="bucket-seg"></div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead><tr>
+          <th data-k="rank">Rank <span class="arrow"></span></th>
+          <th data-k="c">Champion <span class="arrow"></span></th>
+          <th data-k="l">Lane <span class="arrow"></span></th>
+          <th data-k="metric">Win Rate <span class="arrow"></span></th>
+          <th data-k="games">Games <span class="arrow"></span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Champion ============================ -->
+<section class="view" id="view-champion">
+  <div class="controls">
+    <input id="champ-search" type="search" list="champ-list" placeholder="Type a champion (e.g. kayle)..." aria-label="Champion">
+    <datalist id="champ-list"></datalist>
+  </div>
+  <div class="card">
+    <h2 id="champ-title">Pick a champion</h2>
+    <div class="hint">Win rate by game length, one line per lane (lanes with data at this tier).</div>
+    <div class="chartwrap">
+      <svg id="champ-chart" width="100%" height="320" role="img" aria-label="Champion win rate by game length"></svg>
+      <div class="tooltip" id="champ-tt"></div>
+    </div>
+    <div class="legend" id="champ-legend"></div>
+  </div>
+  <div class="card">
+    <h2>Win rate by patch</h2>
+    <div class="hint">Overall win rate per patch (all game lengths), one line per lane.</div>
+    <div class="chartwrap">
+      <svg id="patch-chart" width="100%" height="320" role="img" aria-label="Champion win rate by patch"></svg>
+      <div class="tooltip" id="patch-tt"></div>
+    </div>
+    <div class="legend" id="patch-legend"></div>
+  </div>
+</section>
+
+<!-- ============================ One-tricks ============================ -->
+<section class="view" id="view-onetricks">
+  <div class="card">
+    <h2>One-tricks by champion</h2>
+    <div class="hint" id="ot-hint">Loading…</div>
+    <div class="tablewrap">
+      <table id="otbl">
+        <thead><tr>
+          <th data-k="rank"># <span class="arrow"></span></th>
+          <th data-k="c">Champion <span class="arrow"></span></th>
+          <th data-k="n">One-tricks <span class="arrow"></span></th>
+          <th data-k="top">Top <span class="arrow"></span></th>
+          <th data-k="jungle">Jungle <span class="arrow"></span></th>
+          <th data-k="middle">Middle <span class="arrow"></span></th>
+          <th data-k="bottom">Bottom <span class="arrow"></span></th>
+          <th data-k="support">Support <span class="arrow"></span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Builds ============================ -->
+<section class="view" id="view-builds">
+  <div class="card">
+    <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
+    <div class="seg" id="builds-mode-seg" role="group" aria-label="Builds view">
+      <button data-key="champion" aria-pressed="true" class="active">Champion builds</button>
+      <button data-key="leaderboard" aria-pressed="false">Leaderboard</button>
+    </div>
+    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest — or, overall, that do best on all three at once. Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. Select a column heading to sort by it, and again to reverse: a target's column orders the champions by how the build shown does in that one fight (that target's own scenario ranks each champion's best build against it instead), and # stays the scenario's rank whatever the order. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
+    <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
+    <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
+    <div id="champion-more" hidden style="margin:0 0 10px">
+      <input id="champion-search" type="search" list="champion-list" autocomplete="off"
+             spellcheck="false" aria-label="Machine-written champions"
+             style="width:min(460px,100%)">
+      <datalist id="champion-list"></datalist>
+    </div>
+    <div class="hint" id="builds-generated" hidden
+         style="border-left:3px solid var(--s3);padding-left:10px;margin-bottom:10px"></div>
+    <div class="seg" id="scenario-seg"></div>
+    <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
+    <div class="tablewrap" id="btbl-wrap">
+      <table id="btbl">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="bboard" hidden>
+      <div class="bboard-filters">
+        <label class="tft-label" for="bboard-search">Find <input id="bboard-search" type="search" placeholder="Champion…" autocomplete="off" spellcheck="false" aria-controls="bboard-tbl"></label>
+        <label class="tft-label" for="bboard-reviewed"><input id="bboard-reviewed" type="checkbox"> Reviewed kits only</label>
+        <span class="sub" id="bboard-status" role="status"></span>
+      </div>
+      <div class="tablewrap" id="bboard-wrap">
+        <table id="bboard-tbl">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="hint" id="bboard-failed" hidden style="margin:10px 0 0"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="bd-title">Damage breakdown</h2>
+    <div class="hint" id="bd-hint">Where the selected build's damage comes from over the whole fight (post-mitigation).</div>
+    <div class="hint" id="bd-generated" hidden
+         style="border-left:3px solid var(--s3);padding-left:10px"></div>
+    <div id="bd-bars"></div>
+  </div>
+  <div class="card">
+    <h2 id="pool-title">Item pool</h2>
+    <div class="hint" id="pool-notes" hidden></div>
+    <div class="hint" id="pool-hint-damage">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced — no build carries two of a group.</div>
+    <div class="hint" id="pool-hint-survival" hidden>Every ranked build is one boots choice plus five of these: every item that does something for its holder while it takes damage — health, armor or magic resist, or a modeled defensive effect. An item that only adds damage can't make a tankiest build. In-game "Limited to 1" groups (Lifeline, Immolate, Annul, Hydra, Spellblade ...) are enforced.</div>
+    <div class="chips" id="pool-chips"></div>
+    <div class="hint" style="margin:10px 0 0">Boots (one per build):</div>
+    <div class="chips" id="boots-chips"></div>
+    <details id="pool-excluded" style="margin-top:12px">
+      <summary class="hint" style="cursor:pointer;display:inline-block"></summary>
+      <ul id="pool-excluded-list"></ul>
+    </details>
+  </div>
+</section>
+
+<!-- ============================ TFT ============================ -->
+<section class="view" id="view-tft">
+  <div class="card">
+    <div class="tft-heading">
+      <h2>TFT builds</h2>
+      <span class="sub" id="tft-set-label"></span>
+    </div>
+    <p class="sub tft-intro">Find a champion’s best items, compare carries, or explore early boards and flexible trait combinations.</p>
+    <div class="tft-refresh" id="tft-refresh" role="status" hidden>
+      <strong id="tft-refresh-title"></strong>
+      <span id="tft-refresh-detail"></span>
+    </div>
+    <div class="hint" id="tft-note" role="status" hidden></div>
+    <div class="seg" id="tft-mode-seg" role="group" aria-label="TFT view">
+      <button data-key="builds" aria-pressed="true" aria-controls="tft-champion-panel" class="active">Champion builds</button>
+      <button data-key="leaderboard" aria-pressed="false" aria-controls="tft-leaderboard-panel">Leaderboard</button>
+      <button data-key="early" aria-pressed="false" aria-controls="tft-early-panel">Early comps</button>
+      <button data-key="traits" aria-pressed="false" aria-controls="tft-traits-panel">Trait flex</button>
+    </div>
+    <div id="tft-champion-browser">
+    <div class="tft-search">
+      <label class="tft-label" for="tft-search">Find a champion</label>
+      <input id="tft-search" type="search" placeholder="Search name or trait…" autocomplete="off" aria-controls="tft-unit-seg">
+    </div>
+    <div class="tft-filter-row">
+      <span class="tft-label" id="tft-cost-label">Cost</span>
+      <div class="seg" id="tft-cost-seg" role="group" aria-labelledby="tft-cost-label"></div>
+    </div>
+    <div class="tft-filter-row">
+      <span class="tft-label" id="tft-role-label">Role</span>
+      <div class="seg" id="tft-class-seg" role="group" aria-labelledby="tft-role-label"></div>
+    </div>
+    <div class="tft-browser-meta">
+      <span class="sub" id="tft-unit-count" role="status"></span>
+      <div class="tft-browser-actions">
+        <button id="tft-clear-filters" hidden>Clear filters</button>
+        <button id="tft-jump-to-builds">View builds ↓</button>
+      </div>
+    </div>
+    <div id="tft-unit-seg" role="region" aria-label="Champions grouped by cost" tabindex="0"></div>
+    </div>
+  </div>
+  <section class="card" id="tft-leaderboard-panel" aria-labelledby="tft-board-title" hidden>
+    <div class="tft-heading">
+      <h2 id="tft-board-title" tabindex="-1">Champion leaderboard</h2>
+      <div class="seg" id="tft-board-mode-seg" role="group" aria-label="Leaderboard ranking"></div>
+    </div>
+    <div class="tft-board-settings">
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-board-star-label">Star level</span>
+        <div class="seg" id="tft-board-star-seg" role="group" aria-labelledby="tft-board-star-label"></div>
+        <p id="tft-board-star-hint"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-board-geo-label">Enemy formation</span>
+        <p id="tft-board-formation" aria-labelledby="tft-board-geo-label"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-board-trait-label">Champion traits</span>
+        <div class="seg" id="tft-board-trait-seg" role="group" aria-labelledby="tft-board-trait-label"></div>
+      </div>
+      <div class="tft-setting" id="tft-board-threat-setting" hidden>
+        <span class="tft-label" id="tft-board-threat-label">Backline damage profile</span>
+        <div class="seg" id="tft-board-threat-seg" role="group" aria-labelledby="tft-board-threat-label"></div>
+      </div>
+    </div>
+    <p id="tft-board-context"></p>
+    <p id="tft-board-movement-note" class="hint" hidden></p>
+    <div class="seg" id="tft-board-role-seg" role="group" aria-label="Damage champion roles"></div>
+    <div class="tft-board-filters">
+      <label class="tft-label" for="tft-board-cost">Cost <select id="tft-board-cost"></select></label>
+      <label class="tft-label" for="tft-board-search">Find <input id="tft-board-search" type="search" placeholder="Champion or trait…" autocomplete="off" aria-controls="tft-board-table"></label>
+      <button id="tft-board-clear" hidden>Clear filters</button>
+    </div>
+    <div class="tft-board-status-row">
+      <span class="sub" id="tft-board-status" role="status">Choose a leaderboard to compare champions.</span>
+      <button id="tft-board-retry" hidden>Retry</button>
+    </div>
+    <div class="tablewrap" id="tft-board-tablewrap" role="region" aria-label="Champion leaderboard" tabindex="0" hidden>
+      <table id="tft-board-table">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="tft-empty" id="tft-board-empty" hidden></p>
+    <details class="tft-details" id="tft-board-methodology">
+      <summary>How this comparison works</summary>
+      <p class="hint">Each champion uses its best full three-item build from every legal combination in the selected fight. The leaderboard starts with 2★ 4-costs and first trait breakpoints. Best available uses 3★ for 1–3 costs and 2★ for 4–5 costs. The 3★ board only includes 1–3 costs. Formation and trait settings stay the same across the board; active trait bonuses still depend on each champion.</p>
+      <p class="hint">Damage ranks by time to clear all targets, then damage for champions that cannot clear. Carries are protected; fighters and assassins also take attacks and casts from their targets. Use the role filter to compare the same pressure conditions. DPS is averaged over the simulated fight. All damage targets start with team-supplied Sunder and Shred.</p>
+      <p class="hint">2nd BIS gap compares each champion’s best and second-best distinct three-item builds. It shows how much slower the second build clears, or how much less damage it deals when neither build clears. Tank gaps compare time held, using twice the incoming damage when both builds reach the regular limit. Hover over a gap for the second build’s items and exact results. A dash means a percentage cannot be measured; reaching both survival limits is an observed tie.</p>
+      <p class="hint">Tanks rank by how long they hold the enemy formation, including on-death bodies. 60s+ means the fight limit was reached. Those champions are compared again with twice the incoming damage; reaching both limits remains a tie. Effective healing, shields and stuns contribute to survival. Team utility does not change these ranks.</p>
+      <p class="hint">These are theoretical fights, not match win rates. Equal performance shares a rank, and filters keep the full board’s ranks. Ranks use unrounded results; displayed times and damage are rounded. Select a champion for its exact fight, alternatives and ability assumptions.</p>
+    </details>
+  </section>
+  <section class="card" id="tft-early-panel" aria-labelledby="tft-early-title" hidden>
+    <div class="tft-heading">
+      <h2 id="tft-early-title" tabindex="-1">Early comps</h2>
+      <span class="sub">Stage 2 boards</span>
+    </div>
+    <p class="sub tft-intro">Find early carries and the support units that help them win fights. Compare four- or five-unit boards with no items.</p>
+    <div class="tft-early-controls">
+      <label for="tft-early-level">Board size <select id="tft-early-level"><option value="4">4 units</option><option value="5">5 units</option></select></label>
+      <label><input type="checkbox" id="tft-early-three" checked disabled> Allow one 3-cost on five-unit boards</label>
+      <label for="tft-early-unit">Include champion <select id="tft-early-unit" disabled><option value="all">Any champion</option></select></label>
+      <button id="tft-early-clear" type="button" hidden>Clear filters</button>
+    </div>
+    <p id="tft-early-context">All units at 1★. Benchmark wins compare fixed early reference boards, rather than live stage 2 win probability.</p>
+    <div class="tft-early-controls">
+      <label for="tft-early-sort">Sort by <select id="tft-early-sort"><option value="wins">Benchmark win rate</option><option value="dps">Encounter DPS</option><option value="frontline">Frontline held</option><option value="gold">Purchase gold</option><option value="traits">Active traits</option></select></label>
+      <label for="tft-early-order">Order <select id="tft-early-order"><option value="desc">Highest first</option><option value="asc">Lowest first</option></select></label>
+    </div>
+    <div class="tft-comp-status-row">
+      <p id="tft-early-status" role="status" aria-live="polite">Open Early comps to compare stage 2 boards.</p>
+      <button id="tft-early-retry" type="button" hidden>Retry</button>
+    </div>
+    <div class="tablewrap tft-flex-tablewrap" id="tft-early-tablewrap" role="region" aria-label="Early compositions" tabindex="0" hidden>
+      <table id="tft-early-table" class="tft-early-table"><thead><tr></tr></thead><tbody></tbody></table>
+    </div>
+    <div id="tft-early-pagination" hidden>
+      <span id="tft-early-page"></span>
+      <button id="tft-early-prev" type="button">Previous</button>
+      <button id="tft-early-next" type="button">Next</button>
+    </div>
+    <p class="tft-empty" id="tft-early-empty" hidden></p>
+    <details class="tft-details" id="tft-early-method">
+      <summary>How these early boards are compared</summary>
+      <div id="tft-early-method-body">
+        <p>Four-unit boards use only 1- and 2-costs. Five-unit boards may include one 3-cost. Every champion is 1★; neither team has items.</p>
+        <p>Saved simulations compare boards against a fixed early reference pool. These tests help compare combinations under the same assumptions; their win percentages are not predictions for a live stage 2 lobby.</p>
+      </div>
+    </details>
+  </section>
+  <section class="card" id="tft-traits-panel" aria-labelledby="tft-flex-title" hidden>
+    <div class="tft-heading">
+      <h2 id="tft-flex-title" tabindex="-1">Trait flex</h2>
+      <span class="sub">Level 8 · Units only</span>
+    </div>
+    <p class="sub tft-intro">Choose a cost to browse comps, or select champions to narrow them down. Every selected champion stays in the core, and the search fills your level 8 board with supports.</p>
+    <div class="tft-flex-controls">
+      <div class="tft-setting">
+        <label class="tft-label" for="tft-flex-cost">Champion cost</label>
+        <select id="tft-flex-cost" disabled><option value="2">2-cost cores</option><option value="3">3-cost cores</option><option value="4" selected>4-cost cores</option></select>
+      </div>
+      <div class="tft-setting">
+        <label class="tft-label" for="tft-flex-search">Find a core champion</label>
+        <input id="tft-flex-search" type="search" placeholder="Search name or trait…" autocomplete="off" aria-controls="tft-flex-unit-seg">
+      </div>
+    </div>
+    <div id="tft-flex-selected" role="status" aria-live="polite"></div>
+    <div id="tft-flex-unit-seg" class="tft-unit-grid" role="group" aria-label="Choose core champions"></div>
+    <div class="tft-setting">
+      <span class="tft-label" id="tft-flex-preference-label">Trait preference</span>
+      <div class="seg" id="tft-flex-preference-seg" role="group" aria-labelledby="tft-flex-preference-label">
+        <button data-key="breadth" aria-pressed="true" class="active">More active traits</button>
+        <button data-key="vertical" aria-pressed="false">Higher verticals</button>
+      </div>
+      <p id="tft-flex-formula">Score = 3 × active traits + extra reached tiers.</p>
+    </div>
+    <div class="tft-flex-options">
+      <label for="tft-flex-min-cost">Minimum unit cost <select id="tft-flex-min-cost"><option value="1">1+ (all units)</option><option value="2">2+ (no 1-costs)</option><option value="3">3+ (no 1- or 2-costs)</option></select></label>
+      <label for="tft-flex-frontline">Minimum frontline units <select id="tft-flex-frontline"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
+      <label><input type="checkbox" id="tft-flex-five"> Allow 5-cost supports</label>
+    </div>
+    <p id="tft-flex-context">No selection shows all core pairs of the chosen cost. Pick one champion to see every partner, or select several to keep them all. Any roles can be selected.</p>
+    <p id="tft-flex-gold-target-note" class="hint" hidden>Gold targets: 3★ for every unit of the chosen cost; 1★ for every other unit.</p>
+    <details class="tft-details" id="tft-flex-owned">
+      <summary id="tft-flex-lock-summary">Keep units you already own (optional)</summary>
+      <label class="tft-label" for="tft-flex-lock-search">Find a unit to keep</label>
+      <input id="tft-flex-lock-search" type="search" placeholder="Champion or trait…" autocomplete="off" aria-controls="tft-flex-lock-list">
+      <div id="tft-flex-lock-list" role="group" aria-label="Units to keep on every board"></div>
+    </details>
+    <details class="tft-details" id="tft-flex-lobby">
+      <summary>Typical lobby assumptions and scouting</summary>
+      <div class="tft-flex-lobby-options">
+        <label for="tft-flex-lobby-profile">Stats patch &amp; rank <select id="tft-flex-lobby-profile" disabled></select></label>
+        <label for="tft-flex-lobby-players">Other players <input type="number" id="tft-flex-lobby-players" value="7" min="0" max="7" step="1"></label>
+        <label for="tft-flex-lobby-development">% of final-board holdings <input type="number" id="tft-flex-lobby-development" value="50" min="0" max="100" step="10"></label>
+      </div>
+      <p id="tft-flex-lobby-context" role="status">Typical lobby estimates need published play-rate data for this patch.</p>
+      <p>Play rates and star levels estimate opponent copies across the whole shop pool. The default uses 7 other players and 50% of final-board holdings as a 4-1 assumption. Change this percentage to match your lobby; the source does not capture 4-1 benches or temporary holds.</p>
+      <p>Enter the <strong>total copies held by other players</strong> for any unit you scout, including bench copies. A 2★ unit normally represents 3 copies. Blank uses the estimate; 0 means no opponent copies. Kept-unit locks still start with zero owned copies for the gold estimate.</p>
+      <label class="tft-label" for="tft-flex-lobby-search">Find a unit to scout</label>
+      <input id="tft-flex-lobby-search" type="search" placeholder="Champion or trait…" autocomplete="off" aria-controls="tft-flex-lobby-list">
+      <div id="tft-flex-lobby-list" role="group" aria-label="Scouted copies held by opponents"></div>
+      <button id="tft-flex-lobby-reset" type="button">Clear scouted copies</button>
+    </details>
+    <div class="tft-comp-status-row">
+      <span class="sub" id="tft-flex-status" role="status" aria-live="polite">Loading level 8 trait combinations.</span>
+      <button id="tft-flex-retry" hidden>Retry</button>
+    </div>
+    <div class="tft-flex-browse">
+      <label for="tft-flex-sort">Sort by <select id="tft-flex-sort"><option value="score">Trait score</option><option value="gold">Uncontested gold</option><option value="lobbyGold">Typical lobby gold</option><option value="activeCount">Active traits</option><option value="extraTiers">Extra reached tiers</option><option value="frontlineCount">Frontline units</option><option value="purchaseGold">Unit purchase gold</option><option value="fourCosts">Number of 4-costs</option></select></label>
+      <label for="tft-flex-order">Order <select id="tft-flex-order"><option value="desc">High to low</option><option value="asc">Low to high</option></select></label>
+    </div>
+    <div id="tft-flex-results" aria-label="Flexible level 8 boards"></div>
+    <div id="tft-flex-pagination" hidden>
+      <span id="tft-flex-page"></span>
+      <button id="tft-flex-prev" type="button">Previous</button>
+      <button id="tft-flex-next" type="button">Next</button>
+    </div>
+    <p class="tft-empty" id="tft-flex-empty" hidden></p>
+    <details class="tft-details">
+      <summary>How trait scoring works</summary>
+      <p>Every reached trait counts, including solo traits that activate with one unit. The first reached breakpoint activates a trait; each higher reached breakpoint adds one extra tier. Unfinished breakpoints add no score.</p>
+      <p>More active traits scores 3 × active traits + extra tiers. Higher verticals scores active traits + 3 × extra tiers. These are unit-selection heuristics; scores do not estimate combat strength.</p>
+      <p>Every board fills exactly 8 team slots with distinct units, keeps all selected cores and kept units, activates at least one trait for each core, and meets your frontline minimum. Solo traits count toward core coverage. A unit that occupies two team slots is counted accordingly.</p>
+      <p>With no champions selected, browse all pairs of the chosen cost. With one selected, browse every same-cost partner for that champion. With two or more selected, keep them all as the core. Any combination of roles is allowed. A 2-cost comp can use at most two 4-cost units; a 3-cost comp can use at most three. The cap includes kept units and support swaps. 4-cost cores have no additional 4-cost limit.</p>
+      <p>The search shows up to 6 varied support packages per core group. Comps found with several core groups appear once. These are promising boards from a bounded search, rather than every possible 8-slot roster or a proven global optimum. Sorting compares the comps found by this search. Expand a comp’s swaps to see which reached breakpoints and scores change.</p>
+    </details>
+    <details class="tft-details" id="tft-flex-gold-method">
+      <summary>How expected gold is calculated</summary>
+      <p>Start at level 8 with zero copies of this exact roster. For 2- and 3-cost comps, every unit of the chosen cost needs 9 copies (3★), including supports; every other unit needs 1 copy (1★). For 4-cost comps, every 4-cost needs 3 copies (2★), and every other unit needs 1 copy. Kept-unit locks choose the roster but do not subtract owned copies from this estimate.</p>
+      <p>The total is the average gold spent on shop refreshes plus buying the required units. It collects the whole roster together, accounting for units found in the same shop and copies you buy leaving the bag. It is not the sum of separate unit estimates.</p>
+      <p>Uncontested gold assumes you are the only player taking units from the bag. Typical lobby gold subtracts the opponent holdings in the scouting controls from every champion’s bag, then collects your roster from the remaining pool. Other players’ holdings stay fixed during the estimate. Missing copies can make a roster impossible under those assumptions.</p>
+      <p>Typical lobby holdings use cached tactics.tools play rates and star-level copy equivalents, scaled by the other-player count and final-board percentage, then rounded to whole copies. Special upgrades and generated units can differ from standard copy equivalents; manual scouting replaces the estimate for a unit. Typical lobby gold is an approximation of your lobby. Both estimates show sampling precision when simulation is used.</p>
+      <p>Every refresh costs 2 gold. No free shops, leveling costs, income, Wisp purchases, or augments are included. Shop-changing traits are assumed inactive during the rolldown.</p>
+      <p>Set 18 alternates shops with 4 and 5 visible champions because a Wisp hides the rightmost champion every other shop. The estimate averages both possible starting phases. Gold is an expectation for the named roster; accepting substitutes can reduce the cost.</p>
+      <div class="tablewrap" id="tft-flex-shop-table"></div>
+      <p id="tft-flex-shop-sources"></p>
+    </details>
+  </section>
+  <div id="tft-champion-panel">
+  <div class="card" id="tft-results">
+    <button id="tft-leaderboard-back" hidden>← Back to leaderboard</button>
+    <h2 id="tft-title" tabindex="-1">Ranked builds</h2>
+    <section class="tft-core-panel" id="tft-core-panel" aria-labelledby="tft-core-title">
+      <h3 id="tft-core-title">Two-item cores and flexible slots</h3>
+      <p id="tft-core-status" role="status">Select a champion to compare two-item cores.</p>
+      <div id="tft-core-content" hidden></div>
+    </section>
+    <div class="tft-results-toolbar">
+      <div class="sub" id="tft-result-summary" role="status">Select a champion to compare builds.</div>
+      <label class="tft-stat-toggle"><input type="checkbox" id="tft-show-stats"> Show all stats</label>
+    </div>
+    <div class="tablewrap" role="region" aria-label="Ranked TFT builds" tabindex="0">
+      <table id="ttbl">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <details class="tft-details" id="tft-scenario-details" hidden>
+      <summary>Fight details and assumptions</summary>
+      <div class="sub" id="tft-desc"></div>
+    </details>
+  </div>
+  <div class="card">
+    <div class="tft-selected" id="tft-selected">
+      <div class="tft-selected-heading">
+        <div id="tft-selected-icon" aria-hidden="true"></div>
+        <div>
+          <h2 id="tft-selected-name">Select a champion</h2>
+          <div class="sub" id="tft-selected-meta"></div>
+        </div>
+      </div>
+      <div id="tft-selected-traits" role="group" aria-label="Champion trait details"></div>
+      <p class="hint" style="margin:7px 0 0">Hover or tap a trait for its breakpoints and bonuses.</p>
+    </div>
+    <div class="tft-settings">
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-star-label">Star level</span>
+        <div class="seg" id="tft-star-seg" role="group" aria-labelledby="tft-star-label"></div>
+        <p class="hint" id="tft-star-hint"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-geo-label">Enemy formation</span>
+        <div class="seg" id="tft-geo-seg" role="group" aria-labelledby="tft-geo-label"></div>
+        <p class="hint" id="tft-geo-hint"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-trait-label">Champion traits</span>
+        <div class="seg" id="tft-trait-seg" role="group" aria-labelledby="tft-trait-label"></div>
+        <p class="hint" id="tft-trait-hint"></p>
+      </div>
+      <div class="tft-setting tft-setting-wide" id="tft-threat-setting" hidden>
+        <span class="tft-label" id="tft-threat-label">Backline damage profile</span>
+        <div class="seg" id="tft-threat-seg" role="group" aria-labelledby="tft-threat-label"></div>
+        <p class="hint" id="tft-threat-hint"></p>
+      </div>
+    </div>
+    <section class="tft-fight-preview" aria-labelledby="tft-fight-title" hidden>
+      <div class="tft-fight-heading">
+        <h3 id="tft-fight-title">The test fight</h3>
+        <span class="sub" id="tft-formation-label"></span>
+      </div>
+      <div class="tft-fight-layout">
+        <figure class="tft-formation">
+          <svg id="tft-formation-diagram" viewBox="0 0 420 320" role="img" aria-labelledby="tft-diagram-title tft-diagram-desc"></svg>
+          <figcaption id="tft-formation-caption">Enemy layout and target order. Exact movement paths are not simulated.</figcaption>
+        </figure>
+        <div>
+          <p id="tft-dummy-intro"></p>
+          <div id="tft-dummy-stats"></div>
+          <p id="tft-pressure-note"></p>
+          <details class="tft-details" id="tft-pressure-details" hidden>
+            <summary>Enemy attacks and casts</summary>
+            <div id="tft-dummy-offense"></div>
+          </details>
+          <details class="tft-details" id="tft-target-defenses" hidden>
+            <summary>Enemy defenses for your tank’s damage</summary>
+            <p>Your tank also deals damage, which can trigger healing and item effects. These defenses apply to that damage; enemies remain alive throughout the survival test.</p>
+            <div id="tft-target-defense-stats"></div>
+          </details>
+        </div>
+      </div>
+      <p id="tft-targeting-note"></p>
+    </section>
+  </div>
+  <div class="card">
+    <h2 id="tbd-title">Damage breakdown</h2>
+    <div class="hint" id="tbd-hint">Where the selected build's damage comes from over the whole fight (post-mitigation).</div>
+    <div id="tbd-bars"></div>
+  </div>
+  <div class="card">
+    <h2 id="tpool-title">Item pool</h2>
+    <div class="hint" id="tpool-hint">Every ranked build is three of these, repeats allowed. Each item's plain stats always count; the tag says which passive the engine models, and a dimmed chip is stats only. Defensive passives (shields, heals, durability, thorns) only do something for fighters and tanks, whose dummies hit back. Hover a chip for its stats.</div>
+    <div class="chips" id="tpool-chips"></div>
+    <div class="hint" id="tpool-note" style="margin-top:10px" hidden></div>
+    <details id="tpool-excluded" style="margin-top:12px">
+      <summary class="hint" style="cursor:pointer;display:inline-block"></summary>
+      <ul id="tpool-excluded-list"></ul>
+    </details>
+    <details class="tft-details">
+      <summary>How builds are ranked</summary>
+      <p class="hint">Every three-item combination is simulated against the selected enemy formation. Its target count, roles, order, positions and defenses are shown in the test fight. Targets marked as main tanks use fixed benchmark HP and resistances; supporting target defenses use the saved group medians. Fighters take attacks and casts drawn from those median stats. Tank pressure combines median frontline damage with damage calibrated from 2★, three-item carry builds; the selected preset sets the backline damage mix and timing. Damage accounts for armor, magic resist, Sunder, Shred, expected-value crit, Precision and damage amplification.</p>
+      <p class="hint">Carries are protected and rank by time to defeat all targets, then damage. Fighters and assassins take pressure from the frontline; the backline is a damage target only. They rank by kill time, then damage before dying. Tanks face attackers that remain alive throughout the survival test, with enemy heal cut, Sunder and Shred active. Stuns interrupt only the enemies they reach, and scheduled casts resume afterward. Tanks rank by how long they hold enemies, including on-death bodies. Builds reaching the displayed fight limit are compared again with twice the incoming damage; reaching both limits remains a tie. Shields, effective healing, durability and stuns contribute to survival.</p>
+      <p class="hint">Tank effective HP (EHP) shows the opening capacity to take physical or magic ability damage after enemy Sunder and Shred. It excludes healing, shields and protection that applies only to attacks. Team healing, shields and damage are shown separately; survival rankings do not measure how quickly allied carries win the fight.</p>
+      <p class="hint">Clumped and Spread use different saved positions. Each ability's radius and target-selection rules determine its coverage; a wide enough radius can include backliners. Nearby-only effects follow the frontline grouping, while nearest-target and whole-board abilities retain their stated rules. Exact movement paths are not simulated. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
+    </details>
+  </div>
+  </div>
+</section>
+
+<!-- ============================ Data ============================ -->
+<section class="view" id="view-data">
+  <div class="card" id="services-card">
+    <h2>Services</h2>
+    <div class="hint">The systemd units that run this repo, declared in
+      <code>dotfiles/nixos/configuration.nix</code> — that file is where to change them.
+      A restart count climbing on a continuous unit means it is crash-looping:
+      <code>journalctl -u &lt;unit&gt;</code> has the reason.</div>
+    <table id="services">
+      <thead><tr><th>Unit</th><th>Runs</th><th>State</th><th>Last / next</th><th>What it does</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Automation</h2>
+    <div class="hint">Recurring jobs and their latest update checks. TFT keeps the current builds available while new patch data is checked and recalculated.</div>
+    <table id="jobs">
+      <thead><tr><th>Job</th><th>Runs</th><th>Status</th><th>What it does</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Database</h2>
+    <div class="hint">Everything in lol.db, per tier and patch. Refresh with <code>cli.py scaling sync</code> when the ../lol-quant crawl has new games.</div>
+    <div class="tablewrap">
+      <table id="inv">
+        <thead><tr>
+          <th>Tier</th><th style="text-align:left">Patch</th><th>Champ-lanes</th><th>Games</th><th>Imported at</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<!-- one tooltip for the TFT tab and the Builds tab's item icons -->
+<div class="tft-tooltip" id="tft-tooltip" role="tooltip" hidden></div>
+
+<script defer src="tft-flex-worker.js"></script>
+<script defer src="app.js"></script>
+<script defer src="lol.js"></script>
+<script defer src="tft.js"></script>
+</body>
+</html>
