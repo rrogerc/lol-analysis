@@ -10,6 +10,7 @@ Usage:
   python3 cli.py scaling report [--scaling]
   python3 cli.py scaling champion kayle
   python3 cli.py onetricks sync            # count one-tricks from ../lol-quant
+  python3 cli.py matchups sync             # sync thematic matchups & archetypes
   python3 cli.py items fetch               # snapshot current patch's item data
   python3 cli.py builds warm               # precompute LoL build scenarios
   python3 cli.py tft refresh               # fetch patch, warm TFT, publish site bundle
@@ -23,7 +24,7 @@ import argparse
 import os
 import sys
 
-from lol import builds, items, ladder
+from lol import builds, items, ladder, matchups
 from tft import flex as tft_flex, sim as tft
 from web import server
 from web.db import BASE_DIR
@@ -115,6 +116,26 @@ def main():
     sp = otsub.add_parser("sync", help="count one-tricks from ../lol-quant into the DB")
     quant_args(sp)
     sp.set_defaults(func=ladder.cmd_onetricks_sync)
+
+    # ----- matchups domain -----
+    mu = sub.add_parser("matchups", help="thematic counters, synergies, and draft archetypes")
+    musub = mu.add_subparsers(dest="matchups_cmd", required=True)
+
+    sp = musub.add_parser("sync", help="build matchups and archetypes from ../lol-quant")
+    quant_args(sp)
+    sp.add_argument("--shards-per-region", type=int, default=400,
+                    help="recent participant parquet shards per region for telemetry traits (default 400)")
+    sp.add_argument("--db-only", action="store_true",
+                    help="refresh lol.db without rewriting lol/data/matchups/matchups.json")
+    sp.set_defaults(func=matchups.cmd_sync)
+
+    sp = musub.add_parser("archetypes", help="list the unsupervised draft archetypes")
+    sp.set_defaults(func=matchups.cmd_archetypes)
+
+    sp = musub.add_parser("champion", help="inspect one champion's draft identity")
+    sp.add_argument("name", help="champion slug, e.g. yasuo or malphite")
+    sp.add_argument("--lane", choices=["top", "jungle", "middle", "bottom", "support"])
+    sp.set_defaults(func=matchups.cmd_champion)
 
     # ----- items domain -----
     it = sub.add_parser("items", help="static item data snapshots (for build math)")

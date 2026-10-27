@@ -679,6 +679,8 @@ Object.defineProperties(globalThis, {
   restoredHash: { get: () => restoredHash, set: v => { restoredHash = v; }, configurable: true },
   bstate: { get: () => bstate, configurable: true },
   bboard: { get: () => bboard, configurable: true },
+  mstate: { get: () => mstate, configurable: true },
+  MU_LANES: { get: () => MU_LANES, configurable: true },
   DEFENSE_LABELS: { get: () => DEFENSE_LABELS, configurable: true },
   WARMER_WHY: { get: () => WARMER_WHY, configurable: true },
   EXPECTED_TITLE: { get: () => EXPECTED_TITLE, configurable: true },

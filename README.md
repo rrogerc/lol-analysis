@@ -8,12 +8,13 @@ League of Legends and Teamfight Tactics analytics, combat simulators, and dashbo
 cli.py              Unified CLI entrypoint
 lol/                Summoner's Rift analytics and build simulator
   ladder.py         Champion game-length scaling and Master+ one-trick aggregation
+  matchups.py       Thematic counters, kit synergies, and unsupervised draft archetypes
   items.py          Patch item snapshots (Data Dragon + Meraki + CommunityDragon shop rules)
   builds.py         Stat sheets, fight/survival simulation, exhaustive build optimizer
   leaderboard.py    Cross-champion DPS and survival leaderboards
   codegen/          Champion kit dossier and Rust driver generation pipeline
   engine/           Rust PyO3 combat engine (builds to lol/lol_engine.abi3.so)
-  data/             Committed scaling, item, and champion kit/golden archives
+  data/             Committed scaling, matchups, item, and champion kit/golden archives
   tests/            LoL Python unittest suite and Node UI suite
 tft/                Teamfight Tactics Set 18 simulator and planners
   sim.py            Snapshot loader, unit build/core enumeration, leaderboards, refresh
@@ -42,13 +43,14 @@ Build both Rust combat extensions (`lol/lol_engine.abi3.so` and `tft/lol_tft.abi
 ./web/ops/build-engine.sh
 ```
 
-Populate `lol.db` from the committed `lol/data/scaling` archive (or sync directly from a sibling `../lol-quant` checkout):
+Populate `lol.db` from the committed `lol/data/` archives (or sync directly from a sibling `../lol-quant` checkout):
 
 ```bash
 python3 cli.py import-json
 # or, when ../lol-quant is present:
 python3 cli.py scaling sync --db-only
 python3 cli.py onetricks sync
+python3 cli.py matchups sync --db-only
 ```
 
 ## Common Commands
@@ -58,10 +60,12 @@ python3 cli.py onetricks sync
 python3 cli.py serve --port 8399 --no-open
 python3 cli.py export --out _site
 
-# Summoner's Rift: scaling, one-tricks, items, and builds
+# Summoner's Rift: scaling, one-tricks, matchups, items, and builds
 python3 cli.py status
 python3 cli.py scaling report --scaling
 python3 cli.py scaling champion kayle
+python3 cli.py matchups archetypes
+python3 cli.py matchups champion yasuo
 python3 cli.py items fetch
 python3 cli.py builds sim kayle --items "Nashor's Tooth" "Rabadon's Deathcap"
 python3 cli.py builds optimize kayle --slots 6

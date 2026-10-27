@@ -477,6 +477,19 @@ function renderTierDesc() {
 function updateHash(push = false) {
   if (restoringHash) return;
   const parts = [`tab=${state.view}`, `tier=${state.tier}`];
+  if (state.view === "matchups") {
+    if (mstate.mode === "archetypes") {
+      parts.push("mview=archetypes");
+      if (mstate.matMode !== "counter") parts.push(`mmat=${mstate.matMode}`);
+      if (mstate.matCell) parts.push(`mcell=${mstate.matCell[0]}-${mstate.matCell[1]}`);
+      if (mstate.archRole !== "all") parts.push(`marole=${mstate.archRole}`);
+    } else {
+      if (mstate.champion) parts.push(`mchamp=${mstate.champion}`);
+      if (mstate.lane) parts.push(`mlane=${mstate.lane}`);
+      if (mstate.ctrScope !== "lane") parts.push(`mscope=${mstate.ctrScope}`);
+      if (mstate.synMode !== "kit") parts.push(`msyn=${mstate.synMode}`);
+    }
+  }
   if (state.view === "builds" && bstate.champion) parts.push(`champ=${bstate.champion}`);
   if (state.view === "builds" && bstate.scenario) parts.push(`sc=${bstate.scenario}`);
   if (state.view === "builds" && bstate.mode === "leaderboard") {
@@ -542,6 +555,7 @@ function showView(v, push = true) {
   document.querySelectorAll(".view").forEach(s =>
     s.classList.toggle("active", s.id === "view-" + v));
   updateHash(push);
+  if (v === "matchups") openMatchups();
   // (re)load what the tab's view lacks: a champion's cell, or a complete board
   if (v === "builds" && (restoringHash || !(bstate.mode === "leaderboard" ? bboard.data?.complete : bstate.data))) openBuilds();
   if (v !== "builds") clearTimeout(bstate.timer);  // stop polling off-tab
@@ -586,7 +600,7 @@ function restoreHash() {
   if (!META) return;
   const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
   const tab = hash.tab || hash.view;
-  const view = ["overview", "onetricks", "builds", "tft", "data"].includes(tab) ? tab : "overview";
+  const view = ["overview", "onetricks", "matchups", "builds", "tft", "data"].includes(tab) ? tab : "overview";
   const previousTier = state.tier;
   restoringHash = true;
   try {
@@ -596,6 +610,9 @@ function restoreHash() {
     // Requests started by a later route must not repaint this history entry.
     ++tstate.req;
     tstate.opening = null;
+    if (tab === "matchups") {
+      restoreMatchupsHash(hash);
+    }
     if (tab === "builds") {
       bstate.mode = hash.bview === "leaderboard" ? "leaderboard" : "champion";
       bstate.champion = hash.champ || bstate.meta?.champions[0]?.slug || null;

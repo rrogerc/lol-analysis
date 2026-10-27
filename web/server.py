@@ -19,7 +19,7 @@ import sys
 import threading
 import time
 
-from lol import builds, items, ladder, leaderboard as builds_leaderboard
+from lol import builds, items, ladder, leaderboard as builds_leaderboard, matchups
 from tft import early as tft_early, flex as tft_flex, sim as tft, site as tft_site
 from web.db import BASE_DIR, OPS_DIR, OPS_STATE_DIR, STATIC_DIR, db_connect
 
@@ -205,6 +205,8 @@ def cmd_export(args):
     dump("api/meta.json", meta)
     files = 1
     dump("api/onetricks.json", ladder.api_onetricks(con))
+    files += 1
+    dump("api/matchups.json", matchups.api_matchups(con))
     files += 1
     dump("api/builds/meta.json", builds.api_builds_meta())
     files += 1
@@ -476,6 +478,8 @@ def cmd_serve(args):
                     self._json(app_meta(con))
                 elif u.path == "/api/onetricks.json":
                     self._json(ladder.api_onetricks(con))
+                elif u.path == "/api/matchups.json":
+                    self._json(matchups.api_matchups(con))
                 elif m := re.fullmatch(r"/api/rows/([a-z0-9_]+)\.json", u.path):
                     tier = m.group(1)
                     patches = ladder.db_patches(con, tier)

@@ -243,6 +243,9 @@ def cmd_import_json(args):
                 replace_match_count(con, patch, tier, json.load(f)["matches"])
         imported += 1
         print(f"Imported {patch}/{tier}: {len(entries)} records")
+    from lol import matchups
+    if matchups.import_archive(con, args.data_dir):
+        print("Imported matchups/matchups.json")
     print(f"\nImported {imported} files into {DB_PATH}")
 
 

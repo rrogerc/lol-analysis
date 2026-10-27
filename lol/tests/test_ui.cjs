@@ -6,7 +6,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { INDEX_HTML, STYLES_CSS, loadDashboard, plain } = require("../../web/tests/harness.cjs");
+const { INDEX_HTML, STYLES_CSS, loadDashboard, plain, until } = require("../../web/tests/harness.cjs");
 
 let passedSuites = 0;
 
@@ -894,6 +894,160 @@ async function checkChampionTabRemoved() {
   ++passedSuites;
 }
 
+async function checkMatchups() {
+  const archivePath = path.join(__dirname, "..", "data", "matchups", "matchups.json");
+  const matchupsArchive = JSON.parse(fs.readFileSync(archivePath, "utf8"));
+
+  const meta = {
+    tiers: ["soloq_masters_plus"],
+    defaultTier: "soloq_masters_plus",
+    platforms: ["na1", "kr"],
+    inventory: [],
+  };
+  const overview = {
+    patches: ["16.18"],
+    totalGames: 10000,
+    rows: [
+      { c: "aatrox", l: "top", wr: [50, 50, 50, 50, 50, 50, 51], g: [50, 200, 300, 300, 200, 200, 800], total: 2050 },
+    ],
+  };
+
+  // 1. Error and empty-snapshot states.
+  let mode = "error";
+  const hErr = loadDashboard({
+    api: async url => {
+      if (url === "api/meta.json") return meta;
+      if (url === "api/rows/soloq_masters_plus.json") return overview;
+      if (url === "api/matchups.json") {
+        if (mode === "error") throw new Error("HTTP 503");
+        return { synced: null, archetypes: [], champions: [], pairs: {} };
+      }
+      throw new Error(`Unexpected API request: ${url}`);
+    },
+  });
+  await hErr.context.init();
+  await hErr.query('nav button[data-view="matchups"]').click();
+  await until(() => !hErr.context.mstate.loading);
+  assert.match(hErr.element("mu-provenance").textContent, /HTTP 503/);
+  assert.equal(hErr.element("mu-identity-panel").hidden, true);
+
+  mode = "empty";
+  await hErr.context.openMatchups();
+  assert.match(hErr.element("mu-provenance").textContent, /cli\.py matchups sync/);
+  assert.equal(hErr.element("mu-identity-panel").hidden, true);
+
+  // 2. Full real-archive flow + hash routing.
+  const h = loadDashboard({
+    api: async url => {
+      if (url === "api/meta.json") return meta;
+      if (url === "api/rows/soloq_masters_plus.json") return overview;
+      if (url === "api/matchups.json") return matchupsArchive;
+      throw new Error(`Unexpected API request: ${url}`);
+    },
+  });
+  await h.context.init();
+  await h.query('nav button[data-view="matchups"]').click();
+  await until(() => !h.context.mstate.loading);
+  assert.equal(h.context.state.view, "matchups");
+  assert(h.element("view-matchups").classList.contains("active"));
+  assert.equal(h.element("mu-identity-panel").hidden, false);
+  assert.equal(h.element("mu-archetypes-panel").hidden, true);
+  assert.match(h.element("mu-provenance").textContent, /Master\+ games/);
+
+  // Default first alphabetical champion is Aatrox (top).
+  assert.equal(h.context.mstate.champion, "aatrox");
+  assert.equal(h.element("mu-hero-name").textContent, "Aatrox");
+  assert.equal(h.element("mu-own-traits").children.length, 8);
+  assert.equal(h.element("mu-comp-needs").children.length, 3);
+  assert.equal(h.element("mu-opp-traits").children.length, 11);
+  assert.match(h.element("mu-drivers-r2").textContent, /Archetypes explain \d+% of variance/);
+
+  // Leave-one-out class-breakers detect Malphite against Aatrox top.
+  assert.equal(h.element("mu-outliers-wrap").hidden, false);
+  const outlierSlugs = h.queryAll("#mu-outliers .mu-outlier-card").map(el => el.dataset.champion);
+  assert(outlierSlugs.includes("malphite"), `Expected malphite in Aatrox outliers: ${outlierSlugs}`);
+
+  // Same-lane pool companions populate 5 twins and 5 cover picks.
+  assert.equal(h.element("mu-twins").children.length, 5);
+  assert.equal(h.element("mu-covers").children.length, 5);
+
+  // Filter roster search + select Yasuo.
+  const searchInput = h.element("mu-search");
+  searchInput.value = "yasuo";
+  await searchInput.fire("input");
+  const visibleBtns = h.queryAll("#mu-champ-grid .mu-champ-btn");
+  assert(visibleBtns.some(b => b.dataset.champion === "yasuo"));
+  await visibleBtns.find(b => b.dataset.champion === "yasuo").click();
+  assert.equal(h.context.mstate.champion, "yasuo");
+  assert.equal(h.element("mu-hero-name").textContent, "Yasuo");
+  assert.match(h.location.hash, /mchamp=yasuo/);
+
+  // Switch synergy layout to flat and verify physical knockup partners appear in Kit synergy.
+  await h.query('#mu-syn-layout button[data-key="flat"]').click();
+  const kitPartners = h.queryAll("#mu-syn-body .mu-flat-col")[0]
+    .querySelectorAll(".mu-flat-item")
+    .map(b => b.dataset.champion);
+  assert(
+    kitPartners.includes("wukong") || kitPartners.includes("vi") || kitPartners.includes("rell"),
+    `Expected knockup partner in Yasuo top kit synergies, got: ${kitPartners}`
+  );
+
+  // Toggle Total draft synergy and Enemy comp counter scope; verify hash updates.
+  await h.query('#mu-syn-mode button[data-key="total"]').click();
+  assert.match(h.location.hash, /msyn=total/);
+  await h.query('#mu-ctr-scope button[data-key="team"]').click();
+  assert.match(h.location.hash, /mscope=team/);
+  assert.equal(h.element("mu-ctr-role").hidden, false);
+
+  // Jump to Archetypes view via hero archetype badge.
+  await h.element("mu-hero-arch").click();
+  assert.equal(h.context.mstate.mode, "archetypes");
+  assert.equal(h.element("mu-archetypes-panel").hidden, false);
+  assert.equal(h.element("mu-identity-panel").hidden, true);
+  assert.match(h.location.hash, /mview=archetypes/);
+
+  // 14x14 matrix renders 14 rows and populates detail panel.
+  const matRows = h.queryAll("#mu-matrix-tbl tbody tr");
+  assert.equal(matRows.length, 14);
+  assert.equal(matRows[0].children.length, 15);
+  assert.equal(h.element("mu-matrix-detail").hidden, false);
+
+  // Click cell (0, 2) and switch matrix mode to Kit synergy.
+  const targetCell = h.query('#mu-matrix-tbl .mu-mat-cell[data-row="0"][data-col="2"]');
+  await targetCell.click();
+  assert.match(h.location.hash, /mcell=0-2/);
+  assert(targetCell.classList.contains("sel"));
+
+  await h.query('#mu-mat-mode button[data-key="kit"]').click();
+  assert.match(h.location.hash, /mmat=kit/);
+
+  // Filter archetypes by support lane, then click a member chip back to Identity.
+  await h.query('#mu-arch-role button[data-role="support"]').click();
+  assert.match(h.location.hash, /marole=support/);
+  const supCards = h.queryAll("#mu-arch-grid .mu-arch-card");
+  assert(supCards.length > 0 && supCards.length < 14);
+
+  const memberChip = h.query("#mu-arch-grid .mu-chip");
+  const pickedSlug = memberChip.dataset.champion;
+  await memberChip.click();
+  assert.equal(h.context.mstate.mode, "identity");
+  assert.equal(h.context.mstate.champion, pickedSlug);
+
+  // Browser Back returns to Archetypes view; Forward returns to picked champion.
+  await h.back();
+  assert.equal(h.context.mstate.mode, "archetypes");
+  await h.forward();
+  assert.equal(h.context.mstate.mode, "identity");
+  assert.equal(h.context.mstate.champion, pickedSlug);
+
+  // No NaN, undefined, or em dashes in rendered Matchups DOM.
+  const viewText = h.element("view-matchups").textContent;
+  assert(!/undefined|NaN/.test(viewText), "Rendered Matchups view contains undefined or NaN");
+  assert(!viewText.includes("\u2014"), "Rendered Matchups view contains an em dash");
+
+  ++passedSuites;
+}
+
 (async () => {
   await checkChampionTabRemoved();
   checkOnetricks();
@@ -901,7 +1055,8 @@ async function checkChampionTabRemoved() {
   await checkBuildsGenerated();
   checkBuildsSurvival();
   await checkBuildsLeaderboard();
-  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, survival, leaderboard).`);
+  await checkMatchups();
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, survival, leaderboard, matchups).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);

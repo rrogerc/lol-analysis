@@ -4,16 +4,17 @@ Engineering reference for `lol-analysis`. The repository is organized into three
 
 ## Repository Map
 
-- `cli.py`: Argparse entrypoint dispatching `serve`, `export`, `status`, `import-json`, `scaling`, `onetricks`, `items`, `builds`, and `tft`.
+- `cli.py`: Argparse entrypoint dispatching `serve`, `export`, `status`, `import-json`, `scaling`, `onetricks`, `matchups`, `items`, `builds`, and `tft`.
 - `lol/`: Summoner's Rift analytics and theoretical build simulator.
   - `ladder.py`: Game-length win-rate scaling (`stats`, `match_counts` tables in `lol.db`, committed archive in `lol/data/scaling/`) and Master+ one-trick aggregation (`onetricks`, `onetrick_sync` tables) sourced from `../lol-quant` parquet files.
+  - `matchups.py`: Thematic counters, comp-adjusted kit synergies, Master+ behavioral trait fingerprints, and 14 unsupervised interaction archetypes (`matchups_snapshot` table in `lol.db`, committed archive in `lol/data/matchups/`).
   - `items.py`: Patch-versioned static item snapshots in `lol/data/items/<patch>/` combining Data Dragon stats, Meraki passives/nicknames, and CommunityDragon `items.bin.json` shop/exclusivity rules.
   - `builds.py`: Champion stat sheets, single-build fight and tank survival simulation, exhaustive build enumeration, and `.cache/builds/` cell warmer.
   - `leaderboard.py`: Cross-champion DPS and survival leaderboards assembled from `.cache/builds/` cells.
   - `codegen/`: Champion kit pipeline (`sources.py`, `dossier.py`, `driver.py`, `golden.py`, plus prompt/guide markdown).
   - `engine/`: Rust PyO3 extension (`lol_engine`, compiled to `lol/lol_engine.abi3.so`). Hand-written reference drivers live in `src/drivers/`; generated champion drivers live in `src/generated/`.
-  - `data/`: `scaling/`, `items/`, and `builds/` (`item-effects.json`, `kits/<slug>.json`, `champions/`, `dossiers/`, `sources/`, `golden/`).
-  - `tests/`: `test_ladder.py`, `test_builds.py`, `test_codegen.py`, `test_ui.cjs`.
+  - `data/`: `scaling/`, `matchups/`, `items/`, and `builds/` (`item-effects.json`, `kits/<slug>.json`, `champions/`, `dossiers/`, `sources/`, `golden/`).
+  - `tests/`: `test_ladder.py`, `test_matchups.py`, `test_builds.py`, `test_codegen.py`, `test_ui.cjs`.
 - `tft/`: Teamfight Tactics Set 18 combat simulator, planners, and publisher.
   - `sim.py`: Snapshot loading (`tft/data/set18/<patch>/`), unit fight specs, 3-item cell enumeration, 2-item core comparisons, unit leaderboards, and `tft refresh` orchestration.
   - `board.py`: Board hex placement, trait breakpoints and emblem application, and symmetric team encounter evaluation.

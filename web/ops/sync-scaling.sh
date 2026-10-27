@@ -20,3 +20,7 @@ trap 'rc=$?; printf "{\"finishedAt\":\"%s\",\"exit\":%d}\n" \
 
 python3 cli.py scaling sync --db-only
 python3 cli.py onetricks sync
+if [ -f ../lol-quant/data/models/meta.json ]; then
+  python3 cli.py matchups sync --db-only
+fi
+

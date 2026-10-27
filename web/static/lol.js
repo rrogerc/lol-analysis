@@ -1049,3 +1049,1347 @@ document.getElementById("bboard-search").addEventListener("input", e => {
 document.getElementById("bboard-reviewed").addEventListener("change", e => {
   bboard.reviewedOnly = e.target.checked; renderLeaderboard(); updateHash();
 });
+
+// ---------------- matchups & draft identity ----------------
+const MU_LANES = ["top", "jungle", "middle", "bottom", "support"];
+const MU_LANE_SHORT = { top: "Top", jungle: "Jgl", middle: "Mid", bottom: "Bot", support: "Sup" };
+const MU_LANE_FULL = { top: "Top", jungle: "Jungle", middle: "Middle", bottom: "Bottom", support: "Support" };
+
+const mstate = {
+  mode: "identity",
+  data: null,
+  loading: false,
+  error: null,
+  req: 0,
+  champion: null,
+  lane: null,
+  search: "",
+  roleFilter: "all",
+  archFilter: "all",
+  ctrScope: "lane",
+  ctrRole: "all",
+  ctrLayout: "archetype",
+  synMode: "kit",
+  synRole: "all",
+  synLayout: "archetype",
+  matMode: "counter",
+  matCell: null,
+  archRole: "all",
+  archSearch: "",
+  highlightArch: null,
+};
+
+function fmtPp(v) {
+  const s = v >= 0 ? "+" : "";
+  return s + v.toFixed(2) + "pp";
+}
+
+function unpackPairMatrix(vec, nc, antisym) {
+  const mat = new Float32Array(nc * nc);
+  if (!Array.isArray(vec)) return mat;
+  let k = 0;
+  for (let i = 0; i < nc; i++) {
+    for (let j = i + 1; j < nc; j++) {
+      const v = (vec[k++] || 0) / 100;
+      mat[i * nc + j] = v;
+      mat[j * nc + i] = antisym ? -v : v;
+    }
+  }
+  return mat;
+}
+
+function prepareMatchupsData(raw) {
+  if (!raw || !Array.isArray(raw.champions) || !raw.champions.length) return raw;
+  const nc = raw.champions.length;
+  const roleTotals = [0, 0, 0, 0, 0];
+  const champions = raw.champions.map((c, idx) => {
+    const roles = c.roles || [0, 0, 0, 0, 0];
+    let totalRoles = 0;
+    let primaryLaneIdx = 0;
+    for (let r = 0; r < 5; r++) {
+      totalRoles += roles[r];
+      roleTotals[r] += roles[r];
+      if (roles[r] > roles[primaryLaneIdx]) primaryLaneIdx = r;
+    }
+    const viableLanes = [];
+    for (let r = 0; r < 5; r++) {
+      if (r === primaryLaneIdx || (roles[r] >= 25 && roles[r] >= totalRoles * 0.05)) {
+        viableLanes.push(r);
+      }
+    }
+    return {
+      ...c,
+      idx,
+      totalRoles,
+      primaryLaneIdx,
+      primaryLane: MU_LANES[primaryLaneIdx],
+      viableLanes,
+    };
+  });
+  const totalGames = roleTotals.reduce((a, b) => a + b, 0) || 1;
+  const sortedRoster = champions.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const champBySlug = new Map(champions.map(c => [c.slug, c]));
+  const pairs = raw.pairs || {};
+  const mats = {
+    ctr: unpackPairMatrix(pairs.ctr, nc, true),
+    lane: unpackPairMatrix(pairs.lane, nc, true),
+    syn: unpackPairMatrix(pairs.syn, nc, false),
+    duo: unpackPairMatrix(pairs.duo, nc, false),
+    jgl: unpackPairMatrix(pairs.jgl, nc, false),
+  };
+  return {
+    ...raw,
+    champions,
+    sortedRoster,
+    champBySlug,
+    roleTotals,
+    totalGames,
+    mats,
+    defaultChamp: sortedRoster[0]?.slug || champions[0]?.slug || null,
+  };
+}
+
+function populateMatchupsArchSelect(d) {
+  const sel = document.getElementById("mu-arch-filter");
+  const allOpt = document.createElement("option");
+  allOpt.value = "all";
+  allOpt.textContent = `All archetypes (${d.archetypes.length})`;
+  const opts = d.archetypes.map(a => {
+    const o = document.createElement("option");
+    o.value = String(a.id);
+    o.textContent = `${a.name} (${a.members.length})`;
+    return o;
+  });
+  sel.replaceChildren(allOpt, ...opts);
+  sel.value = mstate.archFilter;
+}
+
+function defaultMatrixCell(d, mode) {
+  const archs = d.archetypes;
+  let best = [0, archs.length > 1 ? 1 : 0];
+  let bestAbs = -1;
+  for (let r = 0; r < archs.length; r++) {
+    const arr = mode === "counter" ? archs[r].ctr : mode === "kit" ? archs[r].kitSyn : archs[r].syn;
+    for (let c = 0; c < archs.length; c++) {
+      if (mode === "counter" && r === c) continue;
+      if (Math.abs(arr[c]) > bestAbs) {
+        bestAbs = Math.abs(arr[c]);
+        best = [r, c];
+      }
+    }
+  }
+  return best;
+}
+
+function ensureMatchupSelection() {
+  const d = mstate.data;
+  if (!d?.champions?.length) return;
+  if (!mstate.champion || !d.champBySlug.has(mstate.champion)) {
+    mstate.champion = d.defaultChamp;
+  }
+  const ch = d.champBySlug.get(mstate.champion);
+  if (!mstate.lane || !MU_LANES.includes(mstate.lane)) {
+    mstate.lane = ch.primaryLane;
+  }
+  const nArch = d.archetypes.length;
+  if (!mstate.matCell || mstate.matCell[0] < 0 || mstate.matCell[0] >= nArch ||
+      mstate.matCell[1] < 0 || mstate.matCell[1] >= nArch ||
+      (mstate.matMode === "counter" && mstate.matCell[0] === mstate.matCell[1] && nArch > 1)) {
+    mstate.matCell = defaultMatrixCell(d, mstate.matMode);
+  }
+}
+
+function restoreMatchupsHash(hash) {
+  mstate.mode = hash.mview === "archetypes" ? "archetypes" : "identity";
+  if (mstate.mode === "archetypes") {
+    mstate.matMode = ["counter", "kit", "synergy"].includes(hash.mmat) ? hash.mmat : "counter";
+    if (typeof hash.mcell === "string" && /^\d+-\d+$/.test(hash.mcell)) {
+      const [r, c] = hash.mcell.split("-").map(Number);
+      mstate.matCell = [r, c];
+    } else {
+      mstate.matCell = null;
+    }
+    mstate.archRole = ["all", ...MU_LANES].includes(hash.marole) ? hash.marole : "all";
+  } else {
+    mstate.champion = hash.mchamp ? hash.mchamp.toLowerCase() : null;
+    mstate.lane = MU_LANES.includes(hash.mlane) ? hash.mlane : null;
+    mstate.ctrScope = hash.mscope === "team" ? "team" : "lane";
+    mstate.synMode = hash.msyn === "total" ? "total" : "kit";
+  }
+}
+
+function muImg(slug, cls) {
+  const img = document.createElement("img");
+  if (cls) img.className = cls;
+  img.alt = "";
+  img.loading = "lazy";
+  img.onerror = () => { img.style.visibility = "hidden"; };
+  img.src = iconUrl(slug);
+  return img;
+}
+
+function muDivergingRow(label, valText, normVal, posColor, negColor, valCls = "", title = "") {
+  const row = document.createElement("div");
+  row.className = "mu-bar-row";
+  if (title) row.title = title;
+  const lbl = document.createElement("span");
+  lbl.className = "mu-bar-lbl";
+  lbl.textContent = label;
+  const track = document.createElement("div");
+  track.className = "mu-div-track";
+  const fill = document.createElement("div");
+  fill.className = "mu-div-fill";
+  const clamped = Math.max(-1, Math.min(1, normVal));
+  if (clamped >= 0) {
+    fill.style.left = "50%";
+    fill.style.width = (clamped * 50).toFixed(1) + "%";
+    fill.style.background = posColor;
+  } else {
+    const w = -clamped * 50;
+    fill.style.left = (50 - w).toFixed(1) + "%";
+    fill.style.width = w.toFixed(1) + "%";
+    fill.style.background = negColor;
+  }
+  track.append(fill);
+  const val = document.createElement("span");
+  val.className = "mu-bar-val" + (valCls ? " " + valCls : "");
+  val.textContent = valText;
+  row.append(lbl, track, val);
+  return row;
+}
+
+function weightedCorr(xs, ys, ws) {
+  let sw = 0, mx = 0, my = 0;
+  for (let i = 0; i < xs.length; i++) {
+    sw += ws[i];
+    mx += ws[i] * xs[i];
+    my += ws[i] * ys[i];
+  }
+  if (sw <= 0) return 0;
+  mx /= sw;
+  my /= sw;
+  let cov = 0, vx = 0, vy = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const dx = xs[i] - mx, dy = ys[i] - my;
+    cov += ws[i] * dx * dy;
+    vx += ws[i] * dx * dx;
+    vy += ws[i] * dy * dy;
+  }
+  const den = Math.sqrt(vx * vy);
+  return den > 1e-9 ? cov / den : 0;
+}
+
+function selectMatchupChampion(slug, laneOverride = null, push = true) {
+  const d = mstate.data;
+  const ch = d?.champBySlug.get(slug);
+  if (!ch) return;
+  mstate.champion = ch.slug;
+  if (laneOverride && MU_LANES.includes(laneOverride)) {
+    mstate.lane = laneOverride;
+  } else if (mstate.roleFilter !== "all" && ch.viableLanes.includes(MU_LANES.indexOf(mstate.roleFilter))) {
+    mstate.lane = mstate.roleFilter;
+  } else {
+    mstate.lane = ch.primaryLane;
+  }
+  if (mstate.mode !== "identity") mstate.mode = "identity";
+  renderMatchups();
+  updateHash(push);
+}
+
+function openArchetypeFocus(archId, push = true) {
+  const d = mstate.data;
+  if (!d) return;
+  mstate.mode = "archetypes";
+  mstate.highlightArch = archId;
+  const a = d.archetypes[archId];
+  if (a) {
+    let bestCol = archId === 0 ? 1 : 0;
+    let bestAbs = -1;
+    const arr = mstate.matMode === "counter" ? a.ctr : mstate.matMode === "kit" ? a.kitSyn : a.syn;
+    for (let c = 0; c < d.archetypes.length; c++) {
+      if (mstate.matMode === "counter" && c === archId) continue;
+      if (Math.abs(arr[c]) > bestAbs) {
+        bestAbs = Math.abs(arr[c]);
+        bestCol = c;
+      }
+    }
+    mstate.matCell = [archId, bestCol];
+  }
+  renderMatchups();
+  updateHash(push);
+  const card = document.querySelector(`.mu-arch-card[data-arch="${archId}"]`);
+  card?.scrollIntoView({ block: "nearest" });
+}
+
+function renderMatchupsBrowser() {
+  const d = mstate.data;
+  if (!d?.champions?.length) return;
+  document.getElementById("mu-search").value = mstate.search;
+  document.getElementById("mu-arch-filter").value = mstate.archFilter;
+  document.querySelectorAll("#mu-role-filter button").forEach(b =>
+    b.classList.toggle("active", b.dataset.role === mstate.roleFilter));
+
+  const q = mstate.search.trim().toLowerCase();
+  const rIdx = MU_LANES.indexOf(mstate.roleFilter);
+  const filtered = d.sortedRoster.filter(c => {
+    if (rIdx >= 0) {
+      const share = c.roles[rIdx] / Math.max(1, d.roleTotals[rIdx]);
+      if (!c.viableLanes.includes(rIdx) && share < 0.004) return false;
+    }
+    if (mstate.archFilter !== "all" && String(c.arch) !== mstate.archFilter) return false;
+    if (q) {
+      const arch = d.archetypes[c.arch];
+      const hay = `${c.name} ${c.slug} ${arch?.name || ""} ${arch?.short || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const total = d.champions.length;
+  document.getElementById("mu-champ-count").textContent =
+    filtered.length === total ? `${fmtInt(total)} champions` : `${fmtInt(filtered.length)} of ${fmtInt(total)} champions`;
+
+  const grid = document.getElementById("mu-champ-grid");
+  grid.replaceChildren(...filtered.map(c => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mu-champ-btn" + (c.slug === mstate.champion ? " active" : "");
+    btn.dataset.champion = c.slug;
+    const shownLane = rIdx >= 0 && c.viableLanes.includes(rIdx) ? mstate.roleFilter : c.primaryLane;
+    btn.append(
+      muImg(c.slug),
+      tftText("span", c.name, "mu-champ-btn-name"),
+      tftText("span", MU_LANE_SHORT[shownLane], "mu-champ-btn-lane"),
+    );
+    btn.addEventListener("click", () => selectMatchupChampion(c.slug));
+    return btn;
+  }));
+}
+
+function counterOpponents(d, ch, rIdx) {
+  const nc = d.champions.length;
+  const { ctr, lane } = d.mats;
+  const opps = [];
+  if (mstate.ctrScope === "lane") {
+    const laneTot = Math.max(1, d.roleTotals[rIdx]);
+    for (let j = 0; j < nc; j++) {
+      if (j === ch.idx) continue;
+      const cj = d.champions[j];
+      const w = cj.roles[rIdx];
+      if (w / laneTot < 0.004) continue;
+      opps.push({ champ: cj, val: ctr[ch.idx * nc + j] + lane[ch.idx * nc + j], w });
+    }
+  } else {
+    const rf = MU_LANES.indexOf(mstate.ctrRole);
+    const den = rf >= 0 ? Math.max(1, d.roleTotals[rf]) : d.totalGames;
+    const minShare = rf >= 0 ? 0.004 : 0.0015;
+    for (let j = 0; j < nc; j++) {
+      if (j === ch.idx) continue;
+      const cj = d.champions[j];
+      const w = rf >= 0 ? cj.roles[rf] : cj.totalRoles;
+      if (w / den < minShare) continue;
+      opps.push({ champ: cj, val: ctr[ch.idx * nc + j], w });
+    }
+  }
+  return opps;
+}
+
+function synergyAllies(d, ch, rIdx) {
+  const nc = d.champions.length;
+  const { syn, duo, jgl } = d.mats;
+  const roleMode = mstate.synRole;
+  const specificLane = MU_LANES.indexOf(roleMode);
+  const allies = [];
+
+  for (let j = 0; j < nc; j++) {
+    if (j === ch.idx) continue;
+    const cj = d.champions[j];
+    let w = 0;
+    let bonus = 0;
+
+    if (specificLane >= 0) {
+      w = cj.roles[specificLane];
+      if (w / Math.max(1, d.roleTotals[specificLane]) < 0.004) continue;
+      if ((rIdx === 3 && specificLane === 4) || (rIdx === 4 && specificLane === 3)) {
+        bonus = duo[ch.idx * nc + j];
+      } else if ((rIdx === 1 && (specificLane === 0 || specificLane === 2)) ||
+                 ((rIdx === 0 || rIdx === 2) && specificLane === 1)) {
+        bonus = jgl[ch.idx * nc + j];
+      }
+    } else if (roleMode === "pair") {
+      if (rIdx === 3) {
+        w = cj.roles[4];
+        if (w / Math.max(1, d.roleTotals[4]) < 0.004) continue;
+        bonus = duo[ch.idx * nc + j];
+      } else if (rIdx === 4) {
+        w = cj.roles[3];
+        if (w / Math.max(1, d.roleTotals[3]) < 0.004) continue;
+        bonus = duo[ch.idx * nc + j];
+      } else if (rIdx === 0 || rIdx === 2) {
+        w = cj.roles[1];
+        if (w / Math.max(1, d.roleTotals[1]) < 0.004) continue;
+        bonus = jgl[ch.idx * nc + j];
+      } else {
+        const soloGames = cj.roles[0] + cj.roles[2];
+        const soloTot = Math.max(1, d.roleTotals[0] + d.roleTotals[2]);
+        w = soloGames;
+        if (w / soloTot < 0.004) continue;
+        bonus = jgl[ch.idx * nc + j];
+      }
+    } else {
+      let otherGames = 0;
+      for (let r = 0; r < 5; r++) {
+        if (r !== rIdx) otherGames += cj.roles[r];
+      }
+      if (otherGames <= 0 || cj.totalRoles / d.totalGames < 0.0015) continue;
+      w = otherGames;
+      if (rIdx === 3) bonus = (cj.roles[4] / otherGames) * duo[ch.idx * nc + j];
+      else if (rIdx === 4) bonus = (cj.roles[3] / otherGames) * duo[ch.idx * nc + j];
+      else if (rIdx === 0 || rIdx === 2) bonus = (cj.roles[1] / otherGames) * jgl[ch.idx * nc + j];
+      else if (rIdx === 1) bonus = ((cj.roles[0] + cj.roles[2]) / otherGames) * jgl[ch.idx * nc + j];
+    }
+
+    const totalVal = syn[ch.idx * nc + j] + bonus;
+    const kitVal = totalVal - ch.apSlope * cj.dmgTilt;
+    allies.push({
+      champ: cj,
+      val: mstate.synMode === "kit" ? kitVal : totalVal,
+      totalVal,
+      kitVal,
+      w,
+    });
+  }
+  return allies;
+}
+
+function makeChampChip(item, isOutlier = false) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  const cls = ["mu-chip"];
+  if (item.val >= 0.75) cls.push("good");
+  else if (item.val <= -0.75) cls.push("bad");
+  if (isOutlier) cls.push("outlier");
+  btn.className = cls.join(" ");
+  btn.dataset.champion = item.champ.slug;
+  const delta = tftText("span", fmtPp(item.val), "mu-chip-delta " + (item.val >= 0 ? "pos" : "neg"));
+  btn.append(muImg(item.champ.slug), document.createTextNode(item.champ.name + " "), delta);
+  btn.addEventListener("click", () => selectMatchupChampion(item.champ.slug));
+  return btn;
+}
+
+function renderArchetypeGroupRows(container, d, groups, sortDir, outlierSlugs = null, maxChips = 8) {
+  if (!groups.length) {
+    container.replaceChildren(tftText("p", "No eligible matchups for this filter.", "sub"));
+    return;
+  }
+  const ordered = groups.slice().sort((a, b) => (a.mean - b.mean) * sortDir);
+  const maxAbs = Math.max(1.2, ...ordered.map(g => Math.abs(g.mean)));
+  const posColor = css("--s2") || "#059669";
+  const negColor = css("--s6") || "#dc2626";
+
+  const wrap = document.createElement("div");
+  wrap.className = "mu-arch-rows";
+  for (const g of ordered) {
+    const row = document.createElement("div");
+    row.className = "mu-arch-row";
+    row.dataset.arch = String(g.arch.id);
+
+    const head = document.createElement("button");
+    head.type = "button";
+    head.className = "mu-arch-row-head";
+    head.style.setProperty("--arch-c", css(g.arch.color) || "var(--s1)");
+    head.title = "Inspect this archetype in the Archetypes view";
+    head.append(
+      tftText("strong", g.arch.name),
+      tftText("span", `${g.items.length} ${g.items.length === 1 ? "pick" : "picks"}`),
+    );
+    head.addEventListener("click", () => openArchetypeFocus(g.arch.id));
+
+    const meter = document.createElement("div");
+    meter.className = "mu-arch-meter";
+    const track = document.createElement("div");
+    track.className = "mu-div-track";
+    const fill = document.createElement("div");
+    fill.className = "mu-div-fill";
+    const norm = Math.max(-1, Math.min(1, g.mean / maxAbs));
+    if (norm >= 0) {
+      fill.style.left = "50%";
+      fill.style.width = (norm * 50).toFixed(1) + "%";
+      fill.style.background = posColor;
+    } else {
+      const w = -norm * 50;
+      fill.style.left = (50 - w).toFixed(1) + "%";
+      fill.style.width = w.toFixed(1) + "%";
+      fill.style.background = negColor;
+    }
+    track.append(fill);
+    const valSpan = tftText("span", fmtPp(g.mean), "mu-arch-meter-val " + (g.mean >= 0 ? "pos" : "neg"));
+    meter.append(track, valSpan);
+
+    const chips = document.createElement("div");
+    chips.className = "mu-chip-list";
+    const sortedItems = g.items.slice().sort((a, b) =>
+      g.mean < 0 ? a.val - b.val : b.val - a.val
+    );
+    chips.append(...sortedItems.slice(0, maxChips).map(it =>
+      makeChampChip(it, outlierSlugs?.has(it.champ.slug))
+    ));
+    row.append(head, meter, chips);
+    wrap.append(row);
+  }
+  container.replaceChildren(wrap);
+}
+
+function renderFlatSplit(container, d, items, leftTitle, rightTitle, leftAsc = true) {
+  if (!items.length) {
+    container.replaceChildren(tftText("p", "No eligible matchups for this filter.", "sub"));
+    return;
+  }
+  const split = document.createElement("div");
+  split.className = "mu-flat-split";
+
+  const makeCol = (title, list) => {
+    const col = document.createElement("div");
+    col.className = "mu-flat-col";
+    col.append(tftText("h3", title));
+    const box = document.createElement("div");
+    box.className = "mu-flat-list";
+    for (const it of list) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mu-flat-item";
+      btn.dataset.champion = it.champ.slug;
+      const arch = d.archetypes[it.champ.arch];
+      btn.append(
+        muImg(it.champ.slug),
+        tftText("span", it.champ.name, "mu-flat-name"),
+        tftText("span", arch ? arch.short : "", "mu-flat-arch"),
+        tftText("span", fmtPp(it.val), "mu-flat-val " + (it.val >= 0 ? "pos" : "neg")),
+      );
+      btn.addEventListener("click", () => selectMatchupChampion(it.champ.slug));
+      box.append(btn);
+    }
+    col.append(box);
+    return col;
+  };
+
+  const byLow = items.slice().sort((a, b) => a.val - b.val);
+  const byHigh = items.slice().sort((a, b) => b.val - a.val);
+  split.append(
+    makeCol(leftTitle, (leftAsc ? byLow : byHigh).slice(0, 12)),
+    makeCol(rightTitle, (leftAsc ? byHigh : byLow).slice(0, 12)),
+  );
+  container.replaceChildren(split);
+}
+
+function groupItemsByArchetype(d, items) {
+  const buckets = new Map();
+  for (const it of items) {
+    let b = buckets.get(it.champ.arch);
+    if (!b) {
+      b = { arch: d.archetypes[it.champ.arch], items: [], sumW: 0, sumWV: 0 };
+      buckets.set(it.champ.arch, b);
+    }
+    b.items.push(it);
+    b.sumW += it.w;
+    b.sumWV += it.w * it.val;
+  }
+  const groups = [];
+  for (const b of buckets.values()) {
+    if (!b.items.length || b.sumW <= 0) continue;
+    b.mean = b.sumWV / b.sumW;
+    groups.push(b);
+  }
+  return groups;
+}
+
+function renderPoolCompanions(d, ch, rIdx) {
+  const nc = d.champions.length;
+  const { ctr, lane } = d.mats;
+  const laneTot = Math.max(1, d.roleTotals[rIdx]);
+  const peers = d.champions.filter(c => c.idx === ch.idx || c.roles[rIdx] / laneTot >= 0.005);
+  const twinsBox = document.getElementById("mu-twins");
+  const coversBox = document.getElementById("mu-covers");
+
+  if (peers.length < 4) {
+    twinsBox.replaceChildren(tftText("p", "Not enough lane peers to compare.", "sub"));
+    coversBox.replaceChildren(tftText("p", "Not enough lane peers to compare.", "sub"));
+    return;
+  }
+
+  const myMatchup = j => ctr[ch.idx * nc + j] + lane[ch.idx * nc + j];
+  const peerMatchup = (bIdx, j) => ctr[bIdx * nc + j] + lane[bIdx * nc + j];
+
+  const opponents = peers.filter(p => p.idx !== ch.idx);
+  const sortedWorst = opponents.slice().sort((a, b) => myMatchup(a.idx) - myMatchup(b.idx));
+  const hardCounters = sortedWorst.filter(o => myMatchup(o.idx) < -0.75);
+  const counterTargets = hardCounters.length >= 3 ? hardCounters : sortedWorst.slice(0, Math.min(6, sortedWorst.length));
+
+  const twinScores = [];
+  const coverScores = [];
+
+  for (const cand of opponents) {
+    const xs = [], ys = [], ws = [];
+    const sharedPrey = [];
+    for (const opp of opponents) {
+      if (opp.idx === cand.idx) continue;
+      const vMe = myMatchup(opp.idx);
+      const vCand = peerMatchup(cand.idx, opp.idx);
+      xs.push(vMe);
+      ys.push(vCand);
+      ws.push(opp.roles[rIdx]);
+      if (vMe > 0.7 && vCand > 0.7) {
+        sharedPrey.push({ name: opp.name, score: Math.min(vMe, vCand) });
+      }
+    }
+    const corr = weightedCorr(xs, ys, ws);
+    sharedPrey.sort((a, b) => b.score - a.score);
+    twinScores.push({
+      champ: cand,
+      corr,
+      note: sharedPrey.length
+        ? `Also beats ${sharedPrey.slice(0, 2).map(s => s.name).join(", ")}`
+        : d.archetypes[cand.arch]?.name || "",
+    });
+
+    let cNum = 0, cDen = 0;
+    const covered = [];
+    for (const cnt of counterTargets) {
+      if (cnt.idx === cand.idx) continue;
+      const vMe = myMatchup(cnt.idx);
+      const vCand = peerMatchup(cand.idx, cnt.idx);
+      const weight = Math.max(0.25, -vMe) * Math.sqrt(Math.max(1, cnt.roles[rIdx]));
+      cNum += weight * vCand;
+      cDen += weight;
+      if (vCand > 0.4) {
+        covered.push({ name: cnt.name, val: vCand, swing: vCand - vMe });
+      }
+    }
+    if (cDen > 0) {
+      covered.sort((a, b) => b.swing - a.swing);
+      coverScores.push({
+        champ: cand,
+        gain: cNum / cDen,
+        note: covered.length
+          ? "Beats " + covered.slice(0, 2).map(c => `${c.name} (${fmtPp(c.val)})`).join(", ")
+          : d.archetypes[cand.arch]?.name || "",
+      });
+    }
+  }
+
+  twinScores.sort((a, b) => b.corr - a.corr);
+  coverScores.sort((a, b) => b.gain - a.gain);
+
+  const makePoolBtn = (champ, note, metricText, metricCls) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mu-pool-item";
+    btn.dataset.champion = champ.slug;
+    const text = document.createElement("div");
+    text.className = "mu-pool-text";
+    text.append(tftText("strong", champ.name), tftText("span", note));
+    const metric = tftText("span", metricText, "mu-pool-corr " + metricCls);
+    btn.append(muImg(champ.slug), text, metric);
+    btn.addEventListener("click", () => selectMatchupChampion(champ.slug, mstate.lane));
+    return btn;
+  };
+
+  twinsBox.replaceChildren(...twinScores.slice(0, 5).map(t =>
+    makePoolBtn(t.champ, t.note, (t.corr >= 0 ? "+" : "") + t.corr.toFixed(2) + " r", t.corr >= 0 ? "pos" : "neg")
+  ));
+  coversBox.replaceChildren(...coverScores.slice(0, 5).map(c =>
+    makePoolBtn(c.champ, c.note, fmtPp(c.gain), c.gain >= 0 ? "pos" : "neg")
+  ));
+}
+
+function renderMatchupIdentity() {
+  const d = mstate.data;
+  if (!d?.champions?.length) return;
+  const ch = d.champBySlug.get(mstate.champion) || d.champions[0];
+  const rIdx = MU_LANES.includes(mstate.lane) ? MU_LANES.indexOf(mstate.lane) : ch.primaryLaneIdx;
+  const lane = MU_LANES[rIdx];
+  const arch = d.archetypes[ch.arch];
+
+  // Hero
+  const icon = document.getElementById("mu-hero-icon");
+  icon.src = iconUrl(ch.slug);
+  icon.alt = ch.name;
+  document.getElementById("mu-hero-name").textContent = ch.name;
+
+  const badge = document.getElementById("mu-hero-arch");
+  badge.textContent = arch ? arch.name : "Archetype";
+  badge.style.setProperty("--arch-c", css(arch?.color || "--s1") || "var(--s1)");
+
+  const laneGames = ch.roles[rIdx];
+  const roleShare = ch.totalRoles > 0 ? Math.round((laneGames / ch.totalRoles) * 100) : 0;
+  const lanePick = d.roleTotals[rIdx] > 0 ? ((laneGames / d.roleTotals[rIdx]) * 100).toFixed(1) : "0.0";
+  const baseDelta = ch.main?.[rIdx] ?? 0;
+  document.getElementById("mu-hero-meta").textContent =
+    `${MU_LANE_FULL[lane]} base role strength ${fmtPp(baseDelta)} · ${roleShare}% of ${ch.name}'s games (${lanePick}% lane pick share)`;
+
+  // Lane selector buttons (viable lanes + active lane if non-viable)
+  const laneIndices = ch.viableLanes.includes(rIdx)
+    ? ch.viableLanes
+    : [...ch.viableLanes, rIdx].sort((a, b) => a - b);
+  document.getElementById("mu-lane-seg").replaceChildren(...laneIndices.map(idx => {
+    const lKey = MU_LANES[idx];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.lane = lKey;
+    btn.className = lKey === lane ? "active" : "";
+    const pct = ch.totalRoles > 0 ? Math.round((ch.roles[idx] / ch.totalRoles) * 100) : 0;
+    btn.textContent = `${MU_LANE_FULL[lKey]} (${pct}%)`;
+    btn.addEventListener("click", () => {
+      mstate.lane = lKey;
+      renderMatchupIdentity();
+      updateHash(true);
+    });
+    return btn;
+  }));
+
+  // 1. Statistical fingerprint (top 8 traits by |z|, ordered from highest +z to lowest -z)
+  const traitBlue = css("--s1") || "#2563eb";
+  const traitSlate = css("--s8") || "#64748b";
+  const ownTraits = d.traits.map((t, k) => ({ t, z: ch.traits[k] || 0 }))
+    .sort((a, b) => Math.abs(b.z) - Math.abs(a.z))
+    .slice(0, 8)
+    .sort((a, b) => b.z - a.z);
+  document.getElementById("mu-own-traits").replaceChildren(...ownTraits.map(({ t, z }) =>
+    muDivergingRow(
+      t.label,
+      (z >= 0 ? "+" : "") + z.toFixed(1) + "z",
+      z / 2.6,
+      traitBlue,
+      traitSlate,
+      "",
+      t.desc,
+    )
+  ));
+
+  // 2. Team composition appetite
+  const posGreen = css("--s2") || "#059669";
+  const negRed = css("--s6") || "#dc2626";
+  const compRows = [
+    {
+      label: "AP vs. AD allies",
+      val: ch.apSlope,
+      unit: "pp",
+      desc: "Synergy slope on teammate magic-vs-physical damage share. Positive prefers AP teammates; negative prefers AD teammates.",
+    },
+    {
+      label: "Frontline setup",
+      val: ch.frontSlope,
+      unit: "pp/z",
+      desc: "Synergy slope per z-score of ally frontline tanking.",
+    },
+    {
+      label: "Peel & shields",
+      val: ch.peelSlope,
+      unit: "pp/z",
+      desc: "Synergy slope per z-score of ally healing and shielding.",
+    },
+  ];
+  document.getElementById("mu-comp-needs").replaceChildren(...compRows.map(r => {
+    const sign = r.val >= 0 ? "+" : "";
+    const cls = Math.abs(r.val) >= 0.15 ? (r.val >= 0 ? "pos" : "neg") : "";
+    return muDivergingRow(r.label, `${sign}${r.val.toFixed(2)}${r.unit}`, r.val / 1.4, posGreen, negRed, cls, r.desc);
+  }));
+
+  // 3. Counters & Matchup Trait Drivers
+  const opps = counterOpponents(d, ch, rIdx);
+  const ctrGroups = groupItemsByArchetype(d, opps);
+
+  // Variance explained by opponent archetype membership
+  let totalW = 0, meanY = 0;
+  for (const o of opps) { totalW += o.w; meanY += o.w * o.val; }
+  meanY = totalW > 0 ? meanY / totalW : 0;
+  let ssTot = 0, ssBetween = 0;
+  for (const o of opps) ssTot += o.w * (o.val - meanY) * (o.val - meanY);
+  for (const g of ctrGroups) ssBetween += g.sumW * (g.mean - meanY) * (g.mean - meanY);
+  const archR2 = ssTot > 1e-9 ? Math.max(0, Math.min(1, ssBetween / ssTot)) : 0;
+
+  document.getElementById("mu-drivers-title").textContent =
+    mstate.ctrScope === "lane"
+      ? `Matchup trait drivers (${MU_LANE_FULL[lane]})`
+      : "Matchup trait drivers (enemy comp)";
+  document.getElementById("mu-drivers-r2").textContent =
+    `Archetypes explain ${Math.round(archR2 * 100)}% of variance`;
+
+  const ys = opps.map(o => o.val);
+  const ws = opps.map(o => o.w);
+  const oppCorrs = d.traits.map((t, k) => {
+    const xs = opps.map(o => o.champ.traits[k] || 0);
+    return { t, r: weightedCorr(xs, ys, ws) };
+  }).sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, 11);
+
+  document.getElementById("mu-opp-traits").replaceChildren(...oppCorrs.map(({ t, r }) => {
+    const cls = Math.abs(r) >= 0.12 ? (r >= 0 ? "pos" : "neg") : "";
+    return muDivergingRow(
+      t.label,
+      (r >= 0 ? "+" : "") + r.toFixed(2) + " r",
+      r / 0.55,
+      posGreen,
+      negRed,
+      cls,
+      `${t.desc} (${r < 0 ? "higher enemy trait counters " + ch.name : "higher enemy trait favors " + ch.name})`,
+    );
+  }));
+
+  // Counter toolbar state
+  document.querySelectorAll("#mu-ctr-scope button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === mstate.ctrScope));
+  const ctrRoleSel = document.getElementById("mu-ctr-role");
+  ctrRoleSel.hidden = mstate.ctrScope !== "team";
+  ctrRoleSel.value = mstate.ctrRole;
+  document.querySelectorAll("#mu-ctr-layout button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === mstate.ctrLayout));
+
+  document.getElementById("mu-ctr-title").textContent =
+    mstate.ctrScope === "lane"
+      ? `In-lane counters (${MU_LANE_FULL[lane]})`
+      : "Enemy comp counters";
+
+  // Leave-one-out class-breakers
+  const minGroupSize = mstate.ctrScope === "lane" ? 2 : 3;
+  const outlierCandidates = [];
+  for (const g of ctrGroups) {
+    if (g.items.length < minGroupSize) continue;
+    for (const it of g.items) {
+      const remW = g.sumW - it.w;
+      if (remW <= 0) continue;
+      const looMean = (g.sumWV - it.w * it.val) / remW;
+      const diff = it.val - looMean;
+      const signFlip = (it.val <= -0.6 && looMean >= 0.25) || (it.val >= 0.6 && looMean <= -0.25);
+      if (signFlip || (Math.abs(diff) >= 1.75 && Math.abs(it.val) >= 1.2)) {
+        outlierCandidates.push({
+          champ: it.champ,
+          arch: g.arch,
+          val: it.val,
+          looMean,
+          diff,
+          rankScore: Math.abs(diff) * (signFlip ? 1.45 : 1.0),
+        });
+      }
+    }
+  }
+  outlierCandidates.sort((a, b) => b.rankScore - a.rankScore);
+  const topOutliers = outlierCandidates.slice(0, 6);
+  const outlierSlugs = new Set(topOutliers.map(o => o.champ.slug));
+
+  const outliersWrap = document.getElementById("mu-outliers-wrap");
+  outliersWrap.hidden = !topOutliers.length;
+  if (topOutliers.length) {
+    document.getElementById("mu-outliers").replaceChildren(...topOutliers.map(o => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mu-outlier-card";
+      btn.dataset.champion = o.champ.slug;
+      const info = document.createElement("div");
+      info.className = "mu-outlier-info";
+      const top = document.createElement("div");
+      top.className = "mu-outlier-top";
+      top.append(
+        tftText("span", o.champ.name),
+        tftText("span", fmtPp(o.val), o.val >= 0 ? "pos" : "neg"),
+      );
+      const sub = tftText(
+        "div",
+        `${o.arch.short} rest ${fmtPp(o.looMean)} (${fmtPp(o.diff)})`,
+        "mu-outlier-sub",
+      );
+      info.append(top, sub);
+      btn.append(muImg(o.champ.slug), info);
+      btn.addEventListener("click", () => selectMatchupChampion(o.champ.slug));
+      return btn;
+    }));
+  }
+
+  const ctrBody = document.getElementById("mu-ctr-body");
+  if (mstate.ctrLayout === "archetype") {
+    renderArchetypeGroupRows(ctrBody, d, ctrGroups, 1, outlierSlugs, 9);
+  } else {
+    renderFlatSplit(ctrBody, d, opps, "Hardest counters", "Best matchups", true);
+  }
+
+  // 4. Synergies & Best Partners
+  document.querySelectorAll("#mu-syn-mode button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === mstate.synMode));
+  document.getElementById("mu-syn-role").value = mstate.synRole;
+  document.querySelectorAll("#mu-syn-layout button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === mstate.synLayout));
+
+  document.getElementById("mu-syn-hint").textContent =
+    mstate.synMode === "kit"
+      ? `Kit synergy strips out generic AD/AP team-damage balance (${fmtPp(ch.apSlope)} AP ally slope) so mechanical combos surface cleanly.`
+      : "Total draft synergy combines mechanical combo value with AD/AP team damage balance.";
+
+  const allies = synergyAllies(d, ch, rIdx);
+  const synBody = document.getElementById("mu-syn-body");
+  if (mstate.synLayout === "archetype") {
+    const synGroups = groupItemsByArchetype(d, allies);
+    renderArchetypeGroupRows(synBody, d, synGroups, -1, null, 8);
+  } else {
+    renderFlatSplit(synBody, d, allies, "Best partners", "Weakest / anti-synergy partners", false);
+  }
+
+  // 5. Same-lane pool companions
+  renderPoolCompanions(d, ch, rIdx);
+}
+
+function renderMatrixDetail() {
+  const d = mstate.data;
+  const detail = document.getElementById("mu-matrix-detail");
+  if (!d?.archetypes?.length || !mstate.matCell) {
+    detail.hidden = true;
+    return;
+  }
+  const [r, c] = mstate.matCell;
+  const archR = d.archetypes[r], archC = d.archetypes[c];
+  if (!archR || !archC) {
+    detail.hidden = true;
+    return;
+  }
+  detail.hidden = false;
+
+  const mode = mstate.matMode;
+  const cellVal = mode === "counter" ? archR.ctr[c] : mode === "kit" ? archR.kitSyn[c] : archR.syn[c];
+  const nc = d.champions.length;
+  const { ctr, syn } = d.mats;
+
+  const pairs = [];
+  const seen = new Set();
+  for (const i of archR.members) {
+    const ci = d.champions[i];
+    for (const j of archC.members) {
+      if (i === j) continue;
+      if (mode !== "counter" && r === c) {
+        const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+      }
+      const cj = d.champions[j];
+      let val;
+      if (mode === "counter") {
+        val = ctr[i * nc + j];
+      } else if (mode === "kit") {
+        val = syn[i * nc + j] - 0.5 * (ci.apSlope * cj.dmgTilt + cj.apSlope * ci.dmgTilt);
+      } else {
+        val = syn[i * nc + j];
+      }
+      pairs.push({ ci, cj, val });
+    }
+  }
+
+  const head = document.createElement("div");
+  head.className = "mu-matrix-detail-head";
+  const sep = mode === "counter" ? "vs." : "+";
+  const titleStrong = tftText("strong", `${archR.name} ${sep} ${archC.name}: ${fmtPp(cellVal)}`);
+  const metaSub = tftText("span", `${fmtInt(pairs.length)} champion pairings · select any pair to open its draft identity`, "sub");
+  head.append(titleStrong, metaSub);
+
+  if (!pairs.length) {
+    detail.replaceChildren(head, tftText("p", "No distinct champion pairs in this cell.", "sub"));
+    return;
+  }
+
+  const makePairCol = (heading, list) => {
+    const col = document.createElement("div");
+    col.className = "mu-flat-col";
+    col.append(tftText("h3", heading));
+    const box = document.createElement("div");
+    box.className = "mu-flat-list";
+    for (const p of list) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mu-flat-item";
+      btn.dataset.champion = p.ci.slug;
+      const pairLabel = mode === "counter"
+        ? `${p.ci.name} vs. ${p.cj.name}`
+        : `${p.ci.name} + ${p.cj.name}`;
+      btn.append(
+        muImg(p.ci.slug),
+        muImg(p.cj.slug),
+        tftText("span", pairLabel, "mu-flat-name"),
+        tftText("span", "", "mu-flat-arch"),
+        tftText("span", fmtPp(p.val), "mu-flat-val " + (p.val >= 0 ? "pos" : "neg")),
+      );
+      btn.addEventListener("click", () => selectMatchupChampion(p.ci.slug));
+      box.append(btn);
+    }
+    col.append(box);
+    return col;
+  };
+
+  const split = document.createElement("div");
+  split.className = "mu-flat-split";
+  const byHigh = pairs.slice().sort((a, b) => b.val - a.val).slice(0, 6);
+  const byLow = pairs.slice().sort((a, b) => a.val - b.val).slice(0, 6);
+  if (mode === "counter") {
+    split.append(
+      makePairCol(`Best ${archR.short} picks into ${archC.short}`, byHigh),
+      makePairCol(`Best ${archC.short} answers`, byLow),
+    );
+  } else {
+    split.append(
+      makePairCol("Strongest ally combos", byHigh),
+      makePairCol("Weakest / clashing pairs", byLow),
+    );
+  }
+  detail.replaceChildren(head, split);
+}
+
+function renderArchetypesPanel() {
+  const d = mstate.data;
+  if (!d?.archetypes?.length) return;
+  const archs = d.archetypes;
+  const mode = mstate.matMode;
+
+  document.querySelectorAll("#mu-mat-mode button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === mode));
+
+  document.getElementById("mu-mat-hint").textContent =
+    mode === "counter"
+      ? "Row vs. column counter delta (in percentage points): green means the row archetype beats the column archetype. Select any cell to inspect top champion pairs."
+      : mode === "kit"
+        ? "Comp-adjusted mechanical kit synergy between ally archetypes (AD/AP damage balance removed). Select any cell to inspect top champion pairs."
+        : "Total same-team draft synergy between ally archetypes, including AD/AP damage balance. Select any cell to inspect top champion pairs.";
+
+  let maxCell = 0.6;
+  for (let r = 0; r < archs.length; r++) {
+    const arr = mode === "counter" ? archs[r].ctr : mode === "kit" ? archs[r].kitSyn : archs[r].syn;
+    for (let c = 0; c < archs.length; c++) {
+      if (mode === "counter" && r === c) continue;
+      if (Math.abs(arr[c]) > maxCell) maxCell = Math.abs(arr[c]);
+    }
+  }
+
+  const thead = document.querySelector("#mu-matrix-tbl thead");
+  const headRow = document.createElement("tr");
+  headRow.append(tftText("th", mode === "counter" ? "Row vs. Col" : "Archetype"));
+  for (const a of archs) {
+    const th = document.createElement("th");
+    th.textContent = a.short;
+    th.title = a.name;
+    headRow.append(th);
+  }
+  thead.replaceChildren(headRow);
+
+  const tbody = document.querySelector("#mu-matrix-tbl tbody");
+  tbody.replaceChildren(...archs.map((a, r) => {
+    const tr = document.createElement("tr");
+    const rowHead = document.createElement("td");
+    rowHead.textContent = a.short;
+    rowHead.title = a.name;
+    rowHead.style.borderInlineStart = `3px solid ${css(a.color) || "var(--s1)"}`;
+    tr.append(rowHead);
+
+    const arr = mode === "counter" ? a.ctr : mode === "kit" ? a.kitSyn : a.syn;
+    for (let c = 0; c < archs.length; c++) {
+      const td = document.createElement("td");
+      td.className = "mu-mat-cell";
+      td.dataset.row = String(r);
+      td.dataset.col = String(c);
+      if (mstate.matCell && mstate.matCell[0] === r && mstate.matCell[1] === c) {
+        td.classList.add("sel");
+      }
+      if (mode === "counter" && r === c) {
+        td.textContent = "·";
+        td.style.color = "var(--muted)";
+      } else {
+        const v = arr[c] || 0;
+        td.textContent = (v >= 0 ? "+" : "") + v.toFixed(2);
+        td.tabIndex = 0;
+        td.setAttribute("role", "button");
+        td.title = `${a.name} ${mode === "counter" ? "vs." : "+"} ${archs[c].name}: ${fmtPp(v)}`;
+        const pct = Math.round(Math.min(1, Math.abs(v) / maxCell) * 34);
+        if (pct >= 3) {
+          const tint = v >= 0 ? "var(--s2)" : "var(--s6)";
+          td.style.background = `color-mix(in srgb, ${tint} ${pct}%, var(--surface-1))`;
+        }
+        const activate = () => {
+          mstate.matCell = [r, c];
+          document.querySelectorAll("#mu-matrix-tbl .mu-mat-cell").forEach(el =>
+            el.classList.toggle("sel", el === td));
+          renderMatrixDetail();
+          updateHash(true);
+        };
+        td.addEventListener("click", activate);
+        td.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+        });
+      }
+      tr.append(td);
+    }
+    return tr;
+  }));
+
+  renderMatrixDetail();
+
+  // Archetype cards directory
+  document.getElementById("mu-arch-search").value = mstate.archSearch;
+  document.querySelectorAll("#mu-arch-role button").forEach(b =>
+    b.classList.toggle("active", b.dataset.role === mstate.archRole));
+
+  const q = mstate.archSearch.trim().toLowerCase();
+  const rIdx = MU_LANES.indexOf(mstate.archRole);
+  const cards = [];
+
+  for (const a of archs) {
+    const archMatch = q && (`${a.name} ${a.short}`).toLowerCase().includes(q);
+    const members = a.members.map(i => d.champions[i]).filter(c => {
+      if (rIdx >= 0) {
+        const share = c.roles[rIdx] / Math.max(1, d.roleTotals[rIdx]);
+        if (!c.viableLanes.includes(rIdx) && share < 0.004) return false;
+      }
+      if (q && !archMatch && !c.name.toLowerCase().includes(q) && !c.slug.includes(q)) return false;
+      return true;
+    });
+    if (!members.length) continue;
+
+    const card = document.createElement("div");
+    card.className = "mu-arch-card" + (mstate.highlightArch === a.id ? " highlight" : "");
+    card.dataset.arch = String(a.id);
+    card.style.setProperty("--arch-c", css(a.color) || "var(--s1)");
+
+    const topLanes = a.roles
+      .map((sh, idx) => ({ sh, idx }))
+      .filter(x => x.sh >= 0.14)
+      .sort((x, y) => y.sh - x.sh)
+      .map(x => `${MU_LANE_SHORT[MU_LANES[x.idx]]} ${Math.round(x.sh * 100)}%`)
+      .join(" · ");
+
+    const head = document.createElement("div");
+    head.className = "mu-arch-card-head";
+    head.append(
+      tftText("h3", a.name),
+      tftText("span", `${members.length} champions${topLanes ? " · " + topLanes : ""}`, "sub"),
+    );
+
+    const sig = document.createElement("div");
+    sig.className = "mu-arch-card-sig";
+    for (const [tIdx, z] of a.sig) {
+      const trMeta = d.traits[tIdx];
+      if (!trMeta) continue;
+      const pill = tftText("span", `${trMeta.short} ${z >= 0 ? "+" : ""}${z.toFixed(1)}z`, "mu-sig-pill");
+      pill.title = trMeta.desc;
+      sig.append(pill);
+    }
+
+    const otherArchs = archs.filter(o => o.id !== a.id);
+    const beats = otherArchs.slice().sort((x, y) => a.ctr[y.id] - a.ctr[x.id]).filter(o => a.ctr[o.id] > 0.05).slice(0, 2);
+    const loses = otherArchs.slice().sort((x, y) => a.ctr[x.id] - a.ctr[y.id]).filter(o => a.ctr[o.id] < -0.05).slice(0, 2);
+    const bestAlly = archs.slice().sort((x, y) => a.kitSyn[y.id] - a.kitSyn[x.id])[0];
+
+    const ecoLines = [];
+    if (beats.length) ecoLines.push("Strong into: " + beats.map(o => `${o.short} (${fmtPp(a.ctr[o.id])})`).join(", "));
+    if (loses.length) ecoLines.push("Weak into: " + loses.map(o => `${o.short} (${fmtPp(a.ctr[o.id])})`).join(", "));
+    if (bestAlly) ecoLines.push(`Best kit partner: ${bestAlly.short} (${fmtPp(a.kitSyn[bestAlly.id])})`);
+
+    const eco = document.createElement("div");
+    eco.className = "mu-arch-card-eco";
+    ecoLines.forEach((line, idx) => {
+      if (idx > 0) eco.append(document.createElement("br"));
+      eco.append(document.createTextNode(line));
+    });
+
+    const chipList = document.createElement("div");
+    chipList.className = "mu-chip-list";
+    for (const m of members) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mu-chip";
+      btn.dataset.champion = m.slug;
+      btn.append(muImg(m.slug), document.createTextNode(m.name));
+      btn.addEventListener("click", () => {
+        const targetLane = rIdx >= 0 && m.viableLanes.includes(rIdx) ? MU_LANES[rIdx] : m.primaryLane;
+        selectMatchupChampion(m.slug, targetLane);
+      });
+      chipList.append(btn);
+    }
+
+    card.append(head, sig, eco, chipList);
+    cards.push(card);
+  }
+
+  document.getElementById("mu-arch-grid").replaceChildren(
+    ...(cards.length ? cards : [tftText("p", "No archetypes match these filters.", "sub")])
+  );
+}
+
+function renderMatchups() {
+  const d = mstate.data;
+  const prov = document.getElementById("mu-provenance");
+  const isIdentity = mstate.mode === "identity";
+
+  document.querySelectorAll("#mu-mode-seg button").forEach(b => {
+    const on = b.dataset.key === mstate.mode;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+
+  if (mstate.error) {
+    prov.textContent = mstate.error;
+    document.getElementById("mu-browser").hidden = true;
+    document.getElementById("mu-identity-panel").hidden = true;
+    document.getElementById("mu-archetypes-panel").hidden = true;
+    return;
+  }
+  if (!d) {
+    prov.textContent = "Loading…";
+    document.getElementById("mu-browser").hidden = true;
+    document.getElementById("mu-identity-panel").hidden = true;
+    document.getElementById("mu-archetypes-panel").hidden = true;
+    return;
+  }
+  if (!d.synced || !d.champions?.length) {
+    prov.textContent = "No matchups snapshot yet: run cli.py matchups sync";
+    document.getElementById("mu-browser").hidden = true;
+    document.getElementById("mu-identity-panel").hidden = true;
+    document.getElementById("mu-archetypes-panel").hidden = true;
+    return;
+  }
+
+  ensureMatchupSelection();
+
+  const bits = [];
+  if (d.games) bits.push(`${fmtCompact(d.games)} Master+ games`);
+  if (d.cutoff) bits.push(`cutoff ${d.cutoff}`);
+  bits.push("synced " + new Date(d.synced).toLocaleString([], { dateStyle: "short", timeStyle: "short" }));
+  prov.textContent = bits.join(" · ");
+
+  document.getElementById("mu-browser").hidden = !isIdentity;
+  document.getElementById("mu-identity-panel").hidden = !isIdentity;
+  document.getElementById("mu-archetypes-panel").hidden = isIdentity;
+
+  if (isIdentity) {
+    renderMatchupsBrowser();
+    renderMatchupIdentity();
+  } else {
+    renderArchetypesPanel();
+  }
+}
+
+async function openMatchups() {
+  if (mstate.data) {
+    mstate.error = null;
+    ensureMatchupSelection();
+    renderMatchups();
+    updateHash();
+    return;
+  }
+  if (mstate.loading) return;
+  mstate.loading = true;
+  mstate.error = null;
+  const req = ++mstate.req;
+  renderMatchups();
+  try {
+    const raw = await api("api/matchups.json");
+    if (req !== mstate.req) return;
+    mstate.data = prepareMatchupsData(raw);
+    if (mstate.data?.archetypes?.length) populateMatchupsArchSelect(mstate.data);
+    ensureMatchupSelection();
+  } catch (e) {
+    if (req !== mstate.req) return;
+    mstate.error = `Matchups data unavailable (${e.message}). Restart the dashboard server if this tab was just added.`;
+  } finally {
+    if (req === mstate.req) mstate.loading = false;
+  }
+  renderMatchups();
+  updateHash();
+}
+
+document.getElementById("mu-hero-arch").addEventListener("click", () => {
+  const ch = mstate.data?.champBySlug.get(mstate.champion);
+  if (ch) openArchetypeFocus(ch.arch);
+});
+
+document.querySelectorAll("#mu-mode-seg button").forEach(b =>
+  b.addEventListener("click", () => {
+    const next = b.dataset.key;
+    if (next === mstate.mode || !["identity", "archetypes"].includes(next)) return;
+    mstate.mode = next;
+    mstate.highlightArch = null;
+    ensureMatchupSelection();
+    renderMatchups();
+    updateHash(true);
+  }));
+
+document.getElementById("mu-search").addEventListener("input", e => {
+  mstate.search = e.target.value;
+  renderMatchupsBrowser();
+});
+
+document.querySelectorAll("#mu-role-filter button").forEach(b =>
+  b.addEventListener("click", () => {
+    mstate.roleFilter = b.dataset.role;
+    renderMatchupsBrowser();
+  }));
+
+document.getElementById("mu-arch-filter").addEventListener("change", e => {
+  mstate.archFilter = e.target.value;
+  renderMatchupsBrowser();
+});
+
+document.querySelectorAll("#mu-ctr-scope button").forEach(b =>
+  b.addEventListener("click", () => {
+    if (mstate.ctrScope === b.dataset.key) return;
+    mstate.ctrScope = b.dataset.key;
+    renderMatchupIdentity();
+    updateHash(true);
+  }));
+
+document.getElementById("mu-ctr-role").addEventListener("change", e => {
+  mstate.ctrRole = e.target.value;
+  renderMatchupIdentity();
+});
+
+document.querySelectorAll("#mu-ctr-layout button").forEach(b =>
+  b.addEventListener("click", () => {
+    mstate.ctrLayout = b.dataset.key;
+    renderMatchupIdentity();
+  }));
+
+document.querySelectorAll("#mu-syn-mode button").forEach(b =>
+  b.addEventListener("click", () => {
+    if (mstate.synMode === b.dataset.key) return;
+    mstate.synMode = b.dataset.key;
+    renderMatchupIdentity();
+    updateHash(true);
+  }));
+
+document.getElementById("mu-syn-role").addEventListener("change", e => {
+  mstate.synRole = e.target.value;
+  renderMatchupIdentity();
+});
+
+document.querySelectorAll("#mu-syn-layout button").forEach(b =>
+  b.addEventListener("click", () => {
+    mstate.synLayout = b.dataset.key;
+    renderMatchupIdentity();
+  }));
+
+document.querySelectorAll("#mu-mat-mode button").forEach(b =>
+  b.addEventListener("click", () => {
+    if (mstate.matMode === b.dataset.key) return;
+    mstate.matMode = b.dataset.key;
+    if (mstate.data) {
+      if (mstate.matMode === "counter" && mstate.matCell && mstate.matCell[0] === mstate.matCell[1]) {
+        mstate.matCell = defaultMatrixCell(mstate.data, mstate.matMode);
+      }
+    }
+    renderArchetypesPanel();
+    updateHash(true);
+  }));
+
+document.getElementById("mu-arch-search").addEventListener("input", e => {
+  mstate.archSearch = e.target.value;
+  renderArchetypesPanel();
+});
+
+document.querySelectorAll("#mu-arch-role button").forEach(b =>
+  b.addEventListener("click", () => {
+    mstate.archRole = b.dataset.role;
+    renderArchetypesPanel();
+    updateHash();
+  }));
+

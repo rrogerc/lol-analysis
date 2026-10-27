@@ -20,6 +20,7 @@
 <nav>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="onetricks">One-tricks</button>
+  <button data-view="matchups">Matchups</button>
   <button data-view="builds">Builds</button>
   <button data-view="tft">TFT</button>
   <button data-view="data">Data</button>
@@ -87,6 +88,209 @@
         </tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Matchups ============================ -->
+<section class="view" id="view-matchups">
+  <div class="card">
+    <div class="mu-heading">
+      <h2>Matchups &amp; draft identity</h2>
+      <span class="sub" id="mu-provenance">Loading…</span>
+    </div>
+    <div class="hint" id="mu-intro">Residual L2-shrunk counter and synergy deltas (in win-rate percentage points near 50%) after stripping out each champion's base role strength, paired with unsupervised interaction archetypes and Master+ behavioral traits.</div>
+    <div class="seg" id="mu-mode-seg" role="group" aria-label="Matchups view">
+      <button data-key="identity" aria-pressed="true" class="active">Champion identity</button>
+      <button data-key="archetypes" aria-pressed="false">Archetypes</button>
+    </div>
+
+    <div id="mu-browser">
+      <div class="mu-filters">
+        <input id="mu-search" type="search" placeholder="Search champion or archetype..." autocomplete="off" spellcheck="false" aria-label="Search champion">
+        <div class="seg" id="mu-role-filter" role="group" aria-label="Filter roster by lane">
+          <button data-role="all" class="active">All</button>
+          <button data-role="top">Top</button>
+          <button data-role="jungle">Jungle</button>
+          <button data-role="middle">Middle</button>
+          <button data-role="bottom">Bottom</button>
+          <button data-role="support">Support</button>
+        </div>
+        <select id="mu-arch-filter" aria-label="Filter roster by archetype">
+          <option value="all">All archetypes</option>
+        </select>
+        <span class="sub" id="mu-champ-count"></span>
+      </div>
+      <div class="mu-champ-grid" id="mu-champ-grid" role="region" aria-label="Champion roster"></div>
+    </div>
+  </div>
+
+  <div id="mu-identity-panel">
+    <div class="card" id="mu-identity-card">
+      <div class="mu-hero">
+        <img id="mu-hero-icon" class="mu-hero-icon" alt="">
+        <div class="mu-hero-text">
+          <div class="mu-hero-title-row">
+            <h2 id="mu-hero-name">-</h2>
+            <button id="mu-hero-arch" class="mu-arch-badge" type="button"></button>
+          </div>
+          <div class="sub" id="mu-hero-meta"></div>
+        </div>
+        <div class="seg" id="mu-lane-seg" role="group" aria-label="Champion lane"></div>
+      </div>
+
+      <div class="mu-identity-grid">
+        <div class="mu-col">
+          <div class="mu-subhead">
+            <h3>Statistical fingerprint</h3>
+            <span class="sub">z-score vs. Master+ roster</span>
+          </div>
+          <div id="mu-own-traits" class="mu-bars"></div>
+
+          <div class="mu-subhead" style="margin-top:16px">
+            <h3>Team composition appetite</h3>
+            <span class="sub">synergy slope on ally profile</span>
+          </div>
+          <div id="mu-comp-needs" class="mu-bars"></div>
+        </div>
+
+        <div class="mu-col">
+          <div class="mu-subhead">
+            <h3 id="mu-drivers-title">Matchup trait drivers</h3>
+            <span class="sub" id="mu-drivers-r2"></span>
+          </div>
+          <div class="hint" style="margin-bottom:8px">Enemy traits correlated with this champion's matchup delta: red left counters it, green right favors it.</div>
+          <div id="mu-opp-traits" class="mu-bars"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="mu-counters-card">
+      <div class="mu-toolbar">
+        <div>
+          <h2 id="mu-ctr-title">Counters by archetype</h2>
+          <div class="hint" id="mu-ctr-hint" style="margin-bottom:0">Grouped from hardest counter class to best prey class. Select any champion to inspect its draft identity.</div>
+        </div>
+        <div class="mu-toolbar-controls">
+          <div class="seg" id="mu-ctr-scope" role="group" aria-label="Counter scope">
+            <button data-key="lane" class="active">In-lane</button>
+            <button data-key="team">Enemy comp</button>
+          </div>
+          <select id="mu-ctr-role" aria-label="Enemy lane filter" hidden>
+            <option value="all">All enemy lanes</option>
+            <option value="top">Top</option>
+            <option value="jungle">Jungle</option>
+            <option value="middle">Middle</option>
+            <option value="bottom">Bottom</option>
+            <option value="support">Support</option>
+          </select>
+          <div class="seg" id="mu-ctr-layout" role="group" aria-label="Counter layout">
+            <button data-key="archetype" class="active">By archetype</button>
+            <button data-key="flat">Flat ranking</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mu-outliers-wrap" class="mu-outliers-wrap">
+        <div class="mu-outliers-head">
+          <strong>Class-breakers &amp; kit outliers</strong>
+          <span class="sub">Opponents whose matchup diverges sharply from their own archetype's average</span>
+        </div>
+        <div id="mu-outliers" class="mu-outliers-grid"></div>
+      </div>
+
+      <div id="mu-ctr-body"></div>
+    </div>
+
+    <div class="card" id="mu-synergies-card">
+      <div class="mu-toolbar">
+        <div>
+          <h2 id="mu-syn-title">Synergies &amp; best partners</h2>
+          <div class="hint" id="mu-syn-hint" style="margin-bottom:0">Kit synergy strips out generic AD/AP team-damage stacking so mechanical combos surface cleanly.</div>
+        </div>
+        <div class="mu-toolbar-controls">
+          <div class="seg" id="mu-syn-mode" role="group" aria-label="Synergy mode">
+            <button data-key="kit" class="active">Kit synergy</button>
+            <button data-key="total">Total draft</button>
+          </div>
+          <select id="mu-syn-role" aria-label="Ally lane filter">
+            <option value="all">All allies</option>
+            <option value="pair">Key lane partners</option>
+            <option value="top">Top</option>
+            <option value="jungle">Jungle</option>
+            <option value="middle">Middle</option>
+            <option value="bottom">Bottom</option>
+            <option value="support">Support</option>
+          </select>
+          <div class="seg" id="mu-syn-layout" role="group" aria-label="Synergy layout">
+            <button data-key="archetype" class="active">By archetype</button>
+            <button data-key="flat">Top partners</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mu-syn-body"></div>
+    </div>
+
+    <div class="card" id="mu-pool-card">
+      <h2>Same-lane pool companions</h2>
+      <div class="hint">Derived from in-lane counter profile correlations among champions played in this lane.</div>
+      <div class="mu-pool-grid">
+        <div class="mu-pool-box">
+          <h3>Draft twins (if banned)</h3>
+          <p class="sub">Shares similar good and bad lane matchups.</p>
+          <div id="mu-twins" class="mu-pool-list"></div>
+        </div>
+        <div class="mu-pool-box">
+          <h3>Cover picks (2-champ pool)</h3>
+          <p class="sub">Beats the opponents that counter this pick.</p>
+          <div id="mu-covers" class="mu-pool-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mu-archetypes-panel" hidden>
+    <div class="card" id="mu-matrix-card">
+      <div class="mu-toolbar">
+        <div>
+          <h2>Archetype interaction matrix</h2>
+          <div class="hint" id="mu-mat-hint" style="margin-bottom:0">Game-weighted win-rate delta (in percentage points) across all champion pairings between two archetypes. Select any cell to inspect individual matchups.</div>
+        </div>
+        <div class="seg" id="mu-mat-mode" role="group" aria-label="Matrix mode">
+          <button data-key="counter" class="active">Counters (row vs. col)</button>
+          <button data-key="kit">Kit synergy</button>
+          <button data-key="synergy">Total synergy</button>
+        </div>
+      </div>
+      <div class="tablewrap mu-matrix-wrap" id="mu-matrix-wrap">
+        <table id="mu-matrix-tbl" class="mu-matrix-tbl">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="mu-matrix-detail" class="mu-matrix-detail"></div>
+    </div>
+
+    <div class="card" id="mu-arch-list-card">
+      <div class="mu-toolbar">
+        <div>
+          <h2>Unsupervised draft archetypes</h2>
+          <div class="hint" style="margin-bottom:0">Clustered strictly on shrunk cross-team counter and same-team synergy vectors; labeled post-hoc from Master+ behavioral z-scores.</div>
+        </div>
+        <div class="mu-toolbar-controls">
+          <input id="mu-arch-search" type="search" placeholder="Filter champion..." autocomplete="off" spellcheck="false" aria-label="Filter archetype champions">
+          <div class="seg" id="mu-arch-role" role="group" aria-label="Filter archetypes by lane">
+            <button data-role="all" class="active">All</button>
+            <button data-role="top">Top</button>
+            <button data-role="jungle">Jungle</button>
+            <button data-role="middle">Middle</button>
+            <button data-role="bottom">Bottom</button>
+            <button data-role="support">Support</button>
+          </div>
+        </div>
+      </div>
+      <div id="mu-arch-grid" class="mu-arch-grid"></div>
     </div>
   </div>
 </section>
