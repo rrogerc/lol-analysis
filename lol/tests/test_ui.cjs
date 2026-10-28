@@ -971,16 +971,36 @@ async function checkMatchups() {
   assert.equal(h.element("mu-twins").children.length, 5);
   assert.equal(h.element("mu-covers").children.length, 5);
 
-  // Filter roster search + select Yasuo.
+  // "All" in the roster lane filter shows every playable (champion, role) pair,
+  // matching the exact union of Top + Jungle + Middle + Bottom + Support.
+  const allTiles = h.queryAll("#mu-champ-grid .mu-champ-btn");
+  assert(allTiles.length > matchupsArchive.champions.length, "All lists multi-role champions across all playable lanes");
+  const aatroxLanes = allTiles.filter(b => b.dataset.champion === "aatrox").map(b => b.dataset.lane);
+  assert(aatroxLanes.length >= 2 && aatroxLanes[0] === "top", `Expected multiple playable lanes for Aatrox, got ${aatroxLanes}`);
+  let laneSum = 0;
+  for (const lane of ["top", "jungle", "middle", "bottom", "support"]) {
+    await h.query(`#mu-role-filter button[data-role="${lane}"]`).click();
+    laneSum += h.queryAll("#mu-champ-grid .mu-champ-btn").length;
+  }
+  await h.query('#mu-role-filter button[data-role="all"]').click();
+  assert.equal(h.queryAll("#mu-champ-grid .mu-champ-btn").length, laneSum);
+
+  // Filter roster search + select Yasuo (lists middle, top, bottom under All).
   const searchInput = h.element("mu-search");
   searchInput.value = "yasuo";
   await searchInput.fire("input");
   const visibleBtns = h.queryAll("#mu-champ-grid .mu-champ-btn");
-  assert(visibleBtns.some(b => b.dataset.champion === "yasuo"));
-  await visibleBtns.find(b => b.dataset.champion === "yasuo").click();
+  const yasuoLanes = visibleBtns.filter(b => b.dataset.champion === "yasuo").map(b => b.dataset.lane);
+  assert.deepEqual(yasuoLanes, ["middle", "top", "bottom"]);
+  await visibleBtns.find(b => b.dataset.champion === "yasuo" && b.dataset.lane === "top").click();
   assert.equal(h.context.mstate.champion, "yasuo");
+  assert.equal(h.context.mstate.lane, "top");
+  assert.match(h.location.hash, /mchamp=yasuo&mlane=top/);
+  await visibleBtns.find(b => b.dataset.champion === "yasuo" && b.dataset.lane === "middle").click();
+  assert.equal(h.context.mstate.champion, "yasuo");
+  assert.equal(h.context.mstate.lane, "middle");
   assert.equal(h.element("mu-hero-name").textContent, "Yasuo");
-  assert.match(h.location.hash, /mchamp=yasuo/);
+  assert.match(h.location.hash, /mchamp=yasuo&mlane=middle/);
 
   // Switch synergy layout to flat and verify physical knockup partners appear in Kit synergy.
   await h.query('#mu-syn-layout button[data-key="flat"]').click();

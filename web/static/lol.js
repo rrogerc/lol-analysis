@@ -1102,18 +1102,22 @@ function prepareMatchupsData(raw) {
   if (!raw || !Array.isArray(raw.champions) || !raw.champions.length) return raw;
   const nc = raw.champions.length;
   const roleTotals = [0, 0, 0, 0, 0];
+  for (const c of raw.champions) {
+    const roles = c.roles || [0, 0, 0, 0, 0];
+    for (let r = 0; r < 5; r++) roleTotals[r] += roles[r];
+  }
   const champions = raw.champions.map((c, idx) => {
     const roles = c.roles || [0, 0, 0, 0, 0];
     let totalRoles = 0;
     let primaryLaneIdx = 0;
     for (let r = 0; r < 5; r++) {
       totalRoles += roles[r];
-      roleTotals[r] += roles[r];
       if (roles[r] > roles[primaryLaneIdx]) primaryLaneIdx = r;
     }
     const viableLanes = [];
     for (let r = 0; r < 5; r++) {
-      if (r === primaryLaneIdx || (roles[r] >= 25 && roles[r] >= totalRoles * 0.05)) {
+      const laneShare = roles[r] / Math.max(1, roleTotals[r]);
+      if (r === primaryLaneIdx || (roles[r] >= 25 && roles[r] >= totalRoles * 0.05) || laneShare >= 0.004) {
         viableLanes.push(r);
       }
     }
@@ -1128,6 +1132,13 @@ function prepareMatchupsData(raw) {
   });
   const totalGames = roleTotals.reduce((a, b) => a + b, 0) || 1;
   const sortedRoster = champions.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const rosterEntries = [];
+  for (const c of sortedRoster) {
+    const byGames = c.viableLanes.slice().sort((a, b) => c.roles[b] - c.roles[a] || a - b);
+    for (const r of byGames) {
+      rosterEntries.push({ champ: c, laneIdx: r, lane: MU_LANES[r] });
+    }
+  }
   const champBySlug = new Map(champions.map(c => [c.slug, c]));
   const pairs = raw.pairs || {};
   const mats = {
@@ -1141,6 +1152,7 @@ function prepareMatchupsData(raw) {
     ...raw,
     champions,
     sortedRoster,
+    rosterEntries,
     champBySlug,
     roleTotals,
     totalGames,
@@ -1331,37 +1343,37 @@ function renderMatchupsBrowser() {
 
   const q = mstate.search.trim().toLowerCase();
   const rIdx = MU_LANES.indexOf(mstate.roleFilter);
-  const filtered = d.sortedRoster.filter(c => {
-    if (rIdx >= 0) {
-      const share = c.roles[rIdx] / Math.max(1, d.roleTotals[rIdx]);
-      if (!c.viableLanes.includes(rIdx) && share < 0.004) return false;
-    }
+  const filtered = d.rosterEntries.filter(({ champ: c, laneIdx, lane }) => {
+    if (rIdx >= 0 && laneIdx !== rIdx) return false;
     if (mstate.archFilter !== "all" && String(c.arch) !== mstate.archFilter) return false;
     if (q) {
       const arch = d.archetypes[c.arch];
-      const hay = `${c.name} ${c.slug} ${arch?.name || ""} ${arch?.short || ""}`.toLowerCase();
+      const hay = `${c.name} ${c.slug} ${lane} ${MU_LANE_SHORT[lane]} ${arch?.name || ""} ${arch?.short || ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
 
-  const total = d.champions.length;
+  const totalEntries = d.rosterEntries.length;
   document.getElementById("mu-champ-count").textContent =
-    filtered.length === total ? `${fmtInt(total)} champions` : `${fmtInt(filtered.length)} of ${fmtInt(total)} champions`;
+    filtered.length === totalEntries
+      ? `${fmtInt(totalEntries)} champion-roles (${fmtInt(d.champions.length)} champions)`
+      : `${fmtInt(filtered.length)} of ${fmtInt(totalEntries)} champion-roles`;
 
   const grid = document.getElementById("mu-champ-grid");
-  grid.replaceChildren(...filtered.map(c => {
+  grid.replaceChildren(...filtered.map(({ champ: c, lane }) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "mu-champ-btn" + (c.slug === mstate.champion ? " active" : "");
+    const isActive = c.slug === mstate.champion && lane === mstate.lane;
+    btn.className = "mu-champ-btn" + (isActive ? " active" : "");
     btn.dataset.champion = c.slug;
-    const shownLane = rIdx >= 0 && c.viableLanes.includes(rIdx) ? mstate.roleFilter : c.primaryLane;
+    btn.dataset.lane = lane;
     btn.append(
       muImg(c.slug),
       tftText("span", c.name, "mu-champ-btn-name"),
-      tftText("span", MU_LANE_SHORT[shownLane], "mu-champ-btn-lane"),
+      tftText("span", MU_LANE_SHORT[lane], "mu-champ-btn-lane"),
     );
-    btn.addEventListener("click", () => selectMatchupChampion(c.slug));
+    btn.addEventListener("click", () => selectMatchupChampion(c.slug, lane));
     return btn;
   }));
 }
@@ -1741,6 +1753,7 @@ function renderMatchupIdentity() {
     btn.textContent = `${MU_LANE_FULL[lKey]} (${pct}%)`;
     btn.addEventListener("click", () => {
       mstate.lane = lKey;
+      renderMatchupsBrowser();
       renderMatchupIdentity();
       updateHash(true);
     });
