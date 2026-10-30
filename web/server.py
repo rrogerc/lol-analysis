@@ -30,7 +30,7 @@ STATIC_MIME = {
 }
 
 # The systemd units that run this repo, declared in
-# dotfiles/nixos/configuration.nix. Listed here rather than discovered, so a
+# dotfiles/nixos/services/lol-analysis.nix. Listed here rather than discovered, so a
 # unit that disappears shows up as "not found" instead of silently dropping
 # out of the table. The dashboard is a system unit, the timers user ones
 # (the item refresh pushes over SSH as rogerc, the scaling sync writes lol.db

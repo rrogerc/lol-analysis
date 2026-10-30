@@ -40,7 +40,7 @@ Engineering reference for `lol-analysis`. The repository is organized into three
 
 ## Live Host Services (NixOS)
 
-Declared in `/home/rogerc/Developer/dotfiles/nixos/configuration.nix`:
+Declared in `/home/rogerc/Developer/dotfiles/nixos/services/lol-analysis.nix`:
 
 - `lol-dashboard.service` (system unit): runs `python cli.py serve --host 0.0.0.0 --port 8321 --no-open` over Tailscale. **Never manually bind port `8321`**; use a temporary port such as `--port 8399 --no-warm --no-open` when smoke-testing `serve`.
 - `lol-dashboard-reload.path` (system path unit): watches `.git/logs/HEAD` and `.cache/tft/.dashboard-ready`, restarting `lol-dashboard.service` after a 10s debounce so new commits and fresh TFT publications go live automatically.
