@@ -18,11 +18,18 @@ python3 cli.py items fetch --force
 
 if [ -n "$(git status --porcelain lol/data/items)" ]; then
   git add lol/data/items
-  git commit -m "items: refresh snapshot for current patch"
-  # --autostash: only lol/data/items is staged above, but rebase refuses to run
-  # while ANY other path is dirty. Without it, unrelated work-in-progress in
-  # this checkout makes the job commit locally and then die before pushing,
-  # leaving GitHub silently behind (happened 2026-08-26, exit 128).
-  git pull --rebase --autostash --quiet
-  git push --quiet
+  # Commit only the snapshot. This checkout is also the one edited by hand and
+  # by agents, and a bare `git commit` takes everything staged, so someone's
+  # half-done change would go to GitHub inside this commit.
+  git commit -m "items: refresh snapshot for current patch" -- lol/data/items
+  # Push first, and rebase only if GitHub has moved on: the autostash puts
+  # other work back unstaged, so skip it when it isn't needed. --autostash:
+  # rebase refuses to run while ANY other path is dirty. Without it, unrelated
+  # work-in-progress in this checkout makes the job commit locally and then
+  # die before pushing, leaving GitHub silently behind (happened 2026-08-26,
+  # exit 128).
+  if ! git push --quiet; then
+    git pull --rebase --autostash --quiet
+    git push --quiet
+  fi
 fi
