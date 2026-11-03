@@ -262,13 +262,14 @@ def lint_driver(src):
     return errors
 
 
-def lint_kit(kit, name, known):
+def lint_kit(kit, name, known, *, allow_reviewed=False):
     errors = []
     if not isinstance(kit, dict):
         return ["kit: must be a JSON object"]
     if kit.get("champion") != name:
         errors.append(f'kit: "champion" must be "{name}"')
-    if kit.get("generated") is not True or kit.get("reviewed") is not False:
+    ok_rev = isinstance(kit.get("reviewed"), bool) if allow_reviewed else kit.get("reviewed") is False
+    if kit.get("generated") is not True or not ok_rev:
         errors.append('kit: needs "generated": true and "reviewed": false')
     if sorted(kit.get("maxOrder") or []) != ["E", "Q", "W"]:
         errors.append('kit: "maxOrder" must order Q, W and E')

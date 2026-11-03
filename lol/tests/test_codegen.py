@@ -582,5 +582,94 @@ class TestRosterEnumerates(unittest.TestCase):
         self.assertTrue(meta["kayle"]["reviewed"])
 
 
+class TestVarusDriver(unittest.TestCase):
+    """Patch 16.21 Varus kit, dossier, Blight refunds, and adaptive Q charge."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("varus")
+        cls.kit = builds.load_kit("varus")
+        _, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+        cls.ranks16 = builds.skill_ranks(16, builds.kit_max_order(cls.kit))
+
+    def sim(self, tokens, hp, armor, mr, duration, level=16, kit=None, use_ult=True, bonus_hp=0.0):
+        kit = kit or self.kit
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        ranks = builds.skill_ranks(level, builds.kit_max_order(kit))
+        sh = builds.resolve_stats(self.champ, level, ids, self.pool, self.effects, kit=kit)
+        fx = builds.merge_effects(ids, self.effects)
+        return builds.simulate(sh, kit, fx, level, ranks, hp, armor, mr, duration,
+                               use_ult=use_ult, target_bonus_hp=bonus_hp)
+
+    def test_sources_lints_and_fight_checks(self):
+        with open(os.path.join(ks.DOSSIERS_DIR, "varus.json")) as f:
+            d = json.load(f)
+        chk = ks.Checker("varus", d, ks.load_sources("varus", "16.21"))
+        chk.run()
+        self.assertEqual(chk.errors, [])
+        with open(os.path.join(kd.GENERATED_DIR, "varus.rs")) as f:
+            rs = f.read()
+        self.assertTrue(self.kit["reviewed"])
+        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
+        self.assertTrue(meta["varus"]["reviewed"])
+        self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "varus", kd.source_numbers("varus"),
+                                     allow_reviewed=True), [])
+        self.assertEqual(kd.lint_driver(rs), [])
+        self.assertEqual(kd.lint_cast_times(self.kit, d, rs, "varus"), [])
+        errors, _ = kd.fight_checks(self.kit, "varus", d)
+        self.assertEqual(errors, [])
+
+    def test_max_order_and_unranked_w_at_level_1(self):
+        self.assertEqual(builds.kit_max_order(self.kit), ("Q", "W", "E"))
+        self.assertEqual(self.ranks16, {"Q": 5, "W": 5, "E": 3, "R": 3})
+        r1 = self.sim([], 3000, 50, 50, 10.0, level=1, use_ult=False)
+        self.assertNotIn("W onhit", r1["breakdown"])
+        self.assertNotIn("W deton Q", r1["breakdown"])
+        self.assertGreater(r1["breakdown"].get("Q", 0.0), 0.0)
+
+    def test_blight_refunds_q_and_w_active_cooldowns(self):
+        # Naked L16 has 12s Q CD (0 haste): Q #1 has not yet released at 5.0s,
+        # so landing 2 full-charge Qs (425 dmg) by 14.0s (<9s span) proves Q self-refunds.
+        self.assertEqual(self.sim([], 30_000, 100, 100, 5.0, use_ult=False)["breakdown"].get("Q", 0.0), 0.0)
+        naked_14s = self.sim([], 30_000, 100, 100, 14.0, use_ult=False)
+        self.assertAlmostEqual(naked_14s["breakdown"]["Q"], 425.0, places=3)
+        # W active has a 40s base CD (29.6s at 35 haste): dealing more W-active
+        # damage by 15s than by 6s proves Blight refunded W active for a 2nd cast.
+        haste_items = ["ionian boots of lucidity", "spear of shojin"]
+        w_6s = self.sim(haste_items, 10_000, 100, 100, 6.0)["breakdown"]["W active"]
+        w_15s = self.sim(haste_items, 10_000, 100, 100, 15.0)["breakdown"]["W active"]
+        self.assertGreater(w_6s, 0.0)
+        self.assertGreater(w_15s, w_6s * 1.5)
+
+    def test_adaptive_q_taps_on_high_as_and_charges_on_lethality(self):
+        tap_kit = copy.deepcopy(self.kit)
+        tap_kit["gen"]["Q"]["chargeDurationS"] = 0.0
+
+        # High-AS on-hit vs squishy: adaptive Q taps (0s hold) and matches pure tap.
+        onhit = ["berserkers", "blade of the ruined king", "guinsoos rageblade",
+                 "terminus", "wits end", "kraken slayer"]
+        r_onhit = self.sim(onhit, 2800, 110, 60, 8.0, bonus_hp=200)
+        r_onhit_tap = self.sim(onhit, 2800, 110, 60, 8.0, kit=tap_kit, bonus_hp=200)
+        self.assertAlmostEqual(r_onhit["ttk_eff"], r_onhit_tap["ttk_eff"], places=6)
+
+        # Low-AS lethality vs bruiser: adaptive Q charges for 1.7x and beats tap-only by >1s.
+        leth = ["ionian boots of lucidity", "youmuus ghostblade", "opportunity",
+                "seryldas grudge", "edge of night", "hubris"]
+        r_leth = self.sim(leth, 3800, 180, 120, 12.0, bonus_hp=900)
+        r_leth_tap = self.sim(leth, 3800, 180, 120, 12.0, kit=tap_kit, bonus_hp=900)
+        self.assertLess(r_leth["ttk_eff"] + 1.0, r_leth_tap["ttk_eff"])
+
+        # Early lethal release vs squishy: lethality releases after 1 step (0.125s)
+        # instead of overcharging to 1.25s, matching a k<=1 capped kit.
+        cap1_kit = copy.deepcopy(self.kit)
+        cap1_kit["gen"]["Q"]["chargeDurationS"] = 0.125
+        r_leth_sq = self.sim(leth, 2800, 110, 60, 8.0, bonus_hp=200)
+        r_leth_sq_c1 = self.sim(leth, 2800, 110, 60, 8.0, kit=cap1_kit, bonus_hp=200)
+        self.assertAlmostEqual(r_leth_sq["ttk_eff"], r_leth_sq_c1["ttk_eff"], places=6)
+
+
 if __name__ == "__main__":
     unittest.main()
+

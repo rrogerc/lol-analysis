@@ -107,20 +107,24 @@ function pickChampion(slug) {
   loadScenario();
 }
 
-// The hand-encoded, reviewed champions are buttons. The machine-written ones
-// (a kit and a rotation driver written by a model, compiled
+// The hand-encoded or reviewed champions are buttons. The unreviewed
+// machine-written ones (a kit and a rotation driver written by a model, compiled
 // and sanity-checked but not reviewed) are too many for that: they are found
 // by name, and the one selected joins the buttons with an "unreviewed" tag.
+function isUnreviewed(c) {
+  return c.reviewed != null ? !c.reviewed : !!c.generated;
+}
+
 function renderChampionPicker() {
   const champs = bstate.meta.champions;
-  const generated = champs.filter(c => c.generated);
-  const shown = champs.filter(c => !c.generated || c.slug === bstate.champion);
+  const generated = champs.filter(isUnreviewed);
+  const shown = champs.filter(c => !isUnreviewed(c) || c.slug === bstate.champion);
   document.getElementById("champion-seg").replaceChildren(...shown.map(c => {
     const btn = document.createElement("button");
     btn.textContent = c.name || c.slug;
     btn.dataset.key = c.slug;
     btn.classList.toggle("active", c.slug === bstate.champion);
-    if (c.generated) {
+    if (isUnreviewed(c)) {
       const tag = document.createElement("span");
       tag.className = "tag";
       tag.textContent = "unreviewed";
@@ -143,7 +147,7 @@ function renderChampionPicker() {
     input.dataset.wired = "1";
     const choose = () => {
       const q = input.value.trim().toLowerCase();
-      const hit = bstate.meta.champions.find(c => c.generated &&
+      const hit = bstate.meta.champions.find(c => isUnreviewed(c) &&
         ((c.name || "").toLowerCase() === q || c.slug === q.replace(/[^a-z0-9]/g, "")));
       if (!hit) return;
       input.value = "";
@@ -162,7 +166,7 @@ function renderChampionPicker() {
 function renderGeneratedBanner(id = "builds-generated", slug = bstate.champion) {
   const el = document.getElementById(id);
   const champ = bstate.meta?.champions?.find(c => c.slug === slug);
-  el.hidden = !champ?.generated;
+  el.hidden = !champ || !isUnreviewed(champ);
   if (el.hidden) return;
   const parts = [
     `${champ.name || champ.slug}'s kit and rotation were written by a model from the wiki and ` +

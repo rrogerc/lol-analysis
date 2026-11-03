@@ -1,26 +1,25 @@
 {
  "champion": "varus",
  "name": "Varus",
- "patch": "16.18",
+ "patch": "16.21",
  "generated": true,
- "reviewed": false,
+ "reviewed": true,
+ "manaless": false,
  "maxOrder": [
   "Q",
-  "E",
-  "W"
+  "W",
+  "E"
  ],
  "notes": [
-  "Living Vengeance (P) only grants its buff on a unit kill; the stationary dummy never dies during the fight, so the passive never triggers and is excluded from the rotation entirely.",
-  "Piercing Arrow (Q) is always charged to its 1.25s effect cap for maximum damage and detonation bonus: its post-effect cooldown is reduced by exactly the charge duration, so full-charging never delays Q's own cadence, it only holds Varus' attacks for the 1.25s of the channel (modeled as an instant hit for damage timing, with the next attack held back by 1.25s). Q's cast time is 'none' per the dossier, so it still respects any cast in progress (busy_until) but does not itself block other casts beyond the attack-holding above.",
-  "Hail of Arrows (E) and Chain of Corruption (R) both have a 0.2419s cast time per the dossier; each cast now keeps Varus busy (no other cast, no attack start) for that duration, landing its damage at the moment of cast as usual, with delayed effects (E's 0.5s landing, R's 1.75s stack window) modeled as separate events.",
-  "Blighted Quiver's active (the missing-health nuke) is consumed by the very next Piercing Arrow cast whenever its own 40s cooldown is up, and always gets the 1.5x full-charge bonus since Q is always fully charged.",
-  "Blight stacks, whether applied by on-hit attacks or by Chain of Corruption, are detonated by the next Q, E, or R hit for magic damage based on the target's maximum health, and (since the dummy counts as an enemy champion) reduce the remaining cooldowns of Q, Blighted Quiver's active, and Hail of Arrows by 13% of each ability's full cooldown per stack consumed (19.5% per stack if consumed via a fully-charged Q); the reduction is applied to all three basic abilities including the one that just triggered the consumption, since the wiki text does not exclude it.",
-  "Chain of Corruption's three separate Blight-stack applications over its ~1.75s root window are modeled as a single application of the full 3 stacks at 1.75s after cast, since the stationary dummy can never leave the root/tether area and would receive all three regardless.",
-  "Hail of Arrows' documented second Blight consumption (~0.3s after the first) is not modeled; only its initial landing consumes and deals stack-detonation damage, a minor, deliberate undercount.",
-  "The opening cast is Chain of Corruption (R); thereafter Piercing Arrow (Q, always full-charged) and Hail of Arrows (E) are each cast on cooldown, and Varus auto-attacks in every gap, keeping Blighted Quiver's on-hit and stacks up.",
-  "Mana costs are not modeled: none of Varus' costs realistically stop casting within a 15s fight at level 16.",
-  "Piercing Arrow's max-charge 'cosmetic critical strike' text is explicitly stated to have no gameplay effect, so none of Varus' damage (Q, on-hit, or Blight detonation) is treated as capable of critically striking.",
-  "If Blighted Quiver is unranked, Chain of Corruption can still generate Blight stacks detonated at a rank-0 base value; this is not modeled since the assumed max order (Q > E > W) has W ranked well before level 16."
+  "Living Vengeance (P) only grants its buff on a unit kill; the stationary dummy never dies during the fight, so the passive never triggers and is excluded from the rotation.",
+  "Skill max order is Q > W > E on Patch 16.21, matching Varus's primary marksman skill order and scaling Blighted Quiver's on-hit, stack detonation, and active missing-health damage.",
+  "Piercing Arrow (Q) scales in 10 discrete 0.125 s channel increments up to 1.25 s (+7% per step, up to +70% damage, Blight detonation, Blight cooldown refund, and W active missing-health damage). Starting the channel blocks attacks and other casts for the chosen charge duration, releasing the arrow applies the standard 0.25 s post-cast animation lockout, and Q's post-effect cooldown is reduced by the channel duration.",
+  "Instead of always holding Q for 1.25 s, the driver chooses the optimal discrete charge step k in 0..=10 on each cast: it releases as soon as a partial or tap charge (or tap plus imminent auto) secures a kill, takes any free charge steps that fit inside the current basic-attack cooldown, and only holds further when the marginal Q, Blight, W-active, and cooldown-refund gain beats the opportunity cost of delayed attacks.",
+  "Blighted Quiver (W) applies on-hit magic damage and 1 Blight stack per on-hit when ranked (up to 3 stacks, lasting 6 s). Detonating stacks with Q, E, or R deals per-stack max-health magic damage (using the 2.5% rank-0 base if W is unranked when R applies stacks) and refunds 11% of Q, W active, and E total cooldowns per stack (up to 18.7% per stack, 56.1% at 3 stacks, on a fully-charged Q).",
+  "Blighted Quiver's active (40 s cooldown, instant, does not trigger Spellblade) empowers the next Q to deal missing-health magic damage after Q's physical hit and Blight detonation; both Q's and W's cooldowns are set before applying Q's Blight detonation refund so Q self-refunds and refunds W's active properly.",
+  "Hail of Arrows (E) and Chain of Corruption (R) both have a 0.2419 s cast time. E lands 0.5 s after cast to deal physical damage and detonate Blight stacks, then detonates any newly applied Blight stacks a second time 0.3 s later. R deals magic damage, triggers Malignance Hatefog, detonates current Blight stacks, and applies 3 staggered Blight stacks at 0.65 s, 1.20 s, and 1.75 s.",
+  "When Varus can generate Blight stacks, E and Q wait for 3 stacks unless an immediate cast finishes the target, and E precedes Q when both are ready at 3 stacks so E consumes the initial stack set, puts E on cooldown to receive Q's Blight refund, and lowers target health before W's missing-health execute.",
+  "Mana costs are not modeled: none of Varus's costs constrain casting within a level 16 fight."
  ],
  "abilities": {
   "Q": {
@@ -66,51 +65,53 @@
   "Q": {
    "damage": {
     "base": [
-     80,
+     50,
+     100,
      150,
-     220,
-     290,
-     360
+     200,
+     250
     ],
-    "bonusAdRatio": 1.2
+    "bonusAdRatio": 0.8
    },
-   "chargeDurationS": 1.25
+   "chargeDurationS": 1.25,
+   "chargeStepS": 0.125,
+   "chargeStepAmp": 0.07
   },
   "W": {
    "onhit": {
     "base": [
      4,
-     13,
+     10,
+     16,
      22,
-     31,
-     40
+     28
     ],
-    "apRatio": 0.25,
-    "bonusAdRatio": 0.15
+    "apRatio": 0.3,
+    "bonusAdRatio": 0.2
    },
    "detonation": {
+    "rank0BaseHpPct": 0.025,
     "baseHpPct": [
+     0.025,
      0.03,
      0.035,
      0.04,
-     0.045,
-     0.05
+     0.045
     ],
-    "apCoefPerAp": 0.00013
+    "apCoefPerAp": 0.00014
    },
    "active": {
     "missingHpPct": [
      0.06,
+     0.07,
      0.08,
-     0.1,
-     0.12,
-     0.14
+     0.09,
+     0.1
     ]
    },
    "maxStacks": 3,
    "stackDurationS": 6,
-   "cdrPerStack": 0.13,
-   "chargeBonusMult": 1.5
+   "cdrPerStack": 0.11
   },
   "E": {
    "damage": {
@@ -123,8 +124,9 @@
     ],
     "bonusAdRatio": 0.9
    },
+   "castTimeS": 0.2419,
    "landDelayS": 0.5,
-   "castTimeS": 0.2419
+   "secondDetonDelayS": 0.3
   },
   "R": {
    "damage": {
@@ -135,8 +137,10 @@
     ],
     "apRatio": 1.0
    },
-   "stackDelayS": 1.75,
-   "castTimeS": 0.2419
+   "castTimeS": 0.2419,
+   "firstStackDelayS": 0.65,
+   "stackIntervalS": 0.55,
+   "stacksApplied": 3
   }
  },
  "attack": {
@@ -144,7 +148,6 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/varus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/varus.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Updated 2026-11-03 from Patch 16.21 sources (dossiers/varus.json, wiki.json, sheet.json, bin.json): Patch 16.21 Q/W values, Q > W > E skill order, Blight self-refund and W-active refund ordering, staggered R Blight stacks, E second detonation, and adaptive 0.125 s Q charge-step selection in engine/src/generated/varus.rs."
  ]
 }

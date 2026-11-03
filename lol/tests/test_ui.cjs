@@ -166,10 +166,19 @@ async function checkBuildsGenerated() {
   context.renderChampionPicker();
   assert.deepEqual(labels(), ["Kayle", "Dr. Mundo"]);
 
-  context.bstate.meta = { champions: [{ slug: "kayle", name: "Kayle" }, { slug: "twitch", name: "Twitch" }] };
+  context.bstate.meta = {
+    champions: [
+      { slug: "kayle", name: "Kayle" },
+      { slug: "varus", name: "Varus", generated: true, reviewed: true },
+      { slug: "twitch", name: "Twitch" },
+    ],
+  };
   context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Twitch"]);
+  assert.deepEqual(labels(), ["Kayle", "Varus", "Twitch"]);
   assert.equal(element("champion-more").hidden, true);
+  context.bstate.champion = "varus";
+  context.renderGeneratedBanner();
+  assert.equal(banner.hidden, true, "A reviewed generated champion has no unreviewed banner");
 
   const errDash = loadDashboard({ api: async () => ({ error: "driver panic" }) });
   errDash.context.bstate.champion = "ahri";
