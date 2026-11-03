@@ -409,10 +409,21 @@ impl GenDriver {
         (total, stacks)
     }
 
-    /// Simulates `n_swings` basic attacks (plus any in-flight Q missiles and
-    /// pending W bolt up to `t_horizon`) against a non-defended target to check
-    /// whether continuing to attack already executes the target.
-    fn sim_attacks_kill(&self, e: &Engine, t_now: f64, t_horizon: f64, n_swings: i64) -> bool {
+    /// Simulates `n_swings` basic attacks starting at `t_first_swing` spaced by
+    /// `swing_period` (plus in-flight Q missiles and any pending or castable W
+    /// resolving by `t_horizon`) against a non-defended target to check whether
+    /// that sequence already executes the target.
+    #[allow(clippy::too_many_arguments)]
+    fn sim_attacks_kill(
+        &self,
+        e: &Engine,
+        t_now: f64,
+        t_horizon: f64,
+        t_first_swing: f64,
+        swing_period: f64,
+        n_swings: i64,
+        allow_ready_w: bool,
+    ) -> bool {
         if e.dfd.is_some() {
             return false;
         }
@@ -421,20 +432,56 @@ impl GenDriver {
             None => 0.0,
         };
         let mut hp = pymax(e.st.hp, 0.0);
-        let mut cleaver_add = 0;
-        let q_dmg = self.est_volley_dmg_until(e, self.s.q_v0, t_horizon, hp, &mut cleaver_add)
-            + self.est_volley_dmg_until(e, self.s.q_v1, t_horizon, hp, &mut cleaver_add);
-        hp = pymax(hp - q_dmg, 0.0);
         let mut stacks = self.stacks_at(t_now);
-        if self.s.w_resolve_at < INF && self.s.w_resolve_at <= t_horizon + 1e-9 {
-            let (w_d, st_after) = self.est_w_burst(
-                e,
-                self.s.w_resolve_at - self.w_cast_time,
-                stacks,
-                hp,
-            );
-            hp = pymax(hp - w_d, 0.0);
+
+        let (w_cast, mut w_land) = if self.s.w_resolve_at < INF {
+            if self.s.w_resolve_at <= t_horizon + 1e-9 {
+                (self.s.w_resolve_at - self.w_cast_time, self.s.w_resolve_at)
+            } else {
+                (INF, INF)
+            }
+        } else if allow_ready_w && self.ranks.w > 0 {
+            let earliest_w = pymax(pymax(self.s.w_ready, t_now), self.s.busy_until);
+            let tc = if n_swings > 0
+                && earliest_w < t_first_swing
+                && t_first_swing < earliest_w + self.w_cast_time - 1e-9
+            {
+                t_first_swing
+            } else {
+                earliest_w
+            };
+            let tl = tc + self.w_cast_time;
+            if tl <= t_horizon + 1e-9 {
+                (tc, tl)
+            } else if earliest_w + self.w_cast_time <= t_horizon + 1e-9 {
+                (earliest_w, earliest_w + self.w_cast_time)
+            } else {
+                (INF, INF)
+            }
+        } else {
+            (INF, INF)
+        };
+
+        let mut cleaver_add = 0;
+        let mut cleaver_all = 0;
+        let q_all = self.est_volley_dmg_until(e, self.s.q_v0, t_horizon, hp, &mut cleaver_all)
+            + self.est_volley_dmg_until(e, self.s.q_v1, t_horizon, hp, &mut cleaver_all);
+        let (q_pre, mut q_post) = if w_land < INF {
+            let qp = self.est_volley_dmg_until(e, self.s.q_v0, w_land, hp, &mut cleaver_add)
+                + self.est_volley_dmg_until(e, self.s.q_v1, w_land, hp, &mut cleaver_add);
+            (qp, pymax(0.0, q_all - qp))
+        } else {
+            cleaver_add = cleaver_all;
+            (q_all, 0.0)
+        };
+        hp = pymax(hp - q_pre, 0.0);
+
+        if n_swings <= 0 && w_land < INF {
+            let (w_d, st_after) = self.est_w_burst(e, w_cast, stacks, hp);
+            hp = pymax(hp - w_d - q_post, 0.0);
             stacks = st_after;
+            q_post = 0.0;
+            w_land = INF;
         }
         if hp <= exec_hp + 1e-9 {
             return true;
@@ -455,12 +502,31 @@ impl GenDriver {
         let mut seething = e.st.seething;
         let mut sb_primed = e.st.sb_primed;
 
+        let mut t_swing = t_first_swing;
         let mut i = 0;
         while i < n_swings {
-            let phys_m = self.est_phys_mult(e, t_now, cleaver_add);
-            let mag_m = self.est_mag_mult(e, t_now, 0);
-            let phys_amp = self.est_amp(e, DType::Physical, t_now, false, 0, hp);
-            let mag_amp = self.est_amp(e, DType::Magic, t_now, false, 0, hp);
+            if t_swing > t_horizon + 1e-9 {
+                break;
+            }
+            if w_land < t_swing - 1e-9 {
+                let (w_d, st_after) = self.est_w_burst(e, w_cast, stacks, hp);
+                hp = pymax(hp - w_d - q_post, 0.0);
+                stacks = st_after;
+                q_post = 0.0;
+                cleaver_add = imax(cleaver_add, cleaver_all);
+                if s.spellblade.is_some() && w_cast >= e.st.sb_icd_until - 1e-9 {
+                    sb_primed = true;
+                }
+                w_land = INF;
+                if hp <= exec_hp + 1e-9 {
+                    return true;
+                }
+            }
+
+            let phys_m = self.est_phys_mult(e, t_swing, cleaver_add);
+            let mag_m = self.est_mag_mult(e, t_swing, 0);
+            let phys_amp = self.est_amp(e, DType::Physical, t_swing, false, 0, hp);
+            let mag_amp = self.est_amp(e, DType::Magic, t_swing, false, 0, hp);
 
             let mut phantom_now = false;
             if let Some(p) = &s.phantom {
@@ -592,8 +658,19 @@ impl GenDriver {
             if hp <= exec_hp + 1e-9 {
                 return true;
             }
+            let prev_swing = t_swing;
+            t_swing += swing_period;
+            if w_land < INF && w_cast <= prev_swing + 1e-9 {
+                t_swing = pymax(t_swing, w_land);
+            }
             i += 1;
         }
+        if w_land < INF {
+            let (w_d, _) = self.est_w_burst(e, w_cast, stacks, hp);
+            hp = pymax(hp - w_d, 0.0);
+        }
+        hp = pymax(hp - q_post, 0.0);
+        let _ = stacks;
         hp <= exec_hp + 1e-9
     }
 
@@ -606,19 +683,24 @@ impl GenDriver {
         {
             // An attack is imminent inside W's 0.4 s cast window: let the auto
             // land first so W fits cleanly into the next backswing for zero
-            // lost attack time, unless W alone executes and 1 auto would not.
-            let w_solo_executes = if e.dfd.is_none() {
-                let exec_hp = match e.p.fx.s.execute_pct {
-                    Some(p) => p / 100.0 * e.target_hp,
-                    None => 0.0,
-                };
-                let (w_d, _) =
-                    self.est_w_burst(e, earliest, self.stacks_at(earliest), e.st.hp);
-                w_d + exec_hp >= e.st.hp * (1.0 + 1e-9)
-                    && !self.sim_attacks_kill(e, earliest, next_atk, 1)
-            } else {
-                false
-            };
+            // lost attack time, unless Q + W alone executes and 1 auto would not.
+            let w_solo_executes = self.sim_attacks_kill(
+                e,
+                earliest,
+                earliest + self.w_cast_time,
+                INF,
+                1.0,
+                0,
+                true,
+            ) && !self.sim_attacks_kill(
+                e,
+                earliest,
+                next_atk,
+                next_atk,
+                1.0,
+                1,
+                false,
+            );
             if !w_solo_executes {
                 return next_atk;
             }
@@ -674,7 +756,15 @@ impl GenDriver {
                 m_breakeven
             };
             let t_horizon = t_first_no_e + ((n_total - 1) as f64) * period0;
-            if self.sim_attacks_kill(e, e.st.t, t_horizon, n_total) {
+            if self.sim_attacks_kill(
+                e,
+                e.st.t,
+                t_horizon,
+                t_first_no_e,
+                period0,
+                n_total,
+                true,
+            ) {
                 return INF;
             }
         }
@@ -860,21 +950,52 @@ impl Driver for GenDriver {
             && t < self.s.p_active_until
             && t >= self.s.busy_until
         {
+            let wf = if self.e_buff_active(t) {
+                self.e_windup_fraction
+            } else {
+                self.windup_fraction
+            };
+            let b0 = self.cur_bonus_as_no_e(e, t) + self.bonus_as(t);
+            let a_cur = self.as_from_bonus(e, b0);
+            let t_r_atk = t + wf / a_cur;
+            let period = 1.0 / a_cur;
+
+            // Skip firing R right before an immediate Q + W execute (0 extra
+            // attacks needed) so W casts at `t` instead of waiting on a reset
+            // swing or overwriting R's reset timer with W's 0.4 s lockout.
+            let w_solo_now = self.ranks.w > 0
+                && self.s.w_resolve_at >= INF
+                && self.castable_at(e, self.s.w_ready) <= t + 1e-9
+                && t_r_atk < t + self.w_cast_time - 1e-9
+                && self.sim_attacks_kill(e, t, t + self.w_cast_time, INF, period, 0, true)
+                && !self.sim_attacks_kill(e, t, t_r_atk, t_r_atk, period, 1, false);
+
             let mut hold_for_sb = false;
-            if e.p.fx.s.spellblade.is_some()
+            if !w_solo_now
+                && e.p.fx.s.spellblade.is_some()
                 && e.p.fx.s.on_ult_cast.is_none()
                 && e.p.fx.s.ult_attack_steroid.is_none()
                 && !e.st.sb_primed
                 && t < e.st.sb_icd_until
             {
-                let b0 = self.cur_bonus_as_no_e(e, t) + self.bonus_as(t);
-                let period = 1.0 / self.as_from_bonus(e, b0);
-                let n_before = imax(0, ((e.st.sb_icd_until - t - 1e-9) / period) as i64) + 1;
-                if !self.sim_attacks_kill(e, t, e.st.sb_icd_until, n_before) {
+                let n_with_r = if t_r_atk <= e.st.sb_icd_until + 1e-9 {
+                    1 + imax(0, ((e.st.sb_icd_until - t_r_atk + 1e-9) / period) as i64)
+                } else {
+                    0
+                };
+                if !self.sim_attacks_kill(
+                    e,
+                    t,
+                    e.st.sb_icd_until,
+                    t_r_atk,
+                    period,
+                    n_with_r,
+                    true,
+                ) {
                     hold_for_sb = true;
                 }
             }
-            if !hold_for_sb {
+            if !w_solo_now && !hold_for_sb {
                 self.s.r_ready = t + e.ult_cd(self.r_cd);
                 e.prime_spellblade();
                 if let Some(u) = &e.p.fx.s.on_ult_cast {
@@ -883,11 +1004,6 @@ impl Driver for GenDriver {
                 if e.p.fx.s.ult_attack_steroid.is_some() {
                     e.st.post_r_attacks = 0;
                 }
-                let wf = if self.e_buff_active(t) {
-                    self.e_windup_fraction
-                } else {
-                    self.windup_fraction
-                };
                 let b = self.bonus_as(t);
                 e.st.next_attack = t + wf / e.attack_speed(b);
                 return;

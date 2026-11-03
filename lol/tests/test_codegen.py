@@ -805,6 +805,39 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertGreater(r_sust["attacks"], r_sust_no_e["attacks"])
         self.assertGreater(r_sust["total"], r_sust_no_e["total"])
 
+    def test_spellblade_r_lookahead_with_ready_w(self):
+        sq = builds.SCENARIOS["full-squishy"]
+        br = builds.SCENARIOS["full-bruiser"]
+
+        # Nashor's + Dusk and Dawn fires R at t = 0 on squishy because Auto #2 + ready W
+        # executes before Sheen's 1.5s ICD, while still holding R on bruiser for a 2nd proc.
+        nash_dusk = ["sorcerers shoes", "nashors tooth", "rabadons deathcap",
+                     "void staff", "shadowflame", "dusk and dawn"]
+        r_sq = self.sim(nash_dusk, sq["targetHp"], sq["armor"], sq["mr"], sq["duration"],
+                        bonus_hp=sq["targetBonusHp"])
+        r_sq_no_r = self.sim(nash_dusk, sq["targetHp"], sq["armor"], sq["mr"], sq["duration"],
+                             use_ult=False, bonus_hp=sq["targetBonusHp"])
+        self.assertLess(r_sq["ttk"], 0.55)
+        self.assertLess(r_sq["ttk"], r_sq_no_r["ttk"] - 0.35)
+
+        r_br = self.sim(nash_dusk, br["targetHp"], br["armor"], br["mr"], br["duration"],
+                        bonus_hp=br["targetBonusHp"])
+        self.assertLess(r_br["ttk"], 2.20)
+
+        # Lich Bane also fires R at t = 0 on squishy so Auto #2 + Evolved W detonates 5th-stack Plasma.
+        nash_lich = ["sorcerers shoes", "nashors tooth", "rabadons deathcap",
+                     "void staff", "shadowflame", "lich bane"]
+        r_lich_sq = self.sim(nash_lich, sq["targetHp"], sq["armor"], sq["mr"], sq["duration"],
+                             bonus_hp=sq["targetBonusHp"])
+        self.assertLess(r_lich_sq["ttk"], 0.56)
+
+        # Gunblade + Dusk and Dawn executes at 0.40s via Q + W without delaying W for a reset swing.
+        gun_dusk = ["sorcerers shoes", "rabadons deathcap", "void staff",
+                    "shadowflame", "dusk and dawn", "hextech gunblade"]
+        r_gun_sq = self.sim(gun_dusk, sq["targetHp"], sq["armor"], sq["mr"], sq["duration"],
+                            bonus_hp=sq["targetBonusHp"])
+        self.assertAlmostEqual(r_gun_sq["ttk"], 0.40, places=4)
+
 
 if __name__ == "__main__":
     unittest.main()
