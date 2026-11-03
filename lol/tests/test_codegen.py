@@ -670,6 +670,142 @@ class TestVarusDriver(unittest.TestCase):
         self.assertAlmostEqual(r_leth_sq["ttk_eff"], r_leth_sq_c1["ttk_eff"], places=6)
 
 
+class TestKaisaDriver(unittest.TestCase):
+    """Patch 16.21 Kai'Sa kit, dossier, Living Weapon evolutions, Plasma, and adaptive E."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("kaisa")
+        cls.kit = builds.load_kit("kaisa")
+        _, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+        cls.ranks16 = builds.skill_ranks(16, builds.kit_max_order(cls.kit))
+
+    def sim(self, tokens, hp, armor, mr, duration, level=16, kit=None, use_ult=True,
+            bonus_hp=0.0, ranks=None):
+        kit = kit or self.kit
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        ranks = ranks or builds.skill_ranks(level, builds.kit_max_order(kit))
+        sh = builds.resolve_stats(self.champ, level, ids, self.pool, self.effects, kit=kit)
+        fx = builds.merge_effects(ids, self.effects)
+        return builds.simulate(sh, kit, fx, level, ranks, hp, armor, mr, duration,
+                               use_ult=use_ult, target_bonus_hp=bonus_hp)
+
+    def test_sources_lints_and_fight_checks(self):
+        with open(os.path.join(ks.DOSSIERS_DIR, "kaisa.json")) as f:
+            d = json.load(f)
+        chk = ks.Checker("kaisa", d, ks.load_sources("kaisa", "16.21"))
+        chk.run()
+        self.assertEqual(chk.errors, [])
+        with open(os.path.join(kd.GENERATED_DIR, "kaisa.rs")) as f:
+            rs = f.read()
+        self.assertTrue(self.kit["reviewed"])
+        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
+        self.assertTrue(meta["kaisa"]["reviewed"])
+        self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "kaisa", kd.source_numbers("kaisa"),
+                                     allow_reviewed=True), [])
+        self.assertEqual(kd.lint_driver(rs), [])
+        self.assertEqual(kd.lint_cast_times(self.kit, d, rs, "kaisa"), [])
+        errors, _ = kd.fight_checks(self.kit, "kaisa", d)
+        self.assertEqual(errors, [])
+
+    def test_max_order_and_level_1_skills(self):
+        self.assertEqual(builds.kit_max_order(self.kit), ("Q", "E", "W"))
+        self.assertEqual(self.ranks16, {"Q": 5, "E": 5, "W": 3, "R": 3})
+        r1 = self.sim([], 3000, 50, 50, 5.0, level=1, use_ult=False)
+        self.assertNotIn("W", r1["breakdown"])
+        self.assertGreater(r1["breakdown"].get("Q", 0.0), 0.0)
+        self.assertGreater(r1["breakdown"].get("P Caustic Wounds", 0.0), 0.0)
+
+    def test_living_weapon_evolutions_and_discrete_q_missiles(self):
+        # Naked L16 has 37.635 AD from growth (< 100): Q fires 6 missiles across [0.4s, 1.4s]
+        # for 100 + 5 * 25 = 225 physical damage on a 0-armor dummy.
+        self.assertEqual(self.sim([], 30_000, 0, 0, 0.39, use_ult=False)["breakdown"].get("Q", 0.0), 0.0)
+        self.assertAlmostEqual(self.sim([], 30_000, 0, 0, 0.41, use_ult=False)["breakdown"]["Q"],
+                               100.0, places=4)
+        self.assertAlmostEqual(self.sim([], 30_000, 0, 0, 1.39, use_ult=False)["breakdown"]["Q"],
+                               200.0, places=4)
+        self.assertAlmostEqual(self.sim([], 30_000, 0, 0, 1.41, use_ult=False)["breakdown"]["Q"],
+                               225.0, places=4)
+
+        # Muramana grants 73.48 bonus AD at L16 -> 73.48 + 37.635 = 111.115 >= 100:
+        # Q evolves dynamically to 12 missiles (3.75x single-missile damage).
+        mura_id = [builds.resolve_item(self.pool, self.idx, "muramana")]
+        sh_mura = builds.resolve_stats(self.champ, 16, mura_id, self.pool, self.effects, kit=self.kit)
+        expected_q12 = (100.0 + 0.55 * sh_mura["ad_bonus"]) * 3.75
+        self.assertAlmostEqual(
+            self.sim(["muramana"], 30_000, 0, 0, 1.5, use_ult=False)["breakdown"]["Q"],
+            expected_q12, places=4)
+
+        # Blackfire Torch has 80 flat AP (83.2 in-combat AP < 100 permanent AP): W stays
+        # unevolved (1 cast in 6s), whereas Shadowflame (110 AP >= 100) evolves W and
+        # refunds 75% cooldown on champion hit to land a 2nd W within 6s.
+        w_bft = self.sim(["blackfire torch"], 30_000, 0, 0, 6.0, use_ult=False)["breakdown"]["W"]
+        w_sf_1 = self.sim(["shadowflame"], 30_000, 0, 0, 2.0, use_ult=False)["breakdown"]["W"]
+        w_sf_2 = self.sim(["shadowflame"], 30_000, 0, 0, 6.0, use_ult=False)["breakdown"]["W"]
+        self.assertLess(w_bft, 300.0)
+        self.assertAlmostEqual(w_sf_2, w_sf_1 * 2.0, places=4)
+
+    def test_plasma_pre_attack_detonation_and_defended_spell_shield(self):
+        # At L1 (AD=59, P base=4, perStack=1, exec=15%) with Q zeroed, 5 autos deal
+        # 4+5+6+7+8 = 30 Caustic Wounds and detonate 15% of 266 = 39.9 missing HP
+        # BEFORE Auto #5's 59 physical damage (rather than 48.75 post-auto).
+        zero_q = copy.deepcopy(self.kit)
+        zero_q["gen"]["Q"]["missileDamage"] = {"base": [0, 0, 0, 0, 0], "bonusAd": 0, "ap": 0}
+        r5 = self.sim([], 1000, 0, 0, 6.3, level=1, kit=zero_q, use_ult=False)
+        self.assertEqual(r5["attacks"], 5)
+        self.assertAlmostEqual(r5["breakdown"]["auto"], 295.0, places=4)
+        self.assertAlmostEqual(r5["breakdown"]["P Caustic Wounds"], 30.0, places=4)
+        self.assertAlmostEqual(r5["breakdown"]["P Detonation"], 39.9, places=4)
+
+        # Against a Banshee's Veil spell shield with Q unranked (Q=0, W=5, E=0, R=0),
+        # Evolved W's first bolt is completely blocked: no W damage, no Plasma stacks
+        # from W, and no 75% cooldown refund (so W cannot recast by 6.0s).
+        mundo = builds.load_champion("drmundo")
+        mundo_kit = builds.load_kit("drmundo")
+        mundo_ranks = builds.skill_ranks(16, builds.kit_max_order(mundo_kit))
+        sf_ids = [builds.resolve_item(self.pool, self.idx, "shadowflame")]
+        att_w_only = dict(
+            sheet=builds.resolve_stats(self.champ, 16, sf_ids, self.pool, self.effects, kit=self.kit),
+            kit=self.kit, fx=builds.merge_effects(sf_ids, self.effects), level=16,
+            ranks={"Q": 0, "W": 5, "E": 0, "R": 0}, duration=6.0)
+        bv_ids = [builds.resolve_item(self.pool, self.idx, "banshees veil")]
+        rep_bv = builds.survive(mundo, mundo_kit, 16, mundo_ranks, bv_ids, self.pool,
+                                self.effects, att_w_only)
+        self.assertNotIn("W", rep_bv["breakdown"])
+        self.assertGreater(rep_bv["defense"]["blocked"], 0.0)
+
+    def test_killer_instinct_attack_reset_and_adaptive_supercharge(self):
+        # Killer Instinct resets the basic attack timer after Plasma lands, adding an
+        # extra attack within 2.0s without delaying Auto #1 at t = 0.
+        items = ["kraken slayer", "guinsoos rageblade"]
+        self.assertEqual(self.sim(items, 30_000, 100, 100, 0.05, use_ult=True)["attacks"], 1)
+        r_no_r = self.sim(items, 30_000, 100, 100, 2.0, use_ult=False)
+        r_with_r = self.sim(items, 30_000, 100, 100, 2.0, use_ult=True)
+        self.assertGreater(r_with_r["attacks"], r_no_r["attacks"])
+        self.assertGreater(r_with_r["total"], r_no_r["total"])
+
+        # Supercharge skips charging when already AS-capped or on 1-swing lethal targets,
+        # while charging on sustained sub-cap fights to gain attacks and total damage.
+        capped = ["berserkers greaves", "guinsoos rageblade", "nashors tooth",
+                  "kraken slayer", "wits end", "phantom dancer"]
+        no_e_ranks = {"Q": 5, "W": 3, "E": 0, "R": 3}
+        self.assertAlmostEqual(
+            self.sim(capped, 10_000, 100, 100, 8.0)["total"],
+            self.sim(capped, 10_000, 100, 100, 8.0, ranks=no_e_ranks)["total"],
+            places=6)
+        self.assertAlmostEqual(
+            self.sim(["kraken slayer"], 400, 50, 50, 8.0)["ttk_eff"],
+            self.sim(["kraken slayer"], 400, 50, 50, 8.0, ranks=no_e_ranks)["ttk_eff"],
+            places=6)
+        r_sust = self.sim(["kraken slayer", "infinity edge"], 8000, 100, 100, 10.0)
+        r_sust_no_e = self.sim(["kraken slayer", "infinity edge"], 8000, 100, 100, 10.0,
+                               ranks=no_e_ranks)
+        self.assertGreater(r_sust["attacks"], r_sust_no_e["attacks"])
+        self.assertGreater(r_sust["total"], r_sust_no_e["total"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

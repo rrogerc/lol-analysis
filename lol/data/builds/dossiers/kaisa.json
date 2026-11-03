@@ -76,7 +76,7 @@
        "coef": 0.03
       }
      ],
-     "quote": "{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack before application|buzzword}}",
+     "quote": "{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack on the target before application|buzzword}}",
      "bin": [
       "KaisaPassive#PCurrentPerStackDamage"
      ]
@@ -154,7 +154,7 @@
     },
     {
      "claim": "Each Plasma application deals the base plus per-stack Caustic Wounds magic damage; a fresh application refreshes the 4-second duration rather than stacking a new timer per stack.",
-     "quote": "'''Kai'Sa's''' basic attacks or ''{{ai|Void Seeker|Kai'Sa}}'' deal {{as|{{pplevel|4 to 30}} {{as|(+ 12% AP)}} '''additional''' magic damage|magic damage}} plus {{as|{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack before application|buzzword}}",
+     "quote": "'''Kai'Sa's''' basic attacks or ''{{ai|Void Seeker|Kai'Sa}}'' deal {{as|{{pplevel|4 to 30}} {{as|(+ 12% AP)}} '''additional''' magic damage|magic damage}} plus {{as|{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack on the target before application|buzzword}}",
      "affectsDamageFight": true
     },
     {
@@ -173,8 +173,8 @@
      "affectsDamageFight": true
     },
     {
-     "claim": "If Void Seeker detonates Plasma, any remaining stacks beyond the detonation are reapplied afterward, and Void Seeker's own damage is calculated as if each stack were applied successively.",
-     "quote": "With {{ai|Void Seeker|Kai'Sa}}, if the stacks detonate {{as|Plasma|buzzword}}, any remaining stacks are reapplied afterwards. {{ai|Void Seeker|Kai'Sa}} also deals ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target. This damage is calculated as if each stack was applied successively.",
+     "claim": "If Void Seeker detonates Plasma, any remaining stacks after the detonation roll over and are reapplied on the target, and Caustic Wounds damage from Void Seeker's stacks is calculated as if each stack were applied successively.",
+     "quote": "When applying {{as|Plasma|buzzword}} with {{ai|Void Seeker|Kai'Sa}}, {{as|Plasma|buzzword}} stacks will roll over; in other words, the remaining stacks of {{as|Plasma|buzzword}} after the detonation are reapplied on the target.\n** Additionally, ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target is calculated as if each stack were applied successively.",
      "affectsDamageFight": true
     }
    ],
@@ -184,16 +184,8 @@
      "reason": "unknown"
     },
     {
-     "ref": "KaisaPassive.PExecuteRatio",
-     "reason": null
-    },
-    {
      "ref": "KaisaPassive.PAllyStacks",
      "reason": "not-in-a-dummy-fight"
-    },
-    {
-     "ref": "KaisaPassive.PExecuteAPRatio",
-     "reason": null
     },
     {
      "ref": "KaisaPassive.PTotalDamageMultiplier_ForModesBalance",
@@ -402,6 +394,11 @@
      "affectsDamageFight": true
     },
     {
+     "claim": "Living Weapon upgrades Icathian Rain at 100 permanent attack damage from items and stat growth so it fires 12 missiles instead of 6.",
+     "quote": "{{sti|{{as|100 attack damage}}}} from items and stat growth... ''Icathian Rain'' instead fires 12 missiles.",
+     "affectsDamageFight": true
+    },
+    {
      "claim": "The ability requires a nearby enemy to be cast at all.",
      "quote": "''A nearby enemy is required to cast this ability.''",
      "affectsDamageFight": false
@@ -606,6 +603,11 @@
     {
      "claim": "During the cast time Kai'Sa is ghosted and gains bonus movement speed, which does not affect either fight.",
      "quote": "becoming {{tip|ghosted}} and gaining {{sti|ms|{{As|'''bonus''' movement speed}}}} for the duration",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Living Weapon upgrades Supercharge at 100% permanent bonus attack speed from items and stat growth, granting 0.5 seconds of invisibility at the start of the cast time.",
+     "quote": "{{sti|{{as|100% attack speed}}}} from items and stat growth... ''Supercharge'' grants {{tip|invisibility}} at the start of the cast time for {{fd|0.5}} seconds.",
      "affectsDamageFight": false
     }
    ],
@@ -834,11 +836,11 @@
  ],
  "needsBespoke": {
   "value": true,
-  "why": "Plasma's interaction across abilities needs bespoke ordering logic: Void Seeker applies 2-3 stacks 'as if applied successively' (each one dealing its own Caustic Wounds damage based on the stack count at that moment), and if it crosses the 5-stack detonation threshold mid-application, remaining stacks are reapplied afterward, with a specific damage-ordering rule (initial Caustic Wounds, then detonation, then Void Seeker's own bolt damage, then attack on-hit last if it's the trigger). No single closed-list primitive captures this multi-step successive-stack-application-with-interleaved-detonation behavior; it must be scripted as a small state machine around the target-stacks/execute-or-threshold primitives."
+  "why": "Plasma's interaction across abilities needs bespoke ordering logic: Void Seeker deals its bolt damage first and then applies 2-3 Plasma stacks successively (each dealing its own Caustic Wounds damage based on the stack count at that moment), detonating on the 5th stack before rolling over any remaining stacks, whereas a basic attack that triggers the 5th stack evaluates Caustic Wounds and the missing-health detonation before the basic attack's own damage. No single closed-list primitive captures this successive-stack-application-with-interleaved-detonation behavior; it must be scripted as a state machine around the target-stacks/execute-or-threshold primitives."
  },
  "unsettled": [
   {
-   "question": "Which Void Seeker cooldown array is live: the numbers-sheet ddragon field [22, 20, 18, 16, 14] or the wiki template's {{ap|20 to 14}} ([20, 18.5, 17, 15.5, 14])?",
+   "question": "Which Void Seeker cooldown array is live: the numbers-sheet bin field [22, 20, 18, 16, 14] or ddragon/wiki [20, 18.5, 17, 15.5, 14]?",
    "options": [
     "ddragon [22, 20, 18, 16, 14] is correct and the wiki is stale",
     "wiki [20, 18.5, 17, 15.5, 14] is correct and ddragon is stale",
@@ -851,7 +853,7 @@
    ]
   },
   {
-   "question": "What is Supercharge's actual cast time formula/base — the bin's flat 1.5s castTime field, or the wiki's dynamic 1.2/(1+bonusAS/100) capped at 0.6s?",
+   "question": "What is Supercharge's actual cast time formula/base: the bin's flat 1.5s castTime field, or the wiki's dynamic 1.2/(1+bonusAS/100) capped at 0.6s?",
    "options": [
     "Use the bin's flat 1.5s",
     "Use the wiki's dynamic formula scaling with bonus attack speed, floor 0.6s",
@@ -872,7 +874,7 @@
    ],
    "impact": "high",
    "quotes": [
-    "With {{ai|Void Seeker|Kai'Sa}}, if the stacks detonate {{as|Plasma|buzzword}}, any remaining stacks are reapplied afterwards. {{ai|Void Seeker|Kai'Sa}} also deals ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target. This damage is calculated as if each stack was applied successively."
+    "When applying {{as|Plasma|buzzword}} with {{ai|Void Seeker|Kai'Sa}}, {{as|Plasma|buzzword}} stacks will roll over; in other words, the remaining stacks of {{as|Plasma|buzzword}} after the detonation are reapplied on the target.\n** Additionally, ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target is calculated as if each stack were applied successively."
    ]
   },
   {

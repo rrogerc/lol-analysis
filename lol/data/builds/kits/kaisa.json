@@ -1,45 +1,24 @@
 {
  "champion": "kaisa",
  "name": "Kai'Sa",
- "patch": "16.18",
+ "patch": "16.21",
  "generated": true,
- "reviewed": false,
+ "reviewed": true,
+ "manaless": false,
  "maxOrder": [
   "Q",
-  "W",
-  "E"
+  "E",
+  "W"
  ],
  "notes": [
-  "Living Weapon evolutions are assumed active on all three basic abilities for the whole fight (a six-item level-16 build plausibly meets every stat threshold): Icathian Rain fires 12 missiles, Void Seeker applies 3 Plasma stacks and refunds 75% of its remaining cooldown on hitting the (champion-type) dummy, and Supercharge's evolution (brief invisibility) has no damage effect and is ignored.",
-  "Icathian Rain has no cast time per the wiki (the numbers sheet's 0.25s is not used); all of its missiles are modeled landing together as one damage instance 0.4s after cast rather than spreading across the up-to-1s convergence window.",
-  "Void Seeker has a 0.4s cast time; its Plasma applications, its own bolt damage, and any Caustic Wounds detonation it triggers all resolve together when the cast ends, then its cooldown is refunded.",
-  "Supercharge's cast time uses the wiki's dynamic formula 1.2s/(1+bonus AS/100), floor 0.6s, recomputed from current bonus attack speed at each cast, instead of the numbers sheet's flat 1.5s field (the two conflict and only the wiki gives the by-AS breakdown). Attack commands are fully converted to movement for the whole charge, not just the standard 0.25s cast lockout, and Supercharge is cast on cooldown throughout the fight.",
-  "Each basic attack applies 1 Plasma stack (Caustic Wounds magic damage); Void Seeker applies 3 stacks successively, each dealing its own Caustic Wounds instance. The 5th stack detonates all stacks for bonus missing-health magic damage, computed after the triggering Caustic Wounds damage (and after Void Seeker's own bolt damage when Void Seeker is the trigger); the 400 monster cap does not apply since the dummy counts as an enemy champion. Plasma decays after 4s without reapplication.",
-  "Killer Instinct (R) deals no damage and its only combat effect (an attack-timer reset) is worthless before any attack has been queued, so it is never cast.",
-  "Mana costs are not modeled: nothing here plausibly runs out of mana inside a short fight.",
-  "Supercharge's extra windup reduction and increased missile speed during its post-charge buff are not modeled (the underlying formula is unresolved in the sheet); only its attack-speed percentage buff is applied."
- ],
- "assumed": [
-  {
-   "path": "gen.Q.damage",
-   "why": "assumes Icathian Rain is evolved (12 missiles) from item AD thresholds met by the build"
-  },
-  {
-   "path": "gen.P.voidSeekerStacksEvolved",
-   "why": "assumes Void Seeker is evolved (3 Plasma stacks, 75% cooldown refund on champion hit) from item AP thresholds met by the build"
-  },
-  {
-   "path": "gen.E.castTimeBaseS",
-   "why": "chooses the wiki's dynamic cast-time formula over the numbers sheet's flat 1.5s, which conflicts with the by-AS tooltip values"
-  },
-  {
-   "path": "abilities.W.cooldownS",
-   "why": "chooses the wiki's Void Seeker cooldown array (20 to 14) over the numbers sheet ddragon field (22 to 14), which the dossier flags as conflicting"
-  },
-  {
-   "path": "gen.Q.missileDelayS",
-   "why": "simplifies Icathian Rain's up-to-1s missile convergence into one instant landing 0.4s after cast"
-  }
+  "Skill max order is Q > E > W on Patch 16.21, matching Kai'Sa's standard marksman skill order across AD, On-Hit, and Hybrid builds since Void Seeker's upgrade comes from item AP while Supercharge rank scales attack speed from 40% to 80% and cooldown from 16 s to 10 s.",
+  "Living Weapon evolutions are evaluated dynamically from each build's permanent stats at its level rather than assumed always on: Icathian Rain upgrades from 6 to 12 missiles at 100 permanent bonus AD plus level AD growth (sheet.ad minus level-1 base AD 59), Void Seeker upgrades from 2 to 3 Plasma stacks and refunds 75% cooldown on champion hit at 100 permanent item AP (counting Rabadon's permanent 30% AP multiplier while excluding Blackfire Torch's temporary 4% in-combat AP), and Supercharge's 100% bonus AS upgrade (0.5 s invisibility) has no dummy damage effect.",
+  "Second Skin (P) applies 1 Plasma stack on each basic attack on-hit (4 s duration, refreshed on reapplication), dealing Caustic Wounds magic damage. At 4 held stacks, a basic attack evaluates the 5th-stack Caustic Wounds hit and the missing-health detonation (15% + 6% per 100 AP, uncapped against champions) before the basic attack's own damage, while extra on-hit applications from Guinsoo's Phantom Hit or Dusk and Dawn apply additional stacks afterward.",
+  "Icathian Rain (Q) has no cast time, does not interrupt basic attacks, and can be cast while charging Supercharge (waiting only if Void Seeker is mid-cast). It fires 6 or 12 discrete physical missiles across a 1.0 s volley starting 0.4 s after cast: the first missile deals 100% damage and triggers once-per-cast procs (Muramana, Eclipse, and 1 Spear of Shojin stack), while subsequent missiles deal 25% persistent-area ability damage and stack physical shreds such as Black Cleaver individually.",
+  "Void Seeker (W) uses the live V26.13 cooldown array [20, 18.5, 17, 15.5, 14] from the wiki and ddragon (over the stale bin field) with a 0.4 s cast time, woven into basic-attack backswings so imminent attacks are not clipped unless an immediate bolt executes faster. At cast completion it deals bolt magic damage first, then applies 2 (unevolved) or 3 (evolved) Plasma stacks successively, detonating immediately upon reaching the 5th stack before rolling over any remaining stacks, and starts its cooldown with the 75% champion-hit refund when evolved.",
+  "Supercharge (E) uses the live dynamic charge time max(1.2 / (1 + bonusAS / 100), 0.6) s from current bonus attack speed (over the stale 1.5 s bin field), disarming attacks and Void Seeker during the charge and then granting 40% to 80% bonus attack speed and reduced 0.1 / 1.552 (6.44%) attack windup for 4 s, while basic attacks shave 0.5 s off E's remaining cooldown on-attack. Instead of charging blindly on cooldown, the driver aligns E into an attack backswing and skips E whenever AS-cap saturation makes the charge a net attack loss or continuing to attack kills the target before E's post-charge speed buff catches up.",
+  "Killer Instinct (R) has no cast time, requires the target to have been affected by Plasma within the last 4 s, and resets Kai'Sa's basic-attack timer (its shield and dash have no dummy damage effect). When use_ult is enabled, R is armed rather than wasted at t = 0 before Plasma exists, then fires immediately after an attack once Plasma is active (holding briefly for Spellblade's 1.5 s cooldown when a Sheen item is equipped without ult-steroid items and the target survives that window).",
+  "Mana costs are not modeled: none of Kai'Sa's costs constrain casting within a fight."
  ],
  "abilities": {
   "Q": {
@@ -129,21 +108,28 @@
    "durationS": 4,
    "executeRatio": 0.15,
    "executeApRatio": 0.0006,
+   "baseAdLevel1": 59,
+   "voidSeekerStacks": 2,
    "voidSeekerStacksEvolved": 3
   },
   "Q": {
-   "damage": {
+   "missileDamage": {
     "base": [
-     150,
-     206.25,
-     262.5,
-     318.75,
-     375
+     40,
+     55,
+     70,
+     85,
+     100
     ],
-    "bonusAdRatio": 2.0625,
-    "apRatio": 0.75
+    "bonusAdRatio": 0.55,
+    "apRatio": 0.2
    },
-   "missileDelayS": 0.4
+   "extraHitMult": 0.25,
+   "missiles": 6,
+   "missilesEvolved": 12,
+   "evolveBonusAd": 100,
+   "missileDelayS": 0.4,
+   "volleyDurationS": 1.0
   },
   "W": {
    "damage": {
@@ -158,6 +144,7 @@
     "apRatio": 0.45
    },
    "castTimeS": 0.4,
+   "evolveAp": 100,
    "cooldownRefundPct": 75
   },
   "E": {
@@ -171,7 +158,12 @@
    "buffDurationS": 4,
    "cdrPerAttackS": 0.5,
    "castTimeBaseS": 1.2,
-   "castTimeFloorS": 0.6
+   "castTimeFloorS": 0.6,
+   "buffWindupCastTimeS": 0.1,
+   "attackTotalTimeS": 1.552
+  },
+  "R": {
+   "plasmaWindowS": 4
   }
  },
  "attack": {
@@ -179,6 +171,6 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kaisa.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kaisa.rs."
+  "Updated 2026-11-03 from Patch 16.21 sources (dossiers/kaisa.json, wiki.json, sheet.json, bin.json): Q > E > W skill order, dynamic Living Weapon Q/W evolutions from permanent stats, discrete 6/12-missile Icathian Rain volleys, pre-auto and Void Seeker rollover Plasma detonation ordering, Killer Instinct post-Plasma attack reset, and adaptive Supercharge backswing/cap/lethal gating in engine/src/generated/kaisa.rs."
  ]
 }
