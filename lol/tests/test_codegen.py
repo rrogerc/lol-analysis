@@ -838,6 +838,53 @@ class TestKaisaDriver(unittest.TestCase):
                             bonus_hp=sq["targetBonusHp"])
         self.assertAlmostEqual(r_gun_sq["ttk"], 0.40, places=4)
 
+    def test_audit_edge_cases_e_buff_r_stasis_and_item_lookahead(self):
+        # 1. Supercharge (E) never overwrites an active 4.0s Supercharge buff even when
+        # cooldown reduction brings E off cooldown mid-window.
+        short_e_kit = copy.deepcopy(self.kit)
+        short_e_kit["abilities"]["E"]["cooldownS"] = [2, 2, 2, 2, 2]
+        e_only = {"Q": 0, "W": 0, "E": 5, "R": 0}
+        r_short = self.sim(["berserkers greaves"], 20_000, 100, 100, 4.6,
+                           kit=short_e_kit, use_ult=False, ranks=e_only)
+        r_norm = self.sim(["berserkers greaves"], 20_000, 100, 100, 4.6,
+                          use_ult=False, ranks=e_only)
+        self.assertEqual(r_short["attacks"], r_norm["attacks"])
+        self.assertAlmostEqual(r_short["total"], r_norm["total"], places=6)
+
+        # 2. Killer Instinct (R) does not fire into defender stasis when an attack
+        # triggers Zhonya's Hourglass at t = 0.0 (verified via Fiendhunter barrage == 0
+        # on the post-stasis finishing auto at t = 2.5s).
+        mundo = copy.deepcopy(builds.load_champion("drmundo"))
+        mundo["dd"]["stats"]["hp"] = 360
+        mundo["dd"]["stats"]["hpperlevel"] = 0
+        mundo_kit = copy.deepcopy(builds.load_kit("drmundo"))
+        mundo_kit["abilities"]["R"]["cooldownS"] = [999, 999, 999]
+        att_ids = [builds.resolve_item(self.pool, self.idx, n) for n in [
+            "infinity edge", "lord dominiks regards", "yun tal wildarrows",
+            "fiendhunter bolts", "experimental hexplate",
+        ]]
+        att = dict(
+            sheet=builds.resolve_stats(self.champ, 16, att_ids, self.pool, self.effects, kit=self.kit),
+            kit=self.kit, fx=builds.merge_effects(att_ids, self.effects),
+            level=16, ranks={"Q": 0, "W": 0, "E": 0, "R": 3}, duration=8.0,
+        )
+        zh_ids = [builds.resolve_item(self.pool, self.idx, "zhonyas hourglass")]
+        rep_zh = builds.survive(mundo, mundo_kit, 1, {"Q": 5, "W": 0, "E": 5, "R": 0},
+                                zh_ids, self.pool, self.effects, att, thresholds=[])
+        self.assertAlmostEqual(rep_zh["defense"]["zhonyaAt"], 0.0, places=6)
+        self.assertAlmostEqual(rep_zh["ttk"], 2.5, places=6)
+        self.assertEqual(rep_zh["breakdown"].get("barrage", 0.0), 0.0)
+
+        # 3. Lookahead counts opening Q volleys plus Muramana, Luden's, and Horizon Focus
+        # so Supercharge skips its charge disarm when the combo already kills by 1.40s.
+        combo = ["muramana", "ludens echo", "horizon focus"]
+        r_no_e = self.sim(combo, 1718, 60, 60, 8.0, use_ult=False,
+                          ranks={"Q": 5, "W": 3, "E": 0, "R": 0})
+        r_with_e = self.sim(combo, 1718, 60, 60, 8.0, use_ult=False,
+                            ranks={"Q": 5, "W": 3, "E": 5, "R": 0})
+        self.assertAlmostEqual(r_no_e["ttk"], 1.40, places=4)
+        self.assertAlmostEqual(r_with_e["ttk"], 1.40, places=4)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -227,16 +227,64 @@ impl GenDriver {
         }
         pymin(raw, AS_CAP)
     }
+}
 
-    fn est_phys_mult(&self, e: &Engine, t: f64, extra_cleaver: i64) -> f64 {
+#[derive(Clone, Copy)]
+struct Lookahead {
+    hp: f64,
+    stacks: i64,
+    p_expire_at: f64,
+    combat_started: bool,
+    combat_t0: f64,
+    cleaver: i64,
+    blood: i64,
+    shojin: i64,
+    dark: i64,
+    attacks: i64,
+    eclipse: i64,
+    nth: i64,
+    sundered_used: bool,
+    once_done: bool,
+    hz_first: bool,
+    hz_until: f64,
+    ss_done: bool,
+    ss_at: f64,
+    dmg_dealt: f64,
+    energize: f64,
+    en_last: f64,
+    kraken: i64,
+    phantom: i64,
+    seething: i64,
+    sb_primed: bool,
+    sb_icd_until: f64,
+    post_r_attacks: i64,
+    q_ready: f64,
+    w_ready: f64,
+    busy_until: f64,
+    v0: Volley,
+    v1: Volley,
+}
+
+impl GenDriver {
+    fn sim_basic_cd(&self, e: &Engine, t: f64, base_cd: f64) -> f64 {
+        let mut cd = base_cd * e.p.sheet.basic_cd_mult;
+        if let Some(m) = &e.p.fx.s.mana_active {
+            if t < e.st.ma_until {
+                cd /= 1.0 + m.basic_cd_faster_pct / 100.0;
+            }
+        }
+        cd
+    }
+
+    fn sim_phys_mult(&self, e: &Engine, lk: &Lookahead, t: f64) -> f64 {
         let sheet = e.p.sheet;
         let s = &e.p.fx.s;
         let dark_pen = match &s.alt_pen {
-            Some(a) => imin(e.st.dark, a.max_stacks) as f64 * a.pct_per_stack,
+            Some(a) => imin(lk.dark, a.max_stacks) as f64 * a.pct_per_stack,
             None => 0.0,
         };
         let shred = match &s.armor_shred {
-            Some(a) => imin(e.st.cleaver + extra_cleaver, a.max_stacks) as f64 * a.pct_per_stack,
+            Some(a) => imin(lk.cleaver, a.max_stacks) as f64 * a.pct_per_stack,
             None => 0.0,
         };
         let mut leth = sheet.lethality;
@@ -254,11 +302,11 @@ impl GenDriver {
         ))
     }
 
-    fn est_mag_mult(&self, e: &Engine, t: f64, extra_blood: i64) -> f64 {
+    fn sim_mag_mult(&self, e: &Engine, lk: &Lookahead, t: f64) -> f64 {
         let sheet = e.p.sheet;
         let s = &e.p.fx.s;
         let dark_pen = match &s.alt_pen {
-            Some(a) => imin(e.st.dark, a.max_stacks) as f64 * a.pct_per_stack,
+            Some(a) => imin(lk.dark, a.max_stacks) as f64 * a.pct_per_stack,
             None => 0.0,
         };
         let mal = match &s.ult_burn {
@@ -266,7 +314,7 @@ impl GenDriver {
             _ => 0.0,
         };
         let shred = match &s.mr_shred {
-            Some(a) => imin(e.st.blood + extra_blood, a.max_stacks) as f64 * a.pct_per_stack,
+            Some(a) => imin(lk.blood, a.max_stacks) as f64 * a.pct_per_stack,
             None => 0.0,
         };
         resist_mult(eff_resist(
@@ -278,28 +326,35 @@ impl GenDriver {
         ))
     }
 
-    fn est_amp(
+    #[allow(clippy::too_many_arguments)]
+    fn sim_deal(
         &self,
         e: &Engine,
-        dt: DType,
+        lk: &mut Lookahead,
+        t_start: f64,
         t: f64,
+        amount: f64,
+        dt: DType,
+        is_auto: bool,
         ability: bool,
-        extra_shojin: i64,
-        hp_at_hit: f64,
-    ) -> f64 {
-        if dt == DType::True {
-            return 1.0;
-        }
+        add_shojin: bool,
+        ev_floor: f64,
+    ) {
         let fx = e.p.fx;
         let s = &fx.s;
         let sheet = e.p.sheet;
-        let mut amp = 1.0;
-        if !fx.dmg_amps.is_empty() {
-            let t0 = if e.st.set & S_COMBAT_T0 != 0 { e.st.combat_t0 } else { t };
-            let secs = imax(0, (t - t0 + 1e-9) as i64);
-            for a in &fx.dmg_amps {
-                amp *= 1.0 + a.pct_per_stack / 100.0 * imin(a.max_stacks, secs) as f64;
+        let secs = if !fx.dmg_amps.is_empty() {
+            if !lk.combat_started {
+                lk.combat_t0 = t;
+                lk.combat_started = true;
             }
+            imax(0, (t - lk.combat_t0 + 1e-9) as i64)
+        } else {
+            0
+        };
+        let mut amp = 1.0;
+        for a in &fx.dmg_amps {
+            amp *= 1.0 + a.pct_per_stack / 100.0 * imin(a.max_stacks, secs) as f64;
         }
         for a in &fx.flat_amps {
             if a.dtype.is_none() || a.dtype == Some(dt) {
@@ -310,14 +365,18 @@ impl GenDriver {
             amp *= 1.0 + pymin(max_pct, e.target_bonus_hp / 100.0) / 100.0;
         }
         if let Some(h) = &s.hypershot {
-            if t < e.st.hz_until {
+            if t < lk.hz_until {
                 amp *= 1.0 + h.amp_pct / 100.0;
+            }
+        }
+        if is_auto {
+            if let Some(aa) = &s.attack_amp {
+                amp *= 1.0 + aa.max_pct / 100.0 * pymin(1.0, self.attack_range / aa.max_at_range);
             }
         }
         if ability {
             if let Some(sh) = &s.ability_amp_stacking {
-                let st = imin(e.st.shojin + extra_shojin, sh.max_stacks);
-                amp *= 1.0 + sh.pct_per_stack / 100.0 * st as f64;
+                amp *= 1.0 + sh.pct_per_stack / 100.0 * imin(lk.shojin, sh.max_stacks) as f64;
             }
             if let Some(m) = &s.mana_active {
                 if t < e.st.ma_until {
@@ -326,93 +385,321 @@ impl GenDriver {
                 }
             }
         }
-        if dt == DType::Magic {
-            if let Some(mc) = &s.magic_crit {
-                if hp_at_hit / e.target_hp * 100.0 < mc.below_target_hp_pct {
-                    amp *= mc.crit_dmg_pct / 100.0;
+        let mult = match dt {
+            DType::Physical => self.sim_phys_mult(e, lk, t),
+            DType::True => 1.0,
+            DType::Magic => self.sim_mag_mult(e, lk, t),
+        };
+        let crit_c = sheet.crit_chance / 100.0;
+        let crit_d = sheet.crit_damage / 100.0;
+        let below_crit_pct = match &s.magic_crit {
+            Some(mc) if dt == DType::Magic && lk.hp / e.target_hp * 100.0 < mc.below_target_hp_pct => {
+                mc.crit_dmg_pct / 100.0
+            }
+            _ => 0.0,
+        };
+        let mut ev = 1.0;
+        if is_auto {
+            ev = 1.0 + crit_c * (crit_d - 1.0);
+            if below_crit_pct > 0.0 {
+                ev = crit_c * crit_d + (1.0 - crit_c) * below_crit_pct;
+            }
+            if ev < ev_floor {
+                ev = ev_floor;
+            }
+        } else if below_crit_pct > 0.0 {
+            ev = below_crit_pct;
+        }
+        let dmg = amount * amp * mult * ev;
+        lk.hp = pymax(lk.hp - dmg, 0.0);
+        lk.dmg_dealt += dmg;
+        if dt == DType::Physical {
+            if let Some(a) = &s.armor_shred {
+                lk.cleaver = imin(lk.cleaver + 1, a.max_stacks);
+            }
+        }
+        if ability {
+            if dt == DType::Magic {
+                if let Some(a) = &s.mr_shred {
+                    lk.blood = imin(lk.blood + 1, a.max_stacks);
+                }
+            }
+            if add_shojin {
+                if let Some(sh) = &s.ability_amp_stacking {
+                    lk.shojin = imin(lk.shojin + 1, sh.max_stacks);
+                }
+            }
+            if let Some(h) = &s.hypershot {
+                if !lk.hz_first {
+                    lk.hz_first = true;
+                    lk.hz_until = t + h.duration_s;
+                }
+            }
+            if let Some(once) = &s.ability_proc_once {
+                if !lk.once_done {
+                    lk.once_done = true;
+                    let amt = once.base + once.ap_ratio * sheet.ap;
+                    self.sim_deal(e, lk, t_start, t, amt, once.dtype, false, false, false, 1.0);
                 }
             }
         }
-        amp
+        if let Some(ss) = &s.stormsurge {
+            if !lk.ss_done
+                && lk.ss_at >= INF
+                && t - t_start <= ss.window_s + 1e-9
+                && lk.dmg_dealt >= ss.threshold_pct / 100.0 * e.target_hp
+            {
+                lk.ss_at = t + ss.delay_s;
+            }
+        }
     }
 
-    fn est_volley_dmg_until(
+    fn sim_ability_cast_proc(&self, e: &Engine, lk: &mut Lookahead, t_start: f64, t: f64) {
+        if let Some(mp) = &e.p.fx.s.ability_mana_proc {
+            let amt = mp.pct_by_level.at(self.level) / 100.0 * e.p.sheet.mana;
+            self.sim_deal(e, lk, t_start, t, amt, mp.dtype, false, false, false, 1.0);
+        }
+    }
+
+    fn sim_eclipse_hit(&self, e: &Engine, lk: &mut Lookahead, t_start: f64, t: f64) {
+        if let Some(hp_cfg) = &e.p.fx.s.hit_pair_proc {
+            lk.eclipse += 1;
+            if lk.eclipse >= 2 {
+                lk.eclipse = 0;
+                let amt = hp_cfg.max_hp_pct_ranged / 100.0 * e.target_hp;
+                self.sim_deal(e, lk, t_start, t, amt, hp_cfg.dtype, false, false, false, 1.0);
+            }
+        }
+    }
+
+    fn sim_apply_cw(&self, e: &Engine, lk: &mut Lookahead, t_start: f64, t: f64) {
+        let stacks_before = if lk.stacks <= 0 || t >= lk.p_expire_at {
+            0
+        } else {
+            lk.stacks
+        };
+        let cw_raw = self.p_base_dmg + self.p_perstack_dmg * (stacks_before as f64);
+        self.sim_deal(e, lk, t_start, t, cw_raw, DType::Magic, false, false, false, 1.0);
+        if stacks_before >= self.p_max_stacks {
+            lk.stacks = 0;
+            lk.p_expire_at = 0.0;
+            let missing = e.target_hp - lk.hp;
+            self.sim_deal(
+                e,
+                lk,
+                t_start,
+                t,
+                self.p_execute_pct * missing,
+                DType::Magic,
+                false,
+                false,
+                false,
+                1.0,
+            );
+        } else {
+            lk.stacks = stacks_before + 1;
+            lk.p_expire_at = t + self.p_duration;
+        }
+    }
+
+    fn sim_onhits(
         &self,
         e: &Engine,
-        v: Volley,
-        t_horizon: f64,
-        hp_est: f64,
-        cleaver_add: &mut i64,
-    ) -> f64 {
-        if v.idx >= self.q_missiles || v.start_at >= INF {
-            return 0.0;
-        }
-        let mut total = 0.0;
-        let mut i = v.idx;
-        while i < self.q_missiles {
-            let t_m = if i == 0 {
-                v.start_at
-            } else if i == self.q_missiles - 1 {
-                v.start_at + self.q_volley_dur
-            } else {
-                v.start_at + (i as f64) * self.q_missile_step
-            };
-            if t_m > t_horizon + 1e-9 {
-                break;
+        lk: &mut Lookahead,
+        t_start: f64,
+        t: f64,
+        skip_cw: &mut bool,
+    ) {
+        let sheet = e.p.sheet;
+        let fx = e.p.fx;
+        for oh in &fx.onhit {
+            let mut raw = oh.base
+                + oh.ap_ratio * sheet.ap
+                + oh.bonus_ad_ratio * sheet.ad_bonus
+                + oh.max_mana_pct / 100.0 * sheet.mana;
+            if let Some((_, rng)) = oh.self_max_hp_pct {
+                raw += rng / 100.0 * sheet.hp;
             }
-            let raw = if i == 0 { self.q_first_dmg } else { self.q_sub_dmg };
-            let sh_add = if !v.proced && i > v.idx { 1 } else { 0 };
-            let hit = raw
-                * self.est_amp(e, DType::Physical, t_m, true, sh_add, hp_est)
-                * self.est_phys_mult(e, t_m, *cleaver_add);
-            total += hit;
-            *cleaver_add += 1;
-            i += 1;
+            self.sim_deal(e, lk, t_start, t, raw, oh.dtype, false, false, false, 1.0);
         }
-        total
+        if *skip_cw {
+            *skip_cw = false;
+        } else {
+            self.sim_apply_cw(e, lk, t_start, t);
+        }
+        for oh in &fx.onhit_current_hp {
+            let raw = oh.ranged_pct / 100.0 * lk.hp;
+            self.sim_deal(e, lk, t_start, t, raw, oh.dtype, false, false, false, 1.0);
+        }
     }
 
-    /// Estimates Void Seeker's total damage (bolt + successive Plasma stacks +
-    /// detonation if triggered) when cast at `t_cast` (resolving at `t_land`).
-    fn est_w_burst(&self, e: &Engine, t_cast: f64, stacks_in: i64, hp_in: f64) -> (f64, i64) {
-        let t_land = t_cast + self.w_cast_time;
-        let mut hp = pymax(hp_in, 0.0);
-        let mut total = 0.0;
-        let mut stacks = stacks_in;
-
-        let w_hit = self.w_dmg
-            * self.est_amp(e, DType::Magic, t_land, true, 0, hp)
-            * self.est_mag_mult(e, t_land, 0);
-        hp = pymax(hp - w_hit, 0.0);
-        total += w_hit;
-
-        let mag_m_after = self.est_mag_mult(e, t_land, 1);
-        let mut k = 0;
-        while k < self.w_stacks {
-            let cw_raw = self.p_base_dmg + self.p_perstack_dmg * (stacks as f64);
-            let cw_hit = cw_raw * self.est_amp(e, DType::Magic, t_land, false, 1, hp) * mag_m_after;
-            hp = pymax(hp - cw_hit, 0.0);
-            total += cw_hit;
-            if stacks >= self.p_max_stacks {
-                stacks = 0;
-                let exec_raw = self.p_execute_pct * (e.target_hp - hp);
-                let exec_hit = exec_raw
-                    * self.est_amp(e, DType::Magic, t_land, false, 1, hp)
-                    * mag_m_after;
-                hp = pymax(hp - exec_hit, 0.0);
-                total += exec_hit;
-            } else {
-                stacks += 1;
-            }
-            k += 1;
+    fn sim_step_volley(&self, e: &Engine, lk: &mut Lookahead, slot: u8, t_start: f64, t: f64) {
+        let mut v = if slot == 0 { lk.v0 } else { lk.v1 };
+        if v.idx >= self.q_missiles || v.start_at >= INF {
+            return;
         }
-        (total, stacks)
+        let dmg = if v.idx == 0 { self.q_first_dmg } else { self.q_sub_dmg };
+        if !v.proced {
+            self.sim_deal(e, lk, t_start, t, dmg, DType::Physical, false, true, true, 1.0);
+            v.proced = true;
+            self.sim_ability_cast_proc(e, lk, t_start, t);
+            self.sim_eclipse_hit(e, lk, t_start, t);
+        } else {
+            self.sim_deal(e, lk, t_start, t, dmg, DType::Physical, false, true, false, 1.0);
+        }
+        v.idx += 1;
+        if v.idx >= self.q_missiles {
+            v.start_at = INF;
+        }
+        if slot == 0 {
+            lk.v0 = v;
+        } else {
+            lk.v1 = v;
+        }
+    }
+
+    fn sim_swing(&self, e: &Engine, lk: &mut Lookahead, t_start: f64, t: f64) {
+        let sheet = e.p.sheet;
+        let fx = e.p.fx;
+        let s = &fx.s;
+        lk.attacks += 1;
+        if let Some(nav) = s.navori_cdr {
+            let factor = 1.0 - nav / 100.0;
+            shave(&mut lk.q_ready, t, factor);
+            shave(&mut lk.w_ready, t, factor);
+        }
+        let mut phantom_now = false;
+        if let Some(p) = &s.phantom {
+            if lk.phantom >= p.stacks_needed {
+                phantom_now = true;
+                lk.phantom = 0;
+            }
+        }
+        let mut kraken_now = false;
+        if s.kraken.is_some() {
+            if lk.kraken >= 2 {
+                kraken_now = true;
+                lk.kraken = 0;
+            } else {
+                lk.kraken += 1;
+            }
+        }
+        if let Some(a) = &s.as_stacking {
+            lk.seething = imin(lk.seething + 1, a.max_stacks);
+            if let Some(p) = &s.phantom {
+                if !phantom_now && lk.seething == a.max_stacks {
+                    lk.phantom = imin(lk.phantom + 1, p.stacks_needed);
+                }
+            }
+        }
+        if let Some(a) = &s.alt_pen {
+            if lk.attacks % 2 == 0 {
+                lk.dark = imin(lk.dark + 1, a.max_stacks);
+            }
+        }
+        let stacks_now = if lk.stacks <= 0 || t >= lk.p_expire_at {
+            0
+        } else {
+            lk.stacks
+        };
+        let mut skip_cw = if stacks_now >= self.p_max_stacks {
+            self.sim_apply_cw(e, lk, t_start, t);
+            true
+        } else {
+            false
+        };
+
+        let mut floor = 1.0;
+        if let Some(sun) = s.first_attack_crit_floor_ev {
+            if !lk.sundered_used {
+                lk.sundered_used = true;
+                floor = sun;
+            }
+        }
+        let mut barrage_true = 0.0;
+        if let Some(u) = &s.ult_attack_steroid {
+            if lk.post_r_attacks < u.attacks {
+                let crit_c = sheet.crit_chance / 100.0;
+                let d = sheet.crit_damage / 100.0;
+                let b_ev = crit_c * d + (1.0 - crit_c) * (1.0 + u.crit_dmg_frac * (d - 1.0));
+                floor = pymax(floor, b_ev);
+                let mut auto_amp = 1.0;
+                if let Some(aa) = &s.attack_amp {
+                    auto_amp += aa.max_pct / 100.0 * pymin(1.0, self.attack_range / aa.max_at_range);
+                }
+                barrage_true = e.p.ad * crit_c * u.true_dmg_frac * auto_amp * d;
+            }
+        }
+
+        self.sim_deal(e, lk, t_start, t, e.p.ad, DType::Physical, true, false, false, floor);
+        if barrage_true > 0.0 {
+            self.sim_deal(e, lk, t_start, t, barrage_true, DType::True, false, false, false, 1.0);
+        }
+        self.sim_onhits(e, lk, t_start, t, &mut skip_cw);
+
+        if !fx.energized.is_empty() {
+            let mut extra = 0.0;
+            for en in &fx.energized {
+                extra += en.extra_stacks_per_attack;
+            }
+            lk.energize += (t - lk.en_last) * sheet.move_speed / (4.0 * 6.0);
+            lk.en_last = t;
+            lk.energize += 6.0 + extra;
+            if lk.energize >= 100.0 {
+                lk.energize -= 100.0;
+                for en in &fx.energized {
+                    self.sim_deal(e, lk, t_start, t, en.bonus, en.dtype, false, false, false, 1.0);
+                }
+            }
+        }
+        self.sim_eclipse_hit(e, lk, t_start, t);
+        if let Some(n) = &s.nth_hit_proc {
+            if lk.nth >= n.stacks_needed_ranged {
+                lk.nth = 0;
+                let dmg = n.base_ad_ratio_ranged * sheet.ad_base
+                    + n.self_max_hp_pct_ranged / 100.0 * sheet.hp;
+                self.sim_deal(e, lk, t_start, t, dmg, n.dtype, false, false, false, 1.0);
+            } else {
+                lk.nth += 1;
+            }
+        }
+        if let Some(fb) = &s.first_attack_bonus {
+            if lk.attacks == 1 {
+                let amt = fb.base + fb.per_lethality * sheet.lethality;
+                self.sim_deal(e, lk, t_start, t, amt, fb.dtype, false, false, false, 1.0);
+            }
+        }
+        lk.post_r_attacks += 1;
+        if lk.sb_primed {
+            lk.sb_primed = false;
+            if let Some(sb) = &s.spellblade {
+                lk.sb_icd_until = t + sb.icd_s;
+                let raw = sb.base_ad_ratio * sheet.ad_base
+                    + sb.ap_ratio * sheet.ap
+                    + sb.per_crit_chance_pct * sheet.crit_chance;
+                self.sim_deal(e, lk, t_start, t, raw, sb.dtype, false, false, false, 1.0);
+                if sb.reapply_onhit {
+                    self.sim_onhits(e, lk, t_start, t, &mut skip_cw);
+                }
+            }
+        }
+        if kraken_now {
+            if let Some(kr) = &s.kraken {
+                let base = kr.base_by_level.at(self.level) * kr.ranged_mult;
+                let miss = 1.0 - lk.hp / e.target_hp;
+                let raw = base * (1.0 + kr.missing_ranged / 100.0 * miss);
+                self.sim_deal(e, lk, t_start, t, raw, kr.dtype, false, false, false, 1.0);
+            }
+        }
+        if phantom_now {
+            self.sim_onhits(e, lk, t_start, t, &mut skip_cw);
+        }
     }
 
     /// Simulates `n_swings` basic attacks starting at `t_first_swing` spaced by
-    /// `swing_period` (plus in-flight Q missiles and any pending or castable W
-    /// resolving by `t_horizon`) against a non-defended target to check whether
-    /// that sequence already executes the target.
+    /// `swing_period` (plus Q casts/missiles, item procs, and any pending or
+    /// castable W resolving by `t_horizon`) against a non-defended target to
+    /// check whether that sequence already executes the target.
     #[allow(clippy::too_many_arguments)]
     fn sim_attacks_kill(
         &self,
@@ -431,247 +718,221 @@ impl GenDriver {
             Some(p) => p / 100.0 * e.target_hp,
             None => 0.0,
         };
-        let mut hp = pymax(e.st.hp, 0.0);
-        let mut stacks = self.stacks_at(t_now);
-
-        let (w_cast, mut w_land) = if self.s.w_resolve_at < INF {
-            if self.s.w_resolve_at <= t_horizon + 1e-9 {
-                (self.s.w_resolve_at - self.w_cast_time, self.s.w_resolve_at)
-            } else {
-                (INF, INF)
-            }
-        } else if allow_ready_w && self.ranks.w > 0 {
-            let earliest_w = pymax(pymax(self.s.w_ready, t_now), self.s.busy_until);
-            let tc = if n_swings > 0
-                && earliest_w < t_first_swing
-                && t_first_swing < earliest_w + self.w_cast_time - 1e-9
-            {
-                t_first_swing
-            } else {
-                earliest_w
-            };
-            let tl = tc + self.w_cast_time;
-            if tl <= t_horizon + 1e-9 {
-                (tc, tl)
-            } else if earliest_w + self.w_cast_time <= t_horizon + 1e-9 {
-                (earliest_w, earliest_w + self.w_cast_time)
-            } else {
-                (INF, INF)
-            }
-        } else {
-            (INF, INF)
+        let mut lk = Lookahead {
+            hp: pymax(e.st.hp, 0.0),
+            stacks: self.stacks_at(t_now),
+            p_expire_at: self.s.p_expire_at,
+            combat_started: e.st.set & S_COMBAT_T0 != 0,
+            combat_t0: e.st.combat_t0,
+            cleaver: e.st.cleaver,
+            blood: e.st.blood,
+            shojin: e.st.shojin,
+            dark: e.st.dark,
+            attacks: e.st.attacks,
+            eclipse: e.st.eclipse,
+            nth: e.st.nth,
+            sundered_used: e.st.sundered_used,
+            once_done: e.st.once_done,
+            hz_first: e.st.hz_first,
+            hz_until: e.st.hz_until,
+            ss_done: e.st.ss_done,
+            ss_at: e.st.ss_at,
+            dmg_dealt: 0.0,
+            energize: e.st.energize,
+            en_last: e.st.en_last,
+            kraken: e.st.kraken,
+            phantom: e.st.phantom,
+            seething: e.st.seething,
+            sb_primed: e.st.sb_primed,
+            sb_icd_until: e.st.sb_icd_until,
+            post_r_attacks: e.st.post_r_attacks,
+            q_ready: e.st.q_ready,
+            w_ready: self.s.w_ready,
+            busy_until: self.s.busy_until,
+            v0: self.s.q_v0,
+            v1: self.s.q_v1,
         };
-
-        let mut cleaver_add = 0;
-        let mut cleaver_all = 0;
-        let q_all = self.est_volley_dmg_until(e, self.s.q_v0, t_horizon, hp, &mut cleaver_all)
-            + self.est_volley_dmg_until(e, self.s.q_v1, t_horizon, hp, &mut cleaver_all);
-        let (q_pre, mut q_post) = if w_land < INF {
-            let qp = self.est_volley_dmg_until(e, self.s.q_v0, w_land, hp, &mut cleaver_add)
-                + self.est_volley_dmg_until(e, self.s.q_v1, w_land, hp, &mut cleaver_add);
-            (qp, pymax(0.0, q_all - qp))
-        } else {
-            cleaver_add = cleaver_all;
-            (q_all, 0.0)
-        };
-        hp = pymax(hp - q_pre, 0.0);
-
-        if n_swings <= 0 && w_land < INF {
-            let (w_d, st_after) = self.est_w_burst(e, w_cast, stacks, hp);
-            hp = pymax(hp - w_d - q_post, 0.0);
-            stacks = st_after;
-            q_post = 0.0;
-            w_land = INF;
-        }
-        if hp <= exec_hp + 1e-9 {
+        if lk.hp <= exec_hp + 1e-9 {
             return true;
         }
 
-        let sheet = e.p.sheet;
-        let fx = e.p.fx;
-        let s = &fx.s;
-        let crit_c = sheet.crit_chance / 100.0;
-        let base_crit_ev = 1.0 + crit_c * (sheet.crit_damage / 100.0 - 1.0);
-        let mut auto_amp = 1.0;
-        if let Some(aa) = &s.attack_amp {
-            auto_amp += aa.max_pct / 100.0 * pymin(1.0, self.attack_range / aa.max_at_range);
-        }
-        let mut sundered_used = e.st.sundered_used;
-        let mut kraken = e.st.kraken;
-        let mut phantom = e.st.phantom;
-        let mut seething = e.st.seething;
-        let mut sb_primed = e.st.sb_primed;
-
+        let mut cur_t = t_now;
         let mut t_swing = t_first_swing;
-        let mut i = 0;
-        while i < n_swings {
-            if t_swing > t_horizon + 1e-9 {
+        let mut swings_done = 0;
+        let mut w_casting = self.s.w_resolve_at < INF;
+        let mut t_w_land = self.s.w_resolve_at;
+        let max_steps = 100.0 as i64;
+        let mut steps = 0;
+
+        while steps < max_steps {
+            steps += 1;
+            let q_slot_free =
+                self.q_missiles > 0 && (lk.v0.idx >= self.q_missiles || lk.v1.idx >= self.q_missiles);
+            let t_q_cast = if self.ranks.q > 0 && q_slot_free {
+                let w_busy = if w_casting { t_w_land } else { 0.0 };
+                let qc = pymax(pymax(lk.q_ready, cur_t), w_busy);
+                if qc <= t_horizon + 1e-9 {
+                    qc
+                } else {
+                    INF
+                }
+            } else {
+                INF
+            };
+
+            let t_atk_ev = if swings_done < n_swings && t_swing <= t_horizon + 1e-9 {
+                t_swing
+            } else {
+                INF
+            };
+            let v0_raw = self.volley_next_at(lk.v0);
+            let t_v0 = if v0_raw <= t_horizon + 1e-9 { v0_raw } else { INF };
+            let v1_raw = self.volley_next_at(lk.v1);
+            let t_v1 = if v1_raw <= t_horizon + 1e-9 { v1_raw } else { INF };
+            let t_ss = if !lk.ss_done && lk.ss_at <= t_horizon + 1e-9 {
+                lk.ss_at
+            } else {
+                INF
+            };
+            let t_wl = if w_casting && t_w_land <= t_horizon + 1e-9 {
+                t_w_land
+            } else {
+                INF
+            };
+            let t_wc = if !w_casting && allow_ready_w && self.ranks.w > 0 {
+                let earliest_w = pymax(pymax(lk.w_ready, cur_t), lk.busy_until);
+                let cand_w = if swings_done < n_swings
+                    && earliest_w < t_swing
+                    && t_swing < earliest_w + self.w_cast_time - 1e-9
+                    && t_swing + self.w_cast_time <= t_horizon + 1e-9
+                {
+                    t_swing
+                } else {
+                    earliest_w
+                };
+                if cand_w + self.w_cast_time <= t_horizon + 1e-9 {
+                    cand_w
+                } else {
+                    INF
+                }
+            } else {
+                INF
+            };
+
+            let mut t_next = t_atk_ev;
+            let mut kind = 0;
+            if t_q_cast < t_next {
+                t_next = t_q_cast;
+                kind = 1;
+            }
+            if t_ss < t_next {
+                t_next = t_ss;
+                kind = 2;
+            }
+            if t_v0 < t_next {
+                t_next = t_v0;
+                kind = 3;
+            }
+            if t_v1 < t_next {
+                t_next = t_v1;
+                kind = 4;
+            }
+            if t_wl < t_next {
+                t_next = t_wl;
+                kind = 5;
+            }
+            if t_wc < t_next {
+                t_next = t_wc;
+                kind = 6;
+            }
+            if t_next >= INF {
                 break;
             }
-            if w_land < t_swing - 1e-9 {
-                let (w_d, st_after) = self.est_w_burst(e, w_cast, stacks, hp);
-                hp = pymax(hp - w_d - q_post, 0.0);
-                stacks = st_after;
-                q_post = 0.0;
-                cleaver_add = imax(cleaver_add, cleaver_all);
-                if s.spellblade.is_some() && w_cast >= e.st.sb_icd_until - 1e-9 {
-                    sb_primed = true;
-                }
-                w_land = INF;
-                if hp <= exec_hp + 1e-9 {
-                    return true;
-                }
-            }
+            cur_t = t_next;
 
-            let phys_m = self.est_phys_mult(e, t_swing, cleaver_add);
-            let mag_m = self.est_mag_mult(e, t_swing, 0);
-            let phys_amp = self.est_amp(e, DType::Physical, t_swing, false, 0, hp);
-            let mag_amp = self.est_amp(e, DType::Magic, t_swing, false, 0, hp);
-
-            let mut phantom_now = false;
-            if let Some(p) = &s.phantom {
-                if phantom >= p.stacks_needed {
-                    phantom_now = true;
-                    phantom = 0;
-                }
-            }
-            let mut kraken_now = false;
-            if s.kraken.is_some() {
-                if kraken >= 2 {
-                    kraken_now = true;
-                    kraken = 0;
+            if t_q_cast <= t_next {
+                lk.q_ready = cur_t + self.sim_basic_cd(e, cur_t, self.q_cd);
+                let volley = Volley {
+                    start_at: cur_t + self.q_missile_delay,
+                    idx: 0,
+                    proced: false,
+                };
+                if lk.v0.idx >= self.q_missiles {
+                    lk.v0 = volley;
                 } else {
-                    kraken += 1;
+                    lk.v1 = volley;
                 }
-            }
-            if let Some(a) = &s.as_stacking {
-                seething = imin(seething + 1, a.max_stacks);
-                if let Some(p) = &s.phantom {
-                    if !phantom_now && seething == a.max_stacks {
-                        phantom = imin(phantom + 1, p.stacks_needed);
-                    }
+                if e.p.fx.s.spellblade.is_some() && cur_t >= lk.sb_icd_until {
+                    lk.sb_primed = true;
+                }
+                if kind == 1 {
+                    continue;
                 }
             }
 
-            let mut p_done = false;
-            if stacks >= self.p_max_stacks {
-                let cw4 = (self.p_base_dmg + self.p_perstack_dmg * (stacks as f64)) * mag_amp * mag_m;
-                hp = pymax(hp - cw4, 0.0);
-                stacks = 0;
-                let exec_d = self.p_execute_pct * (e.target_hp - hp) * mag_amp * mag_m;
-                hp = pymax(hp - exec_d, 0.0);
-                p_done = true;
-            }
-
-            let mut crit_ev = base_crit_ev;
-            if let Some(sun) = s.first_attack_crit_floor_ev {
-                if !sundered_used {
-                    sundered_used = true;
-                    if crit_ev < sun {
-                        crit_ev = sun;
-                    }
+            if kind == 0 {
+                self.sim_swing(e, &mut lk, t_now, cur_t);
+                swings_done += 1;
+                t_swing = cur_t + swing_period;
+                if w_casting {
+                    t_swing = pymax(t_swing, t_w_land);
                 }
-            }
-            let auto_d = e.p.ad * auto_amp * crit_ev * phys_amp * phys_m;
-            hp = pymax(hp - auto_d, 0.0);
-            cleaver_add += 1;
-
-            let mut oh_passes = if phantom_now { 2 } else { 1 };
-            let mut sb_reapply = false;
-            if sb_primed {
-                sb_primed = false;
-                if let Some(sb) = &s.spellblade {
-                    let raw = sb.base_ad_ratio * sheet.ad_base
-                        + sb.ap_ratio * sheet.ap
-                        + sb.per_crit_chance_pct * sheet.crit_chance;
-                    let m = match sb.dtype {
-                        DType::Physical => phys_amp * phys_m,
-                        DType::Magic => mag_amp * mag_m,
-                        DType::True => 1.0,
-                    };
-                    hp = pymax(hp - raw * m, 0.0);
-                    sb_reapply = sb.reapply_onhit;
+            } else if kind == 2 {
+                lk.ss_at = INF;
+                lk.ss_done = true;
+                if let Some(ss) = &e.p.fx.s.stormsurge {
+                    let amt = ss.base + ss.ap_ratio * e.p.sheet.ap;
+                    self.sim_deal(e, &mut lk, t_now, cur_t, amt, ss.dtype, false, false, false, 1.0);
                 }
-            }
-            if sb_reapply {
-                oh_passes += 1;
-            }
-
-            let mut pass = 0;
-            while pass < oh_passes {
-                for oh in &fx.onhit {
-                    let mut raw = oh.base
-                        + oh.ap_ratio * sheet.ap
-                        + oh.bonus_ad_ratio * sheet.ad_bonus
-                        + oh.max_mana_pct / 100.0 * sheet.mana;
-                    if let Some((_, rng)) = oh.self_max_hp_pct {
-                        raw += rng / 100.0 * sheet.hp;
-                    }
-                    let m = match oh.dtype {
-                        DType::Physical => phys_amp * phys_m,
-                        DType::Magic => mag_amp * mag_m,
-                        DType::True => 1.0,
-                    };
-                    hp = pymax(hp - raw * m, 0.0);
+            } else if kind == 3 {
+                self.sim_step_volley(e, &mut lk, 0, t_now, cur_t);
+            } else if kind == 4 {
+                self.sim_step_volley(e, &mut lk, 1, t_now, cur_t);
+            } else if kind == 5 {
+                w_casting = false;
+                t_w_land = INF;
+                self.sim_deal(
+                    e,
+                    &mut lk,
+                    t_now,
+                    cur_t,
+                    self.w_dmg,
+                    DType::Magic,
+                    false,
+                    true,
+                    true,
+                    1.0,
+                );
+                let mut k = 0;
+                while k < self.w_stacks {
+                    self.sim_apply_cw(e, &mut lk, t_now, cur_t);
+                    k += 1;
                 }
-                if pass == 0 && p_done {
-                    p_done = false;
+                self.sim_ability_cast_proc(e, &mut lk, t_now, cur_t);
+                self.sim_eclipse_hit(e, &mut lk, t_now, cur_t);
+                lk.w_ready = if allow_ready_w {
+                    cur_t + self.sim_basic_cd(e, cur_t, self.w_cd) * self.w_cd_mult
                 } else {
-                    let cw = (self.p_base_dmg + self.p_perstack_dmg * (stacks as f64))
-                        * mag_amp
-                        * mag_m;
-                    hp = pymax(hp - cw, 0.0);
-                    if stacks >= self.p_max_stacks {
-                        stacks = 0;
-                        let exec_d = self.p_execute_pct * (e.target_hp - hp) * mag_amp * mag_m;
-                        hp = pymax(hp - exec_d, 0.0);
-                    } else {
-                        stacks += 1;
-                    }
+                    INF
+                };
+            } else if kind == 6 {
+                lk.w_ready = INF;
+                w_casting = true;
+                t_w_land = cur_t + self.w_cast_time;
+                lk.busy_until = t_w_land;
+                if swings_done < n_swings {
+                    t_swing = pymax(t_swing, t_w_land);
                 }
-                for oh in &fx.onhit_current_hp {
-                    let raw = oh.ranged_pct / 100.0 * hp;
-                    let m = match oh.dtype {
-                        DType::Physical => phys_amp * phys_m,
-                        DType::Magic => mag_amp * mag_m,
-                        DType::True => 1.0,
-                    };
-                    hp = pymax(hp - raw * m, 0.0);
-                }
-                pass += 1;
-            }
-
-            if kraken_now {
-                if let Some(kr) = &s.kraken {
-                    let base = kr.base_by_level.at(self.level) * kr.ranged_mult;
-                    let miss = 1.0 - hp / e.target_hp;
-                    let raw = base * (1.0 + kr.missing_ranged / 100.0 * miss);
-                    let m = match kr.dtype {
-                        DType::Physical => phys_amp * phys_m,
-                        DType::Magic => mag_amp * mag_m,
-                        DType::True => 1.0,
-                    };
-                    hp = pymax(hp - raw * m, 0.0);
+                if e.p.fx.s.spellblade.is_some() && cur_t >= lk.sb_icd_until {
+                    lk.sb_primed = true;
                 }
             }
 
-            if hp <= exec_hp + 1e-9 {
+            if lk.hp <= exec_hp + 1e-9 {
                 return true;
             }
-            let prev_swing = t_swing;
-            t_swing += swing_period;
-            if w_land < INF && w_cast <= prev_swing + 1e-9 {
-                t_swing = pymax(t_swing, w_land);
-            }
-            i += 1;
         }
-        if w_land < INF {
-            let (w_d, _) = self.est_w_burst(e, w_cast, stacks, hp);
-            hp = pymax(hp - w_d, 0.0);
-        }
-        hp = pymax(hp - q_post, 0.0);
-        let _ = stacks;
-        hp <= exec_hp + 1e-9
+        lk.hp <= exec_hp + 1e-9
     }
 
     fn w_cast_at(&self, e: &Engine) -> f64 {
@@ -713,7 +974,7 @@ impl GenDriver {
         if next_atk >= INF {
             return INF;
         }
-        let earliest = self.castable_at(e, self.s.e_ready);
+        let earliest = self.castable_at(e, pymax(self.s.e_ready, self.s.e_buff_until));
         let b_no_e = self.cur_bonus_as_no_e(e, earliest);
         let b_cur = b_no_e + self.bonus_as(earliest);
         let cast_s = pymax(self.e_cast_base / (1.0 + b_cur / 100.0), self.e_cast_floor);
@@ -949,6 +1210,7 @@ impl Driver for GenDriver {
             && t >= self.s.r_ready
             && t < self.s.p_active_until
             && t >= self.s.busy_until
+            && t >= e.hold_until()
         {
             let wf = if self.e_buff_active(t) {
                 self.e_windup_fraction
@@ -1021,13 +1283,14 @@ impl Driver for GenDriver {
             return INF;
         }
         // Icathian Rain is an instant cast that can fire during Supercharge's
-        // charge, waiting only if Void Seeker is currently mid-cast.
+        // charge, waiting only if Void Seeker is currently mid-cast or the
+        // defender is in stasis.
         let w_busy = if self.s.w_resolve_at < INF {
             self.s.w_resolve_at
         } else {
             0.0
         };
-        pymax(pymax(e.st.q_ready, e.st.t), w_busy)
+        pymax(pymax(pymax(e.st.q_ready, e.st.t), w_busy), e.hold_until())
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -1128,7 +1391,7 @@ impl Driver for GenDriver {
                 }
             }
             Kind::Ev(EV_E_CAST) => {
-                if self.castable_at(e, self.s.e_ready) > t {
+                if self.castable_at(e, pymax(self.s.e_ready, self.s.e_buff_until)) > t {
                     return;
                 }
                 let total_bonus_as = self.cur_bonus_as_no_e(e, t) + self.bonus_as(t);
