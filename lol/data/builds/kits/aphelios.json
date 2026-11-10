@@ -1,37 +1,58 @@
 {
  "champion": "aphelios",
  "name": "Aphelios",
- "patch": "16.18",
+ "patch": "16.22",
  "generated": true,
- "reviewed": false,
+ "reviewed": true,
+ "manaless": false,
  "maxOrder": [
   "Q",
-  "W",
-  "E"
+  "E",
+  "W"
  ],
  "notes": [
-  "Aphelios opens with Calibrum as his main weapon and Severum in his off-hand (his fixed starting loadout); Moonlight Vigil is cast at t=0 while Calibrum is main, so its weapon-specific bonus always resolves as Calibrum's empowered mark bonus.",
-  "The main weapon is modeled cycling Calibrum -> Gravitum -> Infernum -> Crescendum -> Calibrum... as its 50-Moonlight magazine is spent by attacks (1 Moonlight) and Q casts (10 Moonlight), each depletion causing a 1 s assembly (no attacks) and a 1.5 s lock on the new weapon's Q, exactly as described.",
-  "Off-hand is modeled as staying Severum for the entire fight: off-hand Moonlight is only spent by ability-triggered attacks (Calibrum's snipe, Duskwave's volley, Sentry's copy), which are comparatively rare, so the off-hand weapon is assumed never to exhaust inside this fight. A direct consequence is that Severum never becomes the main weapon, so Onslaught is never cast in this simulation -- a documented simplification, not a claim that Onslaught has no value in real play.",
-  "Because the off-hand never becomes Crescendum, Crescendum never accumulates spectral Chakrams (those are generated only by other weapons' triggered attacks while Crescendum is off-hand, or by Moonlight Vigil while Crescendum is main); Crescendum's own basic attack is therefore modeled as a plain 100% AD hit with no stacking bonus, and its throw-and-return attack lock is not modeled (assumed point-blank engagement, per one of the dossier's own proposed readings, so travel time is treated as negligible).",
-  "Binding Eclipse (Gravitum's Q) can only be cast once a Gravitum basic attack has landed and its slow is still active; it is cast the instant that becomes true and is recast whenever both its own cooldown and a fresh slow window allow it.",
-  "Duskwave's off-hand volley is modeled as crit-affected and applying on-hit effects, following the ability's headline description rather than its self-contradicting note that the automatic attacks trigger no on-attack effects at all -- the higher-damage, more commonly cited reading.",
-  "Sentry is deployed on cooldown while Crescendum is main; it is assumed to arm and immediately find the target (point-blank placement), then attacks at Aphelios' own attack speed for its 4 s active window at full crit-chance effectiveness.",
-  "Casts go one at a time: each weapon's Q keeps Aphelios busy for its own cast time before any other cast or attack starts -- Moonshot and Duskwave 0.4 s (gen.Q.castTimeS, shared since both are literally 0.4 s in the dossier), Binding Eclipse 0.3 s (gen.Q.castTimeGravitumS), Sentry 0.25 s (gen.Q.castTimeCrescendumS) -- and Moonlight Vigil's 0.6 s cast time (gen.R.castTimeS) does the same, so R and the opening Q never resolve at the same instant.",
-  "Weapon Master's bonus stats are modeled on a fixed schedule that matches maxOrder: attack-damage points cap out by champion level 6, then attack-speed points cap out by level 12 (both capped at 6 points); its bonus lethality is not modeled since the engine exposes no hook to add bonus lethality to damage mitigation.",
-  "Moonlight Vigil's extra crit-damage-modifier scaling (0 to 30 percentage points across its ranks) is not applied: its formula references stat hooks the numbers sheet could not resolve, and the wiki itself documents an unexplained bug in this exact area, so ordinary crit damage is used instead.",
-  "Calibrum's mark is treated as a single consumable flag per target (never stacking) and is consumed by the very next basic attack after Moonshot lands; Moonshot is recast on cooldown whenever Calibrum is main.",
-  "Infernum's cone and secondary bolts require other enemies behind the primary target to hit anything, so against a single dummy only the primary 110% AD hit is dealt.",
-  "W (Phase) is a pure weapon-order toggle the driver never uses, since the modeled main-weapon cycle already matches the intended order; its cooldownS list is copied flat from ddragon purely to satisfy the by-rank format. E (Weapon Queue System, see \"unused\") is display-only and has no combat effect either.",
-  "Mana costs are not modeled: nothing here binds inside an 8-15 s fight at level 16."
+  "The fight starts from Aphelios's own starting loadout: Calibrum as main weapon, Severum in the off-hand, Gravitum, Infernum and Crescendum queued in that order, 50 Moonlight each. A fight of 8 to 15 seconds never cycles the arsenal, so the pair it starts with is the fight: Moonshot, Onslaught and the Calibrum mark here. The loadout is a kit parameter (gen.P.loadout), all five weapons are modeled, and other pairs rank builds differently in detail.",
+  "Weapon Master: skill points go to attack damage, then lethality, then attack speed (Q > E > W, the order about three quarters of ranked players use on patch 26.22), each rank as early as the wiki's rule allows (ranks 1 to 6 no earlier than levels 1, 2, 3, 5, 7, 9). At level 16 that is +24 AD, +27 lethality and +36% attack speed. The AD is bonus AD for attacks and every bonus-AD ratio, the lethality cuts the armor all physical damage meets (item procs included), and the attack speed is ordinary bonus attack speed.",
+  "Attacks come first and casts are woven in: a cast starts right after an attack lands, or wherever it fits before the next one is due, so a cast shorter than the attack interval costs no attack. One cast at a time: a cast takes effect as it starts and holds every other cast, and any attack that would start inside it, for its cast time (Moonshot 0.4 s, Binding Eclipse 0.3 s, Duskwave 0.4 s, Sentry 0.25 s, Moonlight Vigil 0.6 s).",
+  "Moonlight Vigil (R) is cast after the first attack, not before it, with the held weapon whose effect deals the most: Crescendum (6 Chakrams), then Infernum (its bonus blast and a 110% AD attack), then Calibrum (an empowered mark), swapping with Phase first when that weapon is in the off-hand. The blast lands at the cast and the locked-on attack 0.3 s later with on-hit effects. That attack does not roll a critical strike: it deals 100% AD times 1 + 0.3 x crit chance x (crit damage - 1), the V26.01 rule read off Riot's calculation.",
+  "Calibrum: Moonshot (Q) is cast when no mark is waiting to be consumed. A mark (4.5 s, one per target) is consumed by the next basic attack for 15 + 15% bonus AD, plus Moonlight Vigil's 50 to 110 when the mark is its empowered one. With Calibrum in the main hand that attack is fired by the off-hand weapon for no Moonlight, and carries that weapon's attack (Infernum's 110% AD, a spectral Chakram from Crescendum, Gravitum's slow); with Calibrum in the off-hand it is the main weapon's ordinary attack. Either way it is fought as an ordinary attack, although in game it triggers no on-attack effect beyond Energized.",
+  "Severum: Onslaught (Q) fires floor(6 x (1 + 0.33334 x bonus attack speed)) shots evenly over 1.75 s, the first at the cast, the off-hand weapon first and then alternating. Each deals 20% to 41% AD by level with critical strike modifiers, applies on-hit effects at 25% (Kraken Slayer's count and proc included), stacks Energized and counts as its own cast for Eclipse. No basic attack and no other cast happens during it, and its cooldown starts when it ends. It is only cast when its shots, on this build against this target, are worth more than the attacks they replace, which an on-hit build can fail.",
+  "Gravitum: a Gravitum hit slows the target for 2.5 s, and Binding Eclipse (Q, magic damage) is cast while that slow is on it, which consumes the slow.",
+  "Infernum: basic attacks deal 110% AD to the target. Duskwave (Q) deals its wave damage at the cast; 0.25 s after its 0.4 s cast time the off-hand weapon fires one attack at the target for 100% AD with critical strike modifiers and on-hit effects, and no basic attack starts before that volley.",
+  "Crescendum: a basic attack is a throw, and the next one waits for the blade to come back, so the attack interval is the windup (0.16 of 1.5 s attack time, 0.1 on a critical strike, weighted by crit chance), the flight out (5000 units a second slowing by 6000 a second each second, never under 1700), 0.2 s at the target and the flight back (600 units a second plus 750 per 100% bonus attack speed), never shorter than the 2.5 attack speed cap allows. The distance flown is Aphelios's own 550 attack range, which makes Crescendum slower than another weapon at high attack speed. Held Chakrams (up to 20, 5 s, refreshed by catching one or by a Crescendum attack) add 16%, 14.5%, 13% ... of AD each down to 5% from the 9th, with critical strike modifiers. They come from Moonlight Vigil cast with Crescendum (6) and from off-hand Crescendum shots (Onslaught, Duskwave's volley, a mark attack), one each, counted when the spectral Chakram has flown back.",
+  "Sentry (Crescendum's Q) arms 0.35 s after the cast and attacks for 4 s at 0.64 attack speed plus 0.64 per 100% of Aphelios's bonus attack speed, each hit dealing its own damage as spell damage with critical strike modifiers and no on-hit effects. It copies the off-hand weapon it was cast with: a Calibrum sentry marks on every hit, a Gravitum one slows. A new one is not placed while one is still attacking.",
+  "Phase (W) has a 0.8 s static cooldown and no cast time: the weapons change hands 0.25 s after it is pressed and attacks go on meanwhile; no cast starts inside a cast, an assembly or a swap. It is used to give Moonlight Vigil its best weapon, to bring the off-hand weapon's Q into play when the main weapon has nothing to cast and that Q is worth more than two attacks made with the weaker hand, and otherwise to keep the weapon with the stronger attacks in the main hand.",
+  "Moonlight: a basic attack spends 1 of the main weapon's 50 and a Q spends 10 (or what is left); attacks made by abilities and the off-hand shot at a marked target spend none. When the main weapon runs out, the next weapon in the queue takes its place after a 1 s assembly with no attack and no cast, its Q is held for 1.5 s from the start of the assembly, and Chakrams are lost if the spent weapon was Crescendum. Each weapon's Q keeps its own cooldown while it is not held.",
+  "Not scored: Severum's healing, Gravitum's slow and root, Infernum's splash on other targets, Calibrum's 100 bonus range. An attack made by an ability deals the ability's stated damage, not the firing weapon's attack bonus (no 110% for an Infernum shot of Onslaught, no Chakram bonus on a spectral Chakram). Mana costs are not modeled: nothing here binds inside a fight of this length."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.P.loadout",
+   "why": "the weapon pair and queue a level 16 fight starts from (0 Calibrum, 1 Severum, 2 Gravitum, 3 Infernum, 4 Crescendum): the kit's own starting state, the one loadout the sources define; in a real game any of the 10 pairs can be held"
+  },
+  {
+   "path": "gen.P.weaponMaster.adRanksByLevel",
+   "why": "Weapon Master ranks by champion level for the Q > E > W order (attack damage first), each rank as early as the wiki's rule allows"
+  },
+  {
+   "path": "gen.P.weaponMaster.lethalityRanksByLevel",
+   "why": "as above: lethality is ranked second, so it is maxed at level 12"
+  },
+  {
+   "path": "gen.P.weaponMaster.asRanksByLevel",
+   "why": "as above: attack speed is ranked last, from level 13, and has 4 of its 6 ranks at level 16"
+  },
+  {
+   "path": "gen.P.crescendum (the distance flown)",
+   "why": "the engine has no positions, so Crescendum's throw, its spectral Chakrams and their return need a distance: all are flown the champion's own attack range (550), the one distance the engine already assumes for a target (Prep::build scales Hexoptics' Magnification by it). The speeds are the wiki's. Standing closer would make Crescendum attack faster"
+  }
+ ],
  "unused": {
-  "E": "Weapon Queue System is a display-only slot (a text prompt of the next reserve weapon); it has no combat effect and the driver never casts it."
+  "E": "Weapon Queue System only shows which weapon comes next; it has no effect on a fight and is never cast."
  },
  "abilities": {
   "Q": {
-   "name": "Weapons of the Faithful (Moonshot cooldown shown)",
+   "name": "Weapons of the Faithful (Moonshot's cooldown by level)",
    "cooldownS": [
     10,
     10,
@@ -56,22 +77,12 @@
   "W": {
    "name": "Phase",
    "cooldownS": [
-    0.8,
-    0.8,
-    0.8,
-    0.8,
-    0.8,
     0.8
    ]
   },
   "E": {
    "name": "Weapon Queue System",
    "cooldownS": [
-    0,
-    0,
-    0,
-    0,
-    0,
     0
    ]
   },
@@ -86,45 +97,141 @@
  },
  "gen": {
   "P": {
-   "maxStacks": 6,
-   "adPerRank": 4,
-   "asPerRank": 0.09,
-   "lethalityPerRank": 4.5,
-   "ammoCapacity": 50,
-   "ammoPerQCast": 10,
-   "assemblyTimeS": 1,
-   "qLockoutS": 1.5,
-   "calibrumMarkDurationS": 4.5,
-   "calibrumSnipe": {
-    "base": 15,
-    "bonusAdRatio": 0.15
+   "weaponMaster": {
+    "adPerRank": 4,
+    "asPctPerRank": 9,
+    "lethalityPerRank": 4.5,
+    "adRanksByLevel": [
+     1,
+     2,
+     3,
+     3,
+     4,
+     4,
+     5,
+     5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "lethalityRanksByLevel": [
+     0,
+     0,
+     0,
+     1,
+     1,
+     2,
+     2,
+     3,
+     3,
+     4,
+     5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "asRanksByLevel": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ]
    },
-   "infernumAttackMultiplier": 1.1
+   "moonlight": {
+    "capacity": 50,
+    "perAttack": 1,
+    "perCast": 10,
+    "assemblyS": 1,
+    "assemblyQLockS": 1.5
+   },
+   "loadout": {
+    "main": 0,
+    "off": 1,
+    "queue": [
+     2,
+     3,
+     4
+    ]
+   },
+   "calibrum": {
+    "markDurationS": 4.5,
+    "markBase": 15,
+    "markBonusAdRatio": 0.15
+   },
+   "gravitum": {
+    "slowDurationS": 2.5
+   },
+   "infernum": {
+    "attackAdRatio": 1.1
+   },
+   "crescendum": {
+    "chakramFirstRatio": 0.16,
+    "chakramStepRatio": 0.015,
+    "chakramMinRatio": 0.05,
+    "chakramMax": 20,
+    "chakramDurationS": 5,
+    "lingerS": 0.2,
+    "outSpeed": 5000,
+    "outDecel": 6000,
+    "outMinSpeed": 1700,
+    "inSpeed": 600,
+    "inSpeedPerBonusAs": 750,
+    "attackCastTimeS": 0.16,
+    "critAttackCastTimeS": 0.1,
+    "attackTotalTimeS": 1.5
+   }
   },
   "Q": {
-   "castTimeS": 0.4,
-   "castTimeGravitumS": 0.3,
-   "castTimeCrescendumS": 0.25,
-   "calibrum": {
+   "unlockLevel": 2,
+   "moonshotCastTimeS": 0.4,
+   "bindingEclipseCastTimeS": 0.3,
+   "duskwaveCastTimeS": 0.4,
+   "sentryCastTimeS": 0.25,
+   "moonshot": {
     "base": [
-     70,
-     70,
-     85,
-     85,
-     100,
-     100,
-     115,
-     115,
-     130,
-     130,
-     145,
-     145,
-     160,
-     160,
-     160,
-     160,
-     160,
-     160
+     80,
+     80,
+     95,
+     95,
+     110,
+     110,
+     125,
+     125,
+     140,
+     140,
+     155,
+     155,
+     170,
+     170,
+     170,
+     170,
+     170,
+     170
     ],
     "bonusAdRatio": [
      0.42,
@@ -146,9 +253,55 @@
      0.6,
      0.6
     ],
-    "apRatio": 1.0
+    "apRatio": 1
    },
-   "gravitum": {
+   "onslaught": {
+    "durationS": 1.75,
+    "startingAttacks": 6,
+    "asCoeff": 0.33334,
+    "adRatio": [
+     0.2,
+     0.2,
+     0.235,
+     0.235,
+     0.27,
+     0.27,
+     0.305,
+     0.305,
+     0.34,
+     0.34,
+     0.375,
+     0.375,
+     0.41,
+     0.41,
+     0.41,
+     0.41,
+     0.41,
+     0.41
+    ],
+    "onHitEffectiveness": 0.25,
+    "cooldownS": [
+     10,
+     10,
+     9.667,
+     9.667,
+     9.334,
+     9.334,
+     9.001,
+     9.001,
+     8.668,
+     8.668,
+     8.335,
+     8.335,
+     8.002,
+     8.002,
+     8.002,
+     8.002,
+     8.002,
+     8.002
+    ]
+   },
+   "bindingEclipse": {
     "base": [
      50,
      50,
@@ -189,9 +342,29 @@
      0.5,
      0.5
     ],
-    "apRatio": 0.7
+    "apRatio": 0.7,
+    "cooldownS": [
+     12,
+     12,
+     11.667,
+     11.667,
+     11.334,
+     11.334,
+     11.001,
+     11.001,
+     10.668,
+     10.668,
+     10.335,
+     10.335,
+     10.002,
+     10.002,
+     10.002,
+     10.002,
+     10.002,
+     10.002
+    ]
    },
-   "infernum": {
+   "duskwave": {
     "base": [
      20,
      20,
@@ -232,9 +405,31 @@
      0.21,
      0.21
     ],
-    "apRatio": 0.7
+    "apRatio": 0.7,
+    "cooldownS": [
+     8,
+     8,
+     7.5,
+     7.5,
+     7,
+     7,
+     6.5,
+     6.5,
+     6,
+     6,
+     5.5,
+     5.5,
+     5,
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "volleyDelayS": 0.25,
+    "volleyAdRatio": 1.0
    },
-   "crescendum": {
+   "sentry": {
     "base": [
      35,
      35,
@@ -275,89 +470,60 @@
      0.52,
      0.52
     ],
-    "apRatio": 0.5
-   },
-   "gravitumCooldownS": [
-    12,
-    12,
-    11.667,
-    11.667,
-    11.334,
-    11.334,
-    11.001,
-    11.001,
-    10.668,
-    10.668,
-    10.335,
-    10.335,
-    10.002,
-    10.002,
-    10.002,
-    10.002,
-    10.002,
-    10.002
-   ],
-   "infernumCooldownS": [
-    9,
-    9,
-    8.5,
-    8.5,
-    8,
-    8,
-    7.5,
-    7.5,
-    7,
-    7,
-    6.5,
-    6.5,
-    6,
-    6,
-    6,
-    6,
-    6,
-    6
-   ],
-   "crescendumCooldownS": [
-    9,
-    9,
-    8.5,
-    8.5,
-    8,
-    8,
-    7.5,
-    7.5,
-    7,
-    7,
-    6.5,
-    6.5,
-    6,
-    6,
-    6,
-    6,
-    6,
-    6
-   ],
-   "gravitumSlowDurationS": 2.5,
-   "duskwaveVolleyDelayS": 0.25,
-   "sentryArmDelayS": 0.35,
-   "sentryActiveDurationS": 4
+    "apRatio": 0.5,
+    "cooldownS": [
+     9,
+     9,
+     8.5,
+     8.5,
+     8,
+     8,
+     7.5,
+     7.5,
+     7,
+     7,
+     6.5,
+     6.5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "armDelayS": 0.35,
+    "activeDurationS": 4,
+    "baseAttackSpeed": 0.64,
+    "attackSpeedRatio": 0.64
+   }
+  },
+  "W": {
+   "swapS": 0.25
   },
   "R": {
    "castTimeS": 0.6,
-   "smite": {
-    "base": [
-     125,
-     175,
-     225
-    ],
-    "bonusAdRatio": 0.2,
-    "apRatio": 1.0
-   },
+   "base": [
+    125,
+    175,
+    225
+   ],
+   "bonusAdRatio": 0.2,
+   "apRatio": 1,
+   "skyAttackDelayS": 0.3,
+   "skyAttackAdRatio": 1.0,
+   "critDamageMod": 0.3,
    "calibrumMarkBonus": [
     50,
     80,
     110
-   ]
+   ],
+   "infernumBonusBase": [
+    50,
+    100,
+    150
+   ],
+   "infernumBonusAdRatio": 0.25,
+   "crescendumChakrams": 6
   }
  },
  "attack": {
@@ -365,7 +531,6 @@
   "ranged": true
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aphelios.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aphelios.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Rewritten by hand and reviewed 2026-11-10 from Patch 16.22 sources (dossiers/aphelios.json, wiki.json at V26.19, sheet.json, bin.json): the full five-weapon state machine with Moonlight and the reserve queue, Phase, the Calibrum mark, Onslaught's shot count and quarter on-hits, Binding Eclipse, Duskwave's volley, Crescendum's flight cadence and Chakrams, Sentry, Moonlight Vigil's per-weapon effects and V26.01 critical modifier, and Weapon Master's AD, attack speed and lethality by level (Q > E > W) in engine/src/generated/aphelios.rs. It replaces the machine-written 16.18 kit, which kept Severum in the off-hand all fight, had no Chakrams and no lethality."
  ]
 }

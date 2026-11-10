@@ -886,6 +886,302 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertAlmostEqual(r_with_e["ttk"], 1.40, places=4)
 
 
+class TestApheliosDriver(unittest.TestCase):
+    """Patch 16.22 Aphelios kit: the five weapons and their Moonlight, Phase,
+    Weapon Master's statistics, and the woven rotation. Numbers are worked out
+    by hand for a level 16 Aphelios with no items against a dummy with no
+    resists unless a test says otherwise."""
+
+    CALIBRUM, SEVERUM, GRAVITUM, INFERNUM, CRESCENDUM = range(5)
+    # 55 + 2.3 x growth(16), plus Weapon Master's 6 ranks of attack damage
+    AD = 55 + 2.3 * 14.475 + 24
+    # 2.1% x growth(16) from levels, plus 4 ranks of attack speed
+    BONUS_AS = 2.1 * 14.475 + 36
+    PERIOD = 1 / (0.665 + 0.658 * BONUS_AS / 100)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("aphelios")
+        cls.kit = builds.load_kit("aphelios")
+        _, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+
+    def variant(self, main=None, off=None, **paths):
+        """The kit with another starting loadout and/or other numbers
+        (`gen_P_moonlight_capacity=14` sets gen.P.moonlight.capacity)."""
+        kit = copy.deepcopy(self.kit)
+        if main is not None:
+            kit["gen"]["P"]["loadout"] = {"main": main, "off": off,
+                                          "queue": [w for w in range(5) if w not in (main, off)]}
+        for path, value in paths.items():
+            node, *keys = kit, *path.split("_")
+            for k in keys[:-1]:
+                node = node[k]
+            node[keys[-1]] = value
+        return kit
+
+    def sim(self, tokens, duration, hp=100_000, armor=0, mr=0, level=16, kit=None, use_ult=True,
+            extra_lethality=0.0, bonus_hp=0.0):
+        kit = kit or self.kit
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        ranks = builds.skill_ranks(level, builds.kit_max_order(kit))
+        sh = builds.resolve_stats(self.champ, level, ids, self.pool, self.effects, kit=kit)
+        sh["lethality"] += extra_lethality
+        fx = builds.merge_effects(ids, self.effects)
+        return builds.simulate(sh, kit, fx, level, ranks, hp, armor, mr, duration,
+                               use_ult=use_ult, target_bonus_hp=bonus_hp)
+
+    def test_sources_lints_and_fight_checks(self):
+        with open(os.path.join(ks.DOSSIERS_DIR, "aphelios.json")) as f:
+            d = json.load(f)
+        chk = ks.Checker("aphelios", d, ks.load_sources("aphelios", "16.22"))
+        chk.run()
+        self.assertEqual(chk.errors, [])
+        with open(os.path.join(kd.GENERATED_DIR, "aphelios.rs")) as f:
+            rs = f.read()
+        self.assertTrue(self.kit["reviewed"])
+        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
+        self.assertTrue(meta["aphelios"]["reviewed"])
+        self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "aphelios", kd.source_numbers("aphelios"),
+                                     allow_reviewed=True), [])
+        self.assertEqual(kd.lint_driver(rs), [])
+        self.assertEqual(kd.lint_cast_times(self.kit, d, rs, "aphelios"), [])
+        errors, _ = kd.fight_checks(self.kit, "aphelios", d)
+        self.assertEqual(errors, [])
+
+    def test_weapon_master_ranks_follow_the_max_order(self):
+        # Q, W and E rank attack damage, attack speed and lethality; a rank
+        # opens at levels 1, 2, 3, 5, 7, 9 and every level grants one point
+        self.assertEqual(builds.kit_max_order(self.kit), ("Q", "E", "W"))
+        table = {"Q": "adRanksByLevel", "W": "asRanksByLevel", "E": "lethalityRanksByLevel"}
+        gate, ranks, by_level = [1, 2, 3, 5, 7, 9], dict.fromkeys("QWE", 0), {s: [] for s in "QWE"}
+        for level in range(1, 19):
+            for slot in self.kit["maxOrder"]:
+                if ranks[slot] < 6 and level >= gate[ranks[slot]]:
+                    ranks[slot] += 1
+                    break
+            for slot in "QWE":
+                by_level[slot].append(ranks[slot])
+        wm = self.kit["gen"]["P"]["weaponMaster"]
+        for slot, key in table.items():
+            self.assertEqual(wm[key], by_level[slot], key)
+        self.assertEqual([wm[key][15] for key in table.values()], [6, 4, 6])  # level 16: AD, AS, lethality
+
+        # the attack damage is in the attack, the attack speed in its cadence
+        self.assertAlmostEqual(self.sim([], 0.0, use_ult=False)["breakdown"]["auto"], self.AD, places=6)
+        self.assertEqual(self.sim([], self.PERIOD - 0.01, use_ult=False)["attacks"], 1)
+        self.assertEqual(self.sim([], self.PERIOD + 0.01, use_ult=False)["attacks"], 2)
+        # 27 lethality: 27 armor is no armor, 127 armor is 100
+        auto = lambda **kw: self.sim([], 0.0, use_ult=False, **kw)["breakdown"]["auto"]  # noqa: E731
+        self.assertAlmostEqual(auto(armor=27), self.AD, places=6)
+        self.assertAlmostEqual(auto(armor=127), self.AD / 2, places=6)
+        # level 9: attack damage maxed, 3 ranks of lethality (13.5), no attack speed yet
+        ad9 = 55 + 2.3 * builds.growth(9) + 24
+        self.assertAlmostEqual(auto(level=9, armor=13.5), ad9, places=6)
+        self.assertAlmostEqual(auto(level=9, armor=113.5), ad9 / 2, places=6)
+        period9 = 1 / (0.665 + 0.658 * 2.1 * builds.growth(9) / 100)
+        self.assertEqual(self.sim([], period9 - 0.01, level=9, use_ult=False)["attacks"], 1)
+        self.assertEqual(self.sim([], period9 + 0.01, level=9, use_ult=False)["attacks"], 2)
+
+    def test_lethality_reaches_every_physical_source_like_sheet_lethality(self):
+        # The passive's lethality is applied by the driver. The reference is the
+        # engine's own chain: the same 27 lethality on the stat sheet, none in the kit.
+        on_sheet = self.variant(gen_P_weaponMaster_lethalityPerRank=0)
+        crit = ["berserkers greaves", "infinity edge", "yun tal wildarrows", "lord dominiks regards",
+                "kraken slayer", "blade of the ruined king"]
+        opener = ["ionian boots of lucidity", "youmuus ghostblade", "profane hydra", "seryldas grudge",
+                  "umbral glaive", "edge of night"]
+        for items in (crit, opener, []):
+            for armor in (20, 110, 220):
+                mine = self.sim(items, 10.0, hp=30_000, armor=armor, mr=60)
+                ref = self.sim(items, 10.0, hp=30_000, armor=armor, mr=60, kit=on_sheet,
+                               extra_lethality=27.0)
+                self.assertEqual(mine["attacks"], ref["attacks"])
+                for source, dmg in ref["breakdown"].items():
+                    self.assertAlmostEqual(mine["breakdown"][source], dmg, delta=1e-6 * max(dmg, 1.0),
+                                           msg=f"{source} at {armor} armor")
+        # Black Cleaver and Terminus move the armor inside an attack: within a tenth of a percent
+        shred = ["berserkers greaves", "black cleaver", "terminus", "kraken slayer",
+                 "blade of the ruined king", "eclipse"]
+        mine = self.sim(shred, 10.0, hp=30_000, armor=110, mr=60)
+        ref = self.sim(shred, 10.0, hp=30_000, armor=110, mr=60, kit=on_sheet, extra_lethality=27.0)
+        self.assertAlmostEqual(mine["total"], ref["total"], delta=1e-3 * ref["total"])
+
+    def test_opening_weaves_moonlight_vigil_and_moonshot_after_attacks(self):
+        r_blast, moonshot, mark = 225 + 0.2 * 24, 170 + 0.6 * 24, 15 + 0.15 * 24
+        # the first attack lands at once, and Moonlight Vigil is cast in its shadow
+        opening = self.sim([], 0.0)["breakdown"]
+        self.assertEqual(sorted(opening), ["R", "auto"])
+        self.assertAlmostEqual(opening["auto"], self.AD, places=6)
+        self.assertAlmostEqual(opening["R"], r_blast, places=6)
+        # its locked-on attack lands 0.3 s later: 100% AD, no critical strike chance yet
+        self.assertNotIn("R attack", self.sim([], 0.29)["breakdown"])
+        self.assertAlmostEqual(self.sim([], 0.30)["breakdown"]["R attack"], self.AD, places=6)
+        # the 0.6 s cast ends before the second attack is due, which consumes the
+        # empowered mark (15 + 15% bonus AD, plus rank 3's 110); Moonshot follows it
+        before, after = self.sim([], self.PERIOD - 0.01), self.sim([], self.PERIOD + 0.01)
+        self.assertEqual((before["attacks"], after["attacks"]), (1, 2))
+        self.assertNotIn("Q Moonshot", before["breakdown"])
+        self.assertAlmostEqual(after["breakdown"]["P Calibrum mark"], mark + 110, places=6)
+        self.assertAlmostEqual(after["breakdown"]["Q Moonshot"], moonshot, places=6)
+        # Moonshot's own mark is an ordinary one, consumed by the third attack
+        third = self.sim([], 2 * self.PERIOD + 0.01)
+        self.assertAlmostEqual(third["breakdown"]["P Calibrum mark"], 2 * mark + 110, places=6)
+        # without the ult Moonshot goes out after the first attack instead
+        no_ult = self.sim([], 0.0, use_ult=False)["breakdown"]
+        self.assertEqual(sorted(no_ult), ["Q Moonshot", "auto"])
+        # the locked-on attack never rolls a crit: 1 + 0.3 x chance x (crit damage - 1)
+        ie = self.sim(["infinity edge"], 0.30)
+        crit_damage = builds.resolve_stats(self.champ, 16, [builds.resolve_item(self.pool, self.idx,
+                                                                              "infinity edge")],
+                                           self.pool, self.effects, kit=self.kit)["crit_damage"] / 100
+        self.assertAlmostEqual(ie["breakdown"]["R attack"],
+                               (self.AD + 75) * (1 + 0.3 * 0.25 * (crit_damage - 1)), places=6)
+        # level 1 has neither a Q nor an ult, level 2 has the Q
+        self.assertEqual(sorted(self.sim([], 5.0, level=1)["breakdown"]), ["auto"])
+        self.assertIn("Q Moonshot", self.sim([], 5.0, level=2)["breakdown"])
+
+    def test_onslaught_shots_and_quarter_onhits(self):
+        shot = 0.41 * self.AD
+        # Phase brings Severum up after Moonshot; Onslaught follows the third attack:
+        # floor(6 x (1 + 0.33334 x 66.4%)) = 7 shots over 1.75 s, the first at the cast
+        cast = 2 * self.PERIOD
+        self.assertAlmostEqual(self.sim([], cast + 0.01)["breakdown"]["Q Onslaught"], shot, places=6)
+        done = self.sim([], cast + 1.74)
+        self.assertAlmostEqual(done["breakdown"]["Q Onslaught"], 7 * shot, places=6)
+        # no attack during it; the next one lands as it ends, and takes the mark
+        # its Calibrum shots left
+        self.assertEqual(done["attacks"], 3)
+        after = self.sim([], cast + 1.76)
+        self.assertEqual(after["attacks"], 4)
+        self.assertGreater(after["breakdown"]["P Calibrum mark"], done["breakdown"]["P Calibrum mark"])
+        # Wit's End: 50% more attack speed makes it 8 shots, each with a quarter
+        # of the 45 on-hit; three attacks and the locked-on attack apply it whole
+        period = 1 / (0.665 + 0.658 * (self.BONUS_AS + 50) / 100)
+        wits = self.sim(["wits end"], 2 * period + 1.74)
+        self.assertEqual(wits["attacks"], 3)
+        self.assertAlmostEqual(wits["breakdown"]["Q Onslaught"], 8 * shot, places=6)
+        self.assertAlmostEqual(wits["breakdown"]["onhit"], 4 * 45 + 8 * 0.25 * 45, places=6)
+
+    def test_onslaught_is_skipped_when_attacks_are_worth_more(self):
+        tank = builds.SCENARIOS["full-tank"]
+        fight = dict(hp=tank["targetHp"], armor=tank["armor"], mr=tank["mr"],
+                     bonus_hp=tank["targetBonusHp"])
+        # a crit build: nine shots of 41% AD beat the three attacks they replace
+        crit = ["berserkers greaves", "infinity edge", "yun tal wildarrows", "lord dominiks regards",
+                "the collector", "bloodthirster"]
+        with_q = self.sim(crit, 15.0, **fight)
+        self.assertGreater(with_q["breakdown"]["Q Onslaught"], 0.0)
+        never = self.variant(gen_Q_onslaught_adRatio=[0.0] * 18, gen_Q_onslaught_onHitEffectiveness=0.0)
+        without_q = self.sim(crit, 15.0, kit=never, **fight)
+        self.assertNotIn("Q Onslaught", without_q["breakdown"])
+        self.assertLess(with_q["ttk"], without_q["ttk"])
+        # an on-hit build at the attack speed cap: a quarter of its on-hits per
+        # shot is a loss, so Severum only attacks
+        onhit = ["berserkers greaves", "blade of the ruined king", "guinsoos rageblade", "kraken slayer",
+                 "nashors tooth", "statikk shiv"]
+        self.assertNotIn("Q Onslaught", self.sim(onhit, 15.0, hp=30_000, armor=220, mr=160)["breakdown"])
+
+    def test_moonlight_vigil_takes_its_best_weapon(self):
+        blast = 225 + 0.2 * 24
+        # Infernum main: its bonus blast (rank 3: 150 + 25% bonus AD) and a 110% AD attack
+        inf = self.sim([], 0.31, kit=self.variant(self.INFERNUM, self.CALIBRUM))["breakdown"]
+        self.assertAlmostEqual(inf["auto"], 1.1 * self.AD, places=6)
+        self.assertAlmostEqual(inf["R"], blast + 150 + 0.25 * 24, places=6)
+        self.assertAlmostEqual(inf["R attack"], 1.1 * self.AD, places=6)
+        # Calibrum in the off-hand of a weapon whose ult deals nothing extra: Phase
+        # first (0.25 s), then the cast where it fits before the next attack
+        sev = self.variant(self.SEVERUM, self.CALIBRUM)
+        self.assertNotIn("R", self.sim([], 0.24, kit=sev)["breakdown"])
+        self.assertAlmostEqual(self.sim([], 0.25, kit=sev)["breakdown"]["R"], blast, places=6)
+        marked = self.sim([], self.PERIOD + 0.01, kit=sev)["breakdown"]
+        self.assertAlmostEqual(marked["P Calibrum mark"], 15 + 0.15 * 24 + 110, places=6)
+        # Crescendum beats Infernum: six Chakrams fly back and are then worth
+        # 16 + 14.5 + 13 + 11.5 + 10 + 8.5 = 73.5% AD on a Crescendum attack
+        cres = self.variant(self.INFERNUM, self.CRESCENDUM)
+        opening = self.sim([], 0.26, kit=cres)["breakdown"]
+        self.assertAlmostEqual(opening["auto"], 1.1 * self.AD, places=6)   # the first attack is Infernum's
+        self.assertAlmostEqual(opening["R"], blast, places=6)              # no Infernum bonus
+        first = None
+        for step in range(100, 600):
+            first = self.sim([], step / 100, kit=cres)["breakdown"].get("P Chakrams")
+            if first is not None:
+                break
+        self.assertAlmostEqual(first, 0.735 * self.AD, places=6)
+
+    def test_the_other_weapons_qs(self):
+        # Duskwave: the wave at the cast, the off-hand volley 0.4 + 0.25 s later
+        # (100% AD), and no attack until then
+        dusk = self.variant(self.INFERNUM, self.SEVERUM)
+        cast = self.sim([], 0.0, kit=dusk, use_ult=False)["breakdown"]
+        self.assertAlmostEqual(cast["Q Duskwave"], 110 + 0.21 * 24, places=6)
+        self.assertNotIn("Q Duskwave volley", self.sim([], 0.64, kit=dusk, use_ult=False)["breakdown"])
+        volley = self.sim([], 0.66, kit=dusk, use_ult=False)
+        self.assertAlmostEqual(volley["breakdown"]["Q Duskwave volley"], self.AD, places=6)
+        self.assertEqual(volley["attacks"], 1)
+        # Binding Eclipse needs Gravitum's slow: the first attack lands it
+        grav = self.variant(self.GRAVITUM, self.SEVERUM)
+        eclipse = self.sim([], 0.0, kit=grav, use_ult=False)["breakdown"]
+        self.assertAlmostEqual(eclipse["Q Binding Eclipse"], 140 + 0.5 * 24, places=6)
+        # it is magic damage: magic resistance cuts it, armor does not
+        self.assertAlmostEqual(self.sim([], 0.0, kit=grav, use_ult=False, mr=100, armor=27)
+                               ["breakdown"]["Q Binding Eclipse"], (140 + 0.5 * 24) / 2, places=6)
+        # Sentry: armed 0.35 s after the cast, then a hit every 1 / (0.64 x (1 + bonus AS))
+        # for 4 s, each 125 + 52% bonus AD
+        sentry = self.variant(self.CRESCENDUM, self.SEVERUM)
+        hit, gap = 125 + 0.52 * 24, 1 / (0.64 * (1 + self.BONUS_AS / 100))
+        self.assertNotIn("Q Sentry", self.sim([], 0.34, kit=sentry, use_ult=False)["breakdown"])
+        self.assertAlmostEqual(self.sim([], 0.36, kit=sentry, use_ult=False)["breakdown"]["Q Sentry"],
+                               hit, places=6)
+        self.assertAlmostEqual(self.sim([], 0.35 + gap + 0.01, kit=sentry, use_ult=False)
+                               ["breakdown"]["Q Sentry"], 2 * hit, places=6)
+        hits = int(4 / gap) + 1
+        self.assertAlmostEqual(self.sim([], 5.9, kit=sentry, use_ult=False)["breakdown"]["Q Sentry"],
+                               hits * hit, places=6)
+
+    def test_crescendum_attacks_at_the_pace_of_its_flight(self):
+        # 550 units out at 5000 units a second slowing by 6000 a second each second,
+        # 0.2 s there, back at 600 + 750 per 100% bonus attack speed, and a windup
+        # of 0.16 / 1.5 of the attack time (0.1 / 1.5 on the crit share)
+        kit = self.variant(self.CRESCENDUM, self.SEVERUM)
+        items = ["phantom dancer", "berserkers greaves"]
+        sh = builds.resolve_stats(self.champ, 16, [builds.resolve_item(self.pool, self.idx, t)
+                                                    for t in items], self.pool, self.effects, kit=kit)
+        bonus_as = sh["bonus_as_pct"] + 36
+        attack_time = 1 / (0.665 + 0.658 * bonus_as / 100)
+        out = (5000 - (5000 ** 2 - 2 * 6000 * 550) ** 0.5) / 6000
+        back = 550 / (600 + 750 * bonus_as / 100)
+        crit = sh["crit_chance"] / 100
+        cycle = 0.2 + back + ((1 - crit) * 0.16 + crit * 0.1) / 1.5 * attack_time + out
+        self.assertGreater(cycle, attack_time)  # slower than another weapon at this attack speed
+        # the throw at t = 0 sets when the next attack may land, whatever is cast meanwhile
+        self.assertEqual(self.sim(items, cycle - 0.01, kit=kit, use_ult=False)["attacks"], 1)
+        self.assertEqual(self.sim(items, cycle + 0.01, kit=kit, use_ult=False)["attacks"], 2)
+
+    def test_a_spent_weapon_is_replaced_from_the_queue(self):
+        # 14 Moonlight a weapon: Calibrum spends 1 on its first attack and 10 on
+        # Moonshot (the marked target's attacks are free), Severum 10 on Onslaught
+        # and 1 an attack until it is empty
+        kit = self.variant(gen_P_moonlight_capacity=14)
+        full = self.sim([], 14.0, kit=kit)
+        self.assertNotIn("Q Binding Eclipse", self.sim([], 14.0)["breakdown"])
+        self.assertIn("Q Binding Eclipse", full["breakdown"])  # Gravitum came up from the queue
+        # the attack that empties Severum is followed by a 1 s assembly with no attack
+        times = []
+        prev = 0
+        for step in range(0, 1400):
+            n = self.sim([], step / 100, kit=kit)["attacks"]
+            if n != prev:
+                times.append(step / 100)
+                prev = n
+        gaps = [round(b - a, 2) for a, b in zip(times, times[1:])]
+        self.assertIn(1.0, gaps)
+        spent_at = times[gaps.index(1.0)]
+        # Gravitum's Q is held 1.5 s from the start of the assembly
+        self.assertNotIn("Q Binding Eclipse", self.sim([], spent_at + 1.49, kit=kit)["breakdown"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

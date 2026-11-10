@@ -178,17 +178,17 @@
      "terms": [
       {
        "stat": "ad",
-       "coef": 0.15
+       "coef": 0.16
       }
      ],
-     "quote": "{{pp|0;then + 15; then + 13.5; then + 12; then + 10.5; then + 9; then + 7.5; then + 6; then + 5*x|0 to 20 by 1|type=number of Chakrams|key=%|formula=Each Chakram grants less bonus damage than the last, starting at 15% and diminishing to 5% for 10+ Chakrams.}} AD",
+     "quote": "{{pp|0;then + 16; then + 14.5; then + 13; then + 11.5; then + 10; then + 8.5; then + 7; then + 5.5; then + 5*x|0 to 20 by 1|type=number of Chakrams|key=%|formula=Each Chakram grants less bonus damage than the last, starting at 16% and diminishing to 5% for 9+ Chakrams.}} AD",
      "bin": [
       "ApheliosCrescendumQ.MiniDamageRatioMax"
      ]
     },
     {
      "id": "p_crescendum_chakram_min",
-     "meaning": "Floor of the per-Chakram bonus AD once it has diminished (from the 8th+ Chakram)",
+     "meaning": "Floor of the per-Chakram bonus AD once it has diminished (the 9th Chakram onward)",
      "role": "onhit",
      "damageType": "physical",
      "by": "const",
@@ -199,7 +199,7 @@
        "coef": 0.05
       }
      ],
-     "quote": "diminishing to 5% for 10+ Chakrams",
+     "quote": "diminishing to 5% for 9+ Chakrams",
      "bin": [
       "ApheliosCrescendumQ.MiniDamageRatioMin"
      ]
@@ -228,6 +228,88 @@
      "bin": [
       "ApheliosCrescendumQ.MiniBuffDuration"
      ]
+    },
+    {
+     "id": "p_crescendum_chakram_step",
+     "meaning": "How much less each further Chakram adds than the one before it (16%, 14.5%, 13% ... of AD), until the 5% floor",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.015
+      }
+     ],
+     "quote": "{{pp|0;then + 16; then + 14.5; then + 13; then + 11.5; then + 10; then + 8.5; then + 7; then + 5.5; then + 5*x|0 to 20 by 1|type=number of Chakrams|key=%|formula=Each Chakram grants less bonus damage than the last, starting at 16% and diminishing to 5% for 9+ Chakrams.}} AD",
+     "bin": [
+      "ApheliosCrescendumQ.MiniDamageRatioDecPer"
+     ]
+    },
+    {
+     "id": "p_crescendum_linger",
+     "meaning": "How long a thrown Crescendum (or a spectral Chakram) stays at the target before it flies back",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "which lingers for {{fd|0.2}} seconds before homing back",
+     "bin": [],
+     "binNote": "A script constant: no data value of ApheliosCrescendumQ carries 0.2."
+    },
+    {
+     "id": "p_crescendum_out_speed",
+     "meaning": "Outbound missile speed of a Crescendum attack: the initial speed, then the deceleration per second, down to the minimum speed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      5000,
+      6000,
+      1700
+     ],
+     "terms": [],
+     "quote": "{{pp|5000 to 5000-6000*0.55|0 to 0.55 by 0.05|label=Missile Speed|label1=Time (s)|formula=5000 u/s initial speed, -6000 u/s² acceleration, and a minimum speed of 1700|showtype=false}}",
+     "bin": [],
+     "binNote": "Riot's file states the same three numbers on the missile itself (ApheliosCrescendumAttackMisOut: mInitialSpeed 5000, mAcceleration -6000, mMinSpeed 1700), which is not a data value the sheet prints."
+    },
+    {
+     "id": "p_crescendum_in_speed",
+     "meaning": "Return missile speed of a Crescendum attack: 600 units a second, plus 750 per 100% bonus attack speed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 600,
+     "terms": [
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 750
+      }
+     ],
+     "quote": "600 {{as|(+ 75 per 10% '''bonus''' attack speed)}}",
+     "bin": [
+      "ApheliosCrescendumQ.UnitsPerPercentAttackSpeedPerSecond",
+      "ApheliosCrescendumQ#{c61fdd37}"
+     ],
+     "binNote": "The wiki writes the ratio per 10% bonus attack speed (75); the bin row is the same ratio per 100% (750)."
+    },
+    {
+     "id": "p_crescendum_windup",
+     "meaning": "Crescendum's attack cast time out of its 1.5 s attack total time (a 10.67% windup), and the shorter one of a critical strike (0.1 of 1.5, 6.67%)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.16,
+      0.1,
+      1.5
+     ],
+     "terms": [],
+     "quote": "have a lower {{tip|attack windup|windup}} of {{ap|0.159999996423721/1.5*100|round=2}}%, further decreased to {{ap|0.100000001490116/1.5*100|round=2}}% when {{tip|critically strike|critically striking}}",
+     "bin": [],
+     "binNote": "Riot's character record states them as attack slots (ApheliosCrescendumAttack: mAttackCastTime 0.16 of mAttackTotalTime 1.5, and 0.1 of 1.5 among the critical attacks); the wiki's 0.159999996423721 and 0.100000001490116 are those float32s."
     }
    ],
    "mechanics": [
@@ -257,8 +339,8 @@
      "affectsDamageFight": true
     },
     {
-     "claim": "Gravitum's basic attack applies a slow (30% decaying to 10% after 0.7s over 2.5s total) but no bonus damage; the slow itself is a pure utility effect the damage fight does not score, though its presence on the target is what Binding Eclipse (Q) requires to be castable.",
-     "quote": "Basic attacks with '''Gravitum''' {{tip|slow}} enemies by 30% for {{fd|2.5}} seconds, decaying to 10% after {{fd|0.7}} seconds.",
+     "claim": "Gravitum's basic attack applies a slow (30% decaying to 15% after 0.7s over 2.5s total) but no bonus damage; the slow itself is a pure utility effect the damage fight does not score, though its presence on the target is what Binding Eclipse (Q) requires to be castable.",
+     "quote": "Basic attacks with '''Gravitum''' {{tip|slow}} enemies by 30% for {{fd|2.5}} seconds, decaying to 15% after {{fd|0.7}} seconds.",
      "affectsDamageFight": false
     },
     {
@@ -274,6 +356,31 @@
     {
      "claim": "While holding Chakrams, Crescendum's own attack windup is reduced (further reduced again on a crit), independent of the per-Chakram bonus damage.",
      "quote": "have a lower {{tip|attack windup|windup}} of {{ap|0.159999996423721/1.5*100|round=2}}%, further decreased to {{ap|0.100000001490116/1.5*100|round=2}}% when {{tip|critically strike|critically striking}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Weapon Master's three statistics are ranked with the Q, W and E level-up keys (attack damage, attack speed, lethality), and a statistic can reach rank 1 to 6 no earlier than levels 1, 2, 3, 5, 7 and 9. With 18 skill points and three statistics of 6 ranks, everything is maxed at level 18; at level 16 the statistic ranked last has 4 of its 6 ranks.",
+     "quote": "the earliest level that an individual statistic can attain rank 6 is level 9, by assigning points at levels {{ap|1|2|3|5|7|9}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When the main weapon runs out of Moonlight the next weapon is assembled over 1 second, with its Q held on cooldown for 1.5 seconds from the start of the assembly; the off-hand weapon is not touched. A spent weapon re-enters the queue with 50 Moonlight.",
+     "quote": "Once his {{as|main weapon's}} ''Moonlight'' is exhausted, it is moved to the end of the reserve queue; '''Alune''' then assembles his next available weapon from the reserve over 1 second, placing its {{cci|Q.png|champion ability|primary ability}} on a {{fd|1.5}}-second {{sti|cooldown}} from the start of the assembly.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A mark-consuming attack is a basic attack in the attack cycle (since V10.4 it no longer resets the attack timer) that applies on-hit effects once and stacks Energized, but triggers no other on-attack effect.",
+     "quote": "Triggered ''Marks'' apply on-hit effects, stack {{nie|Energized}} and trigger {{ii|Runaan's Hurricane}}, but no other [[on-attack effects]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Chakrams are lost when Crescendum runs out of Moonlight, and their 5 s timer restarts whenever a new one is caught or a champion is attacked with Crescendum, so they last as long as Crescendum keeps attacking.",
+     "quote": "which last for 5 seconds or until '''Crescendum''' is depleted of ''Moonlight''. ''Chakram'' duration is refreshed when '''Aphelios''' catches a new one or attacks a {{tip|champion}} with '''Crescendum'''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attack timer is reset when Crescendum is caught, so its cadence is the flight itself: the windup, the way out, the 0.2 s at the target and the way back. At range and at high attack speed that is slower than an ordinary attack.",
+     "quote": "Due to the return time, at high attack speeds '''Crescendum''' will increase '''Aphelios' '''effective time to cast attacks, even when right next to his target.",
      "affectsDamageFight": true
     }
    ],
@@ -303,7 +410,7 @@
      8.002
     ],
     "quote": "{{pp|10 to 8 for 7|1 to 13 for 7}}",
-    "binNote": "This is Moonshot's (Calibrum) and Onslaught's (Severum) shared cooldown, matching CalibrumQCD/SeverumQCD exactly. The generic wrapper spell ApheliosQ_ClientTooltipWrapper reports a flat cooldown of 9, which matches neither of these nor Binding Eclipse's (12 to 10); it happens to equal Duskwave's/Sentry's rank-1 value (9 to 6) but is otherwise a placeholder, since the wiki itself says the five actives 'do not share a cooldown'. Binding Eclipse's and Duskwave's/Sentry's own cooldowns are given as separate values below."
+    "binNote": "This is Moonshot's (Calibrum) and Onslaught's (Severum) cooldown, matching CalibrumQCD/SeverumQCD exactly. The generic wrapper spell ApheliosQ_ClientTooltipWrapper reports a flat cooldown of 9, a placeholder: the wiki itself says the five actives 'do not share a cooldown'. Binding Eclipse's (12 to 10), Duskwave's (8 to 5) and Sentry's (9 to 6) own cooldowns are given as separate values below."
    },
    "cost": {
     "values": 60,
@@ -323,24 +430,24 @@
      "damageType": "physical",
      "by": "level",
      "base": [
-      70,
-      70,
-      85,
-      85,
-      100,
-      100,
-      115,
-      115,
-      130,
-      130,
-      145,
-      145,
-      160,
-      160,
-      160,
-      160,
-      160,
-      160
+      80,
+      80,
+      95,
+      95,
+      110,
+      110,
+      125,
+      125,
+      140,
+      140,
+      155,
+      155,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170
      ],
      "terms": [
       {
@@ -371,7 +478,7 @@
        "coef": 1.0
       }
      ],
-     "quote": "deals {{as|{{pp|70 to 160 for 7|1 to 13 for 7}}|physical damage}} {{as|(+ {{pp|42 to 60 for 7|1 to 13 for 7|key=%}} '''bonus''' AD)}} {{as|(+ 100% AP)}} {{as|physical damage}} to the first enemy hit",
+     "quote": "deals {{as|{{pp|80 to 170 for 7|1 to 13 for 7}}|physical damage}} {{as|(+ {{pp|42 to 60 for 7|1 to 13 for 7|key=%}} '''bonus''' AD)}} {{as|(+ 100% AP)}} {{as|physical damage}} to the first enemy hit",
      "bin": [
       "ApheliosCalibrumQ#SpellDamage"
      ]
@@ -637,8 +744,8 @@
      ]
     },
     {
-     "id": "q_duskwave_sentry_cooldown",
-     "meaning": "Duskwave and Sentry share this cooldown pattern by level",
+     "id": "q_sentry_cooldown",
+     "meaning": "Sentry (Crescendum's Q) cooldown by level",
      "role": "other",
      "damageType": null,
      "by": "level",
@@ -665,7 +772,7 @@
      "terms": [],
      "quote": "{{pp|9 to 6 for 7|1 to 13}}",
      "bin": [],
-     "binNote": "The matching rows, ApheliosInfernumQ#InfernumQCD and ApheliosCrescendumQ#CrescendumQCD, both carry the same unresolved '<CooldownMultiplierCalculationPart>' factor as Calibrum/Severum/Gravitum's Q cooldowns, so neither can be checked as a clean numeric row; their byLevelL portions (9,9,8.5,...,6) both exactly equal the sequence stated here."
+     "binNote": "The matching row, ApheliosCrescendumQ#CrescendumQCD, carries an unresolved '<CooldownMultiplierCalculationPart>' factor (ability haste), so it cannot be checked as a clean numeric row; its byLevelL portion (9, 9, 8.5, ..., 6) is exactly the sequence stated here."
     },
     {
      "id": "q_duskwave_volley_dmg",
@@ -792,6 +899,37 @@
      "quote": "{{fd|0.25}}",
      "bin": [],
      "binNote": "0.25 does not appear among ApheliosCrescendumQ's printed data values (it is also the value of Duskwave's separate volley delay; the two are unrelated numbers that happen to coincide)."
+    },
+    {
+     "id": "q_duskwave_cooldown",
+     "meaning": "Duskwave (Infernum's Q) cooldown by level (V26.19: 8 to 5)",
+     "role": "other",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      8,
+      8,
+      7.5,
+      7.5,
+      7,
+      7,
+      6.5,
+      6.5,
+      6,
+      6,
+      5.5,
+      5.5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+     ],
+     "terms": [],
+     "quote": "{{pp|8 to 5 for 7|1 to 13}}",
+     "bin": [],
+     "binNote": "The matching row, ApheliosInfernumQ#InfernumQCD, carries an unresolved '<CooldownMultiplierCalculationPart>' factor (ability haste), so it cannot be checked as a clean numeric row; its byLevelL portion (8, 8, 7.5, ..., 5) is exactly the sequence stated here."
     }
    ],
    "mechanics": [
@@ -826,16 +964,6 @@
      "affectsDamageFight": true
     },
     {
-     "claim": "Duskwave's description says its off-hand volley deals damage 'and applying on-hit effects', but the ability's own notes say the automatic attacks do not trigger any on-attack effects; the two statements on the same page contradict each other.",
-     "quote": "dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects",
-     "affectsDamageFight": true
-    },
-    {
-     "claim": "(Contradicts the above) Duskwave's notes state the automatic volley attacks trigger no on-attack effects at all.",
-     "quote": "The automatic attacks do not trigger '''any''' [[on-attack effects]].",
-     "affectsDamageFight": true
-    },
-    {
      "claim": "Aphelios is locked out of declaring (Crescendum-style) attacks until Duskwave's volley of attacks has resolved, and the volley's damage is affected by critical strike modifiers.",
      "quote": "'''Aphelios''' is locked out of declaring attacks until the volley of attacks has resolved.",
      "affectsDamageFight": true
@@ -849,6 +977,31 @@
      "claim": "The dummy in this fight never attacks, so the sentry is never destroyed by return fire; its practical lifetime in the fight is bounded only by its own arm/active-duration timers.",
      "quote": "Sentries have {{as|6 health}} and take 3 damage per {{tip|ranged}} basic attack and 4 damage per hit by abilities.",
      "affectsDamageFight": false
+    },
+    {
+     "claim": "Onslaught's attack count is 6 x (1 + 0.33334 x bonus attack speed) in Riot's file: the coefficient is a hair over one third, so 50% and 100% bonus attack speed land just above 7 and 8 and the count reads as rounded down.",
+     "quote": "automatically performing up to 6 {{as|(+ 2 per 100% '''bonus''' attack speed)|attack speed}} attacks over the duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Onslaught's attacks apply on-hit effects at 25% damage (Kraken Slayer's proc included, per the V11.2 and V11.6 patch history) and stack Energized, but trigger no other on-attack effect; they never consume a Calibrum mark.",
+     "quote": "''Onslaught's'' attacks stack {{tip|Energized}}, but do not apply any other {{tip|on-attack}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During Onslaught an attack command only moves Aphelios, so no basic attack is made until it ends.",
+     "quote": "his attack commands instead issue movement commands",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Duskwave's volley applies on-hit effects but no on-attack effects (the two statements are about different things, not a contradiction), and no attack can be declared until the volley has gone out, which therefore comes after the 0.4 s cast time: 0.25 s after it.",
+     "quote": "'''Aphelios''' is locked out of declaring attacks until the volley of attacks has resolved.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The sentry attacks at 0.64 base attack speed with a 0.64 attack speed ratio on Aphelios's bonus attack speed (the Pets infobox of the wiki's champion page, and V13.13's 'Turret attack speed reduced to 0.64 from 0.8'; the ability templates archived here do not repeat it). Its attacks are spell damage and apply no on-hit effects.",
+     "quote": "benefits from both '''Aphelios'''' {{sti|attack speed|{{as|attack speed}}}} and {{sti|critical chance|{{as|critical strike chance}}}} at 100% effectiveness",
+     "affectsDamageFight": true
     }
    ],
    "binUnused": []
@@ -887,6 +1040,11 @@
     {
      "claim": "Casting/toggling Phase does not interrupt any attack or ability command issued before or during it.",
      "quote": "Switching does not interrupt '''any''' commands '''Aphelios''' was issued before or during ''Phase''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Phase's 0.8 s cooldown is static (ability haste does not shorten it), it has no cast time, and the weapons change hands 0.25 s after it is pressed.",
+     "quote": "'''Aphelios''' switches between his {{as|main weapon}} and {{as|off-hand}} weapon over {{fd|0.25}} seconds.",
      "affectsDamageFight": true
     }
    ],
@@ -974,17 +1132,18 @@
     },
     {
      "id": "r_crit_dmg_bonus",
-     "meaning": "Extra critical-strike-damage modifier on R's locked-on attacks at max rank (wiki shows it growing 0 to 30 percentage points over R's 3 ranks; only the rank-3 endpoint has direct bin support, see binNote)",
+     "meaning": "Moonlight Vigil's locked-on attacks do not roll a critical strike: they deal 100% AD times 1 + 0.3 x critical strike chance x (critical strike damage - 1), so 130% at 100% chance and the base 200% critical damage, and 9 points more with Infinity Edge's 30%",
      "role": "other",
      "damageType": null,
      "by": "const",
-     "base": 30,
+     "base": 0.3,
      "terms": [],
      "quote": "These attacks can {{tip|critically strike}} for {{critical damage|100 to 130|0 to 30|critScaling=true}} damage.",
      "bin": [
-      "ApheliosR.CritDamageMod"
+      "ApheliosR.CritDamageMod",
+      "ApheliosR#CritDamageModCalc"
      ],
-     "binNote": "CritDamageMod=0.3 matches only the wiki's rank-3 endpoint (+30 points); there is no separate bin row giving the rank-1/rank-2 values (0/15), so the by-rank interpolation stated in the wiki is not independently checkable. The calc that applies CritDamageMod, ApheliosR#CritDamageModCalc = 1 + 0.3*(critDamage? * (cooldownReduction? - 1)), references two stat hooks the sheet tool could not name; it is not clear this evaluates to a clean per-rank progression at all rather than something stat-dependent. The wiki separately documents an unexplained bug where Severum's and Crescendum's locked-on attacks crit for slightly more than 120% with 'unknown' origin -- this unresolved calc looks like a plausible source, but that is inference, not a confirmed mapping. See top.json unsettled."
+     "binNote": "ApheliosR#CritDamageModCalc = 1 + (CritDamageMod=0.3) x (critChance x (critDamage - 1)) is the whole rule (V26.01: 'Critical damage is now calculated from 30% critical strike chance'). The wiki's '100 to 130' is that formula from 0% to 100% critical strike chance at the base 200% critical strike damage, not a by-rank progression."
     },
     {
      "id": "r_calibrum_mark_bonus",
@@ -1224,84 +1383,76 @@
  },
  "unsettled": [
   {
-   "question": "Does Duskwave's off-hand volley apply on-hit effects?",
+   "question": "Which two weapons, with how much Moonlight, does a level 16 fight start from? A fight of 8 to 15 seconds never cycles through the arsenal, so the loadout it starts with decides which two Qs and which attack effects it has.",
    "options": [
-    "Yes: the ability description says the volley deals damage 'and applying on-hit effects'.",
-    "No: the ability's own notes say 'The automatic attacks do not trigger any on-attack effects.'"
+    "The kit's own starting state: Calibrum as main weapon, Severum in the off-hand, Gravitum, Infernum and Crescendum queued, 50 Moonlight each.",
+    "Another of the 10 weapon pairs (the default order passes through Severum + Gravitum, Gravitum + Infernum, Infernum + Crescendum and Crescendum + Calibrum as the game goes on)."
    ],
    "impact": "high",
    "quotes": [
-    "dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects",
-    "The automatic attacks do not trigger '''any''' [[on-attack effects]]."
+    "begins the game with {{ai|Calibrum|Aphelios}} as his {{as|main weapon}} and {{ai|Severum|Aphelios}} in his {{as|off-hand}}"
    ]
   },
   {
-   "question": "What does Moonlight Vigil's Infernum bonus actually do -- the wiki gives two versions inside one {{ft|current|former}}-style template and it is not clear which is live at this patch.",
+   "question": "What distance does a Crescendum attack (and a spectral Chakram) fly? The way out, the 0.2 s at the target and the way back are the whole attack interval, and neither source states a fight distance.",
    "options": [
-    "A flat 110% AD physical attack against the locked-on target only.",
-    "Infernum's normal attack plus its bolts exploding in a 400-radius circle, secondary targets at 90% of Infernum's regular bolt damage (this reading has direct bin support: ApheliosR#InfernumRPenalty = 0.9)."
-   ],
-   "impact": "medium",
-   "quotes": [
-    "The attack instead deals {{as|110% AD}} {{as|physical damage}} against locked-on targets, and causes an explosion of bolts in a 400-radius circle",
-    "Performs ''Infernum's'' attacks and ''Infernum's'' bolts in a 400-radius circle: primary targets are dealt ''Infernum's'' primary damage; secondary targets are dealt 90% of ''Infernum's'' regular bolt damage"
-   ]
-  },
-  {
-   "question": "Is Moonlight Vigil's extra crit-damage modifier really a clean 0/15/30-percentage-point progression across its 3 ranks, and is it the source of the wiki's documented (unexplained) bug where Severum's and Crescendum's locked-on R attacks crit for slightly more than 120%?",
-   "options": [
-    "The 0/15/30 progression (matching the wiki's '100 to 130' text) is correct and the >120% crit bug is unrelated/uninvestigated.",
-    "ApheliosR#CritDamageModCalc, whose formula references two stat hooks the sheet tool could not name (critDamage?, cooldownReduction?), is the actual (buggy) mechanism, and the true per-rank values differ from 0/15/30."
-   ],
-   "impact": "medium",
-   "quotes": [
-    "These attacks can {{tip|critically strike}} for {{critical damage|100 to 130|0 to 30|critScaling=true}} damage.",
-    "the attacks on locked-on targets when using {{ai|Severum|Aphelios}} and {{ai|Crescendum|Aphelios}} deal slightly more than 120% damage.{{bug}} '''It is currently unknown where this damage originates from.'''"
-   ]
-  },
-  {
-   "question": "Can a single target ever carry more than one consumable Calibrum mark (e.g. from being marked again before the empowered snipe fires), or is 'marked' strictly a binary per-target flag so a single-dummy fight can only ever consume one mark per snipe?",
-   "options": [
-    "Marked is a duration debuff (binary per target); a single target contributes at most one consumable mark no matter how many times it is (re)marked before the snipe.",
-    "Marks can somehow accumulate more than once on the same target."
-   ],
-   "impact": "low",
-   "quotes": [
-    "Enemies damaged by '''Calibrum''' through an ability are marked for {{fd|4.5}} seconds",
-    "The empowered attack will consume the marks from all targets, dealing {{as|15|physical damage}} {{as|(+ 15% '''bonus''' AD)}} {{as|'''bonus''' physical damage}} to the main target for each mark consumed."
-   ]
-  },
-  {
-   "question": "What engage distance should Crescendum's throw-and-return attack (outbound ~5000u/s decelerating to a 1700u/s minimum, inbound 600u/s + 75 per 10% bonus AS) assume against the stationary dummy, since that travel time directly extends its effective attack interval and neither source states a fight distance?",
-   "options": [
-    "Assume point-blank range, minimizing added travel time.",
-    "Assume a fixed representative engage distance (e.g. Aphelios's own attack range, ~550), adding real, non-trivial travel time to every Crescendum attack."
+    "Aphelios's own attack range (550): the one distance the engine already assumes for a target, and the slow reading at high attack speed.",
+    "Point-blank, where the round trip is short and Crescendum attacks far faster than attack speed allows any other weapon."
    ],
    "impact": "high",
    "quotes": [
     "which lingers for {{fd|0.2}} seconds before homing back to '''Aphelios'''",
     "He is unable to declare basic attacks until he retrieves '''Crescendum'''"
    ]
+  },
+  {
+   "question": "Can Aphelios attack during the 1 second in which the next weapon is assembled? The wiki names only Phase as unavailable.",
+   "options": [
+    "No: he has no main weapon until the assembly ends, so no attack and no cast starts inside it (what guides describe: a 1 second animation with no attacks or abilities).",
+    "Yes: only Phase and the new weapon's Q are locked."
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Aphelios''' cannot cast ''{{ai|Phase|Aphelios}}'' during the assembly."
+   ]
+  },
+  {
+   "question": "Do off-hand attacks made by abilities carry the weapon's own attack bonus: Infernum's 110% AD on an Onslaught or Sentry hit, Crescendum's Chakram bonus on a spectral Chakram?",
+   "options": [
+    "No: an ability's attack deals the ability's stated damage; only a basic attack (a mark-consuming one included) deals the firing weapon's attack damage.",
+    "Yes: every attack a weapon makes carries its bonus."
+   ],
+   "impact": "low",
+   "quotes": [
+    "The fire bolt deals {{as|110% AD}} {{as|physical damage}} to the primary target.",
+    "Attacks with '''Crescendum''' are empowered to deal"
+   ]
+  },
+  {
+   "question": "Can a single target carry more than one Calibrum mark?",
+   "options": [
+    "No: a mark is a debuff on the target, so a single target gives one mark per consuming attack however often it is marked again.",
+    "Yes: marks accumulate on one target."
+   ],
+   "impact": "low",
+   "quotes": [
+    "Enemies damaged by '''Calibrum''' through an ability are marked for {{fd|4.5}} seconds",
+    "The empowered attack will consume the marks from all targets"
+   ]
   }
  ],
  "rotation": {
   "proposal": [
-   "Start with the fixed initial loadout: Calibrum main / Severum off-hand, Gravitum/Infernum/Crescendum queued in reserve.",
-   "Cast Moonshot immediately to mark the target; the very next basic attack (fired with the off-hand weapon) is then automatically empowered for the mark's bonus damage. Recast Moonshot every time it comes off cooldown while Calibrum remains available.",
-   "Auto-attack continuously between casts. Infernum's basic attack (flat +10% AD, no cast needed) and Crescendum's basic attack (growing, if diminishing, bonus AD from held Chakrams) are the highest-value auto-attack states, so once ammo depletion or Phase brings either to main, prioritize sustained auto-attacking over holding them off-hand.",
-   "As soon as a Gravitum basic attack has landed or a Gravitum bolt is in flight, cast Binding Eclipse for its magic-damage burst -- it cannot be cast at all before that precondition is met, so do not simply wait for it to come off an ordinary cooldown.",
-   "Cast Duskwave as soon as Infernum is main and it is off cooldown: it hits the target directly and then guarantees a further 100% AD off-hand attack 0.25s later.",
-   "Cast Sentry as soon as Crescendum is main and it is off cooldown, placed so it can reach the target immediately (minimizing its up-to-20s idle window before it activates); let it attack autonomously for its full active window while continuing to manage other weapons.",
-   "Cast Onslaught whenever Severum is main and it is off cooldown, for its 6 (+bonus attack speed) guaranteed attacks; because it locks out Phase and Moonlight Vigil for its 1.75s duration and its own cooldown only starts once it ends, avoid opening it immediately before R would otherwise come off cooldown.",
-   "Cast Moonlight Vigil as soon as it is off cooldown regardless of which weapon is currently main, since its own smite and sky-attack damage are large flat contributions either way; if timing is flexible, prefer casting it while Calibrum or Infernum is main, since Severum's and Gravitum's R bonuses (heal, slow/root) add no damage in this fight.",
-   "Never hold Moonlight ammo or mana in reserve: with no allies, minions, healing, or crowd control to manage, attacking and casting on cooldown throughout the 15s maximizes damage."
+   "Start from the kit's own loadout: Calibrum main, Severum off-hand, Gravitum, Infernum and Crescendum queued, 50 Moonlight each.",
+   "Attack first, then weave every cast into the gap after an attack lands: a cast that ends before the next attack would start costs no attack at all.",
+   "Moonlight Vigil goes out after the first attack with whichever held weapon gives it the most damage (Crescendum's 6 Chakrams, then Infernum's bonus blast, then Calibrum's empowered mark), swapping with Phase first when that weapon is in the off-hand.",
+   "Each weapon's Q is cast when that weapon is main and the Q is up: Sentry, Duskwave, Moonshot (once the previous mark is consumed), Binding Eclipse (once a Gravitum hit has slowed the target), and Onslaught when its shots are worth more than the attacks its 1.75 s replaces.",
+   "Phase to the off-hand when its Q is up and the main weapon has nothing to cast, and otherwise keep the weapon whose attacks deal more as the main weapon (Infernum's 110% AD, Crescendum with Chakrams).",
+   "Mana is never the limit inside a fight of this length."
   ],
   "questions": [
-   "Is it worth manually toggling Phase (0.8s cooldown, 0.25s swap) to force a specific weapon order, versus simply letting the 50-ammo natural depletion cycle weapons on its own?",
-   "Right before casting Onslaught, Duskwave, Sentry or Moonlight Vigil, is it worth forcing a specific weapon into the off-hand/main slot given how much their guaranteed follow-up attack's value differs by weapon?",
-   "Crescendum's Chakram stacks build fastest from other weapons' off-hand attacks during Onslaught/Duskwave; is it worth deliberately delaying Crescendum's own turn as main to bank stacks first, and how many can realistically accumulate in 15s of casting?",
-   "How much of the 15s fight does weapon-reassembly downtime (1s reassembly plus up to a 1.5s Q lockout each time a weapon's ammo hits zero) actually cost at realistic attack speeds, and does that change which weapon order is optimal?",
-   "At what champion level and item state is this fight assumed to run? Q/R availability, ammo drain rate relative to attack speed, and how many full weapon cycles fit in 15s all depend on it."
+   "How much does the ranking of builds move between the 10 weapon pairs?",
+   "Is Onslaught worth casting for an on-hit build, whose on-hit effects it applies at a quarter?"
   ]
  }
 }
