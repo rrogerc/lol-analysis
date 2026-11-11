@@ -661,8 +661,23 @@
      "affectsDamageFight": true
     },
     {
-     "claim": "Death Mark does not store true damage despite storing physical and magic damage.",
+     "claim": "The stored damage comes from every source of Zed's damage: basic attacks, abilities, items, runes and buffs.",
      "quote": "''Death Mark's'' stored damage derives from all [[basic attack]]s, [[Champion ability|abilities]], [[item]]s, [[Runes Reforged|runes]] and [[buff]]s.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death Mark does not store true damage.",
+     "quote": "''Death Mark'' does not store {{tip|true damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death Mark's Shadow appears the moment the ability is cast, so its 9 seconds run from the cast.",
+     "quote": "''Shadow'' is spawned the moment ''Death Mark'' is cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast (swap) window is a 7.5 second buff granted on cast that lingers 0.25 seconds; with the recast barred in the Shadow's last 1.25 seconds, that puts the Shadow's end 9 seconds after the cast.",
+     "quote": "'''Zed''' gains a buff for {{fd|7.5}} seconds that indicates and determines the duration in which he may recast ''Death Mark''.",
      "affectsDamageFight": true
     },
     {
@@ -785,24 +800,36 @@
  },
  "unsettled": [
   {
-   "question": "Do Zed's Shadows (from W and R) automatically mimic every Q and E cast while active, adding a second (and while both a W-Shadow and R-Shadow exist, a third) full damage instance against the dummy, or does mimicry require some other condition not stated in the sources?",
+   "question": "Does Death Mark open the fight, or is it held back? It costs 0.95 s in which Zed deals nothing, and a dummy that dies within the first two seconds never sees the detonation.",
    "options": [
-    "Every Q/E cast while a Shadow is active is automatically also cast by the Shadow, dealing a second full instance of that ability's damage to the target",
-    "Mimicry only happens under some additional unstated condition (e.g. only on the first cast after the Shadow spawns), so not every Q/E cast is doubled"
+    "It opens the fight: it is how Zed reaches a target (625 range, untargetable on the way), everything he casts afterwards is stored by the mark, and its Shadow throws with the first Razor Shuriken.",
+    "It is skipped, or cast after the first Razor Shuriken, whenever the dummy would die before the detonation."
    ],
    "impact": "high",
    "quotes": [
-    "'''Zed''' creates a ... ''Shadow'' that dashes to the target location and remains there for {{fd|5.25}} seconds, being able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range."
+    "'''Zed''' becomes {{tip|untargetable}} and, after a {{fd|0.6}}-second delay, he {{tip|dashes}} to 125 units beyond the target enemy champion"
    ]
   },
   {
-   "question": "How long does the Shadow spawned by Death Mark actually persist and remain able to mimic Q/E: the wiki description states 9 seconds, but the bin's RShadowDurationDisplayed (7.5) and the calculated {43a019eb} (7.5+0.5=8) do not match 9?",
+   "question": "Does every Shadow throw every Razor Shuriken, as a full hit on a target Zed's own shuriken has already hit?",
    "options": [
-    "9 seconds is live (wiki description text)",
-    "7.5 seconds is live (RShadowDurationDisplayed)",
-    "8 seconds is live (ZedR#{43a019eb} calculation)"
+    "Yes: each Shadow still standing when the 0.25 s cast time ends throws its own shuriken, and each shuriken deals full damage to the first enemy it hits; the 60% applies to targets behind the first, per shuriken.",
+    "Mimicry needs some further condition the sources do not state, so not every cast is doubled or tripled."
    ],
    "impact": "high",
+   "quotes": [
+    "'''Zed''' creates a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' that dashes to the target location and remains there for {{fd|5.25}} seconds, being able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range.",
+    "If a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' expires while in the cast time of {{ai|Q|Zed}}, the mimicked cast will be cancelled."
+   ]
+  },
+  {
+   "question": "How long does Death Mark's Shadow stand: the wiki's description says 9 seconds, Riot's file has RShadowDurationDisplayed 7.5 and a tooltip calculation of 7.5 + 0.5 = 8.",
+   "options": [
+    "9 seconds from the cast (the wiki's description): it agrees with Riot's 7.5 s swap window, which the wiki has lingering 0.25 s and closing 1.25 s before the Shadow fades.",
+    "8 seconds (ZedR#{43a019eb}, the tooltip calculation).",
+    "7.5 seconds (RShadowDurationDisplayed)."
+   ],
+   "impact": "low",
    "quotes": [
     "'''Zed''' also spawns a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' at his casting position for 9 seconds",
     "ZedR#{43a019eb} = RShadowDurationDisplayed=7.5 + 0.5"
@@ -811,20 +838,16 @@
  ],
  "rotation": {
   "proposal": [
-   "Open by casting W (Living Shadow) onto or near the target so a Shadow is present to mimic upcoming Q/E casts.",
-   "Cast R (Death Mark) on the target to apply Marked for Death and spawn R's longer-lived Shadow, beginning the stored-damage window.",
-   "Immediately cast Q (Razor Shuriken) so both Zed and the active Shadow(s) hit the target with Q's damage.",
-   "Cast E (Shadow Slash) so Zed's and the Shadow's slashes both land on the target (extra slashes beyond the first apply no bonus damage but reduce W's cooldown).",
-   "Weave basic attacks between ability casts; Contempt for the Weak (P) adds bonus magic damage once the target drops below 50% max HP, subject to its 10s per-target cooldown.",
-   "Recast Q and E on cooldown as energy allows, prioritizing keeping a Shadow alive/present so it continues mimicking casts.",
-   "Let Marked for Death detonate at the end of its 3-second duration for its stored-damage physical burst.",
-   "Continue the Q/E/auto-attack loop for the remainder of the 15s window, recasting W to refresh a Shadow when its duration or R's Shadow lapses."
+   "Death Mark opens the fight: Zed is away for the 0.6 s delay and the 0.35 s dash, attacks as he lands, and the mark detonates 3 s later for 100% AD plus the stored share of every physical and magic hit in between, attacks and item damage included.",
+   "Attacks come first and casts are woven in behind them: Shadow Slash and Living Shadow have no cast time, and Razor Shuriken's 0.25 s is spent right after an attack lands, or wherever it fits before the next one is due.",
+   "On landing: the attack, Living Shadow (if it was not cast before the dash), Shadow Slash, then Razor Shuriken, thrown by Zed and by each Shadow still standing when its cast time ends.",
+   "Living Shadow is cast only for the shurikens its Shadow throws, as early as it can be without giving one up: before Death Mark when the Shadow outlasts the dash at no cost, right before a Razor Shuriken otherwise.",
+   "Razor Shuriken and Shadow Slash go out on cooldown; every Shadow Slash takes 3 s off Living Shadow's remaining cooldown, and a shuriken does not wait behind an attack if a Shadow would fade meanwhile.",
+   "Contempt for the Weak rides the first attack that finds the target under half health, then again 10 s later."
   ],
   "questions": [
-   "Is Shadow mimicry of Q/E fully automatic on every cast while a Shadow is present, and does it happen for both a W-Shadow and an R-Shadow simultaneously if both exist?",
-   "What target health trajectory should the simulator assume for the dummy, since Contempt for the Weak's trigger and its 10s internal cooldown depend on when the target crosses the 50% HP threshold?",
-   "Given Q/W/E energy costs and Zed's max energy/regen (not given in these sources), is the proposed cast-everything-on-cooldown rotation energy-sustainable for the full 15s, or does energy force skipping some E or W casts?",
-   "Does the Death Mark detonation's stored-damage percentage draw only from damage dealt during the 3s Marked-for-Death window, or does it also include the R cast's own flat 100% AD component as a separate simultaneous hit rather than part of one combined detonation?"
+   "Energy is not spent in this engine: Razor Shuriken, Shadow Slash and Living Shadow on cooldown for 15 s would run the bar down in a real fight.",
+   "Item actives are dealt by the engine at 0 s; the kit counts them as used on landing, inside the mark."
   ]
  },
  "filledBy": "sonnet"

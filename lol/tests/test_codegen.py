@@ -1177,6 +1177,258 @@ class TestApheliosDriver(unittest.TestCase):
         self.assertNotIn("Q Binding Eclipse", self.sim([], spent_at + 1.49, kit=kit)["breakdown"])
 
 
+class TestZedDriver(unittest.TestCase):
+    """Patch 16.22 Zed kit: Death Mark's store, the Shadows' shurikens and the
+    woven rotation. Numbers are worked out by hand for a level 16 Zed (Q > E > W:
+    rank 5 Razor Shuriken and Shadow Slash, rank 3 Living Shadow and Death Mark)
+    with no items against a dummy with no resists unless a test says otherwise."""
+
+    AD = 63 + 3.4 * 14.475                       # base attack damage at level 16
+    PERIOD = 1 / (0.651 * (1 + 3.3 * 14.475 / 100))
+    Q, E = 240.0, 160.0                          # rank 5, no bonus attack damage
+    LAND = 0.6 + 0.35                            # Death Mark's delay and dash
+    POP = LAND + 3.0                             # the mark detonates
+    BOOTS = "berserkers greaves"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("zed")
+        cls.kit = builds.load_kit("zed")
+        _, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+
+    def variant(self, **paths):
+        """The kit with other numbers (`gen_E_shadowHitCdrS=0` sets gen.E.shadowHitCdrS)."""
+        kit = copy.deepcopy(self.kit)
+        for path, value in paths.items():
+            node, *keys = kit, *path.split("_")
+            for k in keys[:-1]:
+                node = node[k]
+            node[keys[-1]] = value
+        return kit
+
+    def ids(self, tokens):
+        return [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+
+    def sheet(self, tokens, level=16):
+        return builds.resolve_stats(self.champ, level, self.ids(tokens), self.pool, self.effects,
+                                    kit=self.kit)
+
+    def sim(self, tokens, duration, hp=1_000_000, armor=0, mr=0, level=16, kit=None, use_ult=True,
+            bonus_hp=0.0):
+        kit = kit or self.kit
+        ids = self.ids(tokens)
+        ranks = builds.skill_ranks(level, builds.kit_max_order(kit))
+        sh = builds.resolve_stats(self.champ, level, ids, self.pool, self.effects, kit=kit)
+        fx = builds.merge_effects(ids, self.effects)
+        return builds.simulate(sh, kit, fx, level, ranks, hp, armor, mr, duration,
+                               use_ult=use_ult, target_bonus_hp=bonus_hp)
+
+    def physical_factor(self, tokens, armor, bonus_hp=0.0):
+        """What a physical hit of this build keeps of its damage: Giant Slayer
+        and the armor left after percent penetration and lethality."""
+        sh, fx = self.sheet(tokens), builds.merge_effects(self.ids(tokens), self.effects)
+        amp = 1.0
+        if fx.get("giantSlayer"):
+            amp += min(fx["giantSlayer"]["maxPct"], bonus_hp / 100) / 100
+        left = max(0.0, armor * (1 - sh["armor_pen_pct"] / 100) - sh["lethality"])
+        return amp * builds.resist_mult(left)
+
+    def test_sources_lints_and_fight_checks(self):
+        with open(os.path.join(ks.DOSSIERS_DIR, "zed.json")) as f:
+            d = json.load(f)
+        chk = ks.Checker("zed", d, ks.load_sources("zed", "16.22"))
+        chk.run()
+        self.assertEqual(chk.errors, [])
+        with open(os.path.join(kd.GENERATED_DIR, "zed.rs")) as f:
+            rs = f.read()
+        self.assertTrue(self.kit["reviewed"])
+        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
+        self.assertTrue(meta["zed"]["reviewed"])
+        self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "zed", kd.source_numbers("zed"),
+                                     allow_reviewed=True), [])
+        self.assertEqual(kd.lint_driver(rs), [])
+        self.assertEqual(kd.lint_cast_times(self.kit, d, rs, "zed"), [])
+        errors, _ = kd.fight_checks(self.kit, "zed", d)
+        self.assertEqual(errors, [])
+
+    def test_max_order_and_unlearned_abilities(self):
+        self.assertEqual(builds.kit_max_order(self.kit), ("Q", "E", "W"))
+        self.assertEqual(builds.skill_ranks(16, builds.kit_max_order(self.kit)),
+                         {"Q": 5, "W": 3, "E": 5, "R": 3})
+        # level 1 has Razor Shuriken and nothing else
+        self.assertEqual(sorted(self.sim([], 5.0, level=1)["breakdown"]), ["Q", "auto"])
+        # level 6: rank 3 Q, rank 2 E, Death Mark, no Living Shadow yet, so the
+        # one Shadow there is (Death Mark's) throws the one extra shuriken
+        landed = self.sim([], self.LAND, level=6)["breakdown"]
+        self.assertEqual(sorted(landed), ["E", "Q", "Q mimic", "auto"])
+        self.assertAlmostEqual(landed["auto"], 63 + 3.4 * builds.growth(6), places=6)
+        self.assertAlmostEqual(landed["Q"], 160.0, places=6)
+        self.assertAlmostEqual(landed["Q mimic"], 160.0, places=6)
+        self.assertAlmostEqual(landed["E"], 92.5, places=6)
+
+    def test_death_mark_opens_and_everything_lands_with_zed(self):
+        # nothing happens while Zed is away: 0.6 s delay, 0.35 s dash
+        self.assertEqual(self.sim([], self.LAND - 0.01)["total"], 0.0)
+        # then the attack he is ordered to make, Shadow Slash, and Razor Shuriken
+        # from Zed and both Shadows: Living Shadow went out before the dash,
+        # because a 6 s cooldown lets its Shadow throw one shuriken either way
+        landed = self.sim([], self.LAND)
+        self.assertEqual(landed["attacks"], 1)
+        self.assertEqual(sorted(landed["breakdown"]), ["E", "Q", "Q mimic", "auto"])
+        self.assertAlmostEqual(landed["breakdown"]["auto"], self.AD, places=6)
+        self.assertAlmostEqual(landed["breakdown"]["E"], self.E, places=6)
+        self.assertAlmostEqual(landed["breakdown"]["Q"], self.Q, places=6)
+        self.assertAlmostEqual(landed["breakdown"]["Q mimic"], 2 * self.Q, places=6)
+        # the shuriken's 0.25 s cast was spent behind the attack: the next one is on time
+        self.assertEqual(self.sim([], self.LAND + self.PERIOD - 0.01)["attacks"], 1)
+        self.assertEqual(self.sim([], self.LAND + self.PERIOD + 0.01)["attacks"], 2)
+        # without the ult the same opening lands at once, with Living Shadow's Shadow only
+        no_ult = self.sim([], 0.0, use_ult=False)["breakdown"]
+        self.assertEqual(sorted(no_ult), ["E", "Q", "Q mimic", "auto"])
+        self.assertAlmostEqual(no_ult["Q mimic"], self.Q, places=6)
+        self.assertNotIn("R", self.sim([], 15.0, use_ult=False)["breakdown"])
+
+    def test_the_detonation_repeats_what_the_mark_stored(self):
+        # 3 s after landing: 100% AD + 55% of the three attacks, the Shadow Slash
+        # and the three shurikens that landed meanwhile
+        self.assertNotIn("R", self.sim([], self.POP - 0.01)["breakdown"])
+        stored = 3 * self.AD + self.E + 3 * self.Q
+        at_pop = self.sim([], self.POP)
+        self.assertEqual(at_pop["attacks"], 3)
+        self.assertAlmostEqual(at_pop["breakdown"]["R"], self.AD + 0.55 * stored, places=6)
+        # Shadow Slash (3 s cooldown, cast on landing) is back up at that very
+        # instant: it lands first and is too late to be stored
+        self.assertAlmostEqual(at_pop["breakdown"]["E"], 2 * self.E, places=6)
+        # the detonation is physical damage: 100 armor halves it, the store is the same
+        self.assertAlmostEqual(self.sim([], self.POP, armor=100)["breakdown"]["R"],
+                               (self.AD + 0.55 * stored) / 2, places=6)
+        # rank 2 at level 11 stores 40%: three attacks, a rank 4 Shadow Slash (3.5 s
+        # cooldown) and two shurikens, there being no Living Shadow yet
+        ad11 = 63 + 3.4 * builds.growth(11)
+        self.assertAlmostEqual(self.sim([], self.POP, level=11)["breakdown"]["R"],
+                               ad11 + 0.4 * (3 * ad11 + 137.5 + 2 * self.Q), places=6)
+
+    def test_the_passive_is_stored_at_face_value(self):
+        # 2,000 health and 100 magic resistance: the second attack finds the dummy
+        # under half health, and Contempt for the Weak's 7.5% of maximum health
+        # (150) deals 75; the mark stores the 150
+        fight = self.sim([], 15.0, hp=2000, mr=100)
+        self.assertAlmostEqual(fight["breakdown"]["P"], 75.0, places=6)
+        stored = 3 * self.AD + self.E + 3 * self.Q + 150.0
+        self.assertAlmostEqual(fight["breakdown"]["R"], self.AD + 0.55 * stored, places=6)
+        self.assertAlmostEqual(fight["ttk"], self.POP, places=9)  # the detonation kills
+        # the passive needs the dummy under half health when the attack has landed
+        self.assertNotIn("P", self.sim([], self.LAND, hp=2000)["breakdown"])
+        self.assertIn("P", self.sim([], self.LAND + self.PERIOD, hp=2000)["breakdown"])
+
+    def test_the_mark_stores_attacks_and_items_before_mitigation(self):
+        # Against armor, what the detonation deals for its store is 55% of what
+        # the stored hits dealt, because they met the same armor: checked on the
+        # fight's own breakdown. True damage is dealt and never stored.
+        crit = [self.BOOTS, "infinity edge", "yun tal wildarrows", "lord dominiks regards",
+                "fiendhunter bolts", "umbral glaive"]
+        procs = [self.BOOTS, "kraken slayer", "blade of the ruined king", "eclipse",
+                 "lord dominiks regards", "infinity edge"]
+        for items, need in ((crit, ["barrage", "umbral"]), (procs, ["botrk", "eclipse", "kraken"])):
+            for armor, mr, bonus_hp in ((110, 60, 800.0), (220, 160, 1500.0)):
+                target = dict(hp=30_000, armor=armor, mr=mr, bonus_hp=bonus_hp)
+                before = self.sim(items, self.POP - 1e-6, **target)["breakdown"]
+                for source in need:
+                    self.assertGreater(before[source], 0.0, source)
+                kept = sum(v for s, v in before.items() if s not in ("barrage", "umbral"))
+                want = (self.sheet(items)["ad"] * self.physical_factor(items, armor, bonus_hp)
+                        + 0.55 * kept)
+                got = self.sim(items, self.POP, **target)["breakdown"]["R"]
+                self.assertAlmostEqual(got, want, delta=1e-9 * want, msg=f"{items[1]} at {armor}")
+        # an item active fired with the ult counts as used on landing, inside the mark
+        hydra = self.sim(["profane hydra"], self.POP - 1e-6)["breakdown"]
+        self.assertGreater(hydra["active"], 0.0)
+        self.assertAlmostEqual(self.sim(["profane hydra"], self.POP)["breakdown"]["R"],
+                               self.sheet(["profane hydra"])["ad"] + 0.55 * sum(hydra.values()),
+                               places=6)
+        # Hexoptics amplifies the attack, and an amplification is not stored
+        fx = builds.merge_effects(self.ids(["hexoptics c44"]), self.effects)["attackAmp"]
+        lens = 1 + fx["maxPct"] / 100 * min(1.0, 125 / fx["maxAtRange"])
+        optics = self.sim(["hexoptics c44"], self.POP - 1e-6)["breakdown"]
+        kept = sum(v / lens if s == "auto" else v for s, v in optics.items())
+        self.assertAlmostEqual(self.sim(["hexoptics c44"], self.POP)["breakdown"]["R"],
+                               self.sheet(["hexoptics c44"])["ad"] + 0.55 * kept, places=6)
+        # Black Cleaver shreds as the fight goes: the store is pre-mitigation, so
+        # the whole detonation meets the armor as shredded by then (5 stacks)
+        shred = self.effects[self.ids(["black cleaver"])[0]]["armorShred"]
+        left = 110 * (1 - shred["pctPerStack"] * shred["maxStacks"] / 100)
+        bare = self.sim(["black cleaver"], self.POP)["breakdown"]["R"]
+        self.assertAlmostEqual(self.sim(["black cleaver"], self.POP, armor=110)["breakdown"]["R"],
+                               bare * builds.resist_mult(left), delta=1e-9 * bare)
+
+    def test_shadows_throw_the_shurikens_that_end_their_cast_in_time(self):
+        # No haste: the second shuriken is ready 6 s after the first, 0.24 s before
+        # the seventh attack is due. Its 0.25 s cast would hold that attack up, so
+        # it waits for it; Living Shadow's Shadow (5.25 s) is long gone and Death
+        # Mark's (9 s from the cast) throws with Zed
+        seventh = self.LAND + 6 * self.PERIOD
+        self.assertLess(self.LAND + 6.0, seventh)
+        before, after = (self.sim([], seventh + dt) for dt in (-0.01, 0.01))
+        self.assertEqual((before["attacks"], after["attacks"]), (6, 7))
+        self.assertAlmostEqual(before["breakdown"]["Q"], self.Q, places=6)
+        self.assertAlmostEqual(after["breakdown"]["Q"], 2 * self.Q, places=6)
+        self.assertAlmostEqual(after["breakdown"]["Q mimic"], 3 * self.Q, places=6)
+        # a Shadow gone before the cast time ends throws nothing
+        gone = self.sim([], seventh + 0.01, kit=self.variant(gen_R_shadowDurationS=7))
+        self.assertAlmostEqual(gone["breakdown"]["Q mimic"], 2 * self.Q, places=6)
+        # Shadow Slash takes 3 s off Living Shadow's cooldown at each cast: cast
+        # at 0 s with 18 s to wait, it is back at 9 s and held for the third
+        # shuriken, which goes out behind the thirteenth attack
+        thirteenth = self.LAND + 12 * self.PERIOD
+        third = self.sim([], thirteenth + 0.01)["breakdown"]
+        self.assertAlmostEqual(third["Q"], 3 * self.Q, places=6)
+        self.assertAlmostEqual(third["Q mimic"], 4 * self.Q, places=6)
+        uncut = self.sim([], thirteenth + 0.01, kit=self.variant(gen_E_shadowHitCdrS=0))
+        self.assertAlmostEqual(uncut["breakdown"]["Q mimic"], 3 * self.Q, places=6)
+
+    def test_living_shadow_waits_for_the_cast_that_gives_it_two_shurikens(self):
+        # 20 ability haste: a 5 s cooldown. A Shadow placed as Zed lands throws
+        # with the first shuriken and, fading exactly as the second one's cast
+        # time ends 5.25 s later, with that one too; placed before the dash it
+        # would have missed the second. So Living Shadow waits for the landing.
+        haste = ["axiom arc"]
+        self.assertAlmostEqual(self.sheet(haste)["basic_cd_mult"] * 6, 5.0, places=9)
+        q = self.Q + self.sheet(haste)["ad_bonus"]
+        second = self.LAND + 5.0
+        self.assertAlmostEqual(self.sim(haste, self.LAND)["breakdown"]["Q mimic"], 2 * q, places=6)
+        self.assertAlmostEqual(self.sim(haste, second - 0.01)["breakdown"]["Q"], q, places=6)
+        cast = self.sim(haste, second + 1e-6)["breakdown"]
+        self.assertAlmostEqual(cast["Q"], 2 * q, places=6)
+        self.assertAlmostEqual(cast["Q mimic"], 4 * q, places=6)
+        # that second cast did not wait for the sixth attack, due inside its cast
+        # time: waiting would have cost Living Shadow's shuriken. The attack waits.
+        sixth = self.LAND + 5 * self.PERIOD
+        self.assertTrue(second < sixth < second + 0.25)
+        self.assertEqual(self.sim(haste, second + 0.25 - 0.01)["attacks"], 5)
+        self.assertEqual(self.sim(haste, second + 0.25 + 0.01)["attacks"], 6)
+
+    def test_the_detonation_is_the_last_hit_of_its_instant(self):
+        # No haste and The Collector: Shadow Slash is back up at the instant of the
+        # detonation. With the dummy's health set so that the detonation alone
+        # would leave it inside the execute, Shadow Slash lands first and the
+        # detonation kills outright: no execute, and a kill time that is exactly
+        # the detonation's (a blend with the execute's timeline is not).
+        still = self.variant(gen_P_thresholdPct=0)  # keep the passive out of the sums
+        items = ["the collector"]
+        open_ended = self.sim(items, self.POP, kit=still)["breakdown"]
+        slash = open_ended["E"] / 2
+        before = self.sim(items, self.POP - 1e-6, kit=still)["total"]
+        hp = before + open_ended["R"] + slash / 2
+        self.assertLess(slash / 2, self.effects[self.ids(items)[0]]["executePct"] / 100 * hp)
+        fight = self.sim(items, 15.0, hp=hp, kit=still)
+        self.assertNotIn("execute", fight["breakdown"])
+        self.assertAlmostEqual(fight["ttk"], self.POP, places=9)
+        self.assertEqual(fight["ttk_exp"], fight["ttk"])
+        self.assertLess(fight["ttk_eff"], fight["ttk"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -1,31 +1,32 @@
 {
  "champion": "zed",
  "name": "Zed",
- "patch": "16.18",
+ "patch": "16.22",
  "generated": true,
- "reviewed": false,
+ "reviewed": true,
+ "manaless": true,
  "maxOrder": [
   "Q",
-  "W",
-  "E"
+  "E",
+  "W"
  ],
  "notes": [
-  "Death Mark opens the fight at t=0: Zed is held from attacking and from casting during the 0.6s cast delay plus the 0.35s dash, the mark applies to the dummy the instant the dash ends, and its 100% AD + stored-damage detonation lands 3 seconds later.",
-  "Death Mark's Shadow is used to persist 8s, computed from the sheet's RShadowDurationDisplayed (7.5s) + RReactivateCD (0.5s); this disagrees with the wiki's stated 9s text, and the sheet's calculated figure is used instead (see assumed).",
-  "Razor Shuriken has a 0.25s cast time (its damage lands as the cast starts, then it keeps Zed busy for 0.25s, per the guide's cast-time rule): no other cast and no attack starts during it, but the guide's cast-time rule is not violated by mimicry since a Shadow's mimicked shuriken is not a separate cast by Zed and adds no further busy time.",
-  "Living Shadow (W) is cast on cooldown purely for its 5.25s Shadow: like Death Mark's Shadow, it automatically mimics every Razor Shuriken cast against the target as a full, un-reduced hit, so up to two mimicked Q instances (one from each Shadow) can land per Q cast. Living Shadow itself has no cast time and does not hold up other casts, but still waits its turn behind one in progress.",
-  "Shadow Slash does not multiply with mimicry: per the wiki, only one slash's damage lands per E cast no matter how many Shadows also slash the target, so E deals a single damage instance each cast regardless of active Shadows. Shadow Slash has no cast time either.",
-  "Shadow Slash reduces Living Shadow's current (remaining) cooldown by 3s per champion hit, applied to W's remaining cooldown on every E cast against the dummy.",
-  "Death Mark's stored-damage detonation totals Zed's own Q, E and Contempt for the Weak instances (including mimicked Q casts) that land during the 3s Marked for Death window; basic-attack damage during the mark is not included in the store, a conservative simplification since the engine does not expose per-attack damage amounts to the driver.",
-  "Contempt for the Weak triggers on a basic attack landing while the dummy is below 50% max health, on a 10s internal cooldown; its bonus magic damage does not critically strike.",
-  "Energy costs are not modeled: no source here gives Zed's max energy or regen, and the rotation (R once, Q/E/W on cooldown) is judged plausible within an 8-15s fight.",
-  "Razor Shuriken's reduced pass-through damage to targets beyond the first only matters with multiple enemies; against the single dummy every hit (Zed's or a Shadow's) is a full first hit, so the reduction is unused here.",
-  "Living Shadow's and Death Mark's Shadow Swap recast is a repositioning blink with no damage effect on a stationary target and is not modeled."
+  "Death Mark (R) opens the fight at 0 s. Zed is gone for its 0.6 s delay and 0.35 s dash, attacks the instant he lands at 0.95 s (the game orders that attack) and can cast again from then on. The mark lands with him and detonates 3 s later, at 3.95 s, for 100% AD plus 55% (rank 3) of the damage it stored, as physical damage that meets the target's armor like any other.",
+  "The mark stores pre-mitigation physical and magic damage from every source while it is on the target: basic attacks with their critical strikes, Razor Shuriken and the Shadows' shurikens, Shadow Slash, Contempt for the Weak, and item damage (on-hit effects, Kraken Slayer, Eclipse, Spellblade). True damage is never stored: Umbral Glaive's opener and the true damage of Fiendhunter Bolts' Opening Barrage add nothing to the detonation. A hit landing at the very instant of the detonation comes too late.",
+  "Item actives (Profane Hydra, Stridebreaker, Hextech Rocketbelt) count as used the moment Zed lands, inside the mark, although the engine deals them at 0 s.",
+  "Zed's own damage and physical item damage are stored at their pre-mitigation value. Magic damage from items (Stormrazor's bolt, a Nashor's Tooth on-hit) is stored as the physical damage that would have dealt the same after resistances, which is close because the detonation is physical.",
+  "The Shadows: Death Mark leaves one where it was cast for 9 s, and Living Shadow (W) places one for 5.25 s. Each Shadow still standing when a Razor Shuriken's 0.25 s cast time ends throws a full shuriken of its own, so one cast is up to three hits (\"Q\" and \"Q mimic\" in the breakdown).",
+  "Living Shadow deals nothing itself and is cast only for the shurikens its Shadow throws: as early as it can be without giving one up. That is before Death Mark when the Shadow would outlast the dash at no cost, and right before a Razor Shuriken otherwise. It has no cast time, and a new Shadow replaces the one before it.",
+  "Attacks come first and casts are woven in. Razor Shuriken's damage lands as its 0.25 s cast starts, right after an attack lands or wherever the cast fits before the next attack is due; it holds an attack up only when a Shadow that would throw with it now would have faded by then. Shadow Slash (E) has no cast time and goes out on cooldown, ahead of a shuriken due at the same moment.",
+  "Shadow Slash damages a target once per cast however many Shadows slash it, and every cast takes 3 s off Living Shadow's remaining cooldown, since Zed's own slash always hits the dummy.",
+  "Contempt for the Weak: a basic attack against a target below half health deals 7.5% of its maximum health at level 16 (5% / 7.5% / 10% from levels 1 / 7 / 17) as bonus magic damage, once per 10 s. The health is read after the attack's own damage, where the engine applies on-hit effects, and the bonus damage never critically strikes.",
+  "Skill order Q > E > W, the order played on patch 16.22 (lolalytics, Emerald and above): rank 5 Razor Shuriken and Shadow Slash and rank 3 Living Shadow at level 16.",
+  "Not modeled: energy (nothing spends from the bar), the Shadow Swap recasts of Living Shadow and Death Mark (they move Zed and deal nothing), Razor Shuriken's 60% damage to targets behind the first, and Shadow Slash's slow."
  ],
  "assumed": [
   {
    "path": "gen.R.shadowDurationS",
-   "why": "the sheet's calculated field (RShadowDurationDisplayed 7.5 + RReactivateCD 0.5 = 8s) is used over the wiki's stated 9s prose, since the two disagree and the sheet's computed value is treated as authoritative"
+   "why": "the wiki's 9 s from the cast, which agrees with Riot's 7.5 s swap window (the wiki has it linger 0.25 s and close 1.25 s before the Shadow fades); Riot's tooltip calculation reads 7.5 + 0.5 = 8 s. The two differ only for a third Razor Shuriken inside one Death Mark, which takes more than 50 ability haste or Navori Flickerblade"
   }
  ],
  "abilities": {
@@ -132,7 +133,7 @@
    "dashDelayS": 0.6,
    "dashTravelS": 0.35,
    "markDurationS": 3,
-   "shadowDurationS": 8
+   "shadowDurationS": 9
   }
  },
  "attack": {
@@ -140,8 +141,6 @@
   "ranged": false
  },
  "_provenance": [
-  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zed.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zed.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
- ],
- "manaless": true
+  "Rewritten by hand and reviewed 2026-11-10 from Patch 16.22 sources (dossiers/zed.json, wiki.json at V26.10, sheet.json, bin.json; Zed's numbers are unchanged since 16.18): Death Mark's store of pre-mitigation physical and magic damage from attacks, abilities and items, without true damage; the Shadows' mimicked shurikens with Living Shadow timed around Razor Shuriken; casts woven behind attacks; the Q > E > W skill order, in engine/src/generated/zed.rs. It replaces the machine-written 16.18 kit, which left basic attacks and item damage out of Death Mark's store, cast Razor Shuriken before Living Shadow so its Shadow missed the first one, maxed Living Shadow before Shadow Slash and kept Death Mark's Shadow for 8 s."
+ ]
 }
