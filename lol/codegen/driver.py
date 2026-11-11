@@ -52,8 +52,6 @@ DOSSIERS_DIR = ks.DOSSIERS_DIR
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "kit-driver")
 
 HAND_WRITTEN = ("kayle", "vladimir", "twitch", "kassadin")
-# a hand-written kit in progress elsewhere (the survival model): not written over
-RESERVED = ("drmundo",)
 _print_lock = threading.Lock()
 
 
@@ -928,7 +926,7 @@ def admitted(name):
 def all_slugs():
     """Every champion with a dossier and no hand-written driver."""
     slugs = sorted(f[:-5] for f in os.listdir(DOSSIERS_DIR) if f.endswith(".json"))
-    return [s for s in slugs if s not in HAND_WRITTEN + RESERVED and s != "jax"]
+    return [s for s in slugs if s not in HAND_WRITTEN and s != "jax"]
 
 
 def cmd_write(args):

@@ -335,8 +335,6 @@ pub struct ItemFx {
     pub basic_ability_haste: f64,
     pub ultimate_ability_haste: f64,
     pub haste_from_bonus_ad: Option<(f64, f64)>, // (base, perBonusAdPct)
-    /// Warmog's Vitality: bonus health, this % of the health items grant.
-    pub hp_from_item_hp_pct: f64,
     // fight side, list-valued
     pub onhit: Vec<OnHit>,
     pub onhit_current_hp: Option<OnHitCurrent>,
@@ -649,7 +647,6 @@ impl ItemFx {
             basic_ability_haste: getf(d, "basicAbilityHaste", 0.0)?,
             ultimate_ability_haste: getf(d, "ultimateAbilityHaste", 0.0)?,
             haste_from_bonus_ad: haste,
-            hp_from_item_hp_pct: getf(d, "hpFromItemHpPct", 0.0)?,
             onhit,
             onhit_current_hp: match getd(d, "onhitCurrentHp")? { Some(x) => Some(parse_onhit_current(&x)?), None => None },
             dmg_amp: match getd(d, "dmgAmp")? { Some(x) => Some(parse_dmg_amp(&x)?), None => None },

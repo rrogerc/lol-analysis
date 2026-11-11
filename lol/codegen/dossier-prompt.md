@@ -30,18 +30,17 @@ runs in total (then report what still fails).
 
 ## The fight the dossier is for
 
-The simulator runs two kinds of fight, and one dossier serves both. In the
-**damage fight** one champion, at some level with some items, fights ONE
-stationary target dummy for about 15 seconds: the dummy has health and
-resists, never fights back, never moves, and counts as an enemy champion; the
-simulator ranks item builds by kill time and damage. In the **survival
-fight** a tanky champion is attacked by one enemy champion's full rotation
-and is ranked by how long it survives. There are no allies, minions or
-terrain in either. So record what changes damage dealt (damage, attack speed,
-buffs, debuffs on the target, costs, cooldowns, cast times, attack resets)
-AND what changes damage taken (heals, shields, damage reduction, bonus
-resists and health, health regeneration). Crowd control, mobility and vision
-change neither: ignore them.
+The simulator runs one kind of fight. In the **damage fight** one champion,
+at some level with some items, fights ONE stationary target dummy for about
+15 seconds: the dummy has health and resists, never fights back, never moves,
+and counts as an enemy champion; the simulator ranks item builds by kill time
+and damage. There are no allies, minions or terrain. The dossier is still a
+complete record of the kit, so record what changes damage dealt (damage,
+attack speed, buffs, debuffs on the target, costs, cooldowns, cast times,
+attack resets) AND what changes damage taken (heals, shields, damage
+reduction, bonus resists and health, health regeneration), which the damage
+fight never reads. Crowd control, mobility and vision change neither: ignore
+them.
 
 ## Inputs (read these, and nothing else in the repository)
 

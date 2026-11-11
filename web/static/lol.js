@@ -7,70 +7,6 @@ const bstate = { mode: "champion", meta: null, items: null, champion: null, scen
                  data: null, sel: 0, status: null, req: 0, timer: null };
 const fmtDur = s => s < 90 ? `${Math.round(s)}s` : `${Math.round(s / 60)} min`;
 
-// ---- the Survival tier: a tank's builds, ranked on how long they last ----
-// A champion's own scenarios: a tank sees the Survival tier, a carry the
-// damage tiers. A serve older than the field lists every scenario.
-function championScenarios(meta, slug) {
-  const all = (meta?.scenarios || []).map(s => s.key);
-  const champ = meta?.champions?.find(c => c.slug === slug);
-  return champ?.scenarios?.length ? champ.scenarios.filter(k => all.includes(k)) : all;
-}
-
-// "survival" for a Survival cell (and for a tank's scenarios), else "damage".
-function scenarioObjective(sc) {
-  return sc?.objective === "survival" ? "survival" : "damage";
-}
-
-// A Survival fight's time to die: the kill time, or ≈ the time the damage
-// taken would have needed when the tank outlived the fight.
-function ttdText(v) {
-  if (!v || v.ttd == null) return "—";
-  return v.died ? `${v.ttd.toFixed(2)}s` : `≈${v.ttd.toFixed(1)}s`;
-}
-
-// How far short of the attacker's longest-lived build this one falls.
-function shareText(share) {
-  if (share == null) return "";
-  return share > 0.995 ? " best" : ` −${Math.round((1 - share) * 100)}%`;
-}
-
-// What kept the tank up, largest first: heals, shields and damage kept off.
-const DEFENSE_LABELS = [
-  ["healedR", "Maximum Dosage heal"], ["rBaseHealth", "Maximum Dosage base health"],
-  ["healedW", "Heart Zapper heal"], ["regen", "Regeneration"],
-  ["healedLifeline", "Protoplasm heal"], ["lifelineHealth", "Protoplasm bonus health"],
-  ["healedDrain", "Unending Despair"], ["reviveHealth", "Guardian Angel revive"],
-  ["shieldMagic", "Magic shield (Kaenic)"], ["shieldLifeline", "Lifeline shield"],
-  ["reducedCrit", "Randuin's (crits)"], ["reducedAttack", "Steelcaps (attacks)"],
-  ["blocked", "Spell shield"], ["negated", "Stasis"],
-  ["deferred", "Death's Dance (delayed)"],
-];
-function defenseRows(d) {
-  return DEFENSE_LABELS.filter(([k]) => d?.[k] > 0).map(([k, label]) => [label, d[k]])
-    .sort((a, b) => b[1] - a[1]);
-}
-
-// The moments that decided a fight, in the order they happened. `v` is a
-// row's fight against one attacker (its `defense` report and threshold).
-function defenseEvents(v) {
-  const d = v?.defense;
-  if (!d) return [];
-  const at = (t, what) => [t, `${what} at ${t.toFixed(2)}s`];
-  const out = [];
-  if (d.rAt != null) {
-    const [, text] = at(d.rAt, "Maximum Dosage");
-    out.push([d.rAt, text + (v.threshold ? ` (at or below ${Math.round(v.threshold * 100)}% health)`
-                                         : " (to live through a killing blow)")]);
-  }
-  if (d.lifelineAt != null) out.push(at(d.lifelineAt, "lifeline"));
-  if (d.zhonyaAt != null) out.push(at(d.zhonyaAt, "Zhonya's"));
-  if (d.reviveAt != null) out.push(at(d.reviveAt, "Guardian Angel"));
-  if (d.voidbornAt != null) out.push(at(d.voidbornAt, "Jak'Sho's resists"));
-  if (d.steadfastAt != null) out.push(at(d.steadfastAt, "Force of Nature's 70 MR"));
-  if (d.wCasts) out.push([Infinity, `Heart Zapper ×${d.wCasts}`]);
-  return out.sort((a, b) => a[0] - b[0]).map(([, text]) => text);
-}
-
 async function loadBuildsMeta() {
   if (bstate.meta) return true;
   try {
@@ -94,7 +30,6 @@ async function loadBuildsMeta() {
     btn.addEventListener("click", () => { bstate.scenario = sc.key; loadBuildsView(); });
     return btn;
   }));
-  syncScenarioSeg();
   renderPool();
   return true;
 }
@@ -102,7 +37,6 @@ async function loadBuildsMeta() {
 function pickChampion(slug) {
   bstate.champion = slug;
   renderChampionPicker();
-  syncScenarioSeg();
   renderPool();
   loadScenario();
 }
@@ -180,18 +114,6 @@ function renderGeneratedBanner(id = "builds-generated", slug = bstate.champion) 
   el.textContent = parts.join(" ");
 }
 
-// Show the selected champion's scenarios only (a tank's are the Survival
-// tier's), keeping the scenario if it is one of them. The leaderboard shows
-// the scenarios it has a board for.
-function syncScenarioSeg() {
-  const keys = bstate.mode === "leaderboard" ? leaderboardScenarios(bstate.meta)
-                                             : championScenarios(bstate.meta, bstate.champion);
-  document.querySelectorAll("#scenario-seg button").forEach(b => {
-    b.hidden = !keys.includes(b.dataset.key);
-  });
-  if (!keys.includes(bstate.scenario)) bstate.scenario = keys[0];
-}
-
 // `slug`: the champion the card is about — the selected one, or in the
 // leaderboard the selected row's.
 function renderPool(slug = bstate.champion) {
@@ -209,14 +131,7 @@ function renderPool(slug = bstate.champion) {
   // the pool is per champion: a kit can rule items out (mana items on Vladimir)
   const champ = m.champions.find(c => c.slug === slug);
   const ids = champ ? new Set(champ.pool) : null;
-  const survival = champ?.objective === "survival";
-  // a tank's pool is the Survival tier's (tank items, then the damage
-  // pool's defensive ones)
-  const every = [...m.pool, ...(m.tankPool || []).filter(t => !m.pool.some(p => p.id === t.id))]
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const pool = ids ? every.filter(it => ids.has(it.id)) : m.pool;
-  document.getElementById("pool-hint-damage").hidden = survival;
-  document.getElementById("pool-hint-survival").hidden = !survival;
+  const pool = ids ? m.pool.filter(it => ids.has(it.id)) : m.pool;
   const excluded = [...(champ?.excluded || []), ...m.excluded];
   document.getElementById("pool-title").textContent =
     `Item pool${champ ? " for " + (champ.name || champ.slug) : ""} — ` +
@@ -312,30 +227,11 @@ async function loadScenario() {
   bstate.data = d;
   bstate.sel = 0;
   const sc = d.scenario, rk = d.ranks;
-  const survival = scenarioObjective(sc) === "survival";
-  document.getElementById("builds-note").hidden = survival;
-  document.getElementById("builds-note-survival").hidden = !survival;
   document.getElementById("builds-title").textContent =
-    `${d.championName || d.champion} — ${survival ? "tankiest builds" : "ranked builds"}, ` +
-    sc.label.toLowerCase();
+    `${d.championName || d.champion} — ranked builds, ${sc.label.toLowerCase()}`;
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
-  if (survival) {
-    const foe = a => `${a.name}'s best build (${a.items.join(", ")}), ${a.duration}s fight`;
-    const me = (sc.attackers || []).find(a => a.key === sc.key);
-    const what = sc.overall
-      ? `ranked on every attacker at once — ${(sc.attackers || []).map(foe).join("; ")} — ` +
-        "by the geometric mean of the times to die, builds fewer attackers kill first"
-      : `vs ${me ? foe(me) : sc.attacker} · ranked by time to die, longest first`;
-    desc.textContent =
-      `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}` +
-      ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
-      (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
-      ` · items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.survivalNote || ""}`;
-    renderBuildsTable();
-    return;
-  }
   const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
   const what = sc.overall
     ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
@@ -538,7 +434,6 @@ function buildCell(row) {
 // adds the build's kill time against the tier's other targets; the overall
 // cell shows every target, then the mean it is ranked by.
 function buildColumns(sc) {
-  if (scenarioObjective(sc) === "survival") return survivalColumns(sc);
   const targets = sc.targets || [];
   const cols = [
     { th: "#", td: r => cell(String(r.rank)) },
@@ -592,7 +487,6 @@ function renderBuildsTable() {
 // board's scenario and `who` the row's champion.
 function renderBreakdown(r, sc = bstate.data.scenario, who = "") {
   if (!r) return;
-  if (scenarioObjective(sc) === "survival") { renderSurvivalBreakdown(r); return; }
   document.getElementById("bd-title").textContent =
     `Damage breakdown — #${r.rank}${who && " " + who}: ${r.items.join(", ")}`;
   document.getElementById("bd-hint").textContent =
@@ -614,93 +508,6 @@ function renderBreakdown(r, sc = bstate.data.scenario, who = "") {
   }));
 }
 
-const TTD_TITLE = "Ranking metric: how long the build lasts against this attacker — the kill time, or ≈ the time the damage it took would have needed when it is still standing at the end of the fight — and how far short of the longest-lived build it falls";
-const SURV_MEAN_TITLE = "Ranking metric: the geometric mean of the times to die against every attacker, so each counts equally in percentage terms. Builds fewer attackers kill rank first.";
-
-// One build's fight against one attacker: its time to die and its distance
-// from that attacker's longest-lived build.
-function survCell(v, a) {
-  const td = document.createElement("td");
-  if (!v) { td.textContent = "—"; return td; }
-  td.append(ttdText(v));
-  if (!v.died) td.title = `still standing after the ${a?.duration ?? ""}s fight with ` +
-    `${fmtInt(v.hpLeft)} health — the time the damage it took would have needed`;
-  const s = document.createElement("span");
-  s.className = "ci";
-  s.textContent = shareText(v.share);
-  td.append(s);
-  return td;
-}
-
-// A Survival cell's columns: the cell's own attacker (or every attacker and
-// the mean, overall), then the build's defenses.
-function survivalColumns(sc) {
-  const attackers = sc.attackers || [];
-  const cols = [
-    { th: "#", td: r => cell(String(r.rank)) },
-    { th: "Build", title: "One icon per item — hover, focus or tap an icon for its name and details",
-      td: r => buildCell(r) },
-  ];
-  const vs = a => ({ th: `vs ${a.name}`, title: `${TTD_TITLE} — ${a.name}: ${a.items.join(", ")}`,
-                     td: r => survCell(r.vs?.[a.champion], a) });
-  if (sc.overall) {
-    attackers.forEach(a => cols.push(vs(a)));
-    cols.push({ th: "Mean", title: SURV_MEAN_TITLE,
-                td: r => cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—") });
-  } else {
-    const me = attackers.find(a => a.key === sc.key);
-    cols.push({ th: "Time to die", title: TTD_TITLE, td: r => survCell(r.vs?.[sc.attacker], me) });
-    attackers.filter(a => a.key !== sc.key).forEach(a => cols.push(vs(a)));
-  }
-  cols.push({ th: "Health", td: r => cell(fmtInt(r.hp)) },
-            { th: "Armor", td: r => cell(fmtInt(r.armor)) },
-            { th: "MR", td: r => cell(fmtInt(r.mr)) },
-            { th: "Gold", td: r => cell(fmtInt(r.gold)) });
-  return cols;
-}
-
-// The selected tank build against each attacker: what hit it, and what kept
-// it up (heals, shields, damage kept off), with the moments that decided it.
-function renderSurvivalBreakdown(r) {
-  const sc = bstate.data.scenario;
-  document.getElementById("bd-title").textContent =
-    `Survival breakdown — #${r.rank}: ${r.items.join(", ")}`;
-  document.getElementById("bd-hint").textContent =
-    `${fmtInt(r.hp)} health · ${fmtInt(r.armor)} armor · ${fmtInt(r.mr)} MR · ${fmtInt(r.gold)}g · ` +
-    "what hit it (post-mitigation) and what kept it up, against each attacker";
-  const groups = (sc.attackers || []).filter(a => r.vs?.[a.champion]);
-  document.getElementById("bd-bars").replaceChildren(...groups.flatMap(a => {
-    const v = r.vs[a.champion];
-    const head = document.createElement("div");
-    head.className = "bd-group";
-    const b = document.createElement("b");
-    b.textContent = `vs ${a.name}`;
-    const fate = v.died ? `dies at ${v.ttd.toFixed(2)}s`
-                        : `still standing at ${a.duration}s with ${fmtInt(v.hpLeft)} health`;
-    head.append(b, ` (${a.items.join(", ")}) — ${fate} · ${fmtInt(v.taken)} damage taken`);
-    const events = defenseEvents(v);
-    const when = document.createElement("div");
-    when.className = "hint";
-    when.textContent = events.join(" · ");
-    const taken = Object.entries(v.breakdown);
-    const kept = defenseRows(v.defense);
-    const max = Math.max(1, ...taken.map(([, x]) => x), ...kept.map(([, x]) => x));
-    const sub = text => {
-      const el = document.createElement("div");
-      el.className = "hint";
-      el.textContent = text;
-      return el;
-    };
-    const keptTotal = kept.reduce((s, [, x]) => s + x, 0);
-    return [head, ...(events.length ? [when] : []),
-            sub("Damage taken, by source"),
-            ...taken.map(([src, dmg], i) => bar(src, dmg, max, v.taken, i)),
-            ...(kept.length ? [sub("Kept off and healed"),
-                               ...kept.map(([label, x], i) => bar(label, x, max, keptTotal, i + 3))]
-                            : [])];
-  }));
-}
-
 async function openBuilds() {
   if (await loadBuildsMeta()) {
     renderBuildsMode();
@@ -715,11 +522,6 @@ async function openBuilds() {
 const bboard = { data: null, error: null, search: "", reviewedOnly: false, scroll: 0,
                  sortKey: "rank", sortDir: 1 };  // the column the rows are ordered by: see boardSort
 
-// The scenarios with a board: the damage tiers' (a single tank compares nothing).
-function leaderboardScenarios(meta) {
-  return (meta?.scenarios || []).filter(s => scenarioObjective(s) === "damage").map(s => s.key);
-}
-
 function loadBuildsView() {
   return bstate.mode === "leaderboard" ? loadLeaderboard() : loadScenario();
 }
@@ -732,12 +534,9 @@ function renderBuildsMode() {
     b.classList.toggle("active", on);
     b.setAttribute("aria-pressed", String(on));
   });
-  const survival = !board &&
-    bstate.meta.champions.find(c => c.slug === bstate.champion)?.objective === "survival";
   const hide = (id, hidden) => { document.getElementById(id).hidden = hidden; };
   hide("builds-note-board", !board);
-  hide("builds-note", board || survival);
-  hide("builds-note-survival", !survival);
+  hide("builds-note", board);
   hide("champion-seg", board);
   hide("btbl-wrap", board);
   hide("bboard", !board);
@@ -759,14 +558,13 @@ function setBuildsMode(mode) {
   if (bstate.mode === "leaderboard") bboard.scroll = wrap.scrollTop;  // a hidden box forgets it
   bstate.mode = mode;
   if (!bstate.meta) { updateHash(); return; }  // openBuilds shows the mode once the meta is in
-  syncScenarioSeg();
   if (mode === "champion") {
     // while the cell loads: not another champion's rows under the board's title
     if (bstate.data?.champion !== bstate.champion || bstate.data?.scenario?.key !== bstate.scenario)
       clearBuilds();
     const champ = bstate.meta.champions.find(c => c.slug === bstate.champion);
-    document.getElementById("builds-title").textContent = `${champ?.name || bstate.champion} — ` +
-      (champ?.objective === "survival" ? "tankiest builds" : "ranked builds");
+    document.getElementById("builds-title").textContent =
+      `${champ?.name || bstate.champion} — ranked builds`;
   }
   renderBuildsMode();
   loadBuildsView();  // the board renders what it holds before it asks again

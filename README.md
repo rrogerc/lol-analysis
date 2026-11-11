@@ -10,8 +10,8 @@ lol/                Summoner's Rift analytics and build simulator
   ladder.py         Champion game-length scaling and Master+ one-trick aggregation
   matchups.py       Thematic counters, kit synergies, and unsupervised draft archetypes
   items.py          Patch item snapshots (Data Dragon + Meraki + CommunityDragon shop rules)
-  builds.py         Stat sheets, fight/survival simulation, exhaustive build optimizer
-  leaderboard.py    Cross-champion DPS and survival leaderboards
+  builds.py         Stat sheets, fight simulation, exhaustive build optimizer
+  leaderboard.py    Cross-champion DPS leaderboards
   codegen/          Champion kit dossier and Rust driver generation pipeline
   engine/           Rust PyO3 combat engine (builds to lol/lol_engine.abi3.so)
   data/             Committed scaling, matchups, item, and champion kit/golden archives

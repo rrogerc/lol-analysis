@@ -1,7 +1,7 @@
 "use strict";
 
 // Consolidated LoL dashboard UI test suite.
-// Run: node lol/tests/test_ui.cjs [--cell survival.json] [--board leaderboard.json]
+// Run: node lol/tests/test_ui.cjs [--board leaderboard.json]
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -102,7 +102,7 @@ async function checkBuildsGenerated() {
   context.bstate.meta = {
     champions: [
       { slug: "kayle", name: "Kayle" },
-      { slug: "drmundo", name: "Dr. Mundo", objective: "survival" },
+      { slug: "vladimir", name: "Vladimir" },
       {
         slug: "ahri",
         name: "Ahri",
@@ -121,14 +121,13 @@ async function checkBuildsGenerated() {
       },
     ],
   };
-  context.syncScenarioSeg = () => {};
   context.renderPool = () => {};
   context.loadScenario = () => { picked.push(context.bstate.champion); };
 
   const labels = () => element("champion-seg").children.map(b => b.textContent);
 
   context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Dr. Mundo"]);
+  assert.deepEqual(labels(), ["Kayle", "Vladimir"]);
   assert.equal(element("champion-more").hidden, false);
   assert.match(element("champion-search").placeholder, /^2 more champions, machine-written and unreviewed/);
   assert.deepEqual(element("champion-list").children.map(o => o.value), ["Ahri", "Kai'Sa"]);
@@ -141,7 +140,7 @@ async function checkBuildsGenerated() {
   await input.fire("input");
   assert.deepEqual(picked, ["kaisa"]);
   assert.equal(input.value, "");
-  assert.deepEqual(labels(), ["Kayle", "Dr. Mundo", "Kai'Saunreviewed"], "Selected generated champion joins buttons with tag");
+  assert.deepEqual(labels(), ["Kayle", "Vladimir", "Kai'Saunreviewed"], "Selected generated champion joins buttons with tag");
 
   const kaisa = element("champion-seg").children[2];
   assert.ok(kaisa.classList.contains("active"));
@@ -164,7 +163,7 @@ async function checkBuildsGenerated() {
   context.renderGeneratedBanner();
   assert.equal(banner.hidden, true, "A hand-written champion has no banner");
   context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Dr. Mundo"]);
+  assert.deepEqual(labels(), ["Kayle", "Vladimir"]);
 
   context.bstate.meta = {
     champions: [
@@ -189,147 +188,6 @@ async function checkBuildsGenerated() {
   ++passedSuites;
 }
 
-function checkBuildsSurvival() {
-  const h = loadDashboard();
-  const { context, element } = h;
-  const {
-    championScenarios,
-    scenarioObjective,
-    ttdText,
-    shareText,
-    defenseRows,
-    defenseEvents,
-    survivalColumns,
-    renderSurvivalBreakdown,
-    DEFENSE_LABELS,
-  } = context;
-
-  const meta = {
-    scenarios: ["full-squishy", "full-overall", "survive-kayle", "survive-overall"].map(key => ({ key })),
-    champions: [
-      { slug: "kayle", scenarios: ["full-squishy", "full-overall"] },
-      { slug: "drmundo", scenarios: ["survive-kayle", "survive-overall", "gone"] },
-    ],
-  };
-  assert.deepEqual(plain(championScenarios(meta, "drmundo")), ["survive-kayle", "survive-overall"]);
-  assert.deepEqual(plain(championScenarios(meta, "kayle")), ["full-squishy", "full-overall"]);
-  assert.deepEqual(
-    plain(championScenarios({ scenarios: meta.scenarios, champions: [{ slug: "kayle" }] }, "kayle")),
-    ["full-squishy", "full-overall", "survive-kayle", "survive-overall"]
-  );
-  assert.equal(scenarioObjective({ objective: "survival" }), "survival");
-  assert.equal(scenarioObjective({ key: "full-tank" }), "damage");
-  assert.equal(scenarioObjective(null), "damage");
-
-  assert.equal(ttdText({ ttd: 22.2346, died: true }), "22.23s");
-  assert.equal(ttdText({ ttd: 32.49, died: false }), "\u224832.5s");
-  assert.equal(ttdText({ ttd: null, died: false }), "\u2014");
-  assert.equal(ttdText(undefined), "\u2014");
-  assert.equal(shareText(1), " best");
-  assert.equal(shareText(0.9971), " best");
-  assert.equal(shareText(0.8765), " \u221212%");
-  assert.equal(shareText(null), "");
-
-  const defense = {
-    healedR: 4466, rBaseHealth: 1221, healedW: 1111, regen: 693, reducedCrit: 5196,
-    reducedAttack: 1045, shieldMagic: 0, negated: 0, rAt: 8.17, lifelineAt: 4.81, voidbornAt: 5,
-    steadfastAt: 8.76, zhonyaAt: null, reviveAt: null, wCasts: 2,
-  };
-  assert.deepEqual(
-    plain(defenseRows(defense)).map(([label]) => label),
-    ["Randuin's (crits)", "Maximum Dosage heal", "Maximum Dosage base health", "Heart Zapper heal", "Steelcaps (attacks)", "Regeneration"]
-  );
-  assert.deepEqual(plain(defenseRows(null)), []);
-  for (const [key] of DEFENSE_LABELS) assert.equal(typeof key, "string");
-  assert.deepEqual(
-    plain(defenseEvents({ defense, threshold: 0.1 })),
-    [
-      "lifeline at 4.81s",
-      "Jak'Sho's resists at 5.00s",
-      "Maximum Dosage at 8.17s (at or below 10% health)",
-      "Force of Nature's 70 MR at 8.76s",
-      "Heart Zapper \u00d72",
-    ]
-  );
-  assert.match(plain(defenseEvents({ defense, threshold: 0 }))[2], /to live through a killing blow/);
-  assert.deepEqual(plain(defenseEvents({})), []);
-
-  function syntheticCell(overall) {
-    const attackers = [
-      { key: "survive-kayle", champion: "kayle", name: "Kayle", items: ["Infinity Edge"], duration: 30, level: 16 },
-      { key: "survive-kassadin", champion: "kassadin", name: "Kassadin", items: ["Malignance"], duration: 30, level: 16 },
-    ];
-    const fight = (ttd, died, share) => ({
-      ttd, died, share, hpLeft: died ? 0 : 812, taken: 12678, dps: 570,
-      attacks: 40, breakdown: { auto: 9405, wave: 1157 }, threshold: 0.1, defense,
-    });
-    const row = (rank, kayle, kassadin) => ({
-      rank, items: ["Plated Steelcaps", "Randuin's Omen"], gold: 17000,
-      hp: 4231, armor: 242, mr: 212, vs: { kayle, kassadin },
-      ...(overall ? { survived: kassadin.died ? 0 : 1, mean: 26.13 } : { ttd: kayle.ttd, died: kayle.died }),
-    });
-    return {
-      objective: "survival",
-      championName: "Dr. Mundo",
-      scenario: overall
-        ? { key: "survive-overall", overall: true, objective: "survival", attackers }
-        : { key: "survive-kayle", attacker: "kayle", objective: "survival", attackers },
-      rows: [
-        row(1, fight(22.35, true, 1), fight(30.56, false, 0.94)),
-        row(2, fight(19.51, true, 0.873), fight(30.41, false, 0.935)),
-      ],
-    };
-  }
-
-  function checkCell(d) {
-    const sc = d.scenario;
-    const cols = survivalColumns(sc);
-    const heads = plain(cols.map(c => c.th));
-    const names = sc.attackers.map(a => `vs ${a.name}`);
-    if (sc.overall) {
-      assert.deepEqual(heads, ["#", "Build", ...names, "Mean", "Health", "Armor", "MR", "Gold"]);
-    } else {
-      const me = sc.attackers.find(a => a.key === sc.key);
-      assert.deepEqual(heads, ["#", "Build", "Time to die", ...names.filter(n => n !== `vs ${me.name}`), "Health", "Armor", "MR", "Gold"]);
-    }
-    const text = row => cols.map(c => c.td(row).textContent);
-    for (const row of d.rows.slice(0, 50)) {
-      const cells = text(row);
-      assert.equal(cells[0], String(row.rank));
-      for (const a of sc.attackers) {
-        const v = row.vs[a.champion];
-        assert.ok(v, `Row ${row.rank} fought ${a.name}`);
-        const shown = ttdText(v) + shareText(v.share);
-        assert.ok(cells.includes(shown), `Row ${row.rank} shows ${shown} for ${a.name}: ${cells}`);
-      }
-      if (sc.overall) assert.ok(cells.includes(row.mean.toFixed(2) + "s"));
-      assert.equal(cells.at(-4), row.hp.toLocaleString("en-US"));
-    }
-    context.bstate.data = d;
-    renderSurvivalBreakdown(d.rows[0]);
-    const bars = element("bd-bars").textContent;
-    assert.match(element("bd-title").textContent, /^Survival breakdown \u2014 #1: /);
-    for (const a of sc.attackers) {
-      const v = d.rows[0].vs[a.champion];
-      assert.ok(bars.includes(`vs ${a.name}`));
-      assert.ok(bars.includes(v.died ? `dies at ${v.ttd.toFixed(2)}s` : `still standing at ${a.duration}s`));
-      for (const src of Object.keys(v.breakdown)) assert.ok(bars.includes(src));
-      for (const [label] of plain(defenseRows(v.defense))) assert.ok(bars.includes(label));
-    }
-  }
-
-  const cellArg = process.argv.indexOf("--cell");
-  if (cellArg > 0) {
-    const d = JSON.parse(fs.readFileSync(process.argv[cellArg + 1], "utf8"));
-    assert.equal(scenarioObjective(d.scenario), "survival");
-    checkCell(d);
-  } else {
-    checkCell(syntheticCell(false));
-    checkCell(syntheticCell(true));
-  }
-  ++passedSuites;
-}
-
 async function checkBuildsLeaderboard() {
   const calls = [];
   const log = name => (...args) => { calls.push([name, ...args]); };
@@ -344,7 +202,6 @@ async function checkBuildsLeaderboard() {
   });
   const { context, element, document } = h;
   const {
-    leaderboardScenarios,
     boardColumns,
     boardRows,
     renderLeaderboard,
@@ -386,12 +243,11 @@ async function checkBuildsLeaderboard() {
       champions: [
         { slug: "kayle", name: "Kayle" },
         { slug: "ahri", name: "Ahri", generated: true },
-        { slug: "drmundo", name: "Dr. Mundo", objective: "survival" },
+        { slug: "twitch", name: "Twitch" },
       ],
       scenarios: [
-        { key: "full-squishy", label: "Full build vs squishy", objective: "damage" },
-        { key: "full-overall", label: "Full build \u2014 overall", objective: "damage" },
-        { key: "survive-kayle", label: "Survive Kayle", objective: "survival" },
+        { key: "full-squishy", label: "Full build vs squishy" },
+        { key: "full-overall", label: "Full build \u2014 overall" },
       ],
     },
   });
@@ -407,10 +263,6 @@ async function checkBuildsLeaderboard() {
   };
   context.clearBuilds = log("clearBuilds");
   context.markCold = () => {};
-  context.syncScenarioSeg = key => {
-    calls.push(["syncScenarioSeg", key]);
-    h.queryAll("#scenario-seg button").forEach(b => b.classList.toggle("active", b.dataset.key === key));
-  };
   context.renderChampionPicker = log("renderChampionPicker");
   context.loadScenario = log("loadScenario");
   context.loadStatus = async () => { calls.push(["loadStatus"]); };
@@ -421,9 +273,6 @@ async function checkBuildsLeaderboard() {
   };
 
   const took = name => calls.filter(c => c[0] === name);
-
-  assert.deepEqual(plain(leaderboardScenarios(bstate.meta)), ["full-squishy", "full-overall"]);
-  assert.deepEqual(plain(leaderboardScenarios(null)), []);
 
   const targets = [
     { key: "full-squishy", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 8 },
@@ -509,11 +358,11 @@ async function checkBuildsLeaderboard() {
   assert.deepEqual(plain(took("renderGeneratedBanner")), [["renderGeneratedBanner", "bd-generated", "kayle"]]);
   assert.deepEqual(plain(took("renderPool")), [["renderPool", "kayle"]]);
 
-  bstate.champion = "drmundo";
+  bstate.champion = "twitch";
   show(squishy);
   assert.deepEqual(body().map(tr => tr.className), ["sel", "", "", ""]);
   assert.equal(took("renderPool")[0][1], "ahri");
-  assert.equal(bstate.champion, "drmundo");
+  assert.equal(bstate.champion, "twitch");
 
   calls.length = 0;
   await body()[1].fire("click");
@@ -1082,10 +931,9 @@ async function checkMatchups() {
   checkOnetricks();
   checkBuildsItems();
   await checkBuildsGenerated();
-  checkBuildsSurvival();
   await checkBuildsLeaderboard();
   await checkMatchups();
-  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, survival, leaderboard, matchups).`);
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, leaderboard, matchups).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);

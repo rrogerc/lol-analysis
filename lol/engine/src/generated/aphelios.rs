@@ -184,17 +184,13 @@ struct State {
     leth_cleaver: i64,
     leth_dark: i64,
     armor_true: f64,
-    armor_shown: f64,
 }
 
 impl GenDriver {
     /// The earliest a cast readied at `ready` can start: not before now, not
-    /// inside another cast or a weapon's assembly, not into a stasis.
+    /// inside another cast or a weapon's assembly.
     fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
-        pymax(
-            pymax(pymax(ready, e.st.t), pymax(self.s.busy_until, self.s.assembly_until)),
-            e.hold_until(),
-        )
+        pymax(pymax(ready, e.st.t), pymax(self.s.busy_until, self.s.assembly_until))
     }
 
     /// A cast with a cast time just started: no other cast and no attack
@@ -213,18 +209,15 @@ impl GenDriver {
     /// by `lethality / ((1 - shred) * (1 - pen))`, floored at 0: every source
     /// of physical damage then meets it, item procs included. Shred (Black
     /// Cleaver) and percent pen (Terminus) move during a fight, so this runs
-    /// at every hook and rewrites the armor when either has changed. A
-    /// defender that moves its own armor (Jak'Sho) is noticed by its number
-    /// no longer being the one written here.
+    /// at every hook and rewrites the armor when either has changed.
     fn sync_lethality(&mut self, e: &mut Engine) {
         if self.p_lethality <= 0.0 {
             return;
         }
-        let seen = e.target_armor;
-        if !self.s.leth_on || seen != self.s.armor_shown {
+        if !self.s.leth_on {
+            // the first hook of the fight: the armor the target really has
             self.s.leth_on = true;
-            self.s.armor_true = seen;
-            self.s.leth_cleaver = -1;
+            self.s.armor_true = e.target_armor;
         }
         let (cleaver, dark) = (e.st.cleaver, e.st.dark);
         if cleaver == self.s.leth_cleaver && dark == self.s.leth_dark {
@@ -248,7 +241,6 @@ impl GenDriver {
         } else {
             self.s.armor_true
         };
-        self.s.armor_shown = shown;
         let mr = e.target_mr;
         e.set_target_resists(shown, mr);
     }
@@ -286,11 +278,6 @@ impl GenDriver {
     fn attack_time(&self, e: &Engine) -> f64 {
         let sheet = e.p.sheet;
         let raw = sheet.base_as + sheet.as_ratio * self.bonus_as_pct(e) / 100.0;
-        if let Some(d) = &e.dfd {
-            if d.as_mult != 1.0 {
-                return 1.0 / pymin(raw * d.as_mult, AS_CAP);
-            }
-        }
         1.0 / pymin(raw, AS_CAP)
     }
 
@@ -954,7 +941,6 @@ impl Driver for GenDriver {
             leth_cleaver: -1,
             leth_dark: -1,
             armor_true: 0.0,
-            armor_shown: 0.0,
         };
 
         Ok(GenDriver {

@@ -747,7 +747,7 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertLess(w_bft, 300.0)
         self.assertAlmostEqual(w_sf_2, w_sf_1 * 2.0, places=4)
 
-    def test_plasma_pre_attack_detonation_and_defended_spell_shield(self):
+    def test_plasma_pre_attack_detonation(self):
         # At L1 (AD=59, P base=4, perStack=1, exec=15%) with Q zeroed, 5 autos deal
         # 4+5+6+7+8 = 30 Caustic Wounds and detonate 15% of 266 = 39.9 missing HP
         # BEFORE Auto #5's 59 physical damage (rather than 48.75 post-auto).
@@ -758,23 +758,6 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertAlmostEqual(r5["breakdown"]["auto"], 295.0, places=4)
         self.assertAlmostEqual(r5["breakdown"]["P Caustic Wounds"], 30.0, places=4)
         self.assertAlmostEqual(r5["breakdown"]["P Detonation"], 39.9, places=4)
-
-        # Against a Banshee's Veil spell shield with Q unranked (Q=0, W=5, E=0, R=0),
-        # Evolved W's first bolt is completely blocked: no W damage, no Plasma stacks
-        # from W, and no 75% cooldown refund (so W cannot recast by 6.0s).
-        mundo = builds.load_champion("drmundo")
-        mundo_kit = builds.load_kit("drmundo")
-        mundo_ranks = builds.skill_ranks(16, builds.kit_max_order(mundo_kit))
-        sf_ids = [builds.resolve_item(self.pool, self.idx, "shadowflame")]
-        att_w_only = dict(
-            sheet=builds.resolve_stats(self.champ, 16, sf_ids, self.pool, self.effects, kit=self.kit),
-            kit=self.kit, fx=builds.merge_effects(sf_ids, self.effects), level=16,
-            ranks={"Q": 0, "W": 5, "E": 0, "R": 0}, duration=6.0)
-        bv_ids = [builds.resolve_item(self.pool, self.idx, "banshees veil")]
-        rep_bv = builds.survive(mundo, mundo_kit, 16, mundo_ranks, bv_ids, self.pool,
-                                self.effects, att_w_only)
-        self.assertNotIn("W", rep_bv["breakdown"])
-        self.assertGreater(rep_bv["defense"]["blocked"], 0.0)
 
     def test_killer_instinct_attack_reset_and_adaptive_supercharge(self):
         # Killer Instinct resets the basic attack timer after Plasma lands, adding an
@@ -838,7 +821,7 @@ class TestKaisaDriver(unittest.TestCase):
                             bonus_hp=sq["targetBonusHp"])
         self.assertAlmostEqual(r_gun_sq["ttk"], 0.40, places=4)
 
-    def test_audit_edge_cases_e_buff_r_stasis_and_item_lookahead(self):
+    def test_audit_edge_cases_e_buff_and_item_lookahead(self):
         # 1. Supercharge (E) never overwrites an active 4.0s Supercharge buff even when
         # cooldown reduction brings E off cooldown mid-window.
         short_e_kit = copy.deepcopy(self.kit)
@@ -851,31 +834,7 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertEqual(r_short["attacks"], r_norm["attacks"])
         self.assertAlmostEqual(r_short["total"], r_norm["total"], places=6)
 
-        # 2. Killer Instinct (R) does not fire into defender stasis when an attack
-        # triggers Zhonya's Hourglass at t = 0.0 (verified via Fiendhunter barrage == 0
-        # on the post-stasis finishing auto at t = 2.5s).
-        mundo = copy.deepcopy(builds.load_champion("drmundo"))
-        mundo["dd"]["stats"]["hp"] = 360
-        mundo["dd"]["stats"]["hpperlevel"] = 0
-        mundo_kit = copy.deepcopy(builds.load_kit("drmundo"))
-        mundo_kit["abilities"]["R"]["cooldownS"] = [999, 999, 999]
-        att_ids = [builds.resolve_item(self.pool, self.idx, n) for n in [
-            "infinity edge", "lord dominiks regards", "yun tal wildarrows",
-            "fiendhunter bolts", "experimental hexplate",
-        ]]
-        att = dict(
-            sheet=builds.resolve_stats(self.champ, 16, att_ids, self.pool, self.effects, kit=self.kit),
-            kit=self.kit, fx=builds.merge_effects(att_ids, self.effects),
-            level=16, ranks={"Q": 0, "W": 0, "E": 0, "R": 3}, duration=8.0,
-        )
-        zh_ids = [builds.resolve_item(self.pool, self.idx, "zhonyas hourglass")]
-        rep_zh = builds.survive(mundo, mundo_kit, 1, {"Q": 5, "W": 0, "E": 5, "R": 0},
-                                zh_ids, self.pool, self.effects, att, thresholds=[])
-        self.assertAlmostEqual(rep_zh["defense"]["zhonyaAt"], 0.0, places=6)
-        self.assertAlmostEqual(rep_zh["ttk"], 2.5, places=6)
-        self.assertEqual(rep_zh["breakdown"].get("barrage", 0.0), 0.0)
-
-        # 3. Lookahead counts opening Q volleys plus Muramana, Luden's, and Horizon Focus
+        # 2. Lookahead counts opening Q volleys plus Muramana, Luden's, and Horizon Focus
         # so Supercharge skips its charge disarm when the combo already kills by 1.40s.
         combo = ["muramana", "ludens echo", "horizon focus"]
         r_no_e = self.sim(combo, 1718, 60, 60, 8.0, use_ult=False,

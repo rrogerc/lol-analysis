@@ -95,11 +95,7 @@ struct State {
 
 impl GenDriver {
     fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
-        pymax(pymax(pymax(ready, e.st.t), self.s.busy_until), e.hold_until())
-    }
-
-    fn eff_next_attack(&self, e: &Engine) -> f64 {
-        pymax(e.st.next_attack, e.hold_until())
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
     }
 
     fn busy_for(&mut self, e: &mut Engine, cast_s: f64) {
@@ -126,11 +122,7 @@ impl GenDriver {
         let t = e.st.t;
         let stacks_before = self.stacks_at(t);
         let dmg = self.p_base_dmg + self.p_perstack_dmg * (stacks_before as f64);
-        let tot0 = e.st.total;
         e.deal(dmg, DType::Magic, self.src_p_cw, false, false, 1.0);
-        if dmg > 0.0 && e.st.total <= tot0 {
-            return false;
-        }
         self.s.p_active_until = t + self.r_plasma_window;
         if stacks_before >= self.p_max_stacks {
             self.s.p_stacks = 0;
@@ -167,9 +159,8 @@ impl GenDriver {
         }
         let dmg = if v.idx == 0 { self.q_first_dmg } else { self.q_sub_dmg };
         if !v.proced {
-            let tot0 = e.st.total;
             e.deal(dmg, DType::Physical, SRC_Q, false, true, 1.0);
-            if e.st.total > tot0 {
+            if dmg > 0.0 {
                 v.proced = true;
                 e.ability_cast_proc();
                 e.eclipse_hit();
@@ -220,11 +211,6 @@ impl GenDriver {
     fn as_from_bonus(&self, e: &Engine, total_bonus_pct: f64) -> f64 {
         let sheet = e.p.sheet;
         let raw = sheet.base_as + sheet.as_ratio * total_bonus_pct / 100.0;
-        if let Some(d) = &e.dfd {
-            if d.as_mult != 1.0 {
-                return pymin(raw * d.as_mult, AS_CAP);
-            }
-        }
         pymin(raw, AS_CAP)
     }
 }
@@ -698,8 +684,8 @@ impl GenDriver {
 
     /// Simulates `n_swings` basic attacks starting at `t_first_swing` spaced by
     /// `swing_period` (plus Q casts/missiles, item procs, and any pending or
-    /// castable W resolving by `t_horizon`) against a non-defended target to
-    /// check whether that sequence already executes the target.
+    /// castable W resolving by `t_horizon`) to check whether that sequence
+    /// already executes the target.
     #[allow(clippy::too_many_arguments)]
     fn sim_attacks_kill(
         &self,
@@ -711,9 +697,6 @@ impl GenDriver {
         n_swings: i64,
         allow_ready_w: bool,
     ) -> bool {
-        if e.dfd.is_some() {
-            return false;
-        }
         let exec_hp = match e.p.fx.s.execute_pct {
             Some(p) => p / 100.0 * e.target_hp,
             None => 0.0,
@@ -937,7 +920,7 @@ impl GenDriver {
 
     fn w_cast_at(&self, e: &Engine) -> f64 {
         let earliest = self.castable_at(e, self.s.w_ready);
-        let next_atk = self.eff_next_attack(e);
+        let next_atk = e.st.next_attack;
         if next_atk < INF
             && earliest < next_atk
             && next_atk < earliest + self.w_cast_time - 1e-9
@@ -970,7 +953,7 @@ impl GenDriver {
     }
 
     fn e_cast_at(&self, e: &Engine) -> f64 {
-        let next_atk = self.eff_next_attack(e);
+        let next_atk = e.st.next_attack;
         if next_atk >= INF {
             return INF;
         }
@@ -1003,7 +986,7 @@ impl GenDriver {
         // 2. Short-horizon lethal check: if charge disarm delays the next auto
         // (`lost_s > 0`), only charge E when the target survives past the
         // attack count where E's post-charge AS buff catches up.
-        if lost_s > 1e-9 && e.dfd.is_none() {
+        if lost_s > 1e-9 {
             let m_raw = (lost_s * a0 * a1 / (a1 - a0) + 1.0 - 1e-9) as i64;
             let m_breakeven = imin(imax(1, m_raw), 10 + 10);
             let t_first_no_e = if t_cand > earliest {
@@ -1210,7 +1193,6 @@ impl Driver for GenDriver {
             && t >= self.s.r_ready
             && t < self.s.p_active_until
             && t >= self.s.busy_until
-            && t >= e.hold_until()
         {
             let wf = if self.e_buff_active(t) {
                 self.e_windup_fraction
@@ -1283,14 +1265,13 @@ impl Driver for GenDriver {
             return INF;
         }
         // Icathian Rain is an instant cast that can fire during Supercharge's
-        // charge, waiting only if Void Seeker is currently mid-cast or the
-        // defender is in stasis.
+        // charge, waiting only if Void Seeker is currently mid-cast.
         let w_busy = if self.s.w_resolve_at < INF {
             self.s.w_resolve_at
         } else {
             0.0
         };
-        pymax(pymax(pymax(e.st.q_ready, e.st.t), w_busy), e.hold_until())
+        pymax(pymax(e.st.q_ready, e.st.t), w_busy)
     }
 
     fn cast_q(&mut self, e: &mut Engine) {
@@ -1369,26 +1350,21 @@ impl Driver for GenDriver {
             }
             Kind::Ev(EV_W_LAND) => {
                 self.s.w_resolve_at = INF;
-                let tot0 = e.st.total;
                 e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
-                if self.w_dmg <= 0.0 || e.st.total > tot0 {
-                    // Void Seeker landed (not negated by spell shield or stasis):
-                    // apply 2 or 3 Plasma stacks successively, detonating
-                    // immediately if the 5th stack is reached before rollover
-                    // stacks, and grant Evolved W's 75% champion-hit refund.
-                    let mut k = 0;
-                    while k < self.w_stacks {
-                        if self.apply_cw_stack(e) {
-                            self.detonate_plasma(e);
-                        }
-                        k += 1;
+                // Void Seeker landed: apply 2 or 3 Plasma stacks successively,
+                // detonating immediately if the 5th stack is reached before
+                // rollover stacks, and grant Evolved W's 75% champion-hit
+                // refund.
+                let mut k = 0;
+                while k < self.w_stacks {
+                    if self.apply_cw_stack(e) {
+                        self.detonate_plasma(e);
                     }
-                    e.ability_cast_proc();
-                    e.eclipse_hit();
-                    self.s.w_ready = t + e.basic_cd(self.w_cd) * self.w_cd_mult;
-                } else {
-                    self.s.w_ready = t + e.basic_cd(self.w_cd);
+                    k += 1;
                 }
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                self.s.w_ready = t + e.basic_cd(self.w_cd) * self.w_cd_mult;
             }
             Kind::Ev(EV_E_CAST) => {
                 if self.castable_at(e, pymax(self.s.e_ready, self.s.e_buff_until)) > t {

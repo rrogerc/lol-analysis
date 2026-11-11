@@ -19,10 +19,8 @@ INF = float("inf")
 
 
 def leaderboard_scenarios():
-    """The scenarios with a leaderboard, in SCENARIOS order: the damage tiers'.
-    The Survival tier ranks a single tank so far, which compares nothing."""
-    return [k for k, sc in builds.SCENARIOS.items()
-            if builds.tier_objective(sc["tier"]) == "damage"]
+    """The scenarios with a leaderboard, in SCENARIOS order: every one."""
+    return list(builds.SCENARIOS)
 
 
 def rank_key(row, scenario):
@@ -71,7 +69,7 @@ def cached_leaderboard(key, paths=None):
                 "targets": [{"key": k, **builds.SCENARIOS[k]}
                             for k in builds.tier_targets(sc["tier"])]}
     rows, pending, failed = [], [], []
-    champions = builds.tier_champions(sc["tier"])
+    champions = builds.damage_champions()
     for slug in champions:
         kit = builds.load_kit(slug)
         who = {"champion": slug, "championName": kit.get("name", slug),

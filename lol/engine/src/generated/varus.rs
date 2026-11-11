@@ -561,9 +561,6 @@ impl GenDriver {
     /// Smallest charge step `k in 0..=q_max_steps` whose burst starting at
     /// `t_start` kills the target, or `-1` if even full charge does not kill.
     fn earliest_lethal_step(&self, e: &Engine, t_start: f64) -> i64 {
-        if e.dfd.is_some() {
-            return -1;
-        }
         let hp_need = e.st.hp * (1.0 + 1e-9);
         if self.est_q_burst(e, t_start, self.q_max_steps) < hp_need {
             return -1;
@@ -939,7 +936,6 @@ impl Driver for GenDriver {
             let can_stack = self.ranks.w > 0 || self.s.r_stacks_left > 0;
             let ready_for_stacks = !can_stack || self.stacks_at(earliest) >= self.w_max_stacks;
             let lethal_e = !ready_for_stacks
-                && e.dfd.is_none()
                 && self.est_e_burst(e, earliest) >= e.st.hp * (1.0 + 1e-9)
                 && earliest + self.e_land_delay
                     <= pymin(e.st.next_attack, self.s.r_stack_at) + 1e-9;

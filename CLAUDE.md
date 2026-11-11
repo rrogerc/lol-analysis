@@ -9,8 +9,8 @@ Engineering reference for `lol-analysis`. The repository is organized into three
   - `ladder.py`: Game-length win-rate scaling (`stats`, `match_counts` tables in `lol.db`, committed archive in `lol/data/scaling/`) and Master+ one-trick aggregation (`onetricks`, `onetrick_sync` tables) sourced from `../lol-quant` parquet files.
   - `matchups.py`: Thematic counters, comp-adjusted kit synergies, Master+ behavioral trait fingerprints, and 14 unsupervised interaction archetypes (`matchups_snapshot` table in `lol.db`, committed archive in `lol/data/matchups/`).
   - `items.py`: Patch-versioned static item snapshots in `lol/data/items/<patch>/` combining Data Dragon stats, Meraki passives/nicknames, and CommunityDragon `items.bin.json` shop/exclusivity rules.
-  - `builds.py`: Champion stat sheets, single-build fight and tank survival simulation, exhaustive build enumeration, and `.cache/builds/` cell warmer.
-  - `leaderboard.py`: Cross-champion DPS and survival leaderboards assembled from `.cache/builds/` cells.
+  - `builds.py`: Champion stat sheets, single-build fight simulation, exhaustive build enumeration, and `.cache/builds/` cell warmer.
+  - `leaderboard.py`: Cross-champion DPS leaderboards assembled from `.cache/builds/` cells.
   - `codegen/`: Champion kit pipeline (`sources.py`, `dossier.py`, `driver.py`, `golden.py`, plus prompt/guide markdown).
   - `engine/`: Rust PyO3 extension (`lol_engine`, compiled to `lol/lol_engine.abi3.so`). Hand-written reference drivers live in `src/drivers/`; generated champion drivers live in `src/generated/`.
   - `data/`: `scaling/`, `matchups/`, `items/`, and `builds/` (`item-effects.json`, `kits/<slug>.json`, `champions/`, `dossiers/`, `sources/`, `golden/`).
@@ -57,7 +57,7 @@ Declared in `/home/rogerc/dotfiles/nixos/services/lol-analysis.nix`:
 - Both `build.rs` scripts hash every `Cargo.toml` and `src/**/*.rs` file into `SOURCE_HASH` (with per-champion `GENERATED_HASHES` in `lol_engine`), invalidating downstream `.cache/` artifacts automatically when Rust code changes.
 
 ### LoL Build Cache (`CORE_HASH`) and Kits
-- `lol/builds.py` hashes its own bytes plus `lol_engine.SOURCE_HASH` into `CORE_HASH`. Keep presentation/leaderboard code in `lol/leaderboard.py` so UI/ranking tweaks do not invalidate all 173 champions' `.cache/builds/` cells.
+- `lol/builds.py` hashes its own bytes plus `lol_engine.SOURCE_HASH` into `CORE_HASH`. Keep presentation/leaderboard code in `lol/leaderboard.py` so UI/ranking tweaks do not invalidate all 172 champions' `.cache/builds/` cells.
 - Champion kit encodings live in `lol/data/builds/kits/<slug>.json`. `builds._paths_stamp()` watches `KITS_DIR`, `BUILDS_DATA_DIR`, and `ITEMS_DATA_DIR` so any kit or item snapshot update invalidates memoized cell paths.
 - Golden fixtures in `lol/data/builds/golden/` record their exact `patch` (e.g. `16.18`); golden tests pass `doc["patch"]` explicitly so routine `refresh-items.sh` snapshots on newer patches never break historical math verification.
 - Driver codegen (`python3 -m lol.codegen.driver`) compiles candidate `.rs` drivers in an isolated temp Cargo target directory and benchmarks them via `_bench --so-dir`, overriding `sys.modules["lol.lol_engine"]` before importing `lol.builds`.
