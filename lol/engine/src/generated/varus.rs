@@ -400,7 +400,7 @@ impl GenDriver {
             }
         }
         if let Some(ec) = &e.p.fx.s.hit_pair_proc {
-            if e.st.eclipse >= 1 {
+            if ec.primed(e.st.eclipse, e.st.eclipse_at, e.st.eclipse_ready, t_rel) {
                 let raw = ec.max_hp_pct_ranged / 100.0 * e.target_hp;
                 let m = match ec.dtype {
                     DType::Physical => self.est_phys_mult(e, t_rel, cleaver_add),

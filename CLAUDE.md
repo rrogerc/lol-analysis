@@ -59,7 +59,7 @@ Declared in `/home/rogerc/dotfiles/nixos/services/lol-analysis.nix`:
 ### LoL Build Cache (`CORE_HASH`) and Kits
 - `lol/builds.py` hashes its own bytes plus `lol_engine.SOURCE_HASH` into `CORE_HASH`. Keep presentation/leaderboard code in `lol/leaderboard.py` so UI/ranking tweaks do not invalidate all 172 champions' `.cache/builds/` cells.
 - Champion kit encodings live in `lol/data/builds/kits/<slug>.json`. `builds._paths_stamp()` watches `KITS_DIR`, `BUILDS_DATA_DIR`, and `ITEMS_DATA_DIR` so any kit or item snapshot update invalidates memoized cell paths.
-- Golden fixtures in `lol/data/builds/golden/` record their exact `patch` (e.g. `16.18`); golden tests pass `doc["patch"]` explicitly so routine `refresh-items.sh` snapshots on newer patches never break historical math verification.
+- Golden fixtures in `lol/data/builds/golden/` record their exact `patch` (e.g. `16.18`); golden tests pass `doc["patch"]` explicitly so routine `refresh-items.sh` snapshots on newer patches never break historical math verification. After a deliberate model change, regenerate them at that same patch (`python3 -m lol.codegen.golden --patch <patch>`) so nothing but the model moves, and log the reach in `lol/data/builds/golden/README.md`.
 - Driver codegen (`python3 -m lol.codegen.driver`) compiles candidate `.rs` drivers in an isolated temp Cargo target directory and benchmarks them via `_bench --so-dir`, overriding `sys.modules["lol.lol_engine"]` before importing `lol.builds`.
 
 ### TFT Publication and Combat-Free Trait Flex

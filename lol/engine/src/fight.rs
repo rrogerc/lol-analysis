@@ -123,7 +123,11 @@ pub struct St {
     pub cleaver: i64,
     pub blood: i64,
     pub shojin: i64,
+    /// Eclipse: stacks up (0 or 1), when the one that is up was applied, and
+    /// when the passive comes off cooldown (see `HitPairProc::hit`).
     pub eclipse: i64,
+    pub eclipse_at: f64,
+    pub eclipse_ready: f64,
     pub nth: i64,
     pub hz_until: f64,
     pub hz_first: bool,
@@ -377,7 +381,7 @@ pub struct Prep<'a> {
     /// Opening Barrage's per-attack expectations over the sheet's crit
     /// chance: the crit multiplier of an attack in the window (one that
     /// rolls a crit crits normally, one that does not is empowered to crit
-    /// for `crit_dmg_frac` of the bonus), never below `crit_ev`; and the
+    /// for `crit_dmg_frac` of a normal crit), never below `crit_ev`; and the
     /// true damage per point of attack damage that the crit share adds,
     /// `crit_c * true_dmg_frac * crit_damage` with the attack-only amp.
     barrage_ev: f64,
@@ -698,8 +702,11 @@ impl<'a> Prep<'a> {
         };
         let (barrage_ev, barrage_true_per_ad) = match &s.ult_attack_steroid {
             Some(u) => {
+                // the empowered crit is a share of the whole critical strike
+                // (Riot's CritModifier 0.8: 160% at the 200% base, 184% with
+                // Infinity Edge), not of its bonus over a normal hit
                 let d = sheet.crit_damage / 100.0;
-                (crit_c * d + (1.0 - crit_c) * (1.0 + u.crit_dmg_frac * (d - 1.0)),
+                (crit_c * d + (1.0 - crit_c) * (u.crit_dmg_frac * d),
                  crit_c * u.true_dmg_frac * auto_amp * d)
             }
             None => (1.0, 0.0),
@@ -752,6 +759,8 @@ impl<'a> Prep<'a> {
             blood: 0,
             shojin: 0,
             eclipse: 0,
+            eclipse_at: 0.0,
+            eclipse_ready: 0.0,
             nth: 0,
             hz_until: -1.0,
             hz_first: false,
@@ -1474,17 +1483,18 @@ impl<'a, 'p> Engine<'a, 'p> {
         }
     }
 
-    /// Eclipse: attacks and damaging casts each grant one stack; every 2nd
-    /// stack procs (% max HP).
+    /// Eclipse: attacks and damaging casts each apply one stack; a second
+    /// stack inside the window procs (% max HP) and starts the cooldown,
+    /// during which hits apply nothing.
     pub fn eclipse_hit(&mut self) {
         let fx: &'a Fx = self.p.fx;
         if self.flags & F_HIT_PAIR == 0 {
             return;
         }
         let hp_cfg = fx.s.hit_pair_proc.as_ref().expect("hit_pair_proc");
-        self.st.eclipse += 1;
-        if self.st.eclipse >= 2 {
-            self.st.eclipse = 0;
+        let t = self.st.t;
+        let st = &mut self.st;
+        if hp_cfg.hit(&mut st.eclipse, &mut st.eclipse_at, &mut st.eclipse_ready, t) {
             let dt = hp_cfg.dtype;
             let amt = self.eclipse_amt;
             self.deal(amt, dt, SRC_ECLIPSE, false, false, 1.0);
@@ -1627,7 +1637,7 @@ impl<'a, 'p> Engine<'a, 'p> {
         let mut barrage = false;
         if self.flags & F_ULT_STEROID != 0 && self.st.post_r_attacks < self.p.steroid_attacks {
             // Fiendhunter's Opening Barrage: an attack in the window crits
-            // at least for the empowered share of the bonus (`barrage_ev`
+            // at least for the empowered share of a crit (`barrage_ev`
             // is never below `crit_ev`), and the share that rolls a crit
             // adds true damage right after the attack itself
             floor = pymax(floor, self.p.barrage_ev);

@@ -228,6 +228,8 @@ struct Lookahead {
     dark: i64,
     attacks: i64,
     eclipse: i64,
+    eclipse_at: f64,
+    eclipse_ready: f64,
     nth: i64,
     sundered_used: bool,
     once_done: bool,
@@ -449,9 +451,7 @@ impl GenDriver {
 
     fn sim_eclipse_hit(&self, e: &Engine, lk: &mut Lookahead, t_start: f64, t: f64) {
         if let Some(hp_cfg) = &e.p.fx.s.hit_pair_proc {
-            lk.eclipse += 1;
-            if lk.eclipse >= 2 {
-                lk.eclipse = 0;
+            if hp_cfg.hit(&mut lk.eclipse, &mut lk.eclipse_at, &mut lk.eclipse_ready, t) {
                 let amt = hp_cfg.max_hp_pct_ranged / 100.0 * e.target_hp;
                 self.sim_deal(e, lk, t_start, t, amt, hp_cfg.dtype, false, false, false, 1.0);
             }
@@ -607,7 +607,7 @@ impl GenDriver {
             if lk.post_r_attacks < u.attacks {
                 let crit_c = sheet.crit_chance / 100.0;
                 let d = sheet.crit_damage / 100.0;
-                let b_ev = crit_c * d + (1.0 - crit_c) * (1.0 + u.crit_dmg_frac * (d - 1.0));
+                let b_ev = crit_c * d + (1.0 - crit_c) * (u.crit_dmg_frac * d);
                 floor = pymax(floor, b_ev);
                 let mut auto_amp = 1.0;
                 if let Some(aa) = &s.attack_amp {
@@ -713,6 +713,8 @@ impl GenDriver {
             dark: e.st.dark,
             attacks: e.st.attacks,
             eclipse: e.st.eclipse,
+            eclipse_at: e.st.eclipse_at,
+            eclipse_ready: e.st.eclipse_ready,
             nth: e.st.nth,
             sundered_used: e.st.sundered_used,
             once_done: e.st.once_done,

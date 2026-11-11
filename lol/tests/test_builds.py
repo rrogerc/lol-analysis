@@ -9,6 +9,7 @@ also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 
 from contextlib import redirect_stdout
 import copy
+import glob
 import io
 import itertools
 import json
@@ -200,6 +201,38 @@ class TestRealSnapshot(unittest.TestCase):
                     for stat, fields in it["stats"].items()
                     for field, v in fields.items() if v} - known
         self.assertEqual(unmapped, set())
+
+    def test_base_crit_damage_is_the_games_not_merakis(self):
+        # 200% for every champion since V26.01. Meraki still publishes the
+        # 175% of V10.23 (the fixtures here carry it, as the snapshots do),
+        # and 100% for Ashe, whose Frost Shot her kit leaves to the standard
+        # crit math: neither is read.
+        self.assertEqual(builds.BASE_CRIT_DAMAGE, 200.0)
+        self.assertEqual(fake_champ()["mk"]["stats"]["criticalStrikeDamage"]["flat"], 175.0)
+        self.assertEqual(builds.champ_base(fake_champ())["crit_damage_base"], 200.0)
+        ashe = builds.load_champion("ashe")
+        self.assertEqual(ashe["mk"]["stats"]["criticalStrikeDamage"]["flat"], 100)
+        self.assertEqual(builds.champ_base(ashe)["crit_damage_base"], 200.0)
+        self.assertEqual(self.resolve()["crit_damage"], 200.0)
+        # Infinity Edge's bonus goes on top
+        bonus = self.pool[3031]["stats"]["criticalStrikeDamage"]["percent"]
+        self.assertGreater(bonus, 0)
+        self.assertAlmostEqual(self.resolve("infinity edge")["crit_damage"], 200.0 + bonus)
+
+    def test_riots_character_files_agree_on_base_crit_damage(self):
+        # Riot's own record, in the character files archived with each
+        # champion's sources: 2.0 for everyone but Ashe. A patch that moves
+        # the game's base fails here the next time sources are archived.
+        seen = {}
+        for path in glob.glob(os.path.join(builds.BUILDS_DATA_DIR, "sources", "*", "*", "bin.json")):
+            with open(path) as f:
+                m = re.search(r'"critDamageMultiplier":\s*([0-9.]+)', f.read())
+            if m:
+                seen[tuple(path.split(os.sep)[-3:-1])] = float(m.group(1))
+        self.assertGreater(len(seen), 100)
+        odd = {key: v for key, v in seen.items() if v * 100 != builds.BASE_CRIT_DAMAGE}
+        self.assertEqual({slug for _, slug in odd}, {"ashe"})
+        self.assertEqual(set(odd.values()), {1.0})
 
 
 class TestItemCatalog(unittest.TestCase):
@@ -458,16 +491,28 @@ class TestEngine(unittest.TestCase):
                  if r["breakdown"].get("execute") is None]
         self.assertEqual(plain, sorted(plain))
 
-    def test_execute_charged_back_to_expected_value(self):
-        # deterministic crit always lands in the 5% window; real crit would
-        # only ~W/D of the time, so expected sits between the two outcomes
+    def execute_case(self):
+        """A fight Collector's execute ends early, with and without the
+        execute: the first target health of a range where it does. Whether
+        the 5% window saves an attack depends on where the health bar stands
+        after the attack before, so one fixed target would hang the tests on
+        the build's exact numbers."""
         ids, sheet = self.resolve(16, ["berserkers", "infinity edge", "yun tal",
                                        "collector", "lord dominik"])
         fx = builds.merge_effects(ids, self.effects)
         ranks = builds.skill_ranks(16)
-        a = (sheet, self.kit, fx, 16, ranks, 2800, 110, 60, 8.0)
-        on = builds.simulate(*a)
-        off = builds.simulate(*a[:2], dict(fx, executePct=None), *a[3:])
+        for hp in range(2000, 4001, 25):
+            a = (sheet, self.kit, fx, 16, ranks, hp, 110, 60, 8.0)
+            on = builds.simulate(*a)
+            off = builds.simulate(*a[:2], dict(fx, executePct=None), *a[3:])
+            if None not in (on["ttk"], off["ttk"]) and off["ttk"] > on["ttk"]:
+                return on, off
+        self.fail("the execute shortens no fight between 2,000 and 4,000 health")
+
+    def test_execute_charged_back_to_expected_value(self):
+        # deterministic crit always lands in the 5% window; real crit would
+        # only ~W/D of the time, so expected sits between the two outcomes
+        on, off = self.execute_case()
         self.assertGreater(on["ttk_exp"], on["ttk"])
         self.assertLess(on["ttk_exp"], off["ttk"])
 
@@ -480,13 +525,7 @@ class TestEngine(unittest.TestCase):
     def test_effective_ttk_shrinks_execute_advantage(self):
         # Collector's execute must not buy a whole attack cycle: its worth
         # under the effective metric is well under its worth under raw ttk
-        ids, sheet = self.resolve(16, ["berserkers", "infinity edge", "yun tal",
-                                       "collector", "lord dominik"])
-        fx = builds.merge_effects(ids, self.effects)
-        ranks = builds.skill_ranks(16)
-        a = (sheet, self.kit, fx, 16, ranks, 2800, 110, 60, 8.0)
-        on = builds.simulate(*a)
-        off = builds.simulate(*a[:2], dict(fx, executePct=None), *a[3:])
+        on, off = self.execute_case()
         raw = off["ttk"] - on["ttk"]
         eff = off["ttk_eff"] - on["ttk_eff"]
         self.assertGreater(raw, 0.0)
@@ -573,9 +612,14 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(sheet["mana_bonus"], 800.0)
 
     def test_overlords_ad_from_hp(self):
-        # 30 AD + 2.5% of 550 bonus HP = 43.75 bonus AD
-        _, sheet = self.resolve(16, ["overlord"])
-        self.assertAlmostEqual(sheet["ad_bonus"], 30 + 0.025 * 550)
+        # Tyranny: the item's own AD plus 2.5% of the health it grants, read
+        # off the snapshot so a patch to either number (16.22 took the AD
+        # from 30 to 40) does not fail a test of the rule
+        ids, sheet = self.resolve(16, ["overlord"])
+        stats = self.pool[ids[0]]["stats"]
+        ad, hp = stats["attackDamage"]["flat"], stats["health"]["flat"]
+        self.assertGreater(hp, 0)
+        self.assertAlmostEqual(sheet["ad_bonus"], ad + 0.025 * hp)
 
     def test_endless_hunger_famine_haste(self):
         # 5 + 10% of 65 bonus AD = 11.5 haste
@@ -609,12 +653,57 @@ class TestEngine(unittest.TestCase):
         r = self.sim(16, ["hullbreaker"], hp=100_000, armor=0, duration=10)
         self.assertIn("hullbreaker", r["breakdown"])
 
-    def test_eclipse_procs_every_second_hit(self):
-        r = self.sim(16, ["eclipse"], hp=100_000, armor=0, duration=6)
-        self.assertIn("eclipse", r["breakdown"])
-        # ranged 4% max HP per proc, pre-mitigation with 0 armor
-        procs = r["breakdown"]["eclipse"] / (0.04 * 100_000)
-        self.assertGreater(procs, 2)
+    def test_eclipse_pairs_hits_inside_its_window_then_cools_down(self):
+        # Ever Rising Moon (Riot's item file, 16.16 on): two attacks or casts
+        # within 2 s deal 5% of the target's maximum health for a ranged
+        # user, 8% for a melee one, then nothing for 6 s, in which hits apply
+        # no stack. Zero armor, so a proc is exactly its pre-mitigation size.
+        hp = 100_000
+
+        def proc_times(sim, pct, end=20.0):
+            """When each proc lands, to 0.05 s: the fight lengths at which
+            the breakdown's Eclipse total steps up by one whole proc."""
+            times = []
+            for i in range(1, round(end / 0.05) + 1):
+                d = round(i * 0.05, 2)
+                n = sim(d)["breakdown"].get("eclipse", 0.0) / (pct / 100 * hp)
+                self.assertAlmostEqual(n, round(n), places=9, msg=d)
+                self.assertLessEqual(round(n), len(times) + 1, d)
+                if round(n) > len(times):
+                    times.append(d)
+            return times
+
+        ids = [builds.resolve_item(self.pool, self.idx, "eclipse")]
+        fx = builds.merge_effects(ids, self.effects)
+        cases = []
+        for champ, level, pct in ((fake_champ(), 16, 5), (fake_champ(attackrange=150), 1, 8)):
+            sheet = builds.resolve_stats(champ, level, ids, self.pool, self.effects)
+            ranks = builds.skill_ranks(level)
+            times = proc_times(lambda d: builds.simulate(sheet, self.kit, fx, level, ranks,
+                                                         hp, 0, 0, d), pct)
+            cases.append((level, sheet, times))
+            # the second hit procs; then one pair per cooldown, where the old
+            # every-second-hit rule gave a proc a second or so apart
+            self.assertEqual(len(times), 3, times)
+            self.assertLess(times[0], 2.0)
+            swing = 1 / sheet["attack_speed"]
+            for first, second in zip(times, times[1:]):
+                self.assertGreater(second - first, 6.0, times)
+                self.assertLess(second - first, 6.0 + 2 * swing + 0.05, times)
+        # hits further apart than the window never pair: a kit that only
+        # casts Q, every 3 s before Eclipse's own haste (2.6 s), and the same
+        # kit casting twice as often
+        level, sheet, _ = cases[1]
+        casts_only = copy.deepcopy(self.kit)
+        casts_only["attack"] = dict(casts_only.get("attack", {}), never=True)
+        for cooldown, pairs in ((3.0, False), (1.5, True)):
+            casts_only["abilities"]["Q"]["cooldownS"] = [cooldown] * 5
+            self.assertEqual(cooldown * sheet["basic_cd_mult"] > 2.0, not pairs)
+            r = builds.simulate(sheet, casts_only, fx, level, builds.skill_ranks(level),
+                                hp, 0, 0, 14.0, use_ult=False)
+            self.assertEqual(r["attacks"], 0)
+            self.assertGreater(r["breakdown"]["Q"], 0)
+            self.assertEqual("eclipse" in r["breakdown"], pairs, cooldown)
 
     def test_energized_statikk(self):
         r = self.sim(16, ["statikk"], hp=100_000, mr=0, duration=10)
@@ -661,12 +750,14 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
 
     def test_fiendhunter_opening_barrage(self):
-        # The three attacks after R crit for at least 80% of the crit bonus
-        # (an attack that rolls a crit crits normally) and the crit share
-        # adds 15% of the attack's pre-mitigation damage as true damage:
-        # expected values over crit chance, so Infinity Edge's crit damage
-        # scales both. The old model was a fixed 1.6 floor and no true
-        # damage, which gave a 100%-crit build nothing but the attack speed.
+        # The three attacks after R crit for at least 80% of a normal
+        # critical strike (Riot's CritModifier 0.8: 160% at the 200% base,
+        # more with Infinity Edge; an attack that rolls a crit crits
+        # normally) and the crit share adds 15% of the attack's
+        # pre-mitigation damage as true damage: expected values over crit
+        # chance, so Infinity Edge's crit damage scales both. The old model
+        # was a fixed 1.6 floor and no true damage, which gave a 100%-crit
+        # build nothing but the attack speed.
         ranks = builds.skill_ranks(16)
         for tokens in (["fiendhunter"], ["fiendhunter", "infinity edge"]):
             ids, sheet = self.resolve(16, tokens)
@@ -676,8 +767,10 @@ class TestEngine(unittest.TestCase):
             self.assertGreaterEqual(r["attacks"], 4, tokens)  # past the window
             c = sheet["crit_chance"] / 100
             d = sheet["crit_damage"] / 100
+            if len(tokens) == 1:  # no bonus crit damage: the live 160%
+                self.assertAlmostEqual(0.8 * d, 1.6)
             ev = 1 + c * (d - 1)
-            window_ev = c * d + (1 - c) * (1 + 0.8 * (d - 1))
+            window_ev = c * d + (1 - c) * 0.8 * d
             self.assertGreater(window_ev, ev)
             ad = sheet["ad"]
             self.assertAlmostEqual(
@@ -2417,12 +2510,12 @@ class TestBootsPartitions(unittest.TestCase):
                  "Plated Steelcaps", "Gluttonous Greaves"],
                 ["Sorcerer's Shoes"], ["Ionian Boots of Lucidity"]])
 
-    def fight(self, slug, kit, ids):
+    def fight(self, slug, kit, ids, hp=4800, duration=15):
         champ = builds.load_champion(slug)
         ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
         sheet = builds.resolve_stats(champ, 16, ids, self.pool, self.effects, kit=kit)
         r = builds.simulate(sheet, kit, builds.merge_effects(ids, self.effects), 16,
-                            ranks, 4800, 220, 160, 15, target_bonus_hp=1500)
+                            ranks, hp, 220, 160, duration, target_bonus_hp=1500)
         return (r["total"], r["ttk"], r["ttk_exp"], r["breakdown"])
 
     def test_the_merged_boots_really_fight_alike(self):
@@ -2434,9 +2527,17 @@ class TestBootsPartitions(unittest.TestCase):
         # Kayle, no Energized item: Swiftness = Steelcaps
         self.assertEqual(self.fight("kayle", self.kayle, [3009, *calm]),
                          self.fight("kayle", self.kayle, [3047, *calm]))
-        # with one, the 10 extra move speed charges it sooner
-        self.assertNotEqual(self.fight("kayle", self.kayle, [3009, *charged]),
-                            self.fight("kayle", self.kayle, [3047, *charged]))
+        # with one, the 10 extra move speed charges it sooner: against a
+        # target that outlives the fight, a proc lands earlier or once more
+        # (the tank dummy dies before the two builds part ways, and a single
+        # fight length can end between two procs)
+        self.assertTrue(any(
+            self.fight("kayle", self.kayle, [3009, *charged], hp=1e6, duration=d)
+            != self.fight("kayle", self.kayle, [3047, *charged], hp=1e6, duration=d)
+            for d in (5, 10, 15, 20, 25, 30)))
+        for d in (5, 15, 30):
+            self.assertEqual(self.fight("kayle", self.kayle, [3009, *calm], hp=1e6, duration=d),
+                             self.fight("kayle", self.kayle, [3047, *calm], hp=1e6, duration=d))
         # Vladimir: Berserker's = Steelcaps, even with an Energized item
         vlad = [item(n) for n in ("Rabadon's Deathcap", "Void Staff", "Liandry's Torment")]
         self.assertEqual(self.fight("vladimir", self.vlad, [3006, *vlad]),

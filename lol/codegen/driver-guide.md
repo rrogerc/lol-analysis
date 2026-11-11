@@ -187,7 +187,8 @@ path under `assumed` with the reason, and the check uses your number.
 
 `Sheet` fields: `ad`, `ad_base`, `ad_bonus`, `ap`, `hp`, `hp_bonus`, `mana`,
 `mana_bonus`, `armor`, `mr`, `attack_speed`, `bonus_as_pct`, `crit_chance`
-(0-100), `crit_damage` (percent, 175 = 1.75x), `haste`, `lethality`,
+(0-100), `crit_damage` (percent, 200 = 2x: the game's base, plus the items'
+bonus), `haste`, `lethality`,
 `move_speed`, `base_attack_range`.
 
 Source labels for the damage breakdown: `SRC_Q`, `SRC_W`, `SRC_E`, `SRC_R`

@@ -38,7 +38,7 @@ Replayed by `test_builds.TestGolden`, which re-runs every case through the
 engine and diffs bit for bit (an int and a float of equal value count as the
 same number: the Python engine let Vladimir's integer ult delay leak through
 the clock as `4`, the Rust engine says `4.0`). Regenerate with
-`jobs/gen_golden.py`. **These files are not regenerated on a whim: any
+`python3 -m lol.codegen.golden`. **These files are not regenerated on a whim: any
 deliberate model change must regenerate them in the same commit** — a silent
 drift means the golden files no longer describe the engine.
 
@@ -58,6 +58,34 @@ pins it. `enumerate.json`'s five runs are regenerated over the 75-item pool.
 
 `survival.json`, which pinned the Survival tier's fights (Dr. Mundo builds
 against Kayle's and Kassadin's), was removed with that tier on 2026-11-10.
-Neither file above was regenerated: both replay bit for bit against the
-engine without the defender.
+Neither file above was regenerated for it: both replayed bit for bit against
+the engine without the defender.
+
+Regenerated on 2026-11-10, after that removal, for two deliberate model
+corrections in one commit, at the fixtures' own item patch (`--patch 16.18`,
+an option added for this, so that nothing but the model moved):
+
+- Base critical strike damage is 200%, not 175%. The game went back to 200%
+  in V26.01 and Riot's character files carry `critDamageMultiplier` 2.0;
+  meraki still publishes 175, which the sheet no longer reads. Fiendhunter
+  Bolts' empowered crit became 80% of a whole critical strike (Riot's
+  `CritModifier` 0.8) where it was 80% of the crit bonus: the old formula
+  only landed on the live 160% because of the old base.
+- Eclipse deals 8% (melee) or 5% (ranged) of maximum health, the V26.16
+  values, on two hits within 2 s, then has a 6 s cooldown. The old model
+  had 6% / 4% on every second hit with no cooldown.
+
+Before regenerating, the old fixtures were replayed against the new engine:
+**2,685 of `engine-fights.json`'s 5,220 cases moved** (Kayle 874, Vladimir
+186, Twitch 782, Kassadin 843), every one of them a build with crit chance
+(2,253), Eclipse (138) or both (294). All 1,686 cases with neither came out
+byte for byte the same, and so did 849 cases whose fight never uses what
+the build holds: Vladimir never attacks, a fight can end on one Sundered Sky
+attack (its guaranteed crit is a fixed 160%), and a stop-after variant can
+end before a second hit. Sheets changed in `crit_damage` and nothing else;
+merged effects changed in exactly the 470 cases that hold Eclipse. Of the
+five enumeration runs, Vladimir's is identical and the other four reordered.
+The new `engine-fights.json` holds the same 508 builds in 5,224 cases rather
+than 5,220: two Twitch builds now kill the tank dummy inside the fight and
+gain their two stop-after variants.
 

@@ -5,12 +5,14 @@ The fixtures pin the engine's output bit for bit (test_builds.TestGolden
 replays them), so they are regenerated ONLY after a deliberate model change,
 in the same commit, from the live engine:
 
-    python3 -m lol.codegen.golden [--random N] [--only fights|enumerate]
+    python3 -m lol.codegen.golden [--random N] [--only fights|enumerate] [--patch P]
 
 Every build is drawn with fixed seeds, so an unchanged model reproduces the
 files byte for byte. Writes engine-fights.json (a few hundred builds: every
 pool item at least twice, every effect key, hand-picked interactions, five
 targets, the flag variants) and enumerate.json (five enumeration passes).
+--patch names the item and champion snapshots to draw from (default: the
+newest): pass the fixtures' own patch to regenerate for a model change alone.
 """
 import argparse
 import json
@@ -158,12 +160,12 @@ SKIPPED = []    # (champion, name, reason) for the report
 class Ctx:
     """Everything the engine needs for one champion, loaded once."""
 
-    def __init__(self, slug, pool, effects, groups, caps):
+    def __init__(self, slug, pool, effects, groups, caps, patch=None):
         self.slug = slug
         self.pool, self.effects = pool, effects
         self.groups, self.caps = groups, caps
         self.kit = B.load_kit(slug)
-        self.champ = B.load_champion(slug)
+        self.champ = B.load_champion(slug, patch)
         self.items = B.champion_pool(self.kit, effects)
         self.max_order = B.kit_max_order(self.kit)
         self.idx = B.item_index(pool)
@@ -186,11 +188,11 @@ class Ctx:
         return self.legal(items_list) and self.legal([boots] + list(items_list))
 
 
-def contexts():
-    patch, pool = B.load_items()
+def contexts(patch=None):
+    patch, pool = B.load_items(patch)
     effects = B.load_item_effects()
-    groups, caps = B.load_exclusive_groups()
-    return patch, pool, effects, {s: Ctx(s, pool, effects, groups, caps)
+    groups, caps = B.load_exclusive_groups(patch)
+    return patch, pool, effects, {s: Ctx(s, pool, effects, groups, caps, patch)
                                   for s in CHAMPIONS}
 
 
@@ -435,7 +437,7 @@ def gen_enumerate(ctxs, patch):
         lists, count = B.enumerate_builds(
             c.champ, c.pool, c.effects, c.kit, 16, c.ranks(16), tg,
             candidates=list(cand), overall="full-overall", keep=keep,
-            workers=1)
+            workers=1, patch=patch)
         secs = time.time() - t0
         sys.stderr.write("  %-16s %d candidates, count=%d, %.1fs\n"
                          % (name, len(cand), count, secs))
@@ -464,10 +466,12 @@ def main():
                          "fixture just under 6 MB (three make it 9 MB)")
     ap.add_argument("--out", default=GOLDEN_DIR)
     ap.add_argument("--only", choices=("fights", "enumerate"))
+    ap.add_argument("--patch", help="item and champion snapshots to draw from "
+                                    "(default: the newest)")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
-    patch, pool, effects, ctxs = contexts()
+    patch, pool, effects, ctxs = contexts(args.patch)
     if args.only in (None, "fights"):
         t0 = time.time()
         obj, per_kind, per_champ = gen_fights(ctxs, patch, args.random)

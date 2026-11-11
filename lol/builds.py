@@ -85,6 +85,14 @@ RIOT_BASE_STATS = {
 }
 
 AS_CAP = 2.5  # attack speed is hard-capped in game (the engine's num.rs agrees)
+# Base critical strike damage, in percent: 200 for every champion since V26.01
+# (175 from V10.23 until then). Riot's character files carry it as
+# critDamageMultiplier 2.0; meraki still publishes 175, so it is not read from
+# there. Ashe's file says 1.0, since her critical strikes add nothing of their
+# own, but Frost Shot pays the same bonus on every attack (crit chance times
+# 100% plus bonus crit damage), which her kit leaves to the standard crit
+# math: she takes this number like everyone else.
+BASE_CRIT_DAMAGE = 200.0
 INF = float("inf")
 
 
@@ -604,8 +612,9 @@ IGNORED_ITEM_STATS = {("goldPer10", "flat"), ("healthRegen", "flat"),
 
 def champ_base(champ):
     """The champion base stats the sheet needs, as one flat dict for the
-    engine: ddragon's numbers with meraki's attack-speed ratio and crit damage
-    riding along, and the AD-growth fallback resolved. Ddragon 16.5.1 onward
+    engine: ddragon's numbers with meraki's attack-speed ratio riding along,
+    the game's base crit damage (BASE_CRIT_DAMAGE), and the AD-growth
+    fallback resolved. Ddragon 16.5.1 onward
     publishes attackdamageperlevel = 0 for every champion at once (a Data
     Dragon regression, not a game change; Riot's files keep the real growth,
     16.17: Vladimir 3, Kayle 2.5, Twitch 3), so for exactly that case the
@@ -628,8 +637,8 @@ def champ_base(champ):
         base_as=dd["attackspeed"], as_per=dd["attackspeedperlevel"],
         # ddragon doesn't ship the ratio; without meraki, ratio = base AS
         as_ratio=mk.get("attackSpeedRatio", {}).get("flat", dd["attackspeed"]),
-        # 175% base crit damage; items with criticalStrikeDamage add to it
-        crit_damage_base=mk.get("criticalStrikeDamage", {}).get("flat", 175.0),
+        # items with criticalStrikeDamage add to it
+        crit_damage_base=BASE_CRIT_DAMAGE,
         move_speed=dd["movespeed"], attack_range=dd["attackrange"])
 
 

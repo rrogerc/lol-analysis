@@ -18,7 +18,7 @@
   "Unshackled's up-to-3 stacks and 4 s duration are modeled as one shared timer: any ability cast refreshes it to (current stacks + 1, capped at 3) with a fresh 4 s window, and a consumed stack removes one from the count without changing that shared expiry, approximating the wiki's per-stack timers and its 0.5 s attack-safety refresh rule.",
   "The passive's 125% bonus attack speed is a flat buff active whenever at least one Unshackled stack is up, not a per-stack multiplier, matching the single PassiveAttackSpeed data value.",
   "An empowered attack replaces that attack's normal physical damage with Petricite Burst's own magic damage to the primary target (130% AD + 30% AP); its reduced secondary-target AoE damage never triggers because a solo dummy fight has no secondary targets.",
-  "Petricite Burst's primary-target damage is allowed to critically strike using the build's actual crit chance and crit damage, rather than hard-coding the wiki-flagged 175%-instead-of-200% bug, since 175% is the current game's base crit multiplier anyway.",
+  "Petricite Burst's primary-target damage can critically strike with the build's crit chance. The wiki flags a live bug: it crits for 175% plus bonus crit damage where a normal critical strike is 200%, so the driver takes those 25 points (gen.P.critDamageShortfallPct) off the crit damage it applies to this hit.",
   "Chain Lash's initial chain hit and its 0.6 s-delayed explosion are dealt as two separate damage instances from the same cast; on-cast procs (Muramana, Eclipse, Spellblade) fire once, at the initial cast, not again on the delayed explosion.",
   "Q, W and E are each cast as soon as they come off cooldown, with basic attacks filling every other moment; mana costs are not modeled since nothing here would actually run Sylas out of mana inside a 15 s level-16 fight."
  ],
@@ -69,6 +69,7 @@
     "adRatio": 1.3,
     "apRatio": 0.3
    },
+   "critDamageShortfallPct": 25,
    "secondaryDamage": {
     "adRatio": 0.4,
     "apRatio": 0.2
@@ -135,6 +136,7 @@
  },
  "_provenance": [
   "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/sylas.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/sylas.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-21): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Edited by hand 2026-11-10 with the engine's base crit damage (corrected from 175% to 200%, the V26.01 value): Petricite Burst keeps the wiki-flagged 175% through gen.P.critDamageShortfallPct, which the kit had relied on the old base for. Nothing else was reviewed."
  ]
 }

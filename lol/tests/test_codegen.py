@@ -845,6 +845,42 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertAlmostEqual(r_with_e["ttk"], 1.40, places=4)
 
 
+class TestSylasDriver(unittest.TestCase):
+    """Petricite Burst's crit: the wiki-flagged 175% where a crit is 200%."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("sylas")
+        cls.kit = builds.load_kit("sylas")
+        _, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+
+    def burst(self, tokens, kit):
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        sheet = builds.resolve_stats(self.champ, 16, ids, self.pool, self.effects, kit=kit)
+        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
+        r = builds.simulate(sheet, kit, builds.merge_effects(ids, self.effects), 16, ranks,
+                            100_000, 100, 100, 10.0)
+        return sheet, r["breakdown"]["P"], r["breakdown"]["auto"]
+
+    def test_petricite_burst_crits_25_points_under_a_normal_crit(self):
+        self.assertEqual(self.kit["gen"]["P"]["critDamageShortfallPct"], 25)
+        normal = copy.deepcopy(self.kit)
+        normal["gen"]["P"]["critDamageShortfallPct"] = 0
+        for tokens in (["infinity edge", "the collector"], ["infinity edge", "the collector",
+                                                            "lord dominiks regards", "phantom dancer"]):
+            sheet, bugged, autos = self.burst(tokens, self.kit)
+            _, full, autos_full = self.burst(tokens, normal)
+            c, d = sheet["crit_chance"] / 100, sheet["crit_damage"] / 100
+            self.assertGreater(c, 0)
+            self.assertAlmostEqual(bugged / full, (1 + c * (d - 0.25 - 1)) / (1 + c * (d - 1)), places=12)
+            self.assertEqual(autos, autos_full)  # only the passive's hit
+        # without crit chance the hit is untouched, to the bit
+        for tokens in ([], ["rabadons deathcap", "lich bane"]):
+            self.assertEqual(self.burst(tokens, self.kit), self.burst(tokens, normal))
+
+
 class TestApheliosDriver(unittest.TestCase):
     """Patch 16.22 Aphelios kit: the five weapons and their Moonlight, Phase,
     Weapon Master's statistics, and the woven rotation. Numbers are worked out

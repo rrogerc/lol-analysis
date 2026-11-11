@@ -232,8 +232,8 @@ pub struct OnUltCast {
 
 /// Fiendhunter's Opening Barrage: after the ult, `attacks` attacks gain
 /// `as_pct` attack speed and are empowered to crit for `crit_dmg_frac` of
-/// the crit bonus; one that would have crit anyway crits normally and adds
-/// `true_dmg_frac` of its pre-mitigation damage as true damage.
+/// a normal critical strike; one that would have crit anyway crits normally
+/// and adds `true_dmg_frac` of its pre-mitigation damage as true damage.
 #[derive(Clone, Debug)]
 pub struct UltAttackSteroid {
     pub attacks: i64,
@@ -242,11 +242,44 @@ pub struct UltAttackSteroid {
     pub true_dmg_frac: f64,
 }
 
+/// Eclipse's Ever Rising Moon: two separate attacks or casts inside
+/// `window_s` proc % max health damage, then nothing for `cooldown_s`.
 #[derive(Clone, Debug)]
 pub struct HitPairProc {
     pub max_hp_pct_melee: f64,
     pub max_hp_pct_ranged: f64,
+    pub window_s: f64,
+    pub cooldown_s: f64,
     pub dtype: DType,
+}
+
+impl HitPairProc {
+    /// Whether a hit at `t` would be the second stack: the passive is off
+    /// cooldown (`ready`), one stack is up (`n`) and it was applied (`at`)
+    /// no longer than the window ago.
+    #[inline(always)]
+    pub fn primed(&self, n: i64, at: f64, ready: f64, t: f64) -> bool {
+        t >= ready && n >= 1 && t - at <= self.window_s
+    }
+
+    /// One hit at `t` against the stack state, which it moves: true when it
+    /// procs. A hit during the cooldown applies no stack; a stack older than
+    /// the window is replaced by this one. The engine's own state and a
+    /// driver's lookahead copy of it both step through here.
+    #[inline(always)]
+    pub fn hit(&self, n: &mut i64, at: &mut f64, ready: &mut f64, t: f64) -> bool {
+        if t < *ready {
+            return false;
+        }
+        if self.primed(*n, *at, *ready, t) {
+            *n = 0;
+            *ready = t + self.cooldown_s;
+            return true;
+        }
+        *n = 1;
+        *at = t;
+        false
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -572,6 +605,8 @@ fn parse_singletons(d: &Bound<'_, PyDict>) -> PyResult<Singletons> {
         s.hit_pair_proc = Some(HitPairProc {
             max_hp_pct_melee: reqf(&x, "maxHpPctMelee")?,
             max_hp_pct_ranged: reqf(&x, "maxHpPctRanged")?,
+            window_s: reqf(&x, "windowS")?,
+            cooldown_s: reqf(&x, "cooldownS")?,
             dtype: dtype_of(&x)?,
         });
     }
@@ -750,5 +785,45 @@ impl ItemFx {
             && self.active_once.is_none()
             && self.energized.is_none()
             && self.s.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Of hits at `times`, the ones Eclipse procs on.
+    fn eclipse_procs(times: &[f64]) -> Vec<f64> {
+        let cfg = HitPairProc { max_hp_pct_melee: 8.0, max_hp_pct_ranged: 5.0, window_s: 2.0,
+                                cooldown_s: 6.0, dtype: DType::Physical };
+        let (mut n, mut at, mut ready) = (0i64, 0.0f64, 0.0f64);
+        times.iter().copied().filter(|&t| cfg.hit(&mut n, &mut at, &mut ready, t)).collect()
+    }
+
+    #[test]
+    fn eclipse_pairs_two_hits_inside_the_window() {
+        assert_eq!(eclipse_procs(&[0.0, 1.0]), [1.0]);
+        // an attack and a cast at one instant, and the window's edge
+        assert_eq!(eclipse_procs(&[0.0, 0.0]), [0.0]);
+        assert_eq!(eclipse_procs(&[0.0, 2.0]), [2.0]);
+    }
+
+    #[test]
+    fn eclipse_stack_older_than_the_window_is_replaced() {
+        assert_eq!(eclipse_procs(&[0.0, 2.5]), Vec::<f64>::new());
+        // the hit at 2.5 started a new pair
+        assert_eq!(eclipse_procs(&[0.0, 2.5, 4.0]), [4.0]);
+        assert_eq!(eclipse_procs(&[0.0, 3.0, 6.0, 9.0]), Vec::<f64>::new());
+    }
+
+    #[test]
+    fn eclipse_hits_during_the_cooldown_apply_no_stack() {
+        // a proc at 1.0, ready again at 7.0: the hits before then leave
+        // nothing behind for the one at 7.0 to pair with
+        assert_eq!(eclipse_procs(&[0.0, 1.0, 2.0, 3.0, 6.9, 7.0]), [1.0]);
+        assert_eq!(eclipse_procs(&[0.0, 1.0, 6.9, 7.0, 8.0]), [1.0, 8.0]);
+        // one hit a second: the cooldown, then a fresh pair
+        let every_second: Vec<f64> = (0..20).map(f64::from).collect();
+        assert_eq!(eclipse_procs(&every_second), [1.0, 8.0, 15.0]);
     }
 }

@@ -27,6 +27,9 @@ pub struct GenDriver {
     /// and the shared stack timer's duration and cap.
     p_ad_coef: f64,
     p_ap_coef: f64,
+    /// What Petricite Burst's damage is scaled by so that the engine's crit
+    /// expectation lands on its own, lower crit damage (1.0 without crit).
+    p_crit_scale: f64,
     p_as_pct: f64,
     p_duration: f64,
     p_max: i64,
@@ -104,12 +107,21 @@ impl Driver for GenDriver {
             w_ready: 0.0,
             e_ready: 0.0,
         };
+        // The wiki-flagged bug: Petricite Burst crits for 175% plus bonus
+        // crit damage where a normal critical strike is 200%. The engine
+        // applies its own crit expectation to a crit-modified hit, so the
+        // hit carries the ratio of the two expectations.
+        let cc = sheet.crit_chance / 100.0;
+        let cd = sheet.crit_damage / 100.0;
+        let shortfall = kit.num("gen.P.critDamageShortfallPct")? / 100.0;
+        let p_crit_scale = (1.0 + cc * (cd - shortfall - 1.0)) / (1.0 + cc * (cd - 1.0));
         Ok(GenDriver {
             ranks,
             attack_range: sheet.base_attack_range,
             windup_fraction: kit.windup_fraction.ok_or("sylas kit needs attack.windupFraction")?,
             p_ad_coef: kit.num("gen.P.primaryDamage.adRatio")?,
             p_ap_coef: kit.num("gen.P.primaryDamage.apRatio")?,
+            p_crit_scale,
             p_as_pct: kit.num("gen.P.bonusAsPct")?,
             p_duration: kit.num("gen.P.stackDurationS")?,
             p_max: kit.num("gen.P.maxStacks")? as i64,
@@ -178,7 +190,7 @@ impl Driver for GenDriver {
 
     fn after_attack(&mut self, e: &mut Engine) {
         if self.s.empowered_this_attack {
-            let dmg = self.p_ad_coef * e.p.ad + self.p_ap_coef * e.p.sheet.ap;
+            let dmg = (self.p_ad_coef * e.p.ad + self.p_ap_coef * e.p.sheet.ap) * self.p_crit_scale;
             e.deal(dmg, DType::Magic, self.src_p, true, false, 1.0);
             self.s.empowered_this_attack = false;
         }
