@@ -313,11 +313,13 @@ class TestKayleKit(unittest.TestCase):
         self.assertEqual(len(self.kit["abilities"]["R"]["damage"]["base"]), 3)
 
     def test_wave_by_level(self):
+        # 20 through Aflame's level 11, then +3 a level to 41 at 18: Riot's
+        # PassiveWaveDamage table, exactly (test_codegen pins the table). A
+        # line from level 1 has the same two ends, which is how the old
+        # encoding (32.35 at 11) passed a check of the ends alone.
         wave = self.kit["passive"]["aflame"]["wave"]["baseByLevel"]
-        self.assertAlmostEqual(builds.by_level(wave, 1), 20.0)
-        self.assertAlmostEqual(builds.by_level(wave, 18), 41.0)
-        # level 11 (first level Aflame exists): 20 + 21 * 10/17
-        self.assertAlmostEqual(builds.by_level(wave, 11), 20 + 21 * 10 / 17)
+        self.assertEqual([builds.by_level(wave, lv) for lv in range(1, 19)],
+                         [20] * 11 + [23, 26, 29, 32, 35, 38, 41])
 
     def test_ability_hit(self):
         # Q rank 5 with 100 bonus AD and 400 AP: 180 + 60 + 200 = 440
@@ -363,6 +365,35 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(r["breakdown"]["auto"], 50.0)
         self.assertAlmostEqual(r["breakdown"]["Q"], 60.0)
         self.assertAlmostEqual(r["total"], 110.0)
+
+    def test_q_shred_follows_its_own_hit(self):
+        # "The resistance reduction is applied after the damage has been
+        # dealt." Level 16, no items, no ult, 100 MR, 0.3 s: Q at 0 hits the
+        # full 100 MR (180 x 100/200); the auto at 0.25 brings E's on-hit
+        # (35) and the wave (35 at 16) onto the shredded 85.
+        r = self.sim(16, [], hp=10_000, armor=0, mr=100, duration=0.3,
+                     use_ult=False)
+        self.assertEqual(r["attacks"], 1)
+        self.assertAlmostEqual(r["breakdown"]["Q"], 180 * 100 / 200)
+        self.assertAlmostEqual(r["breakdown"]["E onhit"], 35 * 100 / 185)
+        self.assertAlmostEqual(r["breakdown"]["wave"], 35 * 100 / 185)
+
+    def test_e_cooldown_starts_when_the_empowered_attack_lands(self):
+        # "cdstart = post-effect". Level 17 with Berserker's, no ult, 0
+        # resists, 7.5 s: an attack every 0.8457 s, a windup of 0.1637 s. Q
+        # (180) at 0 pushes the first auto to 0.25, which casts E; the
+        # empowered attack lands at 0.4137, so E is ready at 6.4137, not at
+        # 6.25. The 9th attack (6.3335) falls between the two and attacks
+        # plainly; the 10th (7.1792) casts E and the 11th (7.3429) lands it.
+        # Each E deals 10% of the health missing after its attack's auto (50)
+        # and on-hit (35), before the wave (38 at 17). Starting the cooldown
+        # at the cast, the 9th attack would cast it and the 10th land it.
+        r = self.sim(17, ["berserker"], hp=1_000_000, armor=0, mr=0,
+                     duration=7.5, use_ult=False)
+        self.assertEqual(r["attacks"], 11)
+        e1 = 0.10 * (180 + 2 * (50 + 35) + 38)
+        e2 = 0.10 * (180 + 11 * (50 + 35) + 10 * 38 + e1)
+        self.assertAlmostEqual(r["breakdown"]["E active"], e1 + e2)
 
     def test_breakdown_sums_to_total(self):
         r = self.sim(16, ["nashors", "rabadons", "void staff", "lich bane"])

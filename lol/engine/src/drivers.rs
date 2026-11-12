@@ -150,6 +150,9 @@ impl Driver for KayleDriver {
             e.ability_cast_proc();
             e.eclipse_hit();
             self.s.e_pending = false;
+            // the cooldown starts post-effect: now, as the empowered attack
+            // lands, not at the cast a windup ago
+            self.s.e_ready = e.st.t + e.basic_cd(self.e_cd_base);
         }
         if self.aflame && self.s.zeal >= self.max_stacks {
             e.deal(self.wave_dmg, DType::Magic, SRC_WAVE, true, true, 1.0);
@@ -161,7 +164,6 @@ impl Driver for KayleDriver {
         let t = e.st.t;
         if self.ranks.e > 0 && t >= self.s.e_ready && !self.s.e_pending {
             self.s.e_pending = true;
-            self.s.e_ready = t + e.basic_cd(self.e_cd_base);
             e.prime_spellblade();
             let b = self.bonus_as(t);
             e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
@@ -174,10 +176,13 @@ impl Driver for KayleDriver {
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd_base);
-        e.st.shred_until = t + self.q_shred_duration;
         e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
         e.ability_cast_proc();
         e.eclipse_hit();
+        // Sundered lands after the hit that inflicts it ("The resistance
+        // reduction is applied after the damage has been dealt"): the hit and
+        // the procs it sets off see only an earlier Q's shred
+        e.st.shred_until = t + self.q_shred_duration;
         e.prime_spellblade();
         e.lockout();
     }

@@ -89,3 +89,30 @@ The new `engine-fights.json` holds the same 508 builds in 5,224 cases rather
 than 5,220: two Twitch builds now kill the tank dummy inside the fight and
 gain their two stop-after variants.
 
+Regenerated on 2026-11-12 for three deliberate corrections to Kayle's model
+in one commit, at the fixtures' own item patch (`--patch 16.18`):
+
+- Aflame's wave base is 20 through level 11, then +3 a level to 41 at 18
+  (Riot's `PassiveWaveDamage` table; the wiki's "20 + 3 for every level
+  starting from level 11"). The kit had a line from level 1, which has the
+  same two ends but put 32.35 at level 11 and 38.53 at 16.
+- Radiant Blast's shred lands after the hit that inflicts it ("The
+  resistance reduction is applied after the damage has been dealt"): the
+  Q's own hit, and the Muramana and Eclipse procs it sets off, no longer
+  see their own 15% reduction.
+- Starfire Spellblade's cooldown starts when the empowered attack lands
+  (`cdstart = post-effect`), not at the cast a windup earlier.
+
+Before regenerating, the old fixtures were replayed against the new engine
+and kit: **1,253 of Kayle's 1,353 cases moved and all 3,871 Vladimir, Twitch
+and Kassadin cases came out byte for byte the same**. Each correction alone
+moved 1,119 (the wave, none below level 11), 1,252 (the shred) and 287 (the
+cooldown), and together exactly their union. The 100 Kayle cases that did
+not move are 99 stop-after variants cut off before the kill either way and
+one fight that ends at t = 0 against magic resistance that flat penetration
+already takes to zero. Sheets, merged effects and ranks did not move. The
+new `engine-fights.json` holds the same 5,224 cases; 20 more Kayle cases
+changed only in `stop_after`, which the generator sets from the base
+fight's kill time, and still return `None`. Of the five enumeration runs,
+Vladimir's, Twitch's and Kassadin's are identical and Kayle's two reordered.
+
