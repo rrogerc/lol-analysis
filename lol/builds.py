@@ -757,7 +757,8 @@ def merge_effects(item_ids, effects):
 
 # the champions the engine has a driver for (lol/engine/src/drivers.rs)
 KIT_DRIVERS = tuple(lol_engine.DRIVERS)
-# machine-written drivers (lol/engine/src/generated/, lol/codegen/driver.py): unreviewed
+# drivers in lol/engine/src/generated/ (lol/codegen/driver.py writes them): a
+# kit with one is ranked once a person has reviewed it (kit_champions)
 GENERATED_DRIVERS = tuple(getattr(lol_engine, "GENERATED_DRIVERS", ()))
 
 
@@ -825,12 +826,13 @@ def tiers():
                   key=cost)
 
 
-def kit_champions(include_generated=False):
-    """Slugs with a kit (lol/data/builds/kits/<slug>.json) and the rotation
-    logic that drives it: the hand-encoded ones (KIT_DRIVERS), and with
-    `include_generated` the machine-written ones too (GENERATED_DRIVERS).
-    Machine-written kits ("generated": true, lol/codegen/driver.py) are
-    unreviewed and only listed when asked for."""
+def kit_champions():
+    """Every champion the dashboard ranks: slugs with a kit
+    (lol/data/builds/kits/<slug>.json) and the rotation logic that drives it,
+    hand-encoded (KIT_DRIVERS) or generated (GENERATED_DRIVERS). A generated
+    kit ("generated": true) is ranked only once a person has reviewed it
+    ("reviewed": true): the drafts lol/codegen/driver.py writes, and Jax, the
+    reference kit it shows the model, stay off the dashboard until then."""
     slugs = []
     if os.path.isdir(KITS_DIR):
         for fn in sorted(os.listdir(KITS_DIR)):
@@ -838,7 +840,7 @@ def kit_champions(include_generated=False):
                 continue
             with open(os.path.join(KITS_DIR, fn)) as f:
                 kit = json.load(f)
-            if "abilities" not in kit or (kit.get("generated") and not include_generated):
+            if "abilities" not in kit or (kit.get("generated") and not kit.get("reviewed")):
                 continue
             slug = fn[:-5]
             if slug not in KIT_DRIVERS + GENERATED_DRIVERS:
@@ -847,20 +849,6 @@ def kit_champions(include_generated=False):
                 continue
             slugs.append(slug)
     return slugs
-
-
-# whether the dashboard's damage tiers rank the machine-written champions too
-SHOW_GENERATED = True
-
-
-def damage_champions():
-    """Every champion the damage tiers rank: the hand-encoded kits first (the
-    warm computes in this order, so they are never stuck behind the roster),
-    then the machine-written, unreviewed ones (SHOW_GENERATED)."""
-    hand = kit_champions()
-    if not SHOW_GENERATED:
-        return hand
-    return hand + [s for s in kit_champions(include_generated=True) if s not in hand]
 
 
 def champion_pool(kit, effects):
@@ -875,7 +863,7 @@ def api_builds_meta():
     patch, pool = load_items()
     effects = load_item_effects()
     champs = []
-    for slug in damage_champions():
+    for slug in kit_champions():
         kit = load_kit(slug)
         ids = champion_pool(kit, effects)
         name = kit.get("name", slug)
@@ -894,13 +882,6 @@ def api_builds_meta():
             "excluded": [f"{', '.join(dropped)}: need mana to stack or "
                          f"scale; {name} has none"] if dropped else [],
             "notes": notes,
-            # a machine-written kit and driver (lol/codegen/driver.py): compiled and
-            # sanity-checked, not reviewed; the page says so beside its rankings
-            "generated": bool(kit.get("generated")),
-            "reviewed": bool(kit.get("reviewed", not kit.get("generated"))),
-            "assumed": [f"{a.get('path')}: {a.get('why')}" for a in kit.get("assumed") or []
-                        if isinstance(a, dict)],
-            "unused": [f"{slot}: {why}" for slot, why in (kit.get("unused") or {}).items()],
         })
 
     def entry(iid):
@@ -1021,7 +1002,7 @@ def cells():
     builds against each of its targets (three to five fights per item
     combination and target: boots that fight alike share one, and most
     fights stop early once the build can't place)."""
-    champs = damage_champions()
+    champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
 
@@ -1046,7 +1027,7 @@ def cell_paths():
     base.update(json.dumps([patch, DEFAULT_POOL, BOOTS, pool],
                            sort_keys=True).encode())
     paths = {}
-    for slug in damage_champions():
+    for slug in kit_champions():
         h_champ = base.copy()
         h_champ.update(champion_code_hash(slug).encode())
         with open(os.path.join(KITS_DIR, f"{slug}.json"), "rb") as f:
@@ -1077,7 +1058,7 @@ def _paths_stamp():
     # the cells live, the scenarios and the pools
     settings = json.dumps([CORE_HASH, sorted(GENERATED_HASHES.items()), SCENARIO_CACHE_DIR,
                            SCENARIOS, DEFAULT_POOL, BOOTS,
-                           KIT_DRIVERS, GENERATED_DRIVERS, SHOW_GENERATED],
+                           KIT_DRIVERS, GENERATED_DRIVERS],
                           sort_keys=True,
                           default=str)
     watched = [ITEM_EFFECTS_FILE, groups_path() or ""]
@@ -1465,13 +1446,10 @@ def warm(log=_say):
                              os.path.basename(path))
             if m and (m.group(1), m.group(2)) not in paths:
                 os.remove(path)
-        champs = damage_champions()
+        champs = kit_champions()
         cold = [(slug, tier) for tier in tiers() for slug in champs
                 if any(not os.path.exists(paths[(slug, k)])
                        for k in tier_scenarios(tier))]
-        # the hand-encoded champions of every tier before the machine-written
-        # roster (an hour or more of it)
-        cold.sort(key=lambda st: st[0] in GENERATED_HASHES)
         done = 0
         for n, (slug, tier) in enumerate(cold, 1):
             keys = tier_scenarios(tier)

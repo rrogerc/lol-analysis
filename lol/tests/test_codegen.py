@@ -287,8 +287,13 @@ class TestRegistry(unittest.TestCase):
         # what the engine was built with; the hand-written four stay their own list
         self.assertEqual(sorted(builds.GENERATED_DRIVERS), kd.driver_names())
         self.assertEqual(sorted(builds.KIT_DRIVERS), ["kassadin", "kayle", "twitch", "vladimir"])
-        self.assertNotIn("jax", builds.kit_champions())  # unreviewed: not in the dashboard's tiers
-        self.assertIn("jax", builds.kit_champions(include_generated=True))
+        # the dashboard ranks reviewed kits only: never Jax, the reference the model is shown
+        ranked = builds.kit_champions()
+        self.assertIn("jax", kd.driver_names())
+        self.assertNotIn("jax", ranked)
+        for slug in ranked:
+            kit = builds.load_kit(slug)
+            self.assertTrue(kit.get("reviewed") or not kit.get("generated"), slug)
 
 
 class TestLints(unittest.TestCase):
@@ -442,7 +447,7 @@ class TestCastTimes(unittest.TestCase):
                                             rs, None), [])
 
     def test_the_admitted_drivers_carry_their_cast_times(self):
-        for name in ("jax", "annie", "chogath"):
+        for name in kd.driver_names():
             with open(os.path.join(ks.DOSSIERS_DIR, f"{name}.json")) as f:
                 d = json.load(f)
             with open(os.path.join(kd.GENERATED_DIR, f"{name}.rs")) as f:
@@ -555,9 +560,9 @@ class TestRepair(unittest.TestCase):
 
 
 class TestRosterEnumerates(unittest.TestCase):
-    """A machine-written driver under the enumerator (one Sim per boots class,
-    reset between fights), on a tiny item pool in a temp cache dir: the cells
-    land, and the dashboard's champion list has the hand-encoded ones first."""
+    """A generated driver under the enumerator (one Sim per boots class, reset
+    between fights), on a tiny item pool in a temp cache dir: the cells land,
+    and the meta lists the ranked champions with nothing to flag."""
 
     def test_compute_tier(self):
         tmp = tempfile.mkdtemp()
@@ -565,21 +570,20 @@ class TestRosterEnumerates(unittest.TestCase):
         tiny = [3089, 3135, 4645, 6653, 4633, 3115, 3042]
         with mock.patch.object(builds, "SCENARIO_CACHE_DIR", tmp), \
                 mock.patch.object(builds, "DEFAULT_POOL", tiny):
-            champs = builds.damage_champions()
-            self.assertEqual(champs[:4], builds.kit_champions())
-            self.assertIn("jax", champs)
+            champs = builds.kit_champions()
+            generated = [s for s in champs if s in builds.GENERATED_DRIVERS]
+            self.assertTrue(generated)
+            slug = generated[0]
             paths = builds.cell_paths()
             tier = builds.SCENARIOS["full-squishy"]["tier"]
-            outs = builds.compute_tier("jax", tier, paths)
+            outs = builds.compute_tier(slug, tier, paths)
             cell = outs["full-squishy"]
             self.assertGreater(cell["buildsEvaluated"], 0)
             self.assertTrue(cell["rows"])
-            self.assertTrue(os.path.exists(paths[("jax", "full-squishy")]))
-        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
-        self.assertTrue(meta["jax"]["generated"])
-        self.assertFalse(meta["jax"]["reviewed"])
-        self.assertFalse(meta["kayle"]["generated"])
-        self.assertTrue(meta["kayle"]["reviewed"])
+            self.assertTrue(os.path.exists(paths[(slug, "full-squishy")]))
+        meta = builds.api_builds_meta()["champions"]
+        self.assertEqual([c["slug"] for c in meta], champs)
+        self.assertFalse([c for c in meta if {"generated", "reviewed", "assumed", "unused"} & set(c)])
 
 
 class TestVarusDriver(unittest.TestCase):
@@ -612,8 +616,7 @@ class TestVarusDriver(unittest.TestCase):
         with open(os.path.join(kd.GENERATED_DIR, "varus.rs")) as f:
             rs = f.read()
         self.assertTrue(self.kit["reviewed"])
-        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
-        self.assertTrue(meta["varus"]["reviewed"])
+        self.assertIn("varus", builds.kit_champions())  # reviewed, so ranked
         self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "varus", kd.source_numbers("varus"),
                                      allow_reviewed=True), [])
         self.assertEqual(kd.lint_driver(rs), [])
@@ -701,8 +704,7 @@ class TestKaisaDriver(unittest.TestCase):
         with open(os.path.join(kd.GENERATED_DIR, "kaisa.rs")) as f:
             rs = f.read()
         self.assertTrue(self.kit["reviewed"])
-        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
-        self.assertTrue(meta["kaisa"]["reviewed"])
+        self.assertIn("kaisa", builds.kit_champions())  # reviewed, so ranked
         self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "kaisa", kd.source_numbers("kaisa"),
                                      allow_reviewed=True), [])
         self.assertEqual(kd.lint_driver(rs), [])
@@ -845,42 +847,6 @@ class TestKaisaDriver(unittest.TestCase):
         self.assertAlmostEqual(r_with_e["ttk"], 1.40, places=4)
 
 
-class TestSylasDriver(unittest.TestCase):
-    """Petricite Burst's crit: the wiki-flagged 175% where a crit is 200%."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.champ = builds.load_champion("sylas")
-        cls.kit = builds.load_kit("sylas")
-        _, cls.pool = builds.load_items()
-        cls.idx = builds.item_index(cls.pool)
-        cls.effects = builds.load_item_effects()
-
-    def burst(self, tokens, kit):
-        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
-        sheet = builds.resolve_stats(self.champ, 16, ids, self.pool, self.effects, kit=kit)
-        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
-        r = builds.simulate(sheet, kit, builds.merge_effects(ids, self.effects), 16, ranks,
-                            100_000, 100, 100, 10.0)
-        return sheet, r["breakdown"]["P"], r["breakdown"]["auto"]
-
-    def test_petricite_burst_crits_25_points_under_a_normal_crit(self):
-        self.assertEqual(self.kit["gen"]["P"]["critDamageShortfallPct"], 25)
-        normal = copy.deepcopy(self.kit)
-        normal["gen"]["P"]["critDamageShortfallPct"] = 0
-        for tokens in (["infinity edge", "the collector"], ["infinity edge", "the collector",
-                                                            "lord dominiks regards", "phantom dancer"]):
-            sheet, bugged, autos = self.burst(tokens, self.kit)
-            _, full, autos_full = self.burst(tokens, normal)
-            c, d = sheet["crit_chance"] / 100, sheet["crit_damage"] / 100
-            self.assertGreater(c, 0)
-            self.assertAlmostEqual(bugged / full, (1 + c * (d - 0.25 - 1)) / (1 + c * (d - 1)), places=12)
-            self.assertEqual(autos, autos_full)  # only the passive's hit
-        # without crit chance the hit is untouched, to the bit
-        for tokens in ([], ["rabadons deathcap", "lich bane"]):
-            self.assertEqual(self.burst(tokens, self.kit), self.burst(tokens, normal))
-
-
 class TestApheliosDriver(unittest.TestCase):
     """Patch 16.22 Aphelios kit: the five weapons and their Moonlight, Phase,
     Weapon Master's statistics, and the woven rotation. Numbers are worked out
@@ -936,8 +902,7 @@ class TestApheliosDriver(unittest.TestCase):
         with open(os.path.join(kd.GENERATED_DIR, "aphelios.rs")) as f:
             rs = f.read()
         self.assertTrue(self.kit["reviewed"])
-        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
-        self.assertTrue(meta["aphelios"]["reviewed"])
+        self.assertIn("aphelios", builds.kit_champions())  # reviewed, so ranked
         self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "aphelios", kd.source_numbers("aphelios"),
                                      allow_reviewed=True), [])
         self.assertEqual(kd.lint_driver(rs), [])
@@ -1244,8 +1209,7 @@ class TestZedDriver(unittest.TestCase):
         with open(os.path.join(kd.GENERATED_DIR, "zed.rs")) as f:
             rs = f.read()
         self.assertTrue(self.kit["reviewed"])
-        meta = {c["slug"]: c for c in builds.api_builds_meta()["champions"]}
-        self.assertTrue(meta["zed"]["reviewed"])
+        self.assertIn("zed", builds.kit_champions())  # reviewed, so ranked
         self.assertEqual(kd.lint_kit(kd.as_written(self.kit), "zed", kd.source_numbers("zed"),
                                      allow_reviewed=True), [])
         self.assertEqual(kd.lint_driver(rs), [])

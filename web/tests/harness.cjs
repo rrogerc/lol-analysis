@@ -691,7 +691,6 @@ Object.defineProperties(globalThis, {
   BOARD_TIME_TITLE: { get: () => BOARD_TIME_TITLE, configurable: true },
   BOARD_MEAN_TITLE: { get: () => BOARD_MEAN_TITLE, configurable: true },
   INSTANT_TITLE: { get: () => INSTANT_TITLE, configurable: true },
-  UNREVIEWED_TITLE: { get: () => UNREVIEWED_TITLE, configurable: true },
   TSRC_COLOR: { get: () => TSRC_COLOR, configurable: true },
   tstate: { get: () => tstate, configurable: true },
   tcore: { get: () => tcore, configurable: true },

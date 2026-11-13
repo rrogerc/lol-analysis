@@ -12,7 +12,7 @@ Engineering reference for `lol-analysis`. The repository is organized into three
   - `builds.py`: Champion stat sheets, single-build fight simulation, exhaustive build enumeration, and `.cache/builds/` cell warmer.
   - `leaderboard.py`: Cross-champion DPS leaderboards assembled from `.cache/builds/` cells.
   - `codegen/`: Champion kit pipeline (`sources.py`, `dossier.py`, `driver.py`, `golden.py`, plus prompt/guide markdown).
-  - `engine/`: Rust PyO3 extension (`lol_engine`, compiled to `lol/lol_engine.abi3.so`). Hand-written reference drivers live in `src/drivers/`; generated champion drivers live in `src/generated/`.
+  - `engine/`: Rust PyO3 extension (`lol_engine`, compiled to `lol/lol_engine.abi3.so`). Hand-written drivers live in `src/drivers.rs`; generated champion drivers live in `src/generated/`.
   - `data/`: `scaling/`, `matchups/`, `items/`, and `builds/` (`item-effects.json`, `kits/<slug>.json`, `champions/`, `dossiers/`, `sources/`, `golden/`).
   - `tests/`: `test_ladder.py`, `test_matchups.py`, `test_builds.py`, `test_codegen.py`, `test_ui.cjs`.
 - `tft/`: Teamfight Tactics Set 18 combat simulator, planners, and publisher.
@@ -57,8 +57,9 @@ Declared in `/home/rogerc/dotfiles/nixos/services/lol-analysis.nix`:
 - Both `build.rs` scripts hash every `Cargo.toml` and `src/**/*.rs` file into `SOURCE_HASH` (with per-champion `GENERATED_HASHES` in `lol_engine`), invalidating downstream `.cache/` artifacts automatically when Rust code changes.
 
 ### LoL Build Cache (`CORE_HASH`) and Kits
-- `lol/builds.py` hashes its own bytes plus `lol_engine.SOURCE_HASH` into `CORE_HASH`. Keep presentation/leaderboard code in `lol/leaderboard.py` so UI/ranking tweaks do not invalidate all 172 champions' `.cache/builds/` cells.
+- `lol/builds.py` hashes its own bytes plus `lol_engine.SOURCE_HASH` into `CORE_HASH`. Keep presentation/leaderboard code in `lol/leaderboard.py` so UI/ranking tweaks do not invalidate every champion's `.cache/builds/` cells.
 - Champion kit encodings live in `lol/data/builds/kits/<slug>.json`. `builds._paths_stamp()` watches `KITS_DIR`, `BUILDS_DATA_DIR`, and `ITEMS_DATA_DIR` so any kit or item snapshot update invalidates memoized cell paths.
+- The Builds tab ranks reviewed kits only (`builds.kit_champions()`): hand-encoded kits, and generated kits marked `"reviewed": true`. A draft from `lol.codegen.driver write` (`"generated": true, "reviewed": false`) stays off the tab until a person reviews it. `kits/jax.json` and `src/generated/jax.rs` are the reference `driver.py write` shows the model (and the codegen tests' fixture), not a ranked build: keep them.
 - Golden fixtures in `lol/data/builds/golden/` record their exact `patch` (e.g. `16.18`); golden tests pass `doc["patch"]` explicitly so routine `refresh-items.sh` snapshots on newer patches never break historical math verification. After a deliberate model change, regenerate them at that same patch (`python3 -m lol.codegen.golden --patch <patch>`) so nothing but the model moves, and log the reach in `lol/data/builds/golden/README.md`.
 - Driver codegen (`python3 -m lol.codegen.driver`) compiles candidate `.rs` drivers in an isolated temp Cargo target directory and benchmarks them via `_bench --so-dir`, overriding `sys.modules["lol.lol_engine"]` before importing `lol.builds`.
 

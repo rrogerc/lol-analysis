@@ -495,7 +495,6 @@ function updateHash(push = false) {
   if (state.view === "builds" && bstate.mode === "leaderboard") {
     parts.push("bview=leaderboard");
     if (bboard.search.trim()) parts.push(`lbq=${encodeURIComponent(bboard.search.trim())}`);
-    if (bboard.reviewedOnly) parts.push("lbrev=1");
     if (bboard.sortKey !== "rank" || bboard.sortDir !== 1)
       parts.push(`lbs=${encodeURIComponent(bboard.sortKey)}`, ...(bboard.sortDir === 1 ? [] : ["lbd=d"]));
   }
@@ -617,12 +616,11 @@ function restoreHash() {
       bstate.mode = hash.bview === "leaderboard" ? "leaderboard" : "champion";
       bstate.champion = hash.champ || bstate.meta?.champions[0]?.slug || null;
       bstate.scenario = hash.sc || bstate.meta?.scenarios[0]?.key || null;
-      Object.assign(bboard, { search: "", reviewedOnly: false, sortKey: "rank", sortDir: 1 });
+      Object.assign(bboard, { search: "", sortKey: "rank", sortDir: 1 });
     }
     if (tab === "builds" && hash.bview === "leaderboard") {
       bstate.mode = "leaderboard";
       if (hash.lbq) bboard.search = hash.lbq;
-      bboard.reviewedOnly = hash.lbrev === "1";
       // a column this board lacks leaves it in rank order: boardSort
       if (hash.lbs) { bboard.sortKey = hash.lbs; bboard.sortDir = hash.lbd === "d" ? -1 : 1; }
     }

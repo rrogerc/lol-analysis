@@ -41,77 +41,17 @@ function pickChampion(slug) {
   loadScenario();
 }
 
-// The hand-encoded or reviewed champions are buttons. The unreviewed
-// machine-written ones (a kit and a rotation driver written by a model, compiled
-// and sanity-checked but not reviewed) are too many for that: they are found
-// by name, and the one selected joins the buttons with an "unreviewed" tag.
-function isUnreviewed(c) {
-  return c.reviewed != null ? !c.reviewed : !!c.generated;
-}
-
+// A button per champion: every one the meta lists has a reviewed kit
+// (builds.kit_champions).
 function renderChampionPicker() {
-  const champs = bstate.meta.champions;
-  const generated = champs.filter(isUnreviewed);
-  const shown = champs.filter(c => !isUnreviewed(c) || c.slug === bstate.champion);
-  document.getElementById("champion-seg").replaceChildren(...shown.map(c => {
+  document.getElementById("champion-seg").replaceChildren(...bstate.meta.champions.map(c => {
     const btn = document.createElement("button");
     btn.textContent = c.name || c.slug;
     btn.dataset.key = c.slug;
     btn.classList.toggle("active", c.slug === bstate.champion);
-    if (isUnreviewed(c)) {
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      tag.textContent = "unreviewed";
-      btn.append(tag);
-    }
     btn.addEventListener("click", () => pickChampion(c.slug));
     return btn;
   }));
-  const more = document.getElementById("champion-more");
-  more.hidden = !generated.length;
-  if (!generated.length) return;
-  const input = document.getElementById("champion-search");
-  input.placeholder = `${generated.length} more champions, machine-written and unreviewed — type a name…`;
-  document.getElementById("champion-list").replaceChildren(...generated.map(c => {
-    const o = document.createElement("option");
-    o.value = c.name || c.slug;
-    return o;
-  }));
-  if (!input.dataset.wired) {
-    input.dataset.wired = "1";
-    const choose = () => {
-      const q = input.value.trim().toLowerCase();
-      const hit = bstate.meta.champions.find(c => isUnreviewed(c) &&
-        ((c.name || "").toLowerCase() === q || c.slug === q.replace(/[^a-z0-9]/g, "")));
-      if (!hit) return;
-      input.value = "";
-      input.blur();
-      pickChampion(hit.slug);
-    };
-    input.addEventListener("change", choose);
-    input.addEventListener("input", choose);
-  }
-}
-
-// What a machine-written kit is, beside its rankings: the reader decides from
-// the kit's own assumptions whether to trust them. The leaderboard shows it
-// with the selected row's breakdown instead (`id`), below the table, where
-// its changing height cannot move the rows under the pointer.
-function renderGeneratedBanner(id = "builds-generated", slug = bstate.champion) {
-  const el = document.getElementById(id);
-  const champ = bstate.meta?.champions?.find(c => c.slug === slug);
-  el.hidden = !champ || !isUnreviewed(champ);
-  if (el.hidden) return;
-  const parts = [
-    `${champ.name || champ.slug}'s kit and rotation were written by a model from the wiki and ` +
-    "Riot's game file, compiled and sanity-checked, and NOT reviewed by a person: treat this " +
-    "ranking as a draft. A driver written this way for a hand-modeled champion ranked builds " +
-    "much like the hand-written one when its rotation agreed, and very differently when it did " +
-    "not, so read the rotation it assumes (the notes under the item pool).",
-  ];
-  if (champ.assumed?.length) parts.push(`Assumed numbers: ${champ.assumed.join("; ")}.`);
-  if (champ.unused?.length) parts.push(`Abilities it does not use: ${champ.unused.join("; ")}.`);
-  el.textContent = parts.join(" ");
 }
 
 // `slug`: the champion the card is about — the selected one, or in the
@@ -190,13 +130,10 @@ async function loadScenario() {
       "No champion kit encodings yet: add lol/data/builds/<champ>.json.";
     return;
   }
-  if (!document.querySelector(`#champion-seg button[data-key="${bstate.champion}"]`))
-    renderChampionPicker();  // a machine-written champion arriving by URL
   document.querySelectorAll("#champion-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.champion));
   document.querySelectorAll("#scenario-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.scenario));
-  renderGeneratedBanner();
   markCold();
   updateHash();
   const req = ++bstate.req;  // a newer click supersedes this load
@@ -219,9 +156,9 @@ async function loadScenario() {
     return;
   }
   if (d.error) {
-    // a machine-written driver that failed in the enumeration (builds.warm)
+    // a generated driver that failed in the enumeration (builds.warm records it)
     clearBuilds();
-    desc.textContent = `This champion's machine-written driver failed, so nothing is ranked: ${d.error}`;
+    desc.textContent = `This champion's driver failed, so nothing is ranked: ${d.error}`;
     return;
   }
   bstate.data = d;
@@ -519,7 +456,7 @@ async function openBuilds() {
 // ---- the leaderboard: every champion's best build under one scenario ----
 // A row per champion: the top row of its cell, ranked against the others'
 // (builds_leaderboard.py). Saved cells only, like everything on this tab.
-const bboard = { data: null, error: null, search: "", reviewedOnly: false, scroll: 0,
+const bboard = { data: null, error: null, search: "", scroll: 0,
                  sortKey: "rank", sortDir: 1 };  // the column the rows are ordered by: see boardSort
 
 function loadBuildsView() {
@@ -541,13 +478,9 @@ function renderBuildsMode() {
   hide("btbl-wrap", board);
   hide("bboard", !board);
   if (board) {
-    hide("champion-more", true);
-    hide("builds-generated", true);  // the selected row's is with its breakdown
     document.getElementById("bboard-search").value = bboard.search;
-    document.getElementById("bboard-reviewed").checked = bboard.reviewedOnly;
   } else {
-    hide("bd-generated", true);
-    renderChampionPicker();  // a champion opened from the board joins the buttons
+    renderChampionPicker();  // the champion selected on the board is the active button
     renderPool();
   }
 }
@@ -579,8 +512,7 @@ function openBoardChampion(slug) {
 
 const BOARD_TIME_TITLE = "Ranking metric: the expected kill time of the champion's best build against this target (the kill time, unless the build relies on an execute). A ≈ time is extrapolated past the fight at its average DPS: the target survived.";
 const BOARD_MEAN_TITLE = "Ranking metric: the geometric mean of the best build's expected kill times against every target, so each target counts equally in percentage terms. Champions that kill every target rank above those that leave one standing.";
-const INSTANT_TITLE = "Dead at 0.00s: this kit lands its whole opening combo in the fight's first instant, with no cast or travel time between the hits. The time — and an overall mean built on it — says more about the draft kit than about the champion.";
-const UNREVIEWED_TITLE = "This kit and its rotation were written by a model and not reviewed by a person: treat the rank as a draft. Select the row for what the kit assumes.";
+const INSTANT_TITLE = "Dead at 0.00s: this kit lands its whole opening combo in the fight's first instant, with no cast or travel time between the hits. The time — and an overall mean built on it — says more about the kit than about the champion.";
 
 // Whether any of the row's fights ends the instant it starts.
 function boardInstant(r) {
@@ -617,8 +549,7 @@ function boardTimeSort(v) {
   return time == null ? null : [v.ttkExp == null ? 1 : 0, time];
 }
 
-// The champion: its name opens its own ranked builds; a kit nobody has
-// reviewed says so.
+// The champion: its name opens its own ranked builds.
 function boardChampionCell(r) {
   const td = document.createElement("td");
   const icon = document.createElement("img");
@@ -634,11 +565,6 @@ function boardChampionCell(r) {
   open.title = "Open this champion's ranked builds";
   open.addEventListener("click", e => { e.stopPropagation(); openBoardChampion(r.champion); });
   td.append(icon, open);
-  if (!r.reviewed) {
-    const tag = tftText("span", "unreviewed", "bboard-tag");
-    tag.title = UNREVIEWED_TITLE;
-    td.append(tag);
-  }
   return td;
 }
 
@@ -684,11 +610,11 @@ function boardColumns(sc) {
   return cols;
 }
 
-// The rows the filters leave, in rank order (ranks stay the full board's).
+// The rows the search leaves, in rank order (ranks stay the full board's).
 function boardRows(d) {
   const q = bboard.search.trim().toLowerCase();
-  return (d?.rows || []).filter(r => (!bboard.reviewedOnly || r.reviewed) &&
-    (!q || (r.championName || "").toLowerCase().includes(q) || r.champion.includes(q.replace(/[^a-z0-9]/g, ""))));
+  return (d?.rows || []).filter(r =>
+    !q || (r.championName || "").toLowerCase().includes(q) || r.champion.includes(q.replace(/[^a-z0-9]/g, "")));
 }
 
 // The column the table is ordered by and the direction (1 ascending): the one
@@ -736,15 +662,13 @@ function sortBoard(key, dir) {
 }
 
 // What the cards below the table show: the selected row's damage sources,
-// what its kit assumes, and its item pool with the rotation's notes.
+// and its item pool with the rotation's notes.
 function renderBoardSelection(r) {
   if (!r) {
     clearBreakdown();
-    document.getElementById("bd-generated").hidden = true;
     return;
   }
   renderBreakdown(r, bboard.data.scenario, r.championName || r.champion);
-  renderGeneratedBanner("bd-generated", r.champion);
   renderPool(r.champion);
 }
 
@@ -756,18 +680,16 @@ function renderLeaderboard() {
   if (!d) desc.textContent = bboard.error ? "" : "Loading…";
   else {
     const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
-    const drafts = d.rows.filter(r => !r.reviewed).length;
     desc.textContent = `Level ${sc.level} · ` + (sc.overall
       ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
         "by the geometric mean of expected kill times, champions that kill all of them first"
       : `target ${dummy(sc)} · ranked by expected kill time`) +
       ` · each champion with the best build of its own ranking` +
-      (drafts ? ` · ${fmtInt(drafts)} of ${fmtInt(d.rows.length)} kits machine-written and unreviewed` : "") +
       ` · items patch ${bstate.meta.itemsPatch} · ${bstate.meta.note}`;
   }
   const cols = sc ? boardColumns(sc) : [], sorted = boardSort(cols);
   const rows = sorted.col ? boardSorted(boardRows(d), sorted) : [];
-  const filtered = !!bboard.search.trim() || bboard.reviewedOnly;
+  const filtered = !!bboard.search.trim();
   let status = "";
   if (bboard.error) status = bboard.error + (d ? " Showing the board as last loaded." : "");
   else if (d) {
@@ -847,9 +769,6 @@ document.querySelectorAll("#builds-mode-seg button").forEach(b =>
   b.addEventListener("click", () => setBuildsMode(b.dataset.key)));
 document.getElementById("bboard-search").addEventListener("input", e => {
   bboard.search = e.target.value; renderLeaderboard(); updateHash();
-});
-document.getElementById("bboard-reviewed").addEventListener("change", e => {
-  bboard.reviewedOnly = e.target.checked; renderLeaderboard(); updateHash();
 });
 
 // ---------------- matchups & draft identity ----------------

@@ -4933,13 +4933,15 @@ async function runNavigationUiSuite() {
   async function checkBuildsAndTierCompatibility() {
     const h = harness();
     h.context.restoreHash();
+    // lbrev=1: a link from before the reviewed-only filter was retired still opens
     await h.setHash("#tab=builds&tier=other&bview=leaderboard&champ=annie&sc=squishy&lbq=Ash%20%26%20Ember%3D%CE%B2&lbrev=1&lbs=dps&lbd=d");
     assert.equal(h.context.state.view, "builds");
     assert.equal(h.context.state.tier, "other");
     assert.equal(h.node("tier").value, "other");
     assert.equal(h.context.bstate.mode, "leaderboard");
     assert.equal(h.context.bboard.search, "Ash & Ember=\u03b2");
-    assert.equal(h.context.bboard.reviewedOnly, true);
+    assert.equal("reviewedOnly" in h.context.bboard, false);
+    assert.doesNotMatch(h.location.hash, /lbrev/);
     assert.equal(h.context.bboard.sortKey, "dps");
     assert.equal(h.context.bboard.sortDir, -1);
     await h.setHash("#tab=builds&tier=fixture");
@@ -4947,7 +4949,6 @@ async function runNavigationUiSuite() {
     assert.equal(h.context.bstate.champion, "annie");
     assert.equal(h.context.bstate.scenario, "squishy");
     assert.equal(h.context.bboard.search, "");
-    assert.equal(h.context.bboard.reviewedOnly, false);
     assert.equal(h.context.bboard.sortKey, "rank");
     assert.equal(h.context.bboard.sortDir, 1);
     await h.back();

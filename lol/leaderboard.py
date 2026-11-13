@@ -5,8 +5,8 @@ Read-only over the precomputed cells: builds.warm computes them, nothing here
 simulates. The top row of a champion's cell IS its best build under that
 scenario's ranking, so comparing champions needs nothing a cell does not
 already hold. That is also why this is not in builds.py: that file's bytes are
-part of every cell's cache key, and an edit there recomputes the whole roster
-(about two hours).
+part of every cell's cache key, and an edit there recomputes every champion's
+cells.
 """
 
 import json
@@ -69,14 +69,10 @@ def cached_leaderboard(key, paths=None):
                 "targets": [{"key": k, **builds.SCENARIOS[k]}
                             for k in builds.tier_targets(sc["tier"])]}
     rows, pending, failed = [], [], []
-    champions = builds.damage_champions()
+    champions = builds.kit_champions()
     for slug in champions:
         kit = builds.load_kit(slug)
-        who = {"champion": slug, "championName": kit.get("name", slug),
-               # a machine-written kit and driver (lol/codegen/driver.py), and
-               # whether a person has been through it: as api_builds_meta
-               "generated": bool(kit.get("generated")),
-               "reviewed": bool(kit.get("reviewed", not kit.get("generated")))}
+        who = {"champion": slug, "championName": kit.get("name", slug)}
         path = paths[(slug, key)]
         try:
             st = os.stat(path)

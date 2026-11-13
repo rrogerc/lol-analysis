@@ -89,102 +89,46 @@ function checkBuildsItems() {
   ++passedSuites;
 }
 
-async function checkBuildsGenerated() {
+async function checkBuildsPicker() {
+  // Only reviewed kits reach the tab: the unreviewed drafts' search box,
+  // banners, tag and filter are gone for good.
+  for (const id of ["champion-more", "champion-search", "champion-list", "builds-generated", "bd-generated", "bboard-reviewed"]) {
+    assert(!INDEX_HTML.includes(`id="${id}"`), `#${id} is absent from index.html`);
+  }
+  assert(!STYLES_CSS.includes(".bboard-tag"), "The unreviewed tag's CSS is absent");
+
   const h = loadDashboard();
   const { context, element } = h;
-
-  for (const id of ["champion-seg", "champion-more", "champion-search", "champion-list", "builds-generated"]) {
-    assert.ok(element(id), `The page has #${id}`);
-  }
+  assert.ok(element("champion-seg"), "The page has #champion-seg");
 
   const picked = [];
   context.bstate.champion = "kayle";
   context.bstate.meta = {
     champions: [
+      { slug: "aphelios", name: "Aphelios" },
       { slug: "kayle", name: "Kayle" },
-      { slug: "vladimir", name: "Vladimir" },
-      {
-        slug: "ahri",
-        name: "Ahri",
-        generated: true,
-        reviewed: false,
-        assumed: ["gen.W.delayS: the wiki gives no per-flame timing"],
-        unused: [],
-      },
-      {
-        slug: "kaisa",
-        name: "Kai'Sa",
-        generated: true,
-        reviewed: false,
-        assumed: [],
-        unused: ["E: only grants attack speed"],
-      },
+      { slug: "zed", name: "Zed" },
     ],
   };
   context.renderPool = () => {};
   context.loadScenario = () => { picked.push(context.bstate.champion); };
 
-  const labels = () => element("champion-seg").children.map(b => b.textContent);
-
+  const buttons = () => element("champion-seg").children;
+  const active = () => buttons().map(b => b.classList.contains("active"));
   context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Vladimir"]);
-  assert.equal(element("champion-more").hidden, false);
-  assert.match(element("champion-search").placeholder, /^2 more champions, machine-written and unreviewed/);
-  assert.deepEqual(element("champion-list").children.map(o => o.value), ["Ahri", "Kai'Sa"]);
-
-  const input = element("champion-search");
-  input.value = "ahr";
-  await input.fire("input");
-  assert.deepEqual(picked, [], "A partial name selects nothing");
-  input.value = "kai'sa";
-  await input.fire("input");
-  assert.deepEqual(picked, ["kaisa"]);
-  assert.equal(input.value, "");
-  assert.deepEqual(labels(), ["Kayle", "Vladimir", "Kai'Saunreviewed"], "Selected generated champion joins buttons with tag");
-
-  const kaisa = element("champion-seg").children[2];
-  assert.ok(kaisa.classList.contains("active"));
-  assert.equal(kaisa.children[0].className, "tag");
-  await kaisa.fire("click");
-  assert.deepEqual(picked, ["kaisa", "kaisa"]);
-
-  context.renderGeneratedBanner();
-  const banner = element("builds-generated");
-  assert.equal(banner.hidden, false);
-  assert.match(banner.textContent, /NOT reviewed by a person/);
-  assert.match(banner.textContent, /Abilities it does not use: E: only grants attack speed\./);
-  assert.doesNotMatch(banner.textContent, /Assumed numbers/);
-
-  context.bstate.champion = "ahri";
-  context.renderGeneratedBanner();
-  assert.match(banner.textContent, /Assumed numbers: gen\.W\.delayS: the wiki gives no per-flame timing\./);
-
-  context.bstate.champion = "kayle";
-  context.renderGeneratedBanner();
-  assert.equal(banner.hidden, true, "A hand-written champion has no banner");
-  context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Vladimir"]);
-
-  context.bstate.meta = {
-    champions: [
-      { slug: "kayle", name: "Kayle" },
-      { slug: "varus", name: "Varus", generated: true, reviewed: true },
-      { slug: "twitch", name: "Twitch" },
-    ],
-  };
-  context.renderChampionPicker();
-  assert.deepEqual(labels(), ["Kayle", "Varus", "Twitch"]);
-  assert.equal(element("champion-more").hidden, true);
-  context.bstate.champion = "varus";
-  context.renderGeneratedBanner();
-  assert.equal(banner.hidden, true, "A reviewed generated champion has no unreviewed banner");
+  assert.deepEqual(buttons().map(b => b.textContent), ["Aphelios", "Kayle", "Zed"], "Every champion in the meta is a button, in its order");
+  assert.deepEqual(active(), [false, true, false]);
+  assert.ok(buttons().every(b => b.children.length === 0), "No button carries a tag");
+  await buttons()[2].fire("click");
+  assert.deepEqual(picked, ["zed"]);
+  assert.deepEqual(active(), [false, false, true]);
 
   const errDash = loadDashboard({ api: async () => ({ error: "driver panic" }) });
-  errDash.context.bstate.champion = "ahri";
+  errDash.context.bstate.champion = "zed";
   errDash.context.bstate.scenario = "full-squishy";
-  errDash.context.bstate.meta = { champions: [{ slug: "ahri", name: "Ahri", generated: true }], scenarios: [{ key: "full-squishy", label: "Full" }] };
+  errDash.context.bstate.meta = { champions: [{ slug: "zed", name: "Zed" }], scenarios: [{ key: "full-squishy", label: "Full" }] };
   await errDash.context.loadScenario();
-  assert.match(errDash.element("scenario-desc").textContent, /machine-written driver failed.*driver panic/);
+  assert.equal(errDash.element("scenario-desc").textContent, "This champion's driver failed, so nothing is ranked: driver panic");
   ++passedSuites;
 }
 
@@ -210,12 +154,11 @@ async function checkBuildsLeaderboard() {
     bstate,
     bboard,
     INSTANT_TITLE,
-    UNREVIEWED_TITLE,
   } = context;
 
   for (const id of [
     "builds-mode-seg", "builds-note-board", "btbl-wrap", "bboard", "bboard-search",
-    "bboard-reviewed", "bboard-status", "bboard-wrap", "bboard-tbl", "bboard-failed", "bd-generated",
+    "bboard-status", "bboard-wrap", "bboard-tbl", "bboard-failed",
   ]) {
     assert.ok(element(id), `The page has #${id}`);
   }
@@ -242,7 +185,7 @@ async function checkBuildsLeaderboard() {
       note: "Theoretical damage model.",
       champions: [
         { slug: "kayle", name: "Kayle" },
-        { slug: "ahri", name: "Ahri", generated: true },
+        { slug: "ahri", name: "Ahri" },
         { slug: "twitch", name: "Twitch" },
       ],
       scenarios: [
@@ -253,7 +196,6 @@ async function checkBuildsLeaderboard() {
   });
 
   context.renderBreakdown = log("renderBreakdown");
-  context.renderGeneratedBanner = log("renderGeneratedBanner");
   context.renderPool = log("renderPool");
   context.clearBreakdown = log("clearBreakdown");
   const realUpdateHash = context.updateHash;
@@ -283,8 +225,8 @@ async function checkBuildsLeaderboard() {
     ttk, ttkExp: ttk, killTime: ttk, dps: ttk ? Math.round(3000 / ttk) : 0,
     total: 3000, attacks: 3, breakdown: { Q: 3000 }, ...extra,
   });
-  const champ = (rank, champion, championName, reviewed, times, extra = {}) => ({
-    rank, champion, championName, generated: !reviewed, reviewed,
+  const champ = (rank, champion, championName, times, extra = {}) => ({
+    rank, champion, championName,
     items: ["Boots", `${championName}'s item`],
     gold: 16000 + rank, ap: 0, ad: 300, attackSpeed: 1.2,
     vs: {
@@ -298,11 +240,11 @@ async function checkBuildsLeaderboard() {
     scenario: { ...targets[0], label: "Full build vs squishy", tier: "full", level: 16, targets },
     complete: true, expectedCount: 4, readyCount: 4, pending: [], failed: [],
     rows: [
-      [1, "ahri", "Ahri", false, [0, 4.49, 7.69]],
-      [2, "kassadin", "Kassadin", true, [0.75, 2.2, 5.1]],
-      [2, "leesin", "Lee Sin", false, [0.75, 3.5, null]],
-      [4, "kayle", "Kayle", true, [1.07, 2.76, 4.46]],
-    ].map(([rank, slug, name, reviewed, times]) => champ(rank, slug, name, reviewed, times, {
+      [1, "ahri", "Ahri", [0, 4.49, 7.69]],
+      [2, "kassadin", "Kassadin", [0.75, 2.2, 5.1]],
+      [2, "leesin", "Lee Sin", [0.75, 3.5, null]],
+      [4, "kayle", "Kayle", [1.07, 2.76, 4.46]],
+    ].map(([rank, slug, name, times]) => champ(rank, slug, name, times, {
       ttk: times[0], ttkExp: times[0], dps: times[0] ? Math.round(3000 / times[0]) : 0, total: 3000,
     })),
   };
@@ -310,8 +252,8 @@ async function checkBuildsLeaderboard() {
     scenario: { key: "full-overall", label: "Full build \u2014 overall", tier: "full", overall: true, level: 16, targets },
     complete: true, expectedCount: 2, readyCount: 2, pending: [], failed: [],
     rows: [
-      champ(1, "ahri", "Ahri", false, [0, 4.49, 7.69], { kills: 3, mean: 0 }),
-      champ(2, "kayle", "Kayle", true, [1.21, 2.5, 4.21], { kills: 3, mean: 2.34 }),
+      champ(1, "ahri", "Ahri", [0, 4.49, 7.69], { kills: 3, mean: 0 }),
+      champ(2, "kayle", "Kayle", [1.21, 2.5, 4.21], { kills: 3, mean: 2.34 }),
     ],
   };
 
@@ -324,7 +266,7 @@ async function checkBuildsLeaderboard() {
   const head = () => h.query("#bboard-tbl thead tr").children;
   const headTexts = () => head().map(th => th.textContent.trim());
   const show = (data, st = {}) => {
-    Object.assign(bboard, { data, error: null, search: "", reviewedOnly: false, sortKey: "rank", sortDir: 1 }, st);
+    Object.assign(bboard, { data, error: null, search: "", sortKey: "rank", sortDir: 1 }, st);
     calls.length = 0;
     document.focusHistory.length = 0;
     renderLeaderboard();
@@ -334,28 +276,27 @@ async function checkBuildsLeaderboard() {
   assert.equal(element("builds-title").textContent, "Champion leaderboard, full build vs squishy");
   assert.deepEqual(headTexts(), ["# \u25b2", ...heads(squishy.scenario).slice(1)]);
   assert.deepEqual(texts(), [
-    ["1", "Ahriunreviewed", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "\u2014", "3,000", "16,001"],
+    ["1", "Ahri", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "\u2014", "3,000", "16,001"],
     ["2", "Kassadin", "Boots + Kassadin's item", "0.75s", "2.20s", "5.10s", "4,000", "3,000", "16,002"],
-    ["2", "Lee Sinunreviewed", "Boots + Lee Sin's item", "0.75s", "3.50s", "\u224817.3s", "4,000", "3,000", "16,002"],
+    ["2", "Lee Sin", "Boots + Lee Sin's item", "0.75s", "3.50s", "\u224817.3s", "4,000", "3,000", "16,002"],
     ["4", "Kayle", "Boots + Kayle's item", "1.07s", "2.76s", "4.46s", "2,804", "3,000", "16,004"],
   ]);
 
   const [ahri, , leesin, kayle] = body();
   assert.equal(ahri.children[3].title, INSTANT_TITLE);
-  assert.equal(ahri.children[1].children[2].title, UNREVIEWED_TITLE);
+  assert.equal(ahri.children[1].children.length, 2, "The champion cell is its icon and name, no tag");
   assert.equal(ahri.children[1].children[0].src, "https://cdn.communitydragon.org/latest/champion/ahri/square");
   assert.match(leesin.children[5].title, /^survives the 15s fight \(4,100 damage dealt\)/);
   assert.equal(kayle.children[3].title, "");
 
   const desc = element("scenario-desc").textContent;
   assert.match(desc, /^Level 16 \u00b7 target 2,800 HP, 110 armor, 60 MR, 8s fight \u00b7 ranked by expected kill time/);
-  assert.match(desc, /2 of 4 kits machine-written and unreviewed \u00b7 items patch 16\.18/);
+  assert.match(desc, /each champion with the best build of its own ranking \u00b7 items patch 16\.18/);
   assert.equal(element("bboard-status").textContent, "4 champions");
   assert.equal(element("bboard-failed").hidden, true);
 
   assert.deepEqual(body().map(tr => tr.className), ["", "", "", "sel"]);
   assert.deepEqual(plain(took("renderBreakdown")), [["renderBreakdown", plain(squishy.rows[3]), plain(squishy.scenario), "Kayle"]]);
-  assert.deepEqual(plain(took("renderGeneratedBanner")), [["renderGeneratedBanner", "bd-generated", "kayle"]]);
   assert.deepEqual(plain(took("renderPool")), [["renderPool", "kayle"]]);
 
   bstate.champion = "twitch";
@@ -375,7 +316,7 @@ async function checkBuildsLeaderboard() {
   show(overall);
   assert.equal(element("builds-title").textContent, "Champion leaderboard, full build \u2014 overall");
   assert.deepEqual(texts(), [
-    ["1", "Ahriunreviewed", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "0.00s instant", "16,001"],
+    ["1", "Ahri", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "0.00s instant", "16,001"],
     ["2", "Kayle", "Boots + Kayle's item", "1.21s", "2.50s", "4.21s", "2.34s", "16,002"],
   ]);
   assert.equal(body()[0].children[6].title, INSTANT_TITLE);
@@ -386,18 +327,14 @@ async function checkBuildsLeaderboard() {
   bstate.scenario = "full-squishy";
 
   show(squishy, { search: " LEE" });
-  assert.deepEqual(texts().map(r => r.slice(0, 2)), [["2", "Lee Sinunreviewed"]]);
+  assert.deepEqual(texts().map(r => r.slice(0, 2)), [["2", "Lee Sin"]]);
   assert.equal(element("bboard-status").textContent, "1 of 4 champions \u00b7 ranks are from the full board");
   show(squishy, { search: "lee sin" });
   assert.equal(body().length, 1);
-  show(squishy, { reviewedOnly: true });
-  assert.deepEqual(texts().map(r => r.slice(0, 2)), [["2", "Kassadin"], ["4", "Kayle"]]);
-  assert.equal(element("bboard-status").textContent, "2 of 4 champions \u00b7 ranks are from the full board");
   show(squishy, { search: "zzz" });
   assert.equal(body().length, 0);
   assert.equal(element("bboard-status").textContent, "No champion matches these filters.");
   assert.deepEqual(plain(took("clearBreakdown")), [["clearBreakdown"]]);
-  assert.equal(element("bd-generated").hidden, true);
   assert.deepEqual(plain(boardRows(null)), []);
 
   show(squishy);
@@ -406,11 +343,7 @@ async function checkBuildsLeaderboard() {
   assert.deepEqual(texts().map(r => r[1]), ["Kayle"]);
   element("bboard-search").value = "";
   await element("bboard-search").fire("input");
-  element("bboard-reviewed").checked = true;
-  await element("bboard-reviewed").fire("change");
-  assert.equal(body().length, 2);
-  element("bboard-reviewed").checked = false;
-  await element("bboard-reviewed").fire("change");
+  assert.equal(body().length, 4);
 
   const names = () => body().map(tr => tr.children[1].children[1].textContent);
   const ranks = () => body().map(tr => tr.children[0].textContent);
@@ -519,7 +452,7 @@ async function checkBuildsLeaderboard() {
 
   const savedOpenBuilds = context.openBuilds;
   context.openBuilds = () => {};
-  Object.assign(bboard, { search: "", reviewedOnly: false, sortKey: "rank", sortDir: 1 });
+  Object.assign(bboard, { search: "", sortKey: "rank", sortDir: 1 });
   realUpdateHash();
   assert.ok(!/lbs|lbd/.test(h.location.hash), `Ranked default adds no sort params: ${h.location.hash}`);
   for (const [sk, sd, lbs, lbd] of [["vs-tank", 1, "vs-tank", undefined], ["dps", -1, "dps", "d"], ["rank", -1, "rank", "d"]]) {
@@ -528,7 +461,7 @@ async function checkBuildsLeaderboard() {
     const written = h.location.hash;
     const parsed = Object.fromEntries(new URLSearchParams(written.slice(1)));
     assert.deepEqual([parsed.bview, parsed.lbs, parsed.lbd], ["leaderboard", lbs, lbd], written);
-    Object.assign(bboard, { search: "", reviewedOnly: false, sortKey: "rank", sortDir: 1 });
+    Object.assign(bboard, { search: "", sortKey: "rank", sortDir: 1 });
     h.location.hash = written;
     context.restoredHash = null;
     context.restoreHash();
@@ -584,7 +517,7 @@ async function checkBuildsLeaderboard() {
   assert.equal(element("builds-title").textContent, "Ahri \u2014 ranked builds");
   assert.equal(took("renderChampionPicker").length, 1);
   const hidden = ids => ids.map(id => element(id).hidden);
-  assert.deepEqual(hidden(["bboard", "builds-note-board", "bd-generated"]), [true, true, true]);
+  assert.deepEqual(hidden(["bboard", "builds-note-board"]), [true, true]);
   assert.deepEqual(hidden(["champion-seg", "btbl-wrap", "builds-note"]), [false, false, false]);
   assert.deepEqual(h.queryAll("#builds-mode-seg button").map(b => b.attributes["aria-pressed"]), ["true", "false"]);
 
@@ -594,7 +527,7 @@ async function checkBuildsLeaderboard() {
   calls.length = 0;
   h.timers.length = 0;
   setBuildsMode("leaderboard");
-  assert.deepEqual(hidden(["bboard", "champion-seg", "btbl-wrap", "champion-more", "builds-generated", "builds-note"]), [false, true, true, true, true, true]);
+  assert.deepEqual(hidden(["bboard", "champion-seg", "btbl-wrap", "builds-note"]), [false, true, true, true]);
   assert.equal(body().length, 4);
   assert.deepEqual(plain(took("api")), [["api", "api/builds/leaderboard/full-squishy.json"]]);
   assert.ok(h.queryAll("#scenario-seg button")[0].classList.contains("active"));
@@ -930,10 +863,10 @@ async function checkMatchups() {
   await checkChampionTabRemoved();
   checkOnetricks();
   checkBuildsItems();
-  await checkBuildsGenerated();
+  await checkBuildsPicker();
   await checkBuildsLeaderboard();
   await checkMatchups();
-  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, generated, leaderboard, matchups).`);
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, picker, leaderboard, matchups).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);

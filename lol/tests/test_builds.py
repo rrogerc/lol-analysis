@@ -919,8 +919,9 @@ class TestVladimirKit(unittest.TestCase):
         self.assertEqual(builds.kit_max_order(self.kit, "e,q,w"), ("E", "Q", "W"))
 
     def test_registered(self):
-        self.assertEqual(builds.kit_champions(), ["kassadin", "kayle", "twitch", "vladimir"])
         self.assertEqual(sorted(builds.KIT_DRIVERS), ["kassadin", "kayle", "twitch", "vladimir"])
+        # ranked alongside the reviewed generated kits (test_codegen's TestRegistry)
+        self.assertLessEqual(set(builds.KIT_DRIVERS), set(builds.kit_champions()))
 
     def test_own_health_ratios(self):
         # E at full charge, rank 5: 180 + 80% AP + 6% of OWN max health
@@ -1736,12 +1737,8 @@ class TestScenarioCache(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
-        # the hand-encoded champions only: the machine-written roster has its
-        # own enumeration test (test_codegen) and would make every warm
-        # here a hundred and seventy champions long
         for name, value in (("SCENARIO_CACHE_DIR", self.tmp),
-                            ("DEFAULT_POOL", self.TINY_POOL),
-                            ("SHOW_GENERATED", False)):
+                            ("DEFAULT_POOL", self.TINY_POOL)):
             patcher = mock.patch.object(builds, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1816,19 +1813,16 @@ class TestScenarioCache(unittest.TestCase):
         with mock.patch.object(builds, "SOURCE_HASH", "0" * 64):
             self.assertTrue(builds.source_stale())
         # the cells key on the engine's core (and this module), not on the
-        # machine-written drivers: a change to it reaches every cell ...
+        # generated drivers: a change to it reaches every cell ...
         with mock.patch.object(builds, "CORE_HASH", "0" * 64):
             other = builds.cell_paths()
         self.assertTrue(set(other.values()).isdisjoint(paths.values()))
-        # ... and a change to one machine-written driver only its champion's
-        if builds.GENERATED_HASHES:
-            slug = sorted(builds.GENERATED_HASHES)[0]
-            with mock.patch.object(builds, "SHOW_GENERATED", True):
-                roster = builds.cell_paths()
-                self.assertEqual({c: roster[c] for c in paths}, paths)  # the others' cells stay
-                with mock.patch.dict(builds.GENERATED_HASHES, {slug: "0" * 64}):
-                    other = builds.cell_paths()
-            self.assertEqual({c[0] for c in roster if other[c] != roster[c]}, {slug})
+        # ... and a change to one generated driver only its champion's
+        generated = sorted({slug for slug, _ in paths} & set(builds.GENERATED_HASHES))
+        if generated:
+            with mock.patch.dict(builds.GENERATED_HASHES, {generated[0]: "0" * 64}):
+                other = builds.cell_paths()
+            self.assertEqual({c[0] for c in paths if other[c] != paths[c]}, {generated[0]})
         # a target's change reaches every cell of its tier (they come from
         # the same pass, and the overall cell depends on all of them) and
         # no cell of any other tier; and the shipped cells don't care
@@ -2612,18 +2606,15 @@ def overall_row(times, mean):
 
 class TestLeaderboard(unittest.TestCase):
     """Ranking over cells written by hand: one champion a kit file."""
-    KITS = {"ahri": {"name": "Ahri", "generated": True, "reviewed": False},
-            "kayle": {"name": "Kayle"},
-            "garen": {"name": "Garen", "generated": True, "reviewed": True},
-            "zed": {"name": "Zed", "generated": True},
-            "annie": {"name": "Annie", "generated": True}}
+    KITS = {"ahri": {"name": "Ahri"}, "kayle": {"name": "Kayle"}, "garen": {"name": "Garen"},
+            "zed": {"name": "Zed"}, "annie": {"name": "Annie"}}
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
         self.paths = {(slug, key): os.path.join(self.tmp, f"{slug}-{key}-{'0' * 16}.json")
                       for slug in self.KITS for key in builds.SCENARIOS}
-        for name, value in (("damage_champions", lambda: list(self.KITS)),
+        for name, value in (("kit_champions", lambda: list(self.KITS)),
                             ("load_kit", lambda slug: self.KITS[slug]),
                             # nothing here may simulate
                             ("compute_tier", mock.Mock(side_effect=AssertionError)),
@@ -2665,17 +2656,14 @@ class TestLeaderboard(unittest.TestCase):
         self.assertEqual((d["readyCount"], d["expectedCount"]), (5, 5))
         self.assertEqual((d["pending"], d["failed"]), ([], []))
         kayle = d["rows"][1]
-        # the cell's top row, whole, with who it is and whether to trust it
+        # the cell's top row, whole, with who it is
         self.assertEqual(kayle["items"], ["Boots", "IE", "LDR"])
         self.assertEqual(kayle["buyOrder"], ["IE", "LDR"])
         self.assertEqual(kayle["vs"]["bruiser"]["ttkExp"], 9.0)
-        self.assertEqual((kayle["championName"], kayle["generated"], kayle["reviewed"]),
-                         ("Kayle", False, True))
+        self.assertEqual(kayle["championName"], "Kayle")
         self.assertEqual((kayle["kitPatch"], kayle["buildsEvaluated"]), ("16.18", 1234))
-        flags = {r["champion"]: (r["generated"], r["reviewed"]) for r in d["rows"]}
-        self.assertEqual(flags["ahri"], (True, False))
-        self.assertEqual(flags["zed"], (True, False))  # unreviewed unless it says so
-        self.assertEqual(flags["garen"], (True, True))
+        # nothing to flag: every champion on the board has a reviewed kit
+        self.assertFalse([r for r in d["rows"] if {"generated", "reviewed"} & set(r)])
         # the scenario is a cell's: the page reads its targets the same way
         self.assertEqual(d["scenario"]["key"], key)
         self.assertEqual([t["target"] for t in d["scenario"]["targets"]],
@@ -2700,15 +2688,14 @@ class TestLeaderboard(unittest.TestCase):
         key = "full-tank"
         self.write("kayle", key, [target_row(4.2)])
         self.write("zed", key, [target_row(3.1)])
-        # a machine-written driver that failed in the enumeration (builds.warm)
+        # a generated driver that failed in the enumeration (builds.warm)
         self.write("ahri", key, [], error="PanicException: index out of bounds")
         self.write("annie", key, [])
         d = self.board(key)  # garen's cell is cold
         self.assertEqual([r["champion"] for r in d["rows"]], ["zed", "kayle"])
         self.assertFalse(d["complete"])
         self.assertEqual((d["readyCount"], d["expectedCount"]), (4, 5))
-        self.assertEqual(d["pending"], [{"champion": "garen", "championName": "Garen",
-                                         "generated": True, "reviewed": True}])
+        self.assertEqual(d["pending"], [{"champion": "garen", "championName": "Garen"}])
         self.assertEqual([(f["champion"], f["error"]) for f in d["failed"]],
                          [("ahri", "PanicException: index out of bounds"),
                           ("annie", "no build was ranked")])
@@ -2774,20 +2761,19 @@ class TestLeaderboard(unittest.TestCase):
 
 
 class TestRealCells(unittest.TestCase):
-    """End to end on cells builds.compute_tier writes: the hand-encoded
-    champions on a tiny pool, in a temp cache."""
+    """End to end on cells builds.compute_tier writes: every ranked champion
+    on a tiny pool, in a temp cache."""
     TINY_POOL = [3089, 3135, 4645, 6653, 4633, 3115, 3042]  # test_builds' pool
 
     def test_board_of_computed_cells(self):
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp)
-        for name, value in (("SCENARIO_CACHE_DIR", tmp), ("DEFAULT_POOL", self.TINY_POOL),
-                            ("SHOW_GENERATED", False)):
+        for name, value in (("SCENARIO_CACHE_DIR", tmp), ("DEFAULT_POOL", self.TINY_POOL)):
             patcher = mock.patch.object(builds, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
         paths = builds.cell_paths()
-        champions = builds.damage_champions()
+        champions = builds.kit_champions()
         self.assertGreaterEqual(len(champions), 4)
         cells = {}
         for slug in champions[1:]:
@@ -2804,7 +2790,6 @@ class TestRealCells(unittest.TestCase):
                 self.assertEqual(top["rank"], 1)
                 for field in ("items", "buyOrder", "gold", "vs"):
                     self.assertEqual(row[field], top[field], (key, row["champion"], field))
-                self.assertEqual((row["generated"], row["reviewed"]), (False, True))
             # best first on the scenario's own metric, as the cells rank builds
             if sc.get("overall"):
                 keys = [(len(r["vs"]) - r["kills"], r["mean"]) for r in d["rows"]]
