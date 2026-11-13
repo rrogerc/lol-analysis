@@ -54,8 +54,8 @@ The sources for champion `<slug>` are in `lol/data/builds/sources/<patch>/<slug>
   primitives (for `top.json`).
 
 Do NOT read `lol/data/builds/kits/<slug>.json` or any other kit file, anything
-under `lol/engine/`, `lol/builds.py`, `lol/tests/test_builds.py`, `README.md`,
-`CLAUDE.md`, or other champions' dossiers, and do not use the web. This run
+under `lol/engine/`, `lol/builds.py`, `lol/tests/test_builds.py`, `AGENTS.md`,
+or other champions' dossiers, and do not use the web. This run
 measures what can be derived from the archived sources alone; if your context
 already contains notes about this champion, do not rely on them. Do not edit
 any file except the six part files of your champion.

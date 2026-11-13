@@ -306,7 +306,7 @@ def _run_build(args, slugs):
     if not slugs:
         raise SystemExit("name champions, or use `build-all`")
     t0 = time.time()
-    cwd = tempfile.mkdtemp(prefix="kit-dossier-")  # no CLAUDE.md anywhere above it
+    cwd = tempfile.mkdtemp(prefix="kit-dossier-")  # no AGENTS.md or CLAUDE.md anywhere above it
     futures, skipped = [], []
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
