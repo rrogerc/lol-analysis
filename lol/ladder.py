@@ -438,7 +438,8 @@ def cmd_import_soloq(args, crawl=None):
         import pyarrow.compute as pc
         import pyarrow.dataset as pads
     except ModuleNotFoundError:
-        sys.exit("pyarrow is required for import-soloq: pip install pyarrow")
+        sys.exit("pyarrow is required to read lol-quant parquet; it is missing from this Python "
+                 "(the system environment is defined in dotfiles nixos/python-env.nix)")
 
     if not args.tier:
         args.tier = ("soloq_otp" if args.otp_share else
@@ -741,7 +742,8 @@ def count(quant_dir, players):
         import pyarrow.acero as ac
         import pyarrow.compute as pc
     except ModuleNotFoundError:
-        sys.exit("pyarrow is required for onetricks sync: pip install pyarrow")
+        sys.exit("pyarrow is required for onetricks sync; it is missing from this Python "
+                 "(the system environment is defined in dotfiles nixos/python-env.nix)")
 
     snapshot = crawl_snapshot(quant_dir)
 
