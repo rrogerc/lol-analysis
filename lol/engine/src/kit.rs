@@ -3,6 +3,7 @@
 //! demands what its rotation needs when it is built.
 
 use std::collections::HashMap;
+use std::hash::{BuildHasherDefault, Hasher};
 
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -165,6 +166,58 @@ impl DriverId {
     }
 }
 
+/// FxHash, rustc's own hasher: a rotate, an xor and a multiply per 8 bytes.
+/// The generated drivers probe the kit's path maps in `Driver::new`, which
+/// runs once per boots class, tens of millions of times an enumeration, so
+/// the hash has to be cheap. The keys are the kit's own paths, so SipHash's
+/// flooding resistance bought nothing here.
+#[derive(Clone, Copy, Default)]
+pub struct FxHasher {
+    hash: u64,
+}
+
+impl FxHasher {
+    #[inline]
+    fn add(&mut self, word: u64) {
+        self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+}
+
+impl Hasher for FxHasher {
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        let mut words = bytes.chunks_exact(8);
+        for w in &mut words {
+            self.add(u64::from_le_bytes(w.try_into().unwrap()));
+        }
+        let tail = words.remainder();
+        if !tail.is_empty() {
+            let mut w = [0u8; 8];
+            w[..tail.len()].copy_from_slice(tail);
+            // the tail's length rides above its bytes, so zero padding can't
+            // make two tails hash alike
+            self.add(u64::from_le_bytes(w) | ((tail.len() as u64) << 56));
+        }
+    }
+
+    #[inline]
+    fn write_u8(&mut self, i: u8) {
+        self.add(i as u64);
+    }
+
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.hash
+    }
+}
+
+/// A map keyed by dotted kit path.
+pub type PathMap<V> = HashMap<String, V, BuildHasherDefault<FxHasher>>;
+
+/// The fields of a damage block (see `Kit::hit`).
+const DAMAGE_FIELDS: [&str; 7] = ["base", "apRatio", "adRatio", "bonusAdRatio", "maxHpRatio",
+                                  "bonusHpRatio", "maxManaRatio"];
+
 /// One leaf of a kit encoding, for the generated drivers: they read the kit
 /// by dotted path ("abilities.Q.damage.base") instead of through typed
 /// fields, so a new champion adds no parsing code.
@@ -176,7 +229,7 @@ pub enum KitValue {
     Flag(bool),
 }
 
-fn flatten(prefix: &str, v: &Bound<'_, PyAny>, out: &mut HashMap<String, KitValue>) -> PyResult<()> {
+fn flatten(prefix: &str, v: &Bound<'_, PyAny>, out: &mut PathMap<KitValue>) -> PyResult<()> {
     if let Ok(d) = v.cast::<PyDict>() {
         for (k, item) in d.iter() {
             let key: String = k.extract()?;
@@ -199,10 +252,50 @@ fn flatten(prefix: &str, v: &Bound<'_, PyAny>, out: &mut HashMap<String, KitValu
     Ok(())
 }
 
+/// Every damage block of a flattened kit by its path: each path with at
+/// least one of `DAMAGE_FIELDS` directly under it.
+fn damage_blocks(values: &PathMap<KitValue>) -> PathMap<DamageSpec> {
+    let mut out = PathMap::default();
+    for key in values.keys() {
+        let Some((path, field)) = key.rsplit_once('.') else { continue };
+        if DAMAGE_FIELDS.contains(&field) && !out.contains_key(path) {
+            out.insert(path.to_string(), damage_block(values, path));
+        }
+    }
+    out
+}
+
+/// The block at `path`: a missing `base` is 0, a `base` shorter than six
+/// ranks repeats its last entry, and a ratio that isn't a number is absent.
+fn damage_block(values: &PathMap<KitValue>, path: &str) -> DamageSpec {
+    let num = |field: &str| match values.get(&format!("{path}.{field}")) {
+        Some(KitValue::Num(x)) => Some(*x),
+        _ => None,
+    };
+    let mut base = match values.get(&format!("{path}.base")) {
+        Some(KitValue::List(xs)) => xs.clone(),
+        Some(KitValue::Num(x)) => vec![*x],
+        _ => vec![0.0],
+    };
+    let last = *base.last().unwrap_or(&0.0);
+    base.resize(base.len().max(6), last);
+    DamageSpec {
+        base,
+        bonus_ad_ratio: num("bonusAdRatio").unwrap_or(0.0),
+        ad_ratio: num("adRatio").unwrap_or(0.0),
+        ap_ratio: num("apRatio").unwrap_or(0.0),
+        max_hp_ratio: num("maxHpRatio"),
+        bonus_hp_ratio: num("bonusHpRatio"),
+        max_mana_ratio: num("maxManaRatio"),
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Kit {
     /// Every leaf of the encoding by dotted path (see `KitValue`).
-    pub values: HashMap<String, KitValue>,
+    pub values: PathMap<KitValue>,
+    /// Every damage block of the encoding, parsed once here (`Kit::hit`).
+    damages: PathMap<DamageSpec>,
     pub champion: String,
     pub driver: Option<DriverId>,
     pub attack_never: bool,
@@ -402,9 +495,10 @@ impl Kit {
         }
         let abilities = reqd(d, "abilities")?;
         let champion = reqs(d, "champion")?;
-        let mut values = HashMap::new();
+        let mut values = PathMap::default();
         flatten("", d.as_any(), &mut values)?;
         Ok(Kit {
+            damages: damage_blocks(&values),
             values,
             driver: DriverId::of(&champion),
             champion,
@@ -425,7 +519,10 @@ impl Kit {
 }
 
 /// The generated drivers' view of a kit: values by dotted path, with errors
-/// that name the path. All of it runs in `Driver::new`, never inside a fight.
+/// that name the path. All of it runs in `Driver::new`, never inside a fight,
+/// but the enumerator builds a driver once per boots class, so each read is
+/// one hash probe with no path formatting and no copying beyond the Vec that
+/// `list` returns.
 impl Kit {
     pub fn has(&self, path: &str) -> bool {
         self.values.contains_key(path)
@@ -459,7 +556,12 @@ impl Kit {
     /// entry stands for any rank past its end), a number is the same at every
     /// rank. Rank 0 (the ability is not learned) reads 0.
     pub fn at_rank(&self, path: &str, rank: i64) -> Result<f64, String> {
-        let xs = self.list(path)?;
+        let xs: &[f64] = match self.values.get(path) {
+            Some(KitValue::List(xs)) => xs,
+            Some(KitValue::Num(x)) => std::slice::from_ref(x),
+            Some(other) => return Err(format!("kit value {path} is {other:?}, not a list")),
+            None => return Err(format!("kit has no value {path}")),
+        };
         if rank <= 0 || xs.is_empty() {
             return Ok(0.0);
         }
@@ -483,37 +585,61 @@ impl Kit {
         }
     }
 
-    /// The damage block at `path` evaluated at an ability rank on a sheet:
-    /// `damage(path)?.hit(rank, sheet)`, and 0 for an ability not learned.
+    /// The damage block at `path` evaluated at an ability rank on a sheet, and
+    /// 0 for an ability not learned. A block is the `{base, apRatio, adRatio,
+    /// bonusAdRatio, maxHpRatio, bonusHpRatio, maxManaRatio}` under `path`
+    /// (see `damage_block`): the three health and mana ratios are PERCENT of
+    /// the caster's own stat, the others are fractions.
     pub fn hit(&self, path: &str, rank: i64, sheet: &crate::sheet::Sheet) -> Result<f64, String> {
         if rank <= 0 {
             return Ok(0.0);
         }
-        Ok(self.damage(path)?.hit(rank, sheet))
+        match self.damages.get(path) {
+            Some(d) => Ok(d.hit(rank, sheet)),
+            None => Err(format!("kit has no damage block {path}")),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn values(leaves: &[(&str, KitValue)]) -> PathMap<KitValue> {
+        leaves.iter().map(|(k, v)| (k.to_string(), v.clone())).collect()
     }
 
-    /// The `{base, apRatio, adRatio, bonusAdRatio, maxHpRatio, bonusHpRatio,
-    /// maxManaRatio}` block at `path` as a `DamageSpec` (`hit(rank, sheet)`
-    /// evaluates it; the three health and mana ratios are PERCENT of the
-    /// caster's own stat, the others are fractions). A missing `base` is 0.
-    pub fn damage(&self, path: &str) -> Result<DamageSpec, String> {
-        let known = ["base", "apRatio", "adRatio", "bonusAdRatio", "maxHpRatio", "bonusHpRatio",
-                     "maxManaRatio"];
-        if !known.iter().any(|k| self.has(&format!("{path}.{k}"))) {
-            return Err(format!("kit has no damage block {path}"));
-        }
-        let mut base = self.list(&format!("{path}.base")).unwrap_or_else(|_| vec![0.0]);
-        let last = *base.last().unwrap_or(&0.0);
-        base.resize(base.len().max(6), last);
-        let opt = |k: &str| self.num(&format!("{path}.{k}")).ok();
-        Ok(DamageSpec {
-            base,
-            bonus_ad_ratio: opt("bonusAdRatio").unwrap_or(0.0),
-            ad_ratio: opt("adRatio").unwrap_or(0.0),
-            ap_ratio: opt("apRatio").unwrap_or(0.0),
-            max_hp_ratio: opt("maxHpRatio"),
-            bonus_hp_ratio: opt("bonusHpRatio"),
-            max_mana_ratio: opt("maxManaRatio"),
-        })
+    #[test]
+    fn damage_blocks_are_the_paths_with_a_damage_field_under_them() {
+        let v = values(&[
+            ("gen.W.damage.base", KitValue::List(vec![30.0, 55.0])),
+            ("gen.W.damage.note", KitValue::Text("not a field".into())),
+            ("gen.P.burst.apRatio", KitValue::Num(0.1)),
+            ("gen.P.burst.byLevel.base", KitValue::Num(5.0)),
+            ("gen.Q.cooldownS", KitValue::List(vec![10.0, 9.0])),
+            ("base", KitValue::Num(1.0)),
+        ]);
+        let mut paths: Vec<String> = damage_blocks(&v).into_keys().collect();
+        paths.sort_unstable();
+        assert_eq!(paths, ["gen.P.burst", "gen.P.burst.byLevel", "gen.W.damage"]);
+    }
+
+    #[test]
+    fn damage_block_pads_base_and_reads_only_numeric_ratios() {
+        let v = values(&[
+            ("w.base", KitValue::List(vec![30.0, 55.0, 80.0])),
+            ("w.apRatio", KitValue::Num(0.45)),
+            ("w.maxHpRatio", KitValue::Num(2.0)),
+            ("w.adRatio", KitValue::List(vec![1.0])),
+            ("p.base", KitValue::Num(12.0)),
+            ("e.bonusAdRatio", KitValue::Num(0.6)),
+        ]);
+        let w = damage_block(&v, "w");
+        assert_eq!(w.base, [30.0, 55.0, 80.0, 80.0, 80.0, 80.0]);
+        assert_eq!((w.ap_ratio, w.ad_ratio, w.bonus_ad_ratio), (0.45, 0.0, 0.0));
+        assert_eq!((w.max_hp_ratio, w.bonus_hp_ratio, w.max_mana_ratio), (Some(2.0), None, None));
+        assert_eq!(damage_block(&v, "p").base, [12.0; 6]);
+        let e = damage_block(&v, "e");
+        assert_eq!((e.base, e.bonus_ad_ratio), (vec![0.0; 6], 0.6));
     }
 }
