@@ -100,6 +100,31 @@ async function loadStatus() {
   return bstate.status;
 }
 
+// A scenario's build size, boots aside: five items, or six in the tier the
+// "6 items + boots" toggle switches to (builds.py SCENARIOS: `slots` counts
+// the boots, and a scenario that doesn't say is the usual six).
+const scenarioItems = sc => (sc?.slots ?? 6) - 1;
+const ITEM_COUNT_WORDS = { 5: "five", 6: "six" };
+const selectedScenario = () => bstate.meta?.scenarios?.find(s => s.key === bstate.scenario);
+
+// The scenario buttons of the selected scenario's build size, the selected one
+// lit, with the toggle and the wording that follow that size.
+function markScenario() {
+  const scenarios = bstate.meta?.scenarios || [];
+  const byKey = new Map(scenarios.map(s => [s.key, s]));
+  const items = scenarioItems(selectedScenario());
+  document.querySelectorAll("#scenario-seg button").forEach(b => {
+    b.classList.toggle("active", b.dataset.key === bstate.scenario);
+    b.hidden = scenarioItems(byKey.get(b.dataset.key)) !== items;
+  });
+  document.getElementById("builds-six").checked = items === 6;
+  // a serve older than the six-item tier has nothing to switch to
+  document.getElementById("builds-six-toggle").hidden = !scenarios.some(s => scenarioItems(s) === 6);
+  document.querySelectorAll("#view-builds .build-size").forEach(el => {
+    el.textContent = ITEM_COUNT_WORDS[items] || String(items);
+  });
+}
+
 // Dim the scenario buttons whose cell isn't computed for the selected champion
 // (the leaderboard says how many champions it is still waiting for instead).
 function markCold() {
@@ -124,6 +149,11 @@ function clearBuilds() {
   clearBreakdown();
 }
 
+// The champion view's heading: who, and under which scenario once one is picked.
+function buildsTitle(name, label) {
+  return `${name} — ranked builds` + (label ? `, ${label.toLowerCase()}` : "");
+}
+
 async function loadScenario() {
   if (!bstate.champion) {
     document.getElementById("builds-note").textContent =
@@ -132,12 +162,15 @@ async function loadScenario() {
   }
   document.querySelectorAll("#champion-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.champion));
-  document.querySelectorAll("#scenario-seg button").forEach(b =>
-    b.classList.toggle("active", b.dataset.key === bstate.scenario));
+  markScenario();
   markCold();
   updateHash();
   const req = ++bstate.req;  // a newer click supersedes this load
   clearTimeout(bstate.timer);
+  // what is selected, whether or not its cell is computed yet
+  const champ = bstate.meta?.champions?.find(c => c.slug === bstate.champion);
+  document.getElementById("builds-title").textContent =
+    buildsTitle(champ?.name || bstate.champion, selectedScenario()?.label);
   const desc = document.getElementById("scenario-desc");
   desc.textContent = "Loading…";
   let d;
@@ -165,7 +198,7 @@ async function loadScenario() {
   bstate.sel = 0;
   const sc = d.scenario, rk = d.ranks;
   document.getElementById("builds-title").textContent =
-    `${d.championName || d.champion} — ranked builds, ${sc.label.toLowerCase()}`;
+    buildsTitle(d.championName || d.champion, sc.label);
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
@@ -496,8 +529,7 @@ function setBuildsMode(mode) {
     if (bstate.data?.champion !== bstate.champion || bstate.data?.scenario?.key !== bstate.scenario)
       clearBuilds();
     const champ = bstate.meta.champions.find(c => c.slug === bstate.champion);
-    document.getElementById("builds-title").textContent =
-      `${champ?.name || bstate.champion} — ranked builds`;
+    document.getElementById("builds-title").textContent = buildsTitle(champ?.name || bstate.champion);
   }
   renderBuildsMode();
   loadBuildsView();  // the board renders what it holds before it asks again
@@ -740,8 +772,7 @@ function renderLeaderboard() {
 async function loadLeaderboard() {
   const key = bstate.scenario, req = ++bstate.req;  // a newer click supersedes this load
   clearTimeout(bstate.timer);
-  document.querySelectorAll("#scenario-seg button").forEach(b =>
-    b.classList.toggle("active", b.dataset.key === key));
+  markScenario();
   markCold();
   updateHash();
   if (bboard.data?.scenario?.key !== key) bboard.data = null;  // another scenario's board
@@ -767,6 +798,16 @@ async function loadLeaderboard() {
 
 document.querySelectorAll("#builds-mode-seg button").forEach(b =>
   b.addEventListener("click", () => setBuildsMode(b.dataset.key)));
+// The same fight at the other build size: the scenario is what changes, so
+// the buttons, the cell or board and the URL all follow it.
+document.getElementById("builds-six").addEventListener("change", e => {
+  const sc = selectedScenario(), items = e.target.checked ? 6 : 5;
+  const twin = bstate.meta?.scenarios?.find(s => scenarioItems(s) === items &&
+    s.target === sc?.target && !!s.overall === !!sc?.overall);
+  if (!twin) { markScenario(); return; }  // nothing to switch to: the box goes back
+  bstate.scenario = twin.key;
+  loadBuildsView();
+});
 document.getElementById("bboard-search").addEventListener("input", e => {
   bboard.search = e.target.value; renderLeaderboard(); updateHash();
 });

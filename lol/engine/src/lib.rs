@@ -106,5 +106,7 @@ fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
         }
     }
     m.add("GENERATED_HASHES", generated)?;
+    // the layout of the bounds table builds.py shares with `Ctx.run_block`
+    m.add("BOUNDS_WIDTH", enumerate::WIDTH)?;
     Ok(())
 }

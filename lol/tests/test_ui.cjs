@@ -132,6 +132,133 @@ async function checkBuildsPicker() {
   ++passedSuites;
 }
 
+async function checkBuildsSixItems() {
+  // "6 items + boots": the scenario buttons show one build size at a time, and
+  // the toggle swaps the selected scenario for the same fight at the other size.
+  assert(INDEX_HTML.includes('id="builds-six"'), "The page has the toggle");
+  assert(STYLES_CSS.includes("#builds-six-toggle[hidden] { display: none; }"), "The hidden toggle, a flex box, is hidden by its own rule");
+  const full = [
+    { key: "full-squishy", label: "Full build vs squishy", tier: "full", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 8 },
+    { key: "full-tank", label: "Full build vs tank", tier: "full", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 15 },
+    { key: "full-overall", label: "Full build: overall", tier: "full", overall: true },
+  ];
+  const six = full.map(sc => ({
+    ...sc, key: sc.key.replace("full", "six"), tier: "six", slots: 7,
+    label: sc.label.replace("Full build", "Six-item build"),
+  }));
+  const keys = scenarios => scenarios.map(sc => sc.key);
+  const flush = () => new Promise(setImmediate);
+
+  const open = async scenarios => {
+    const requests = [], cold = new Set();  // cold: cells that aren't computed yet
+    const h = loadDashboard({
+      manualTimers: true,
+      api: async url => {
+        requests.push(url);
+        if (url === "api/builds/meta.json") {
+          return {
+            champions: [{ slug: "kayle", name: "Kayle", pool: [] }], scenarios,
+            pool: [], boots: [], excluded: [], items: [], itemsPatch: "16.23", note: "Theoretical damage model.",
+          };
+        }
+        if (url === "api/builds/status.json") return { ready: {}, warmer: "idle" };
+        const [, board, key] = /^api\/builds\/(leaderboard|kayle)\/(.+)\.json$/.exec(url);
+        if (board === "kayle" && cold.has(key)) return { pending: true };
+        const scenario = { ...scenarios.find(sc => sc.key === key), level: 16, targets: [] };
+        return board === "leaderboard"
+          ? { scenario, rows: [], complete: true, expectedCount: 0, readyCount: 0, pending: [], failed: [] }
+          : { champion: "kayle", championName: "Kayle", scenario, ranks: { Q: 5, W: 3, E: 5, R: 2 }, rows: [],
+              buildsEvaluated: 0, itemsPatch: "16.23", kitPatch: "16.16" };
+      },
+    });
+    h.context.META = { tiers: ["soloq_masters_plus"], defaultTier: "soloq_masters_plus", platforms: [] };
+    h.context.state.view = "builds";
+    h.context.state.tier = "soloq_masters_plus";
+    await h.context.openBuilds();
+    await flush();
+    const buttons = () => h.queryAll("#scenario-seg button");
+    return {
+      h, requests, cold, toggle: h.element("builds-six"),
+      shown: () => buttons().filter(b => !b.hidden).map(b => b.dataset.key),
+      active: () => buttons().filter(b => b.classList.contains("active")).map(b => b.dataset.key),
+      sizes: () => h.queryAll("#view-builds .build-size").map(el => el.textContent),
+      tick: async function (on) { this.toggle.checked = on; await this.toggle.fire("change"); await flush(); },
+    };
+  };
+
+  const d = await open([...full, ...six]);
+  const { h, requests, toggle } = d;
+  const { bstate } = h.context;
+  assert.equal(d.sizes().length, 2, "The leaderboard's note and the item pool's both state the build size");
+  assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys([...full, ...six]));
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-squishy", keys(full), ["full-squishy"]],
+    "Five items is the default, and only its scenarios are offered");
+  assert.deepEqual([toggle.checked, h.element("builds-six-toggle").hidden, d.sizes()], [false, false, ["five", "five"]]);
+
+  requests.length = 0;
+  await d.tick(true);
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["six-squishy", keys(six), ["six-squishy"]],
+    "Ticking it opens the same target's six-item scenario");
+  assert.deepEqual(requests, ["api/builds/kayle/six-squishy.json"]);
+  assert.deepEqual([toggle.checked, d.sizes()], [true, ["six", "six"]]);
+  assert.equal(h.element("builds-title").textContent, "Kayle — ranked builds, six-item build vs squishy");
+  assert.match(h.location.hash, /(^|&)sc=six-squishy(&|$)/, "The URL carries the scenario, and with it the toggle");
+
+  // a six-item cell that is still warming: the heading names it all the same,
+  // and the note says why the table is empty
+  const pick = async key => {
+    await h.queryAll("#scenario-seg button").find(b => b.dataset.key === key).fire("click");
+    await flush();
+  };
+  d.cold.add("six-tank");
+  await pick("six-tank");
+  assert.equal(h.element("builds-title").textContent, "Kayle — ranked builds, six-item build vs tank");
+  assert.match(h.element("scenario-desc").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
+  assert.equal(h.query("#btbl tbody").children.length, 0);
+  d.cold.clear();
+
+  // a scenario picked while it is ticked is a six-item one, and unticking
+  // goes back to the same fight with five
+  await pick("six-overall");
+  assert.deepEqual([bstate.scenario, d.active(), toggle.checked], ["six-overall", ["six-overall"], true]);
+  requests.length = 0;
+  await d.tick(false);
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-overall", keys(full), ["full-overall"]]);
+  assert.deepEqual(requests, ["api/builds/kayle/full-overall.json"]);
+  assert.deepEqual([toggle.checked, d.sizes()], [false, ["five", "five"]]);
+
+  // the leaderboard follows the toggle the same way
+  h.context.setBuildsMode("leaderboard");
+  await flush();
+  requests.length = 0;
+  await d.tick(true);
+  assert.deepEqual([bstate.scenario, d.shown()], ["six-overall", keys(six)]);
+  assert.deepEqual(requests, ["api/builds/leaderboard/six-overall.json"]);
+  assert.equal(h.element("builds-title").textContent, "Champion leaderboard, six-item build: overall");
+  assert.deepEqual(d.sizes(), ["six", "six"]);
+  h.context.setBuildsMode("champion");
+  await flush();
+
+  // a link, or Back, restores the build size with the scenario
+  for (const [key, on, shown] of [["full-tank", false, full], ["six-tank", true, six]]) {
+    h.location.hash = `#tab=builds&tier=soloq_masters_plus&champ=kayle&sc=${key}`;
+    h.context.restoredHash = null;
+    h.context.restoreHash();
+    await flush();
+    assert.deepEqual([bstate.scenario, toggle.checked, d.shown(), d.active()], [key, on, keys(shown), [key]], key);
+  }
+
+  // a serve older than the six-item tier lists none: nothing to switch to
+  const old = await open(full);
+  assert.equal(old.h.element("builds-six-toggle").hidden, true);
+  assert.deepEqual([old.shown(), old.toggle.checked, old.sizes()], [keys(full), false, ["five", "five"]]);
+  old.requests.length = 0;
+  await old.tick(true);
+  assert.deepEqual([old.h.context.bstate.scenario, old.toggle.checked, old.requests], ["full-squishy", false, []],
+    "Without a six-item twin the box goes back and nothing loads");
+  ++passedSuites;
+}
+
 async function checkBuildsLeaderboard() {
   const calls = [];
   const log = name => (...args) => { calls.push([name, ...args]); };
@@ -864,9 +991,10 @@ async function checkMatchups() {
   checkOnetricks();
   checkBuildsItems();
   await checkBuildsPicker();
+  await checkBuildsSixItems();
   await checkBuildsLeaderboard();
   await checkMatchups();
-  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, picker, leaderboard, matchups).`);
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, picker, six-items, leaderboard, matchups).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);

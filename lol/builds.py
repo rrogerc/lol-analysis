@@ -782,13 +782,17 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # web API: the preset scenarios the dashboard shows
 # ---------------------------------------------------------------------------
 
-# A tier is one level/budget preset (a budget caps the build's gold and lets
-# it be smaller than six items). Its targets are simulated together: one
-# enumeration pass scores every build against each of them, which fills the
-# per-target cells and, at no extra cost, the tier's "overall" cell, which
-# ranks every build on all of the targets at once (see overall_key). Only the
-# full-build tier ships; the mid-game and first-item presets were dropped.
+# A tier is one preset of level, budget and build size (a budget caps the
+# build's gold and lets it leave slots empty). Its targets are simulated
+# together: one enumeration pass scores every build against each of them,
+# which fills the per-target cells and, at no extra cost, the tier's
+# "overall" cell, which ranks every build on all of the targets at once (see
+# overall_key). Two tiers ship, the full build and the six-item build below;
+# the mid-game and first-item presets were dropped.
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
+# slots: the build's size, boots included (DEFAULT_SLOTS where a scenario
+# doesn't say)
+DEFAULT_SLOTS = 6  # boots and five items: the inventory as it comes
 SCENARIOS = {
     "full-squishy": dict(label="Full build vs squishy", tier="full",
                          target="squishy", level=16, targetHp=2800, armor=110,
@@ -802,6 +806,14 @@ SCENARIOS = {
     "full-overall": dict(label="Full build: overall", tier="full",
                          overall=True, level=16),
 }
+# The six-item tier: every full-build scenario again with one more slot, the
+# same level and targets. The bot-lane role quest gives boots a slot of their
+# own, so a marksman ends the game on boots and six items.
+SCENARIOS.update({
+    "six-" + key.removeprefix("full-"): dict(
+        sc, tier="six", slots=DEFAULT_SLOTS + 1,
+        label=sc["label"].replace("Full build", "Six-item build"))
+    for key, sc in SCENARIOS.items()})
 
 
 def tier_scenarios(tier):
@@ -814,13 +826,19 @@ def tier_targets(tier):
     return [k for k in tier_scenarios(tier) if not SCENARIOS[k].get("overall")]
 
 
+def tier_slots(tier):
+    """The size of a tier's builds, boots included."""
+    return SCENARIOS[tier_scenarios(tier)[0]].get("slots", DEFAULT_SLOTS)
+
+
 def tiers():
     """Tier keys cheapest first: budget presets before full builds (they
-    reject nearly every combination before simulating it), shorter total
-    fight length first."""
+    reject nearly every combination before simulating it), smaller builds
+    before larger ones (a sixth item is twelve times the combinations),
+    shorter total fight length first."""
     def cost(tier):
         ts = tier_targets(tier)
-        return (SCENARIOS[ts[0]].get("budget") is None,
+        return (SCENARIOS[ts[0]].get("budget") is None, tier_slots(tier),
                 sum(SCENARIOS[k]["duration"] for k in ts))
     return sorted(dict.fromkeys(sc["tier"] for sc in SCENARIOS.values()),
                   key=cost)
@@ -1001,7 +1019,8 @@ def cells():
     cells of a tier sit side by side. The full-build tier ranks ~130M
     builds against each of its targets (three to five fights per item
     combination and target: boots that fight alike share one, and most
-    fights stop early once the build can't place)."""
+    fights stop early once the build can't place); the six-item tier about
+    twelve times as many, in about twelve times as long."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -1171,12 +1190,13 @@ def _fight_row(r, duration, best):
 # ---------------------------------------------------------------------------
 
 BUY_ORDER_ROWS = 10  # rows per cell that get one; the rest keep pool order
-# Owning k of a build's five items (boots are bought early, so every stage
-# has them), the champion fights at BUY_STAGE_LEVELS[k]: the first item
-# lands around level 9 and the second around 11, where the dropped
-# first-item (4.5k gold) and mid-game (7.5k) presets put them, then two
-# levels an item.
-BUY_STAGE_LEVELS = (7, 9, 11, 13, 15)
+# Owning k of a build's items (boots are bought early, so every stage has
+# them), the champion fights at BUY_STAGE_LEVELS[k], or at the scenario's
+# level where that is lower: the first item lands around level 9 and the
+# second around 11, where the dropped first-item (4.5k gold) and mid-game
+# (7.5k) presets put them, then two levels an item. One entry per item of
+# the largest tier: a six-item build's last stage owns five.
+BUY_STAGE_LEVELS = (7, 9, 11, 13, 15, 17)
 # The targets grow into the full-build dummies meanwhile. Up to
 # BUY_EARLY_LEVEL they keep these shares of their full stats (the dropped
 # first-item target's 1,900 HP / 50 armor / 40 MR against today's squishy
@@ -1238,8 +1258,8 @@ def buy_order(items, times, cost, first=(), not_first=()):
     partial builds kill fastest along the way, each stage's kill time
     weighted by the gold of the item bought next, which is how long that
     stage lasts. `times` maps each owned subset to its stage's kill time
-    (None: no damage). Five items have 120 orders, and every one is scored;
-    ties keep pool order."""
+    (None: no damage). Five items have 120 orders and six have 720, and
+    every one is scored; ties keep pool order."""
     lead = [i for i in items if i in first]
     rest = [i for i in items if i not in first]
     orders = [a + b for a in itertools.permutations(lead)
@@ -1300,8 +1320,8 @@ def compute_tier(slug, tier, paths, log=None):
     ranks = skill_ranks(level, kit_max_order(kit))
     lists, count = enumerate_builds(
         champ, pool, effects, kit, level, ranks, targets, budget=budget,
-        candidates=champion_pool(kit, effects), overall=overall,
-        seeds=cached_builds(slug, pool), log=log, patch=patch)
+        slots=tier_slots(tier), candidates=champion_pool(kit, effects),
+        overall=overall, seeds=cached_builds(slug, pool), log=log, patch=patch)
     secs = round(time.time() - t0, 1)
     # each target's best kill time, for the loss column: the top of the
     # target's own list is its fastest kill whenever anything kills at all
@@ -1798,7 +1818,7 @@ def boots_classes(pool, effects, boots=None, ignores=ENGINE_IGNORES):
     """Group boots whose damage-relevant stats and modeled effects are
     identical: a list of member lists, in BOOTS order. Stat resolution sums
     each item's contributions, so two such boots give the same sheet, and
-    the same fight, alongside any other five items: the enumerator simulates
+    the same fight, alongside any other items: the enumerator simulates
     each class once per item combination and ranks every member with the
     result (Mercury's Treads, Plated Steelcaps and Gluttonous Greaves are
     one class; Swiftness moves faster, Lucidity casts faster). `ignores`
@@ -1899,7 +1919,11 @@ class _Bounds:
     mean at that count, the keep-th row's ids]; builds that leave the same
     targets standing all tie on the overall key, so the ids that break ties
     travel too. A list that isn't full yet bounds nothing."""
-    WIDTH = 8  # two values and a bound, or two values and up to six ids
+    # Two values and a bound, or two values and a build's ids. The engine
+    # reads the table through its address, so the width is the engine's: room
+    # for the largest build it holds (an engine built before it exported the
+    # constant had 8, room for six ids).
+    WIDTH = getattr(lol_engine, "BOUNDS_WIDTH", 8)
 
     def __init__(self, keys, overall, table):
         self.keys, self.overall, self.table = list(keys), overall, table
@@ -1927,7 +1951,7 @@ class _Bounds:
                 continue
             thr, ids = lst[keep - 1][0], lst[keep - 1][1]
             if k == self.overall:
-                for j in range(6):
+                for j in range(self.WIDTH - 2):
                     self.table[base + 2 + j] = float(ids[j]) if j < len(ids) else 0.0
                 self.table[base], self.table[base + 1] = thr[0], thr[1]
             elif thr[0] == 0:  # a killer: no survivor can place
@@ -2013,10 +2037,11 @@ def _enum_blocks(n_free, sizes):
 
 
 def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
-                     budget=None, slots=6, required=(), candidates=None,
-                     use_ult=True, prestacked=False, keep=500, overall=None,
-                     seeds=(), log=None, workers=None, patch=None):
+                     budget=None, slots=DEFAULT_SLOTS, required=(),
+                     candidates=None, use_ult=True, prestacked=False, keep=500,
+                     overall=None, seeds=(), log=None, workers=None, patch=None):
     """Rank every boots + item combination against each target in one pass.
+    A build is `slots` items, boots included, or fewer under a `budget`.
     `targets` is {key: scenario-shaped dict: targetHp, armor, mr,
     duration, targetBonusHp}. Returns ({key: results}, count): per target
     the top-`keep` (ids, sheet, {target key: fight result}) best-first by
@@ -2039,6 +2064,11 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
     n_free = slots - 1 - len(required)  # one slot is always boots
     if n_free < 0:
         sys.exit("more required items than slots allow")
+    if overall and slots > _Bounds.WIDTH - 2:
+        # the overall bound breaks ties on the keep-th row's ids, all of them
+        sys.exit(f"the compiled engine's bounds table has no room for the ids "
+                 f"of a {slots}-item build: rebuild it with "
+                 f"web/ops/build-engine.sh")
     sizes = list(range(n_free + 1)) if budget else [n_free]
     _groups, _caps = load_exclusive_groups(patch)
     keys = list(targets) + ([overall] if overall else [])

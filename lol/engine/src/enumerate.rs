@@ -22,8 +22,10 @@ use crate::sheet::{parse_stat_pairs, resolve, ChampBase, Sheet, SK};
 /// Slack on the kill-time cuts: a stopped fight must belong to a build that
 /// is worse than the keep-th best by more than rounding could account for.
 const PRUNE_SLACK: f64 = 1.0 + 1e-9;
-/// Doubles per key in the bounds table (see builds._Bounds.WIDTH).
-const WIDTH: usize = 8;
+/// Doubles per key in the bounds table: two values, then a bound or the
+/// overall row's tie-break ids, with room for the largest build. Exported
+/// as BOUNDS_WIDTH, which builds._Bounds sizes its table by.
+pub const WIDTH: usize = 2 + MAX_ITEMS;
 
 /// A pool item's dense index. Every id a build can hold is interned once in
 /// `Ctx::new`, so the loop indexes flat arrays instead of hashing Riot ids.
@@ -118,7 +120,7 @@ struct Block<'a> {
     /// the overall row's tie-break ids as raw bits, and the place they
     /// resolve to: the parent rewrites them a few thousand times a run,
     /// not once per combination
-    o_bits: [u64; 6],
+    o_bits: [u64; MAX_ITEMS],
     o_place: Place,
     o_seen: bool,
     /// Stormsurge's rolling damage window, lent to every fight of the block
@@ -186,14 +188,14 @@ impl Block<'_> {
             let b = n_t * WIDTH;
             c.o_max = self.read(b);
             c.o_g = self.read(b + 1);
-            let mut bits = [0u64; 6];
-            for j in 0..6 {
+            let mut bits = [0u64; MAX_ITEMS];
+            for j in 0..MAX_ITEMS {
                 bits[j] = self.read_bits(b + 2 + j);
             }
             if !self.o_seen || bits != self.o_bits {
-                let mut oids = [0u32; 6];
+                let mut oids = [0u32; MAX_ITEMS];
                 let mut n_o = 0;
-                for j in 0..6 {
+                for j in 0..MAX_ITEMS {
                     let x = f64::from_bits(bits[j]) as i64;
                     if x != 0 {
                         oids[n_o] = x as u32;
@@ -806,7 +808,7 @@ impl Ctx {
             table: bounds_addr as *const u64,
             out: (0..n_keys).map(|_| Vec::new()).collect(),
             n: 0,
-            o_bits: [0; 6],
+            o_bits: [0; MAX_ITEMS],
             o_place: Place::EMPTY,
             o_seen: false,
             dmg_log: Vec::new(),
