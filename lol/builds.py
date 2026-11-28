@@ -1857,8 +1857,9 @@ def boots_partitions(pool, effects, kit):
     """{no Energized item in the build: boots classes} for one kit. Move
     speed is read only to charge Energized items, so in a build without one
     Swiftness fights exactly like the 45-speed boots; a kit that never
-    attacks (Vladimir) never charges them and never reads attack speed
-    either, so Berserker's joins them too, whatever the build."""
+    attacks (`attack.never`, which no shipped kit sets today) never charges
+    them and never reads attack speed either, so Berserker's joins them
+    too, whatever the build."""
     never = bool(kit.get("attack", {}).get("never"))
     busy = ENGINE_IGNORES | (ATTACK_ONLY_STATS if never else frozenset())
     calm = ENGINE_IGNORES | (ATTACK_ONLY_STATS if never else MOVE_STATS)

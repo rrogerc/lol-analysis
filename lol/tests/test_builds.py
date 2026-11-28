@@ -937,11 +937,13 @@ class TestVladimirKit(unittest.TestCase):
 class TestVladimirEngine(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.kit = builds.load_kit("vladimir")  # as played: never attacks
-        # the same kit with autos on, to pin the driver's channel rules
-        # (charge and pool vs attacks) that other kits rely on
-        cls.kit_autos = copy.deepcopy(cls.kit)
-        del cls.kit_autos["attack"]["never"]
+        # the kit as it ships: he attacks in the gaps his casts leave, which
+        # pins the driver's channel rules (charge and pool vs attacks)
+        cls.kit_autos = builds.load_kit("vladimir")
+        # the same kit under attack.never, which it shipped with until
+        # 2026-11-27: the rotation alone, and the flag's own behaviour
+        cls.kit = copy.deepcopy(cls.kit_autos)
+        cls.kit["attack"]["never"] = True
         cls.patch, cls.pool = builds.load_items()
         cls.idx = builds.item_index(cls.pool)
         cls.effects = builds.load_item_effects()
@@ -1012,11 +1014,17 @@ class TestVladimirEngine(unittest.TestCase):
         self.assertNotIn("auto", off["breakdown"])
         for src in ("Q", "Q empowered", "E", "W"):
             self.assertAlmostEqual(off["breakdown"][src], on["breakdown"][src])
+        # the page says so of a kit that carries the flag, and no kit does
         meta = builds.api_builds_meta()
         by_slug = {c["slug"]: c for c in meta["champions"]}
-        self.assertTrue(any("never auto-attacks" in n
-                            for n in by_slug["vladimir"]["notes"]))
-        self.assertEqual(by_slug["kayle"]["notes"], [])
+        self.assertFalse(builds.load_kit("vladimir")["attack"].get("never"))
+        for slug in ("vladimir", "kayle"):
+            self.assertFalse(any("never auto-attacks" in n
+                                 for n in by_slug[slug]["notes"]), slug)
+        with mock.patch.object(builds, "load_kit", lambda slug, required=True: self.kit):
+            flagged = builds.api_builds_meta()["champions"]
+        self.assertTrue(all(any("never auto-attacks" in n for n in c["notes"])
+                            for c in flagged))
 
     def item_stat(self, iid, stat):
         return self.pool[iid]["stats"].get(stat, {}).get("flat", 0.0)
@@ -2767,6 +2775,9 @@ class TestBootsPartitions(unittest.TestCase):
         _, cls.pool = builds.load_items()
         cls.effects = builds.load_item_effects()
         cls.kayle, cls.vlad = builds.load_kit("kayle"), builds.load_kit("vladimir")
+        # a kit that never attacks: Vladimir's, as it shipped until 2026-11-27
+        cls.caster = copy.deepcopy(cls.vlad)
+        cls.caster["attack"]["never"] = True
         cls.name = lambda self, b: self.pool[b]["name"]
 
     def classes(self, kit, calm):
@@ -2788,9 +2799,13 @@ class TestBootsPartitions(unittest.TestCase):
         for calm in (True, False):
             self.assertEqual(self.classes(twitch, calm), self.classes(self.kayle, calm))
 
-    def test_vladimir_never_attacks_so_only_pen_and_haste_tell_boots_apart(self):
+    def test_vladimir_attacks_so_his_boots_partition_like_kayles(self):
         for calm in (True, False):
-            self.assertEqual(self.classes(self.vlad, calm), [
+            self.assertEqual(self.classes(self.vlad, calm), self.classes(self.kayle, calm))
+
+    def test_a_kit_that_never_attacks_tells_boots_apart_by_pen_and_haste_alone(self):
+        for calm in (True, False):
+            self.assertEqual(self.classes(self.caster, calm), [
                 ["Berserker's Greaves", "Boots of Swiftness", "Mercury's Treads",
                  "Plated Steelcaps", "Gluttonous Greaves"],
                 ["Sorcerer's Shoes"], ["Ionian Boots of Lucidity"]])
@@ -2823,12 +2838,16 @@ class TestBootsPartitions(unittest.TestCase):
         for d in (5, 15, 30):
             self.assertEqual(self.fight("kayle", self.kayle, [3009, *calm], hp=1e6, duration=d),
                              self.fight("kayle", self.kayle, [3047, *calm], hp=1e6, duration=d))
-        # Vladimir: Berserker's = Steelcaps, even with an Energized item
+        # a kit that never attacks: Berserker's = Steelcaps, even with an
+        # Energized item
         vlad = [item(n) for n in ("Rabadon's Deathcap", "Void Staff", "Liandry's Torment")]
-        self.assertEqual(self.fight("vladimir", self.vlad, [3006, *vlad]),
-                         self.fight("vladimir", self.vlad, [3047, *vlad]))
-        self.assertEqual(self.fight("vladimir", self.vlad, [3006, item("Stormrazor"), *vlad[:2]]),
-                         self.fight("vladimir", self.vlad, [3009, item("Stormrazor"), *vlad[:2]]))
+        self.assertEqual(self.fight("vladimir", self.caster, [3006, *vlad]),
+                         self.fight("vladimir", self.caster, [3047, *vlad]))
+        self.assertEqual(self.fight("vladimir", self.caster, [3006, item("Stormrazor"), *vlad[:2]]),
+                         self.fight("vladimir", self.caster, [3009, item("Stormrazor"), *vlad[:2]]))
+        # Vladimir himself attacks, so Berserker's attack speed tells
+        self.assertNotEqual(self.fight("vladimir", self.vlad, [3006, *vlad]),
+                            self.fight("vladimir", self.vlad, [3047, *vlad]))
 
 
 # ---------------------------------------------------------------------------

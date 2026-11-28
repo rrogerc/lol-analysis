@@ -124,3 +124,40 @@ scenario targets from `builds.SCENARIOS`, so the next regeneration will fight
 them under the two-minute limit, and every case whose fight the old lengths
 ended will move for that reason alone: replay the old fixtures against the
 new engine first, as above, to tell that apart from the change being made.
+
+Regenerated on 2026-11-27 for one deliberate model change, at the fixtures'
+own item patch (`--patch 16.18`): Vladimir's kit dropped `attack.never`
+(Roger's call), so he now auto-attacks in the gaps his casts leave: not
+while Tides of Blood charges, not inside Sanguine Pool, not during a cast's
+lockout. The engine did not change; the driver always held those rules, and
+`TestVladimirEngine` pinned them with the flag lifted.
+
+Before regenerating, the old fixtures were replayed against the new kit:
+**1,184 of Vladimir's 1,204 cases moved and all 4,020 Kayle, Twitch and
+Kassadin cases came out byte for byte the same**. Sheets, merged effects and
+ranks did not move. The 20 Vladimir cases that held are 11 fights against the
+600 HP `tiny` target that end before an attack lands and 9 stop-after
+variants cut off before the kill either way. Of the five enumeration runs,
+Vladimir's reordered and the other four were identical.
+
+This is also the first regeneration since the scenarios' targets changed, and
+the generator takes its three scenario targets from `builds.SCENARIOS`: they
+now fight under the two-minute limit (8, 12 and 15 seconds before) and carry
+300, 700 and 1,200 bonus health (800, 1,500 and 1,500 before, lowered the
+same day). So the new files differ from the old ones for those two reasons
+as well, in the scenario targets only. Matching the 4,620 full fights of the
+old and new files by build and target (the same 508 builds in both):
+
+- every fight against `tiny` and `wall`, whose targets the generator owns, is
+  identical for Kayle, Twitch and Kassadin (1,388 fights);
+- of their 2,082 fights against the scenario targets, 1,595 are identical
+  and 487 moved: 378 that the old time limit had ended short of the kill
+  (58 Kayle, 221 Twitch, 99 Kassadin) and now run to it, and 109 builds
+  holding Lord Dominik's Regards, whose Giant Slayer reads the lower bonus
+  health (47, 29 and 33);
+- Vladimir's 1,150 full fights all moved but 10 of the `tiny` ones.
+
+The new `engine-fights.json` holds 5,452 cases rather than 5,224: fights that
+now end in a kill gain their stop-after variants (624 for the scenario
+targets, 396 before; Vladimir's went from 2 to 156). Kayle's test-fixture
+enumeration run is identical; the four 12-item runs reordered.
