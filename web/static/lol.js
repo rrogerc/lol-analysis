@@ -117,7 +117,7 @@ async function loadStatus() {
 const scenarioItems = sc => (sc?.slots ?? 6) - 1;
 const ITEM_COUNT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five" };
 // A scenario button names the fight alone: the Items buttons beside it say
-// the build size, and the heading below spells out both (the label).
+// the build size.
 const scenarioButtonText = sc => sc.overall ? "overall" : sc.target ? `vs ${sc.target}` : sc.label;
 const selectedScenario = () => bstate.meta?.scenarios?.find(s => s.key === bstate.scenario);
 // "one item", "five items"
@@ -197,7 +197,6 @@ function clearBuilds() {
   clearBreakdown();
 }
 
-// The champion view's heading: who, and under which scenario once one is picked.
 // The line under the scenario buttons says what is happening to the selected
 // ranking (loading, still warming, failed) and is empty once it has loaded.
 // What the ranking is (#scenario-desc) sits with the method under "About this
@@ -223,10 +222,6 @@ const targetFacts = sc => (sc.targets?.length ? sc.targets : sc.overall ? [] : [
 const overallFact = who =>
   `Ranked on every target at once, by the geometric mean of expected kill times, ${who} that kill all of them first`;
 
-function buildsTitle(name, label) {
-  return `${name} — ranked builds` + (label ? `, ${label.toLowerCase()}` : "");
-}
-
 async function loadScenario() {
   if (!bstate.champion) {
     scenarioStatus("No champion kit encodings yet: add lol/data/builds/<champ>.json.");
@@ -239,10 +234,6 @@ async function loadScenario() {
   updateHash();
   const req = ++bstate.req;  // a newer click supersedes this load
   clearTimeout(bstate.timer);
-  // what is selected, whether or not its cell is computed yet
-  const champ = bstate.meta?.champions?.find(c => c.slug === bstate.champion);
-  document.getElementById("builds-title").textContent =
-    buildsTitle(champ?.name || bstate.champion, selectedScenario()?.label);
   scenarioStatus("Loading…");
   let d;
   try {
@@ -268,8 +259,6 @@ async function loadScenario() {
   bstate.data = d;
   bstate.sel = 0;
   const sc = d.scenario, rk = d.ranks;
-  document.getElementById("builds-title").textContent =
-    buildsTitle(d.championName || d.champion, sc.label);
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
@@ -617,13 +606,10 @@ function setBuildsMode(mode) {
   if (bstate.mode === "leaderboard") bboard.scroll = wrap.scrollTop;  // a hidden box forgets it
   bstate.mode = mode;
   if (!bstate.meta) { updateHash(); return; }  // openBuilds shows the mode once the meta is in
-  if (mode === "champion") {
-    // while the cell loads: not another champion's rows under the board's title
-    if (bstate.data?.champion !== bstate.champion || bstate.data?.scenario?.key !== bstate.scenario)
-      clearBuilds();
-    const champ = bstate.meta.champions.find(c => c.slug === bstate.champion);
-    document.getElementById("builds-title").textContent = buildsTitle(champ?.name || bstate.champion);
-  }
+  // while the cell loads: not another champion's or scenario's rows
+  if (mode === "champion" &&
+      (bstate.data?.champion !== bstate.champion || bstate.data?.scenario?.key !== bstate.scenario))
+    clearBuilds();
   renderBuildsMode();
   loadBuildsView();  // the board renders what it holds before it asks again
   if (mode === "leaderboard") wrap.scrollTop = bboard.scroll;
@@ -793,8 +779,6 @@ function renderBoardSelection(r) {
 
 function renderLeaderboard() {
   const d = bboard.data, sc = d?.scenario;
-  const label = bstate.meta?.scenarios?.find(s => s.key === bstate.scenario)?.label || bstate.scenario || "";
-  document.getElementById("builds-title").textContent = `Champion leaderboard, ${label.toLowerCase()}`;
   scenarioStatus(d || bboard.error ? "" : "Loading…");
   if (d) {
     scenarioFacts([

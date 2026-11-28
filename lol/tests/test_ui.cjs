@@ -162,6 +162,7 @@ async function checkBuildsSizes() {
   assert(!about[1].includes('id="scenario-status"'), "The status line stays in view");
   assert(INDEX_HTML.indexOf('id="scenario-seg"') < INDEX_HTML.indexOf('id="builds-size"'), "The scenario buttons sit to the left of the size picker");
   assert(!INDEX_HTML.includes('id="builds-six"'), "The five-or-six toggle they replace is gone");
+  assert(!INDEX_HTML.includes('id="builds-title"'), "The card has no heading: the lit buttons say what is ranked");
   assert(STYLES_CSS.includes(".builds-size[hidden] { display: none; }"), "The hidden picker, a flex box, is hidden by its own rule");
   const full = [
     { key: "full-squishy", label: "Full build vs squishy", tier: "full", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 120 },
@@ -221,7 +222,6 @@ async function checkBuildsSizes() {
       pressed: () => sizes().filter(b => b.attributes["aria-pressed"] === "true").map(b => b.textContent),
       dimmed: () => sizes().filter(b => b.classList.contains("cold")).map(b => b.textContent),
       words: () => h.queryAll("#view-builds .build-size").map(el => el.textContent),
-      title: () => h.element("builds-title").textContent,
       pickSize: async n => { await sizes().find(b => b.textContent === String(n)).fire("click"); await flush(); },
       pick: async key => { await buttons().find(b => b.dataset.key === key).fire("click"); await flush(); },
     };
@@ -251,16 +251,14 @@ async function checkBuildsSizes() {
     "A size opens the same target's scenario at that size");
   assert.deepEqual(requests, ["api/builds/kayle/one-squishy.json"]);
   assert.deepEqual([d.size(), d.pressed(), d.words()], [["1"], ["1"], ["one item", "one"]]);
-  assert.equal(d.title(), "Kayle — ranked builds, one-item build vs squishy");
   assert.match(h.location.hash, /(^|&)sc=one-squishy(&|$)/, "The URL carries the scenario, and with it the size");
 
-  // a cell that is still warming: the heading names it all the same, the
-  // note says why the table is empty, and the size is dimmed like the scenario
+  // a cell that is still warming: the note says why the table is empty, and
+  // the size is dimmed like the scenario
   await d.pickSize(4);
   assert.equal(bstate.scenario, "four-squishy");
   d.cold.add("four-tank");
   await d.pick("four-tank");
-  assert.equal(d.title(), "Kayle — ranked builds, four-item build vs tank");
   assert.match(h.element("scenario-status").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
   assert.equal(h.query("#btbl tbody").children.length, 0);
   assert.deepEqual(d.dimmed(), ["4"], "A size is dimmed while the cell its button opens is cold");
@@ -295,7 +293,6 @@ async function checkBuildsSizes() {
   await d.pickSize(2);
   assert.deepEqual([bstate.scenario, d.shown(), d.size()], ["two-tank", keys(two), ["2"]]);
   assert.deepEqual(requests, ["api/builds/leaderboard/two-tank.json"]);
-  assert.equal(d.title(), "Champion leaderboard, two-item build vs tank");
   assert.deepEqual(d.words(), ["two items", "two"]);
   d.cold.clear();
   h.context.setBuildsMode("champion");
@@ -548,7 +545,6 @@ async function checkBuildsLeaderboard() {
   };
 
   show(squishy);
-  assert.equal(element("builds-title").textContent, "Champion leaderboard, full build vs squishy");
   assert.deepEqual(headTexts(), ["# \u25b2", ...heads(squishy.scenario).slice(1)]);
   assert.deepEqual(texts(), [
     ["1", "Ahri", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "\u2014", "3,000", "16,001"],
@@ -597,7 +593,6 @@ async function checkBuildsLeaderboard() {
 
   bstate.scenario = "full-overall";
   show(overall);
-  assert.equal(element("builds-title").textContent, "Champion leaderboard, full build \u2014 overall");
   assert.deepEqual(texts(), [
     ["1", "Ahri", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "0.00s instant", "16,001"],
     ["2", "Kayle", "Boots + Kayle's item", "1.21s", "2.50s", "4.21s", "2.34s", "16,002"],
@@ -798,7 +793,6 @@ async function checkBuildsLeaderboard() {
   assert.deepEqual([bstate.mode, bstate.champion, bstate.scenario], ["champion", "ahri", "full-squishy"]);
   assert.equal(took("loadScenario").length, 1);
   assert.equal(took("clearBuilds").length, 1);
-  assert.equal(element("builds-title").textContent, "Ahri \u2014 ranked builds");
   assert.equal(took("renderChampionPicker").length, 1);
   const hidden = ids => ids.map(id => element(id).hidden);
   assert.deepEqual(hidden(["bboard", "builds-note-board"]), [true, true]);
