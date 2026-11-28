@@ -12,8 +12,7 @@ async function loadBuildsMeta() {
   try {
     bstate.meta = await api("api/builds/meta.json");
   } catch (e) {
-    document.getElementById("builds-note").textContent =
-      "Builds API not reachable: restart `cli.py serve` to pick up the new endpoints.";
+    scenarioStatus("Builds API not reachable: restart `cli.py serve` to pick up the new endpoints.");
     return false;
   }
   bstate.items = buildItemLookup(bstate.meta);
@@ -25,7 +24,7 @@ async function loadBuildsMeta() {
   const seg = document.getElementById("scenario-seg");
   seg.replaceChildren(...bstate.meta.scenarios.map(sc => {
     const btn = document.createElement("button");
-    btn.textContent = sc.label;
+    btn.textContent = scenarioButtonText(sc);
     btn.dataset.key = sc.key;
     btn.addEventListener("click", () => { bstate.scenario = sc.key; loadBuildsView(); });
     return btn;
@@ -115,6 +114,9 @@ async function loadStatus() {
 // scenario that doesn't say is the usual six, boots and five items).
 const scenarioItems = sc => (sc?.slots ?? 6) - 1;
 const ITEM_COUNT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five" };
+// A scenario button names the fight alone: the Items buttons beside it say
+// the build size, and the heading below spells out both (the label).
+const scenarioButtonText = sc => sc.overall ? "overall" : sc.target ? `vs ${sc.target}` : sc.label;
 const selectedScenario = () => bstate.meta?.scenarios?.find(s => s.key === bstate.scenario);
 // "one item", "five items"
 const itemCount = n => `${ITEM_COUNT_WORDS[n] || n} item${n === 1 ? "" : "s"}`;
@@ -194,14 +196,24 @@ function clearBuilds() {
 }
 
 // The champion view's heading: who, and under which scenario once one is picked.
+// The line under the scenario buttons says what is happening to the selected
+// ranking (loading, still warming, failed) and is empty once it has loaded.
+// What the ranking is (#scenario-desc) sits with the method under "About this
+// ranking", and is blank until there is a ranking to describe.
+function scenarioStatus(text) {
+  const el = document.getElementById("scenario-status");
+  el.textContent = text;
+  el.hidden = !text;
+  document.getElementById("scenario-desc").textContent = "";
+}
+
 function buildsTitle(name, label) {
   return `${name} — ranked builds` + (label ? `, ${label.toLowerCase()}` : "");
 }
 
 async function loadScenario() {
   if (!bstate.champion) {
-    document.getElementById("builds-note").textContent =
-      "No champion kit encodings yet: add lol/data/builds/<champ>.json.";
+    scenarioStatus("No champion kit encodings yet: add lol/data/builds/<champ>.json.");
     return;
   }
   document.querySelectorAll("#champion-seg button").forEach(b =>
@@ -215,15 +227,14 @@ async function loadScenario() {
   const champ = bstate.meta?.champions?.find(c => c.slug === bstate.champion);
   document.getElementById("builds-title").textContent =
     buildsTitle(champ?.name || bstate.champion, selectedScenario()?.label);
-  const desc = document.getElementById("scenario-desc");
-  desc.textContent = "Loading…";
+  scenarioStatus("Loading…");
   let d;
   try {
     d = await api(`api/builds/${bstate.champion}/${bstate.scenario}.json`);
   } catch (e) {
     if (req !== bstate.req) return;
     clearBuilds();
-    desc.textContent = `Could not load this scenario (${e.message}).`;
+    scenarioStatus(`Could not load this scenario (${e.message}).`);
     return;
   }
   if (req !== bstate.req) return;
@@ -235,7 +246,7 @@ async function loadScenario() {
   if (d.error) {
     // a generated driver that failed in the enumeration (builds.warm records it)
     clearBuilds();
-    desc.textContent = `This champion's driver failed, so nothing is ranked: ${d.error}`;
+    scenarioStatus(`This champion's driver failed, so nothing is ranked: ${d.error}`);
     return;
   }
   bstate.data = d;
@@ -250,7 +261,8 @@ async function loadScenario() {
     ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
       "by the geometric mean of expected kill times, builds that kill all of them first"
     : `target ${dummyStats(sc)}`;
-  desc.textContent =
+  scenarioStatus("");
+  document.getElementById("scenario-desc").textContent =
     `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}${fightLimitNote(sc)}` +
     (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
     ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
@@ -278,15 +290,18 @@ async function showPending(req) {
     running: `warming in the background, ${n} of ${total} scenarios ready — this one will appear when it lands`,
     ...WARMER_WHY,
   }[st?.warmer] || "status unavailable";
-  document.getElementById("scenario-desc").textContent =
-    `Not computed yet for the current code and data (${why}).`;
+  scenarioStatus(`Not computed yet for the current code and data (${why}).`);
   bstate.timer = setTimeout(() => showPending(req), 10000);
 }
 
 const EXPECTED_TITLE = "Ranking metric. Same as kill time unless the build relies on an execute: expected-value crit always lands in the execute window, but real crit only would some of the time, so this blends the executing and non-executing timelines by that probability";
 const MEAN_TITLE = "Ranking metric: the geometric mean of the expected kill times against every target, so each target counts equally in percentage terms. Builds that kill every target rank above builds that leave one standing; a target a build can't kill counts as the time its average damage would have needed.";
-// A dummy's stats, as a scenario's line and the column headings' notes give them.
-const dummyStats = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR`;
+// A dummy's stats, as a scenario's line, the column headings' notes and the
+// breakdown give them. Its bonus health is the share of its HP that comes from
+// items and runes, which Giant Slayer reads (builds.py targetBonusHp).
+const dummyStats = t =>
+  `${fmtInt(t.targetHp)} HP` + (t.targetBonusHp != null ? ` (${fmtInt(t.targetBonusHp)} bonus)` : "") +
+  `, ${t.armor} armor, ${t.mr} MR`;
 const vsTitle = t =>
   `The same build's expected kill time against the ${t.target} (${dummyStats(t)}), ` +
   "and how far behind that target's own best build it is";
@@ -528,7 +543,7 @@ function renderBreakdown(r, sc = bstate.data.scenario, who = "") {
     const b = document.createElement("b");
     b.textContent = `vs ${t.target}`;
     const fight = v.ttk != null ? `dies at ${v.ttk.toFixed(2)}s` : `${CANT_KILL} within ${fmtDur(t.duration)}`;
-    head.append(b, ` (${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR) — ` +
+    head.append(b, ` (${dummyStats(t)}) — ` +
       `${fmtInt(v.total)} damage · ${fmtInt(v.dps)} DPS · ${v.attacks} attacks · ${fight}`);
     const entries = Object.entries(v.breakdown);
     const max = Math.max(...entries.map(([, x]) => x));
@@ -760,10 +775,9 @@ function renderLeaderboard() {
   const d = bboard.data, sc = d?.scenario;
   const label = bstate.meta?.scenarios?.find(s => s.key === bstate.scenario)?.label || bstate.scenario || "";
   document.getElementById("builds-title").textContent = `Champion leaderboard, ${label.toLowerCase()}`;
-  const desc = document.getElementById("scenario-desc");
-  if (!d) desc.textContent = bboard.error ? "" : "Loading…";
-  else {
-    desc.textContent = `Level ${sc.level} · ` + (sc.overall
+  scenarioStatus(d || bboard.error ? "" : "Loading…");
+  if (d) {
+    document.getElementById("scenario-desc").textContent = `Level ${sc.level} · ` + (sc.overall
       ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
         "by the geometric mean of expected kill times, champions that kill all of them first"
       : `target ${dummyStats(sc)} · ranked by expected kill time`) + fightLimitNote(sc) +

@@ -142,7 +142,9 @@ async function checkBuildsPicker() {
   errDash.context.bstate.scenario = "full-squishy";
   errDash.context.bstate.meta = { champions: [{ slug: "zed", name: "Zed" }], scenarios: [{ key: "full-squishy", label: "Full" }] };
   await errDash.context.loadScenario();
-  assert.equal(errDash.element("scenario-desc").textContent, "This champion's driver failed, so nothing is ranked: driver panic");
+  assert.equal(errDash.element("scenario-status").textContent, "This champion's driver failed, so nothing is ranked: driver panic");
+  assert.deepEqual([errDash.element("scenario-status").hidden, errDash.element("scenario-desc").textContent], [false, ""],
+    "What went wrong stays in view; the dropdown has no ranking to describe");
   ++passedSuites;
 }
 
@@ -150,6 +152,15 @@ async function checkBuildsSizes() {
   // "Items 1 to 5": the scenario buttons show one build size at a time, and a
   // size button swaps the selected scenario for the same fight at that size.
   assert(INDEX_HTML.includes('id="builds-size-seg"'), "The page has the size buttons");
+  // the method and the selected ranking's particulars are folded away under
+  // one dropdown, closed until asked for; the status line is outside it
+  const about = /<details class="builds-details" id="builds-about">([\s\S]*?)<\/details>/.exec(INDEX_HTML);
+  assert(about, "The page has the About this ranking dropdown, closed by default");
+  for (const id of ["scenario-desc", "builds-note", "builds-note-board"]) {
+    assert(about[1].includes(`id="${id}"`), `#${id} is inside the dropdown`);
+  }
+  assert(!about[1].includes('id="scenario-status"'), "The status line stays in view");
+  assert(INDEX_HTML.indexOf('id="scenario-seg"') < INDEX_HTML.indexOf('id="builds-size"'), "The scenario buttons sit to the left of the size picker");
   assert(!INDEX_HTML.includes('id="builds-six"'), "The five-or-six toggle they replace is gone");
   assert(STYLES_CSS.includes(".builds-size[hidden] { display: none; }"), "The hidden picker, a flex box, is hidden by its own rule");
   const full = [
@@ -220,6 +231,9 @@ async function checkBuildsSizes() {
   const { bstate } = h.context;
   assert.equal(d.words().length, 2, "The leaderboard's note and the item pool's both state the build size");
   assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys(all));
+  assert.deepEqual(h.queryAll("#scenario-seg button").slice(0, 6).map(b => b.textContent),
+    ["vs squishy", "vs tank", "overall", "vs squishy", "vs tank", "overall"],
+    "A scenario button names the fight; the Items buttons say the size");
   assert.deepEqual(d.offered(), ["1", "2", "3", "4", "5"], "A button per size, smallest first, whatever order the scenarios come in");
   assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-squishy", keys(full), ["full-squishy"]],
     "Five items is the default, and only its scenarios are offered");
@@ -245,7 +259,7 @@ async function checkBuildsSizes() {
   d.cold.add("four-tank");
   await d.pick("four-tank");
   assert.equal(d.title(), "Kayle — ranked builds, four-item build vs tank");
-  assert.match(h.element("scenario-desc").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
+  assert.match(h.element("scenario-status").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
   assert.equal(h.query("#btbl tbody").children.length, 0);
   assert.deepEqual(d.dimmed(), ["4"], "A size is dimmed while the cell its button opens is cold");
   assert.equal(h.queryAll("#builds-size-seg button")[3].title, `${titles[4]} Not computed yet.`);
@@ -317,8 +331,8 @@ async function checkBuildsFights() {
   // "can't kill" wherever its kill time would stand, in the champion's table
   // and in the breakdown below it.
   const targets = [
-    { key: "one-squishy", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 120 },
-    { key: "one-tank", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 120 },
+    { key: "one-squishy", target: "squishy", targetHp: 2800, targetBonusHp: 300, armor: 110, mr: 60, duration: 120 },
+    { key: "one-tank", target: "tank", targetHp: 4800, targetBonusHp: 1200, armor: 220, mr: 160, duration: 120 },
   ];
   const kill = (ttk, total, loss) => ({ ttk, ttkExp: ttk, killTime: ttk, loss, dps: Math.round(total / ttk), total, attacks: 9, breakdown: { auto: total } });
   // still standing at the limit: no kill time, and the time its damage would have needed
@@ -356,7 +370,7 @@ async function checkBuildsFights() {
   ]);
   assert.deepEqual(rows().map(tds => tds[2].title), ["", `The tank ${stood}`], "The cell says what was dealt, and how long the fight ran");
   assert.equal(h.element("scenario-desc").textContent,
-    "Level 16 (Q5/W3/E5/R3) \u00b7 target 4,800 HP, 220 armor, 160 MR \u00b7 fights run to the kill, 2 min at most" +
+    "Level 16 (Q5/W3/E5/R3) \u00b7 target 4,800 HP (1,200 bonus), 220 armor, 160 MR \u00b7 fights run to the kill, 2 min at most" +
     " \u00b7 525 builds ranked \u00b7 items patch 16.23, kit 16.16 \u00b7 Theoretical damage model.");
 
   await open("one-squishy");
@@ -366,16 +380,16 @@ async function checkBuildsFights() {
     ["2", "60.02s", "60.02s", "can't kill", "47", "2,800", "4,100"],
   ], "Against another target it reads the same, with no distance from the best to give");
   assert.deepEqual(rows().map(tds => tds[4].title), ["", `The tank ${stood}`]);
-  assert.match(h.queryAll("#btbl thead th")[4].title, /against the tank \(4,800 HP, 220 armor, 160 MR\), and how far behind/);
+  assert.match(h.queryAll("#btbl thead th")[4].title, /against the tank \(4,800 HP \(1,200 bonus\), 220 armor, 160 MR\), and how far behind/);
 
   // the selected build's fights, below the table
   const groups = () => h.queryAll("#bd-bars .bd-group").map(el => el.textContent);
   assert.deepEqual(groups(), [
-    "vs squishy (2,800 HP, 110 armor, 60 MR) \u2014 2,800 damage \u00b7 336 DPS \u00b7 9 attacks \u00b7 dies at 8.34s",
-    "vs tank (4,800 HP, 220 armor, 160 MR) \u2014 4,800 damage \u00b7 50 DPS \u00b7 9 attacks \u00b7 dies at 96.50s",
+    "vs squishy (2,800 HP (300 bonus), 110 armor, 60 MR) \u2014 2,800 damage \u00b7 336 DPS \u00b7 9 attacks \u00b7 dies at 8.34s",
+    "vs tank (4,800 HP (1,200 bonus), 220 armor, 160 MR) \u2014 4,800 damage \u00b7 50 DPS \u00b7 9 attacks \u00b7 dies at 96.50s",
   ]);
   await h.queryAll("#btbl tbody tr")[1].fire("click");
-  assert.equal(groups()[1], "vs tank (4,800 HP, 220 armor, 160 MR) \u2014 4,391 damage \u00b7 37 DPS \u00b7 80 attacks \u00b7 can't kill within 2 min");
+  assert.equal(groups()[1], "vs tank (4,800 HP (1,200 bonus), 220 armor, 160 MR) \u2014 4,391 damage \u00b7 37 DPS \u00b7 80 attacks \u00b7 can't kill within 2 min");
 
   assert(!/survive|\u2248|undefined|NaN/.test(h.element("view-builds").textContent),
     "Nothing on the tab says survives, or shows an estimated time");
@@ -803,7 +817,7 @@ async function checkBuildsLeaderboard() {
   respond = async () => ({ ...overall, complete: false, readyCount: 1 });
   const loading = loadLeaderboard();
   assert.equal(body().length, 0);
-  assert.equal(element("scenario-desc").textContent, "Loading\u2026");
+  assert.equal(element("scenario-status").textContent, "Loading\u2026");
   await loading;
   assert.equal(body().length, 2);
   assert.equal(took("loadStatus").length, 1);
