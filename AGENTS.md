@@ -73,6 +73,15 @@ Declared in `/home/rogerc/dotfiles/nixos/services/lol-analysis.nix`. Commits on 
   - `lol-tft-refresh.timer` (every 6h at `:41`): `web/ops/refresh-tft.sh` execs `cli.py tft refresh`, which exits `75` on exhausted temporary fetch failures, `2` when a patch change needs manual review, and `1` otherwise. systemd retries only `75`, 5 minutes apart, at most 3 starts per 30 minutes; `1` and `2` stay failed and visible.
 - Heartbeats land in `.cache/ops/<script>.json` and feed the Data tab health table via `web/server.py:local_jobs()`. The items and scaling scripts write theirs from an `EXIT` trap; `tft refresh` writes `refresh-tft.json` itself. `local_jobs()` lists any `web/ops/*.sh` whose header has `# name:` and `# schedule:` comments.
 
+## Memory Budget
+
+The host has 32 GB of RAM, shared with the dashboard, the timers, and the `../lol-quant` crawler. Swap is zram (compressed RAM), so it buys headroom, not capacity. Each tmux pane is a systemd scope with `OOMPolicy=stop`: one OOM kill inside a pane stops everything in it, the agent session included.
+
+- **Cap heavy ad-hoc jobs in their own scope.** Anything that forks workers or reads `../lol-quant` data runs as `systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -- <command>`. Past the cap the job dies alone, the way `lol-scaling-sync.service` does, and the pane survives.
+- **Measure one worker before fanning out.** Take a single worker's peak RSS (`resource.getrusage`), multiply by the pool size, and keep the total under the cap. A two-worker test says nothing about twelve.
+- **Stream `../lol-quant` data.** Filter parquet a batch at a time (`ParquetFile.iter_batches`, or the chunked scans in `lol/ladder.py`): a `pyarrow.dataset` scan with a filter reads far ahead of it and holds gigabytes per process. Timeline files (`../lol-quant/data/timelines/<platform>/`, 500 games each) are about 350 MB of JSON once decompressed, so parse them one line at a time.
+- **Keep big scans out of a parent that forks.** pyarrow holds on to what it allocated, so a parent that scanned the crawl stays gigabytes large for the rest of the job. Do that scan in a process of its own.
+
 ## Architectural Invariants
 
 ### Floating-point determinism (both Rust engines)
