@@ -789,7 +789,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # which fills the per-target cells and, at no extra cost, the tier's
 # "overall" cell, which ranks every build on all of the targets at once (see
 # overall_key). Five tiers ship, one per build size: the full build and the
-# four smaller sizes below; the mid-game and first-item presets were dropped.
+# four smaller sizes below, each at the level and against the dummies of
+# its size (ITEM_LEVELS, TARGET_STATS).
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
 # duration: the fight's time limit, in seconds (FIGHT_LIMIT for every target)
 # slots: the build's size, boots included (DEFAULT_SLOTS where a scenario
@@ -799,32 +800,70 @@ DEFAULT_SLOTS = 6  # boots and five items: the inventory as it comes
 # a build still short of the kill after two minutes is listed as one that
 # can't kill, below every build that does (rank_key).
 FIGHT_LIMIT = 120
-SCENARIOS = {
-    "full-squishy": dict(label="Full build vs squishy", tier="full",
-                         target="squishy", level=16, targetHp=2800, armor=110,
-                         mr=60, duration=FIGHT_LIMIT, targetBonusHp=300),
-    "full-bruiser": dict(label="Full build vs bruiser", tier="full",
-                         target="bruiser", level=16, targetHp=3800, armor=180,
-                         mr=120, duration=FIGHT_LIMIT, targetBonusHp=700),
-    "full-tank": dict(label="Full build vs tank", tier="full", target="tank",
-                      level=16, targetHp=4800, armor=220, mr=160,
-                      duration=FIGHT_LIMIT, targetBonusHp=1200),
-    "full-overall": dict(label="Full build: overall", tier="full",
-                         overall=True, level=16),
+# What a build of each size fights at and against: one entry per number of
+# finished items owned, boots aside, from none to five, the same for every
+# role and champion. Both tables are measured on 121k Master+ solo queue
+# games (the lol-quant timelines, patches 16.5 to 16.23), over the minutes a
+# top, jungle, mid or bot player holds exactly that many items.
+#
+# ITEM_LEVELS is that player's level, averaged over the four roles:
+#   items      0     1     2     3     4     5
+#   top      5.6  11.8  14.9  17.0  18.6  19.7
+#   jungle   4.3   9.5  12.7  15.1  16.8  17.8
+#   mid      5.2  10.8  13.7  15.7  17.2  17.8
+#   bot      4.3   9.0  11.7  13.8  15.4  16.8
+# Top runs a level or two ahead of the number used (its role quest lifts
+# the cap to 20) and bot as far behind; no patch group moved one by more
+# than 0.1.
+ITEM_LEVELS = (5, 10, 13, 15, 17, 18)
+# TARGET_STATS is the enemies across from that player in those minutes,
+# supports aside, by Riot's class for the enemy's champion: mages, marksmen
+# and assassins are the squishy, fighters the bruiser and tanks the tank.
+# Each entry is (health, armor, magic resistance, bonus health), the class
+# average rounded to 50 health and 5 resistance; bonus health is what the
+# enemy has above its champion's base at its level, which Giant Slayer
+# reads. The enemies are about as far along as the player, though an item
+# short by the time the player holds five.
+TARGET_STATS = {
+    "squishy": ((1050, 40, 35, 150), (1700, 65, 45, 250), (2100, 80, 50, 350),
+                (2350, 95, 55, 400), (2550, 110, 60, 400), (2750, 125, 65, 450)),
+    "bruiser": ((1150, 50, 40, 150), (1950, 85, 55, 450), (2500, 115, 65, 650),
+                (2900, 135, 75, 750), (3150, 155, 85, 850), (3400, 175, 95, 950)),
+    "tank": ((1350, 60, 45, 350), (2600, 125, 70, 1050), (3450, 175, 95, 1550),
+             (4050, 215, 115, 1950), (4500, 245, 130, 2250), (5000, 275, 140, 2600)),
 }
-# The smaller build sizes, from boots and one item to boots and four: every
-# full-build scenario again with that many slots, at the same level against
-# the same targets, so two sizes differ by their items and nothing else.
+
+
+def target_at(target, items):
+    """The stat dummy `target` as a build of `items` items meets it."""
+    hp, armor, mr, bonus = TARGET_STATS[target][items]
+    return dict(targetHp=hp, armor=armor, mr=mr, targetBonusHp=bonus)
+
+
+def _tier(tier, items):
+    """One build size's scenarios: a fight against each target at that
+    size's level, then the overall cell. The full build leaves `slots` out
+    and takes the inventory as it comes (DEFAULT_SLOTS)."""
+    name = "Full build" if tier == "full" else f"{tier.capitalize()}-item build"
+    size = {} if tier == "full" else {"slots": items + 1}
+    out = {f"{tier}-{target}": dict(
+        label=f"{name} vs {target}", tier=tier, target=target,
+        level=ITEM_LEVELS[items], **target_at(target, items),
+        duration=FIGHT_LIMIT, **size) for target in TARGET_STATS}
+    out[f"{tier}-overall"] = dict(label=f"{name}: overall", tier=tier,
+                                  overall=True, level=ITEM_LEVELS[items], **size)
+    return out
+
+
+# The full build first (the dashboard opens on the first scenario), then the
+# smaller sizes, from boots and one item to boots and four.
 # Nothing ranks a sixth item (the bot-lane role quest gives boots a slot of
 # their own): few games get that far, and the item that fills the slot is
 # bought for utility or survival, which a damage ranking can't weigh.
 SIZED_TIERS = {"one": 1, "two": 2, "three": 3, "four": 4}  # items, boots aside
-SCENARIOS.update({
-    f"{tier}-" + key.removeprefix("full-"): dict(
-        sc, tier=tier, slots=items + 1,
-        label=sc["label"].replace("Full build", f"{tier.capitalize()}-item build"))
-    for tier, items in SIZED_TIERS.items() for key, sc in SCENARIOS.items()})
-
+SCENARIOS = _tier("full", DEFAULT_SLOTS - 1)
+for _name, _items in SIZED_TIERS.items():
+    SCENARIOS.update(_tier(_name, _items))
 
 def tier_scenarios(tier):
     """A tier's scenario keys in SCENARIOS order: its targets, then overall."""
@@ -1201,22 +1240,8 @@ def _fight_row(r, duration, best):
 
 BUY_ORDER_ROWS = 10  # rows per cell that get one; the rest keep pool order
 # Owning k of a build's items (boots are bought early, so every stage has
-# them), the champion fights at BUY_STAGE_LEVELS[k], or at the scenario's
-# level where that is lower: the first item lands around level 9 and the
-# second around 11, where the dropped first-item (4.5k gold) and mid-game
-# (7.5k) presets put them, then two levels an item. One entry per item of
-# the largest tier: a five-item build's last stage owns four.
-BUY_STAGE_LEVELS = (7, 9, 11, 13, 15)
-# The targets grow into the full-build dummies meanwhile. Up to
-# BUY_EARLY_LEVEL they keep these shares of their full stats (the dropped
-# first-item target's 1,900 HP / 50 armor / 40 MR against today's squishy
-# 2,800/110/60), then reach the full dummy linearly by the scenario's level.
-# That puts the level-11 squishy at 2,157/67/46 and tank at 3,698/134/122,
-# near the dropped mid-game presets' 2,200/60/45 and 3,800/160/110. The
-# health a target lacks comes out of its item health first, which Giant
-# Slayer reads.
-BUY_EARLY_LEVEL = 9
-BUY_EARLY_SHARE = {"targetHp": 1900 / 2800, "armor": 50 / 110, "mr": 40 / 60}
+# them), the champion fights what a build of k items fights on the tab: at
+# ITEM_LEVELS[k], against its targets as TARGET_STATS has them at k items.
 # Seraph's and Muramana count as fully stacked, and those stacks come from a
 # Tear bought early that needs about an item's time to fill: neither is ever
 # the first item completed. (Rod of Ages stacks only once completed, so
@@ -1224,16 +1249,15 @@ BUY_EARLY_SHARE = {"targetHp": 1900 / 2800, "armor": 50 / 110, "mr": 40 / 60}
 BUY_NOT_FIRST = (3040, 3042)
 
 
-def stage_target(sc, level):
-    """Full-build target scenario `sc` as that enemy stands at `level`. A
-    scenario at or below BUY_EARLY_LEVEL has nothing to grow into."""
-    span = sc["level"] - BUY_EARLY_LEVEL
-    f = 1.0 if span <= 0 else min(1.0, max(0.0, (level - BUY_EARLY_LEVEL) / span))
-    t = {k: sc[k] * (s + (1 - s) * f) for k, s in BUY_EARLY_SHARE.items()}
-    t["targetBonusHp"] = max(0.0, sc.get("targetBonusHp", 0.0)
-                             - (sc["targetHp"] - t["targetHp"]))
-    t["duration"] = sc["duration"]
-    return t
+def stage_target(sc, items):
+    """Target scenario `sc` as that enemy stands while the attacker owns
+    `items` items: the measured dummy of that size. A stage no earlier than
+    the scenario itself, or a target that is not one of the measured
+    classes, keeps the scenario's own."""
+    if sc.get("target") in TARGET_STATS and ITEM_LEVELS[items] < sc["level"]:
+        return dict(target_at(sc["target"], items), duration=sc["duration"])
+    return {k: sc.get(k, 0.0) for k in ("targetHp", "armor", "mr",
+                                        "targetBonusHp", "duration")}
 
 
 def stage_times(champ, kit, pool, effects, ids, targets):
@@ -1245,9 +1269,9 @@ def stage_times(champ, kit, pool, effects, ids, targets):
     top = min(sc["level"] for sc in targets.values())
     out = {}
     for k in range(len(items)):
-        level = min(BUY_STAGE_LEVELS[k], top)
+        level = min(ITEM_LEVELS[k], top)
         ranks = skill_ranks(level, kit_max_order(kit))
-        stage = {key: stage_target(sc, level) for key, sc in targets.items()}
+        stage = {key: stage_target(sc, k) for key, sc in targets.items()}
         for owned in itertools.combinations(items, k):
             build = [boots, *owned]
             sheet = resolve_stats(champ, level, build, pool, effects, kit=kit)

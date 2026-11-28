@@ -241,8 +241,8 @@ async function checkBuildsSizes() {
   assert.deepEqual([h.element("builds-size").hidden, d.size(), d.pressed(), d.dimmed(), d.words()],
     [false, ["5"], ["5"], [], ["five items", "five"]]);
   const titles = Object.fromEntries(h.queryAll("#builds-size-seg button").map(b => [b.textContent, b.title]));
-  assert.equal(titles[1], "Rank boots plus one item. Same level, same targets.");
-  assert.equal(titles[5], "Rank boots plus five items: a full inventory. Same level, same targets.");
+  assert.equal(titles[1], "Rank boots plus one item. Fought at the level, and against the enemies, typical for that many items.");
+  assert.equal(titles[5], "Rank boots plus five items: a full inventory. Fought at the level, and against the enemies, typical for that many items.");
 
   await d.pick("full-squishy");
   requests.length = 0;

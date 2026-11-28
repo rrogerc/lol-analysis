@@ -17,6 +17,7 @@ import math
 import os
 import re
 import shutil
+import statistics
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -40,6 +41,10 @@ def fake_champ(**dd_overrides):
     mk = {"stats": {"attackSpeedRatio": {"flat": 0.667},
                     "criticalStrikeDamage": {"flat": 175.0}}}
     return {"slug": "kayle", "dd": dd, "mk": mk, "meta": {"patch": "16.16"}}
+
+
+# the full-build tank, as measured (builds.TARGET_STATS)
+TANK_FULL = (5000, 275, 140, 2600)
 
 
 def enum_one(champ, pool, effects, kit, level, ranks, hp, armor, mr, duration,
@@ -1784,26 +1789,49 @@ class TestScenarioCache(unittest.TestCase):
                                  builds.SCENARIOS[keys[0]].get("budget"), k)
                 self.assertEqual(builds.SCENARIOS[k].get("slots"),
                                  builds.SCENARIOS[keys[0]].get("slots"), k)
-            # every item of a build has a stage of its buy order to land in
-            self.assertLessEqual(builds.tier_slots(tier) - 1,
-                                 len(builds.BUY_STAGE_LEVELS), tier)
+            # a tier fights at the level players hold its number of items
+            # at, and every smaller number, a stage of its buy order, has
+            # a lower level of its own
+            self.assertEqual(builds.SCENARIOS[keys[0]]["level"],
+                             builds.ITEM_LEVELS[builds.tier_slots(tier) - 1], tier)
         self.assertEqual(builds.tier_targets("full"),
                          ["full-squishy", "full-bruiser", "full-tank"])
         self.assertEqual(builds.tier_scenarios("full")[-1], "full-overall")
-        # every other size is the full build's scenarios with its own number
-        # of slots: the same level and targets, so the sizes rank the same
-        # fights and differ by their items alone
+        # one level per number of items owned, none to five, for every role
+        # and champion: measured, rising, and 18 with a full build
+        self.assertEqual(builds.ITEM_LEVELS, (5, 10, 13, 15, 17, 18))
+        self.assertEqual(sorted(set(builds.ITEM_LEVELS)), list(builds.ITEM_LEVELS))
+        # and one dummy of each class per number of items, measured the same
+        # way: every stat grows with the game, and at every size the tank
+        # outlasts the bruiser, which outlasts the squishy
+        self.assertEqual(list(builds.TARGET_STATS), ["squishy", "bruiser", "tank"])
+        for name, rows in builds.TARGET_STATS.items():
+            self.assertEqual(len(rows), len(builds.ITEM_LEVELS), name)
+            for lo, hi in zip(rows, rows[1:]):
+                for a, b in zip(lo, hi):
+                    self.assertLessEqual(a, b, name)
+        for squishy, bruiser, tank in zip(*builds.TARGET_STATS.values()):
+            for a, b, c in zip(squishy, bruiser, tank):
+                self.assertTrue(a <= b <= c, (squishy, bruiser, tank))
+        self.assertEqual(builds.target_at("tank", 5),
+                         dict(targetHp=TANK_FULL[0], armor=TANK_FULL[1],
+                              mr=TANK_FULL[2], targetBonusHp=TANK_FULL[3]))
+        # every size is the same four fights at its own level against its
+        # own dummies; only the full build leaves its slots to the default
         self.assertEqual({tier: builds.tier_slots(tier) - 1 for tier in builds.tiers()},
                          self.SIZES)
         for tier, items in self.SIZES.items():
-            for full, key in zip(builds.tier_scenarios("full"),
-                                 builds.tier_scenarios(tier)):
-                a, b = builds.SCENARIOS[full], builds.SCENARIOS[key]
-                if tier == "full":
-                    self.assertNotIn("slots", a)  # the inventory as it comes
-                else:
-                    self.assertEqual({**a, "tier": tier, "slots": items + 1,
-                                      "label": b["label"]}, b)
+            name = "Full build" if tier == "full" else f"{tier.capitalize()}-item build"
+            size = {} if tier == "full" else {"slots": items + 1}
+            for target in builds.TARGET_STATS:
+                self.assertEqual(
+                    builds.SCENARIOS[f"{tier}-{target}"],
+                    dict(label=f"{name} vs {target}", tier=tier, target=target,
+                         level=builds.ITEM_LEVELS[items], duration=builds.FIGHT_LIMIT,
+                         **builds.target_at(target, items), **size))
+            self.assertEqual(builds.SCENARIOS[f"{tier}-overall"],
+                             dict(label=f"{name}: overall", tier=tier, overall=True,
+                                  level=builds.ITEM_LEVELS[items], **size))
         # every fight runs to the kill under one time limit, two minutes
         self.assertEqual(builds.FIGHT_LIMIT, 120)
         for key, sc in builds.SCENARIOS.items():
@@ -1943,8 +1971,8 @@ class TestScenarioCache(unittest.TestCase):
         d = builds.compute_scenario(*cell, builds.cell_paths())
         self.assertEqual(d["championName"], "Vladimir")
         kit = builds.load_kit("vladimir")
-        self.assertEqual(d["ranks"],
-                         builds.skill_ranks(16, builds.kit_max_order(kit)))
+        self.assertEqual(d["ranks"],  # the full build's level: everything maxed
+                         builds.skill_ranks(18, builds.kit_max_order(kit)))
         self.assertTrue(d["rows"])
         for r in d["rows"]:
             self.assertNotIn("Muramana", r["items"])
@@ -2001,11 +2029,12 @@ class TestScenarioCache(unittest.TestCase):
     def test_a_fight_runs_to_the_kill_and_the_limit_ends_one_that_has_not(self):
         key = "one-tank"
         full = builds.compute_tier("kayle", "one", builds.cell_paths())[key]["rows"]
-        # boots and one item need far longer than the 8 to 15 seconds a
+        # boots and one item mostly need longer than the 8 to 15 seconds a
         # fight used to get, and every one of them gets there
         times = [r["ttk"] for r in full]
         self.assertNotIn(None, times)
-        self.assertGreater(min(times), 15)
+        self.assertGreater(min(times), 8)
+        self.assertGreater(statistics.median(times), 15)
         self.assertLess(max(times), builds.FIGHT_LIMIT)
         self.assertEqual([r["ttkExp"] for r in full], sorted(r["ttkExp"] for r in full))
         # under a limit half of them miss, a fight the limit ends has no kill
@@ -2306,22 +2335,26 @@ class TestBuyOrder(unittest.TestCase):
         times[frozenset({"a"})] = None  # owning just a deals nothing
         self.assertEqual(builds.buy_order(list("abc"), times, cost)[0], "b")
 
-    def test_stage_targets_grow_into_the_full_dummies(self):
+    def test_a_stage_fights_what_a_build_of_its_size_fights(self):
+        # owning two items of a full build: the two-item tier's tank
         tank = builds.SCENARIOS["full-tank"]
-        full = builds.stage_target(tank, tank["level"])
+        stage = builds.stage_target(tank, 2)
+        self.assertEqual(stage, dict(builds.target_at("tank", 2), duration=tank["duration"]))
         for k in ("targetHp", "armor", "mr", "targetBonusHp", "duration"):
-            self.assertAlmostEqual(full[k], tank[k], msg=k)
-        early = builds.stage_target(tank, 9)
-        self.assertAlmostEqual(early["armor"], 220 * 50 / 110)  # first-item share
-        self.assertEqual(builds.stage_target(tank, 7), early, "no lower before 9")
-        # the health it lacks is item health first: 1,543 lacking, 1,200 of it items
-        self.assertEqual(early["targetBonusHp"], 0.0)
-        squishy = builds.stage_target(builds.SCENARIOS["full-squishy"], 11)
-        self.assertEqual([round(squishy[k]) for k in ("targetHp", "armor", "mr",
-                                                      "targetBonusHp")],
-                         [2157, 67, 46, 0])  # 643 lacking, 300 of it items
-        # a tier at or below the early level has nothing to grow into
-        self.assertAlmostEqual(builds.stage_target(dict(tank, level=9), 7)["armor"], 220)
+            self.assertEqual(stage[k], builds.SCENARIOS["two-tank"][k], k)
+        # before the first item it is the enemy of the first minutes
+        early = builds.stage_target(tank, 0)
+        self.assertLess(early["targetHp"], stage["targetHp"])
+        self.assertLess(stage["targetHp"], tank["targetHp"])
+        # a stage no earlier than its scenario keeps the scenario's own
+        # target (a tier's last stage always owns fewer items than the tier),
+        # as does a target that is not one of the measured classes
+        own = {k: tank[k] for k in stage}
+        self.assertEqual(builds.stage_target(dict(tank, level=9), 1), own)
+        self.assertEqual(builds.stage_target(dict(tank, target="wall"), 1), own)
+        bare = builds.stage_target(dict(targetHp=900, armor=10, mr=10, duration=5,
+                                        level=18), 0)
+        self.assertEqual(bare["targetBonusHp"], 0.0)
 
 
 class TestBootsClasses(unittest.TestCase):

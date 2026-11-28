@@ -125,7 +125,7 @@ const itemCount = n => `${ITEM_COUNT_WORDS[n] || n} item${n === 1 ? "" : "s"}`;
 // What a size is, where its number doesn't say.
 const BUILD_SIZE_NOTES = { 5: "a full inventory" };
 const buildSizeTitle = n =>
-  `Rank boots plus ${itemCount(n)}${BUILD_SIZE_NOTES[n] ? `: ${BUILD_SIZE_NOTES[n]}` : ""}. Same level, same targets.`;
+  `Rank boots plus ${itemCount(n)}${BUILD_SIZE_NOTES[n] ? `: ${BUILD_SIZE_NOTES[n]}` : ""}. Fought at the level, and against the enemies, typical for that many items.`;
 
 // The scenario of `items` items that is the same fight as `sc`: its target, or
 // the overall ranking. A size without that fight gives its first scenario.

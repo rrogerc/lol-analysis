@@ -161,3 +161,17 @@ The new `engine-fights.json` holds 5,452 cases rather than 5,224: fights that
 now end in a kill gain their stop-after variants (624 for the scenario
 targets, 396 before; Vladimir's went from 2 to 156). Kayle's test-fixture
 enumeration run is identical; the four 12-item runs reordered.
+
+The scenarios got measured levels and dummies on 2026-11-27
+(`builds.ITEM_LEVELS`, `builds.TARGET_STATS`). The full build fights at level
+18 rather than 16, and its squishy, bruiser and tank went from 2,800/110/60,
+3,800/180/120 and 4,800/220/160 (health/armor/magic resistance) to
+2,750/125/65, 3,400/175/95 and 5,000/275/140, with 450, 950 and 2,600 bonus
+health rather than 300, 700 and 1,200. Neither file was regenerated for it:
+the engine did not change, each fixture carries its own levels and targets,
+and both replay bit for bit. The generator still fights at its own levels
+(16, and 9, 11 and 13) but takes its three scenario targets from
+`builds.SCENARIOS`, so the next regeneration will fight the new dummies and
+every fight against them will move for that reason alone: replay the old
+fixtures against the new engine first, as above, to tell that apart from the
+change being made.
