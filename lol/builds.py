@@ -765,8 +765,9 @@ GENERATED_DRIVERS = tuple(getattr(lol_engine, "GENERATED_DRIVERS", ()))
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
              duration, use_ult=True, prestacked=False, target_bonus_hp=0.0,
              stop_after=INF, breakdown=True, _blend=True):
-    """One fight vs a stat dummy. Returns totals, DPS, time-to-kill (None if
-    the dummy survives), and a per-source damage breakdown (empty unless
+    """One fight vs a stat dummy, until it dies or `duration` runs out.
+    Returns totals, DPS, time-to-kill (None if the dummy is still standing
+    then), and a per-source damage breakdown (empty unless
     `breakdown`: the enumerator skips it and fills it in for the rows that
     place), or None if the clock passed `stop_after` with the dummy still
     standing (the enumerator stops fights whose outcome can no longer
@@ -787,33 +788,41 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # together: one enumeration pass scores every build against each of them,
 # which fills the per-target cells and, at no extra cost, the tier's
 # "overall" cell, which ranks every build on all of the targets at once (see
-# overall_key). Two tiers ship, the full build and the six-item build below;
-# the mid-game and first-item presets were dropped.
+# overall_key). Six tiers ship, one per build size: the full build and the
+# five other sizes below; the mid-game and first-item presets were dropped.
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
+# duration: the fight's time limit, in seconds (FIGHT_LIMIT for every target)
 # slots: the build's size, boots included (DEFAULT_SLOTS where a scenario
 # doesn't say)
 DEFAULT_SLOTS = 6  # boots and five items: the inventory as it comes
+# A fight runs until the dummy dies. The limit only ends one that would not:
+# a build still short of the kill after two minutes is listed as one that
+# can't kill, below every build that does (rank_key).
+FIGHT_LIMIT = 120
 SCENARIOS = {
     "full-squishy": dict(label="Full build vs squishy", tier="full",
                          target="squishy", level=16, targetHp=2800, armor=110,
-                         mr=60, duration=8, targetBonusHp=800),
+                         mr=60, duration=FIGHT_LIMIT, targetBonusHp=800),
     "full-bruiser": dict(label="Full build vs bruiser", tier="full",
                          target="bruiser", level=16, targetHp=3800, armor=180,
-                         mr=120, duration=12, targetBonusHp=1500),
+                         mr=120, duration=FIGHT_LIMIT, targetBonusHp=1500),
     "full-tank": dict(label="Full build vs tank", tier="full", target="tank",
-                      level=16, targetHp=4800, armor=220, mr=160, duration=15,
-                      targetBonusHp=1500),
+                      level=16, targetHp=4800, armor=220, mr=160,
+                      duration=FIGHT_LIMIT, targetBonusHp=1500),
     "full-overall": dict(label="Full build: overall", tier="full",
                          overall=True, level=16),
 }
-# The six-item tier: every full-build scenario again with one more slot, the
-# same level and targets. The bot-lane role quest gives boots a slot of their
-# own, so a marksman ends the game on boots and six items.
+# The other build sizes, from boots and one item to boots and six: every
+# full-build scenario again with that many slots, at the same level against
+# the same targets, so two sizes differ by their items and nothing else. Six
+# is one more than the inventory holds: the bot-lane role quest gives boots a
+# slot of their own, so a marksman ends the game on boots and six items.
+SIZED_TIERS = {"one": 1, "two": 2, "three": 3, "four": 4, "six": 6}  # items, boots aside
 SCENARIOS.update({
-    "six-" + key.removeprefix("full-"): dict(
-        sc, tier="six", slots=DEFAULT_SLOTS + 1,
-        label=sc["label"].replace("Full build", "Six-item build"))
-    for key, sc in SCENARIOS.items()})
+    f"{tier}-" + key.removeprefix("full-"): dict(
+        sc, tier=tier, slots=items + 1,
+        label=sc["label"].replace("Full build", f"{tier.capitalize()}-item build"))
+    for tier, items in SIZED_TIERS.items() for key, sc in SCENARIOS.items()})
 
 
 def tier_scenarios(tier):
@@ -835,7 +844,7 @@ def tiers():
     """Tier keys cheapest first: budget presets before full builds (they
     reject nearly every combination before simulating it), smaller builds
     before larger ones (a sixth item is twelve times the combinations),
-    shorter total fight length first."""
+    shorter fight limits first."""
     def cost(tier):
         ts = tier_targets(tier)
         return (SCENARIOS[ts[0]].get("budget") is None, tier_slots(tier),
@@ -1020,7 +1029,8 @@ def cells():
     builds against each of its targets (three to five fights per item
     combination and target: boots that fight alike share one, and most
     fights stop early once the build can't place); the six-item tier about
-    twelve times as many, in about twelve times as long."""
+    twelve times as many, in about twelve times as long; the tiers of one
+    to four items 8M at most, in seconds."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -1125,9 +1135,9 @@ def cached_scenario(slug, key, paths=None):
 
 
 def kill_time(r, duration):
-    """The expected kill time of one fight, extended past its end for a dummy
-    that survived: the time the fight's average DPS would have needed. None
-    if the build dealt no damage at all."""
+    """The expected kill time of one fight, extended past its time limit for
+    a dummy still standing then: the time the fight's average DPS would have
+    needed. None if the build dealt no damage at all."""
     if r["ttk"] is not None:
         return r["ttk_exp"]
     return duration + r["hp_left"] / r["dps"] if r["dps"] > 0 else None
@@ -1153,8 +1163,8 @@ def geo_mean(xs):
 def overall_key(rs, targets):
     """Sort key across every target of a tier, best first: builds that kill
     all of them come before builds that leave one standing; within that, the
-    geometric mean of the kill times (kill_time, so a survived fight counts
-    as the time it would have needed). The geometric mean weights each
+    geometric mean of the kill times (kill_time, so a fight the limit ended
+    counts as the time it would have needed). The geometric mean weights each
     target equally in percentage terms (10% slower on the tank and 10%
     faster on the squishy is level pegging), and ranking by it is the same
     as ranking by the mean regret against each target's own best build, so
@@ -1690,12 +1700,12 @@ def cmd_sim(args):
 
     print(f"{champ['dd']['name']} lvl {args.level} "
           f"(Q{ranks['Q']} W{ranks['W']} E{ranks['E']} R{ranks['R']}): "
-          f"{args.duration:g}s vs {args.target_hp}hp {args.armor}armor {args.mr}mr")
+          f"vs {args.target_hp}hp {args.armor}armor {args.mr}mr, {args.duration:g}s at most")
     if sheet["items"]:
         print(f"Items ({sheet['gold']}g): {', '.join(sheet['items'])}")
     print()
     dead = f"target dies at {r['ttk']:.2f}s" if r["ttk"] is not None else \
-           f"target survives with {r['hp_left']:.0f} hp"
+           f"can't kill in {args.duration:g}s: {r['hp_left']:.0f} hp left"
     print(f"  {r['total']:.0f} damage, {r['dps']:.0f} DPS ({dead})")
     print(f"  {r['attacks']} attacks"
           + (f", {r['phantom_hits']} phantom hits" if r["phantom_hits"] else ""))
@@ -2235,8 +2245,8 @@ def cmd_optimize(args):
     results = [(ids, sheet, rs["target"]) for ids, sheet, rs in lists["target"]]
 
     print(f"{champ['dd']['name']} lvl {args.level}: {count} builds "
-          f"in {time.time() - t0:.1f}s, {args.duration:g}s vs "
-          f"{args.target_hp}hp {args.armor}armor {args.mr}mr"
+          f"in {time.time() - t0:.1f}s, vs {args.target_hp}hp {args.armor}armor "
+          f"{args.mr}mr, {args.duration:g}s at most"
           + (f", budget {args.budget}g" if args.budget else "") + "\n")
     print(f"  {'#':>3} {'ttk':>6} {'exp':>6} {'dps':>6} {'total':>7} "
           f"{'gold':>6}  items")

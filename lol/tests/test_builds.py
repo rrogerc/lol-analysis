@@ -1733,6 +1733,9 @@ class TestScenarioCache(unittest.TestCase):
                                    target="squishy", level=9, targetHp=1900,
                                    armor=50, mr=40, duration=8, budget=4500,
                                    targetBonusHp=400)}
+    # the tiers that ship, as SCENARIOS lists them: the items of a build,
+    # boots aside
+    SIZES = {"full": 5, "one": 1, "two": 2, "three": 3, "four": 4, "six": 6}
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -1751,11 +1754,12 @@ class TestScenarioCache(unittest.TestCase):
         for key, sc in builds.SCENARIOS.items():
             self.assertIn("tier", sc, key)
             self.assertEqual("target" in sc, not sc.get("overall"), key)
+        # a tier per build size, each with the same four fights; the full
+        # build is listed first, and the dashboard opens on the first scenario
         self.assertEqual(list(builds.SCENARIOS),
-                         ["full-squishy", "full-bruiser", "full-tank",
-                          "full-overall", "six-squishy", "six-bruiser",
-                          "six-tank", "six-overall"])
-        self.assertEqual(builds.tiers(), ["full", "six"])
+                         [f"{tier}-{fight}" for tier in self.SIZES
+                          for fight in ("squishy", "bruiser", "tank", "overall")])
+        self.assertEqual(builds.tiers(), ["one", "two", "three", "four", "full", "six"])
         for tier in builds.tiers():
             keys = builds.tier_scenarios(tier)
             targets = builds.tier_targets(tier)
@@ -1778,38 +1782,52 @@ class TestScenarioCache(unittest.TestCase):
         self.assertEqual(builds.tier_targets("full"),
                          ["full-squishy", "full-bruiser", "full-tank"])
         self.assertEqual(builds.tier_scenarios("full")[-1], "full-overall")
-        # the six-item tier is the full build's scenarios with one more slot:
-        # the same level and targets, so the two rank the same fights
-        self.assertEqual((builds.tier_slots("full"), builds.tier_slots("six")),
-                         (6, 7))
-        self.assertEqual(builds.tier_scenarios("six"),
-                         ["six-squishy", "six-bruiser", "six-tank", "six-overall"])
-        for full, six in zip(builds.tier_scenarios("full"),
-                             builds.tier_scenarios("six")):
-            a, b = builds.SCENARIOS[full], builds.SCENARIOS[six]
-            self.assertNotIn("slots", a)
-            self.assertNotEqual(a["label"], b["label"])
-            self.assertEqual({**a, "tier": "six", "slots": 7, "label": b["label"]}, b)
+        # every other size is the full build's scenarios with its own number
+        # of slots: the same level and targets, so the sizes rank the same
+        # fights and differ by their items alone
+        self.assertEqual({tier: builds.tier_slots(tier) - 1 for tier in builds.tiers()},
+                         self.SIZES)
+        for tier, items in self.SIZES.items():
+            for full, key in zip(builds.tier_scenarios("full"),
+                                 builds.tier_scenarios(tier)):
+                a, b = builds.SCENARIOS[full], builds.SCENARIOS[key]
+                if tier == "full":
+                    self.assertNotIn("slots", a)  # the inventory as it comes
+                else:
+                    self.assertEqual({**a, "tier": tier, "slots": items + 1,
+                                      "label": b["label"]}, b)
+        # every fight runs to the kill under one time limit, two minutes
+        self.assertEqual(builds.FIGHT_LIMIT, 120)
+        for key, sc in builds.SCENARIOS.items():
+            if not sc.get("overall"):
+                self.assertEqual(sc["duration"], builds.FIGHT_LIMIT, key)
+        # the page tells the scenarios apart by their labels
+        labels = [sc["label"] for sc in builds.SCENARIOS.values()]
+        self.assertEqual(len(set(labels)), len(labels))
+        self.assertEqual([builds.SCENARIOS[k]["label"] for k in
+                          ("one-squishy", "three-overall", "full-tank", "six-bruiser")],
+                         ["One-item build vs squishy", "Three-item build: overall",
+                          "Full build vs tank", "Six-item build vs bruiser"])
 
     def test_cells_cheapest_first(self):
         champs = builds.kit_champions()
         cs = builds.cells()
         self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
         self.assertEqual(len(set(cs)), len(cs))
-        self.assertEqual(cs[0], (champs[0], "full-squishy"))
-        # every champion's full build before anyone's six-item one, which
-        # ranks twelve times the builds
-        self.assertEqual([k for _, k in cs[:len(cs) // 2]],
-                         builds.tier_scenarios("full") * len(champs))
-        self.assertEqual([k for _, k in cs[len(cs) // 2:]],
-                         builds.tier_scenarios("six") * len(champs))
+        self.assertEqual(cs[0], (champs[0], "one-squishy"))
+        # every champion's builds of one size before anyone's of the next
+        # size up: each further item multiplies the builds, a sixth by twelve
+        sizes = sorted(self.SIZES, key=self.SIZES.get)
+        self.assertEqual([k for _, k in cs],
+                         [k for tier in sizes for _ in champs
+                          for k in builds.tier_scenarios(tier)])
         # with a budget tier in the mix: tier by tier, budget presets before
         # full builds (seconds, not half an hour), smaller builds before
         # larger, shorter total fights first; every champion gets a tier's
         # cells before anyone gets a costlier tier's; and one champion's
         # cells of a tier are adjacent, since they come from one pass
         with mock.patch.dict(builds.SCENARIOS, self.PROBE):
-            self.assertEqual(builds.tiers(), ["probe", "full", "six"])
+            self.assertEqual(builds.tiers(), ["probe", *sizes])
             cs = builds.cells()
             self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
 
@@ -1923,51 +1941,119 @@ class TestScenarioCache(unittest.TestCase):
         for r in d["rows"]:
             self.assertNotIn("Muramana", r["items"])
 
-    def test_six_item_tier_ranks_boots_and_six_items(self):
+    def test_each_tier_ranks_boots_and_its_number_of_items(self):
         paths = builds.cell_paths()
-        outs = builds.compute_tier("kayle", "six", paths)
-        self.assertEqual(list(outs), builds.tier_scenarios("six"))
         champ = builds.load_champion("kayle")
         _, pool = builds.load_items()
         effects = builds.load_item_effects()
         kit = builds.load_kit("kayle")
         boots = {pool[b]["name"] for b in builds.BOOTS}
-        for key, d in outs.items():
-            self.assertTrue(os.path.exists(paths[("kayle", key)]))
-            self.assertEqual((d["scenario"]["tier"], d["scenario"]["slots"]),
-                             ("six", 7))
-            self.assertEqual([t["key"] for t in d["scenario"]["targets"]],
-                             builds.tier_targets("six"))
-            self.assertEqual(d["buildsEvaluated"],
-                             len(builds.BOOTS) * math.comb(len(self.TINY_POOL), 6))
-            self.assertTrue(d["rows"])
-            for r in d["rows"]:
-                self.assertEqual(len(set(r["items"])), 7)
-                self.assertIn(r["items"][0], boots)
-                self.assertEqual(list(r["vs"]), ["squishy", "bruiser", "tank"])
-        # each per-target cell is what a seven-slot pass over that target
-        # alone ranks
-        for key in builds.tier_targets("six"):
-            sc = builds.SCENARIOS[key]
-            single, count = enum_one(
-                champ, pool, effects, kit, sc["level"],
-                builds.skill_ranks(sc["level"], builds.kit_max_order(kit)),
-                sc["targetHp"], sc["armor"], sc["mr"], sc["duration"],
-                bonus_hp=sc["targetBonusHp"], slots=sc["slots"],
-                candidates=builds.champion_pool(kit, effects))
-            self.assertEqual(outs[key]["buildsEvaluated"], count)
-            self.assertEqual([r["items"] for r in outs[key]["rows"]],
-                             [[pool[i]["name"] for i in ids]
-                              for ids, _, _ in single[:builds.CACHED_ROWS]])
-        # the full build's cells are another pass: still cold
-        for key in builds.tier_scenarios("full"):
-            self.assertFalse(os.path.exists(paths[("kayle", key)]))
+        cold = set(self.SIZES)
+        for tier in builds.tiers():
+            items = self.SIZES[tier]
+            with self.subTest(tier=tier):
+                outs = builds.compute_tier("kayle", tier, paths)
+                cold.remove(tier)
+                self.assertEqual(list(outs), builds.tier_scenarios(tier))
+                for key, d in outs.items():
+                    self.assertTrue(os.path.exists(paths[("kayle", key)]))
+                    self.assertEqual(
+                        (d["scenario"]["tier"],
+                         d["scenario"].get("slots", builds.DEFAULT_SLOTS)),
+                        (tier, items + 1))
+                    self.assertEqual([t["key"] for t in d["scenario"]["targets"]],
+                                     builds.tier_targets(tier))
+                    self.assertEqual(
+                        d["buildsEvaluated"],
+                        len(builds.BOOTS) * math.comb(len(self.TINY_POOL), items))
+                    self.assertTrue(d["rows"])
+                    for r in d["rows"]:
+                        self.assertEqual(len(set(r["items"])), items + 1)
+                        self.assertIn(r["items"][0], boots)
+                        self.assertEqual(list(r["vs"]), ["squishy", "bruiser", "tank"])
+                # each per-target cell is what a pass of that size over that
+                # target alone ranks
+                for key in builds.tier_targets(tier):
+                    sc = builds.SCENARIOS[key]
+                    single, count = enum_one(
+                        champ, pool, effects, kit, sc["level"],
+                        builds.skill_ranks(sc["level"], builds.kit_max_order(kit)),
+                        sc["targetHp"], sc["armor"], sc["mr"], sc["duration"],
+                        bonus_hp=sc["targetBonusHp"], slots=items + 1,
+                        candidates=builds.champion_pool(kit, effects))
+                    self.assertEqual(outs[key]["buildsEvaluated"], count)
+                    self.assertEqual([r["items"] for r in outs[key]["rows"]],
+                                     [[pool[i]["name"] for i in ids]
+                                      for ids, _, _ in single[:builds.CACHED_ROWS]])
+                # the sizes still to come are other passes: cold
+                for other in cold:
+                    for key in builds.tier_scenarios(other):
+                        self.assertFalse(os.path.exists(paths[("kayle", key)]), key)
+
+    def test_a_fight_runs_to_the_kill_and_the_limit_ends_one_that_has_not(self):
+        key = "one-tank"
+        full = builds.compute_tier("kayle", "one", builds.cell_paths())[key]["rows"]
+        # boots and one item need far longer than the 8 to 15 seconds a
+        # fight used to get, and every one of them gets there
+        times = [r["ttk"] for r in full]
+        self.assertNotIn(None, times)
+        self.assertGreater(min(times), 15)
+        self.assertLess(max(times), builds.FIGHT_LIMIT)
+        self.assertEqual([r["ttkExp"] for r in full], sorted(r["ttkExp"] for r in full))
+        # under a limit half of them miss, a fight the limit ends has no kill
+        # time: those builds come after every kill, most damage first
+        distinct = sorted(set(times))
+        middle = len(distinct) // 2
+        limit = (distinct[middle - 1] + distinct[middle]) / 2
+        with mock.patch.dict(builds.SCENARIOS[key], {"duration": limit}):
+            cut = builds.compute_tier("kayle", "one", builds.cell_paths())[key]
+        self.assertEqual(cut["scenario"]["duration"], limit)
+        rows = cut["rows"]
+        kills = [r for r in rows if r["ttk"] is not None]
+        short = [r for r in rows if r["ttk"] is None]
+        self.assertTrue(kills and short)
+        self.assertEqual(rows, kills + short)
+        # a kill inside the limit is the same fight, in the same place
+        strip = lambda r: {k: v for k, v in r.items() if k not in ("rank", "vs", "buyOrder")}
+        self.assertEqual([strip(r) for r in kills],
+                         [strip(r) for r in full if r["ttk"] < limit])
+        totals = [r["total"] for r in short]
+        self.assertEqual(totals, sorted(totals, reverse=True))
+        hp = builds.SCENARIOS[key]["targetHp"]
+        for r in short:
+            self.assertIsNone(r["ttkExp"])
+            self.assertLess(r["total"], hp)
+            own = r["vs"]["tank"]
+            self.assertIsNone(own["ttk"])
+            # the time its average damage would have needed: past the limit
+            self.assertAlmostEqual(own["killTime"], limit * hp / own["total"], delta=0.05)
+            self.assertGreater(own["killTime"], limit)
 
     def test_top_rows_carry_buy_orders(self):
         self.check_buy_orders("full")
 
     def test_six_item_rows_carry_buy_orders(self):
         self.check_buy_orders("six")  # 720 orders over 63 partial builds
+
+    def test_smaller_builds_carry_buy_orders(self):
+        for tier in ("two", "three", "four"):
+            with self.subTest(tier=tier):
+                self.check_buy_orders(tier)
+
+    def test_a_one_item_row_buys_its_item(self):
+        # nothing to order, and the rule that keeps Muramana from going
+        # first has no say over a build that holds nothing else
+        outs = builds.compute_tier("kayle", "one", builds.cell_paths())
+        bought = set()
+        for d in outs.values():
+            self.assertGreater(len(d["rows"]), builds.BUY_ORDER_ROWS)
+            for r in d["rows"][builds.BUY_ORDER_ROWS:]:
+                self.assertNotIn("buyOrder", r)
+            for r in d["rows"][:builds.BUY_ORDER_ROWS]:
+                self.assertEqual(r["buyOrder"], r["items"][1:])
+                self.assertEqual(len(r["buyOrder"]), 1)
+                bought.update(r["buyOrder"])
+        self.assertIn("Muramana", bought)
 
     def check_buy_orders(self, tier):
         outs = builds.compute_tier("kayle", tier, builds.cell_paths())
@@ -2024,7 +2110,7 @@ class TestScenarioCache(unittest.TestCase):
         self.assertEqual(len(heads),
                          len(builds.tiers()) * len(builds.kit_champions()))
         self.assertTrue(any("full-overall" in h for h in heads))
-        # every champion's full build is in before anyone's six-item one
+        # every champion's builds of a size are in before anyone's of the next
         self.assertEqual([h.split()[1].split("/")[1] for h in heads],
                          [t for t in builds.tiers() for _ in builds.kit_champions()])
         self.assertEqual(builds.warm(log=log.append), 0)  # nothing cold now
@@ -2035,6 +2121,31 @@ class TestScenarioCache(unittest.TestCase):
         finally:
             lock.close()
         self.assertFalse(builds.warm_running())
+
+
+class TestSimCommand(unittest.TestCase):
+    """`cli.py builds sim`: one fight, in the dashboard's words."""
+
+    def run_sim(self, **kw):
+        args = SimpleNamespace(
+            name="kayle", level=16, patch=None, max_order=None, no_ult=False,
+            prestacked=False, items=["Berserker's Greaves", "Yun Tal Wildarrows"],
+            **{**dict(target_hp=2800, armor=110, mr=60, target_bonus_hp=800,
+                      duration=builds.FIGHT_LIMIT), **kw})
+        out = io.StringIO()
+        with redirect_stdout(out):
+            builds.cmd_sim(args)
+        return out.getvalue()
+
+    def test_a_fight_runs_to_the_kill_inside_its_limit(self):
+        out = self.run_sim()
+        self.assertIn("vs 2800hp 110armor 60mr, 120s at most", out)
+        died = re.search(r"\(target dies at (\d+\.\d\d)s\)", out)
+        self.assertTrue(died, out)
+        # a limit the fight outlasts: said as it is on the Builds tab
+        cut = self.run_sim(duration=float(died.group(1)) / 2)
+        self.assertRegex(cut, r"\(can't kill in [\d.]+s: \d+ hp left\)")
+        self.assertNotIn("survive", out + cut)
 
 
 class TestOverallRanking(unittest.TestCase):
@@ -2396,14 +2507,38 @@ class TestEnumeratorPruning(unittest.TestCase):
                                  [ids for ids, _, _ in ref[k][:20]], k)
                 self.assertEqual({len(ids) for ids, _, _ in lists[k]}, {7}, k)
 
+    def test_smaller_passes_are_pruned_as_exactly(self):
+        # the tiers below the full build: boots and one item to boots and
+        # four, sequential and forked
+        for slots in (2, 3, 4, 5):
+            ref, count = builds.enumerate_builds(
+                self.champ, self.pool, self.effects, self.kit, 16, self.ranks,
+                self.targets, slots=slots, candidates=self.tiny,
+                overall=self.overall, keep=10_000)
+            self.assertEqual(count, 7 * math.comb(len(self.tiny), slots - 1))
+            for workers, fork_above in ((None, builds.FORK_ABOVE), (3, 0)):
+                with self.subTest(slots=slots, workers=workers), \
+                     mock.patch.object(builds, "FORK_ABOVE", fork_above):
+                    lists, n = self.enum(slots=slots, workers=workers)
+                    self.assertEqual(n, count)
+                    for k in self.keys:
+                        self.assertEqual([ids for ids, _, _ in lists[k]],
+                                         [ids for ids, _, _ in ref[k][:20]], k)
+                        self.assertEqual({len(ids) for ids, _, _ in lists[k]},
+                                         {slots}, k)
+                        for (_, sheet, rs), (_, ref_sheet, ref_rs) in zip(lists[k], ref[k]):
+                            self.assertEqual((sheet, rs), (ref_sheet, ref_rs))
+
     def test_every_id_of_a_seven_item_build_breaks_an_overall_tie(self):
-        # Targets nobody kills: every build leaves all three standing, so the
-        # overall bound carries the keep-th row's ids to break ties with, and
-        # boots of one class tie on everything else. A seed puts a class's
-        # last boots on the bound; its earlier boots rank ahead of it and
-        # have to displace it, which a bound one id short of the build would
-        # stop them doing.
-        targets = {k: dict(sc, targetHp=10 ** 7) for k, sc in self.targets.items()}
+        # Targets nobody kills (more health than ten seconds can take off,
+        # where the scenarios' own fights run to the kill): every build
+        # leaves all three standing, so the overall bound carries the keep-th
+        # row's ids to break ties with, and boots of one class tie on
+        # everything else. A seed puts a class's last boots on the bound; its
+        # earlier boots rank ahead of it and have to displace it, which a
+        # bound one id short of the build would stop them doing.
+        targets = {k: dict(sc, targetHp=10 ** 7, duration=10)
+                   for k, sc in self.targets.items()}
 
         def enum(**kw):
             return builds.enumerate_builds(
@@ -2762,8 +2897,9 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_scenarios(self):
         self.assertEqual(leaderboard.leaderboard_scenarios(),
-                         ["full-squishy", "full-bruiser", "full-tank", "full-overall",
-                          "six-squishy", "six-bruiser", "six-tank", "six-overall"])
+                         [f"{tier}-{fight}"
+                          for tier in ("full", "one", "two", "three", "four", "six")
+                          for fight in ("squishy", "bruiser", "tank", "overall")])
         for key in ("mid-squishy", "nope"):
             with self.assertRaises(ValueError):
                 self.board(key)
@@ -2919,9 +3055,12 @@ class TestRealCells(unittest.TestCase):
                 self.assertEqual(top["rank"], 1)
                 for field in ("items", "buyOrder", "gold", "vs"):
                     self.assertEqual(row[field], top[field], (key, row["champion"], field))
-            # best first on the scenario's own metric, as the cells rank builds
+            # best first on the scenario's own metric, as the cells rank
+            # builds; a fight runs to the kill, and at every size each
+            # champion's best build gets there
             if sc.get("overall"):
-                keys = [(len(r["vs"]) - r["kills"], r["mean"]) for r in d["rows"]]
+                self.assertTrue(all(r["kills"] == len(r["vs"]) for r in d["rows"]))
+                keys = [r["mean"] for r in d["rows"]]
             else:
                 self.assertTrue(all(r["ttk"] is not None for r in d["rows"]))
                 keys = [r["ttkExp"] for r in d["rows"]]

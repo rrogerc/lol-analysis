@@ -30,6 +30,16 @@ async function loadBuildsMeta() {
     btn.addEventListener("click", () => { bstate.scenario = sc.key; loadBuildsView(); });
     return btn;
   }));
+  // a button per build size the scenarios come in, smallest first
+  const sizes = [...new Set(bstate.meta.scenarios.map(scenarioItems))].sort((a, b) => a - b);
+  document.getElementById("builds-size-seg").replaceChildren(...sizes.map(n => {
+    const btn = document.createElement("button");
+    btn.textContent = String(n);
+    btn.dataset.items = n;
+    btn.title = buildSizeTitle(n);
+    btn.addEventListener("click", () => pickBuildSize(n));
+    return btn;
+  }));
   renderPool();
   return true;
 }
@@ -100,15 +110,40 @@ async function loadStatus() {
   return bstate.status;
 }
 
-// A scenario's build size, boots aside: five items, or six in the tier the
-// "6 items + boots" toggle switches to (builds.py SCENARIOS: `slots` counts
-// the boots, and a scenario that doesn't say is the usual six).
+// A scenario's build size, boots aside: one item to six, the sizes the Items
+// buttons switch between (builds.py SCENARIOS: `slots` counts the boots, and a
+// scenario that doesn't say is the usual six, boots and five items).
 const scenarioItems = sc => (sc?.slots ?? 6) - 1;
-const ITEM_COUNT_WORDS = { 5: "five", 6: "six" };
+const ITEM_COUNT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six" };
 const selectedScenario = () => bstate.meta?.scenarios?.find(s => s.key === bstate.scenario);
+// "one item", "five items"
+const itemCount = n => `${ITEM_COUNT_WORDS[n] || n} item${n === 1 ? "" : "s"}`;
+// What a size is, where its number doesn't say.
+const BUILD_SIZE_NOTES = {
+  5: "a full inventory",
+  6: "the build of a bot-lane carry once the role quest has given boots a slot of their own",
+};
+const buildSizeTitle = n =>
+  `Rank boots plus ${itemCount(n)}${BUILD_SIZE_NOTES[n] ? `: ${BUILD_SIZE_NOTES[n]}` : ""}. Same level, same targets.`;
+
+// The scenario of `items` items that is the same fight as `sc`: its target, or
+// the overall ranking. A size without that fight gives its first scenario.
+function sizedScenario(items, sc = selectedScenario()) {
+  const sized = (bstate.meta?.scenarios || []).filter(s => scenarioItems(s) === items);
+  return sized.find(s => s.target === sc?.target && !!s.overall === !!sc?.overall) || sized[0];
+}
+
+// The same fight at another build size: the scenario is what changes, so the
+// buttons, the cell or board and the URL all follow it.
+function pickBuildSize(items) {
+  const sc = sizedScenario(items);
+  if (!sc) return;
+  bstate.scenario = sc.key;
+  loadBuildsView();
+}
 
 // The scenario buttons of the selected scenario's build size, the selected one
-// lit, with the toggle and the wording that follow that size.
+// lit, with the size's own button and the wording that follow that size.
 function markScenario() {
   const scenarios = bstate.meta?.scenarios || [];
   const byKey = new Map(scenarios.map(s => [s.key, s]));
@@ -117,23 +152,35 @@ function markScenario() {
     b.classList.toggle("active", b.dataset.key === bstate.scenario);
     b.hidden = scenarioItems(byKey.get(b.dataset.key)) !== items;
   });
-  document.getElementById("builds-six").checked = items === 6;
-  // a serve older than the six-item tier has nothing to switch to
-  document.getElementById("builds-six-toggle").hidden = !scenarios.some(s => scenarioItems(s) === 6);
+  const sizes = document.querySelectorAll("#builds-size-seg button");
+  sizes.forEach(b => {
+    const on = Number(b.dataset.items) === items;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  // a serve older than the build sizes ranks one, and has nothing to pick
+  document.getElementById("builds-size").hidden = sizes.length < 2;
   document.querySelectorAll("#view-builds .build-size").forEach(el => {
-    el.textContent = ITEM_COUNT_WORDS[items] || String(items);
+    el.textContent = el.dataset.unit ? itemCount(items) : ITEM_COUNT_WORDS[items] || String(items);
   });
 }
 
 // Dim the scenario buttons whose cell isn't computed for the selected champion
-// (the leaderboard says how many champions it is still waiting for instead).
+// (the leaderboard says how many champions it is still waiting for instead),
+// and each size whose button would open such a cell.
 function markCold() {
   const ready = bstate.status?.ready;
+  const cold = key => bstate.mode !== "leaderboard" && !!ready && !!key &&
+    !ready[`${bstate.champion}/${key}`];
   document.querySelectorAll("#scenario-seg button").forEach(b => {
-    const cold = bstate.mode !== "leaderboard" && !!ready &&
-      !ready[`${bstate.champion}/${b.dataset.key}`];
-    b.classList.toggle("cold", cold);
-    b.title = cold ? "not computed yet" : "";
+    const off = cold(b.dataset.key);
+    b.classList.toggle("cold", off);
+    b.title = off ? "not computed yet" : "";
+  });
+  document.querySelectorAll("#builds-size-seg button").forEach(b => {
+    const n = Number(b.dataset.items), off = cold(sizedScenario(n)?.key);
+    b.classList.toggle("cold", off);
+    b.title = buildSizeTitle(n) + (off ? " Not computed yet." : "");
   });
 }
 
@@ -202,13 +249,12 @@ async function loadScenario() {
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
-  const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
   const what = sc.overall
-    ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
+    ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
       "by the geometric mean of expected kill times, builds that kill all of them first"
-    : `target ${dummy(sc)}`;
+    : `target ${dummyStats(sc)}`;
   desc.textContent =
-    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}` +
+    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}${fightLimitNote(sc)}` +
     (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
     ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
     (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
@@ -241,23 +287,37 @@ async function showPending(req) {
 }
 
 const EXPECTED_TITLE = "Ranking metric. Same as kill time unless the build relies on an execute: expected-value crit always lands in the execute window, but real crit only would some of the time, so this blends the executing and non-executing timelines by that probability";
-const MEAN_TITLE = "Ranking metric: the geometric mean of the expected kill times against every target, so each target counts equally in percentage terms. Builds that kill every target rank above builds that leave one standing; a ≈ time is extrapolated past the fight at its average DPS.";
+const MEAN_TITLE = "Ranking metric: the geometric mean of the expected kill times against every target, so each target counts equally in percentage terms. Builds that kill every target rank above builds that leave one standing; a target a build can't kill counts as the time its average damage would have needed.";
+// A dummy's stats, as a scenario's line and the column headings' notes give them.
+const dummyStats = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR`;
 const vsTitle = t =>
-  `The same build's expected kill time against the ${t.target} (${fmtInt(t.targetHp)} HP, ` +
-  `${t.armor} armor, ${t.mr} MR, ${t.duration}s), and how far behind that target's own best build it is`;
+  `The same build's expected kill time against the ${t.target} (${dummyStats(t)}), ` +
+  "and how far behind that target's own best build it is";
+// A fight runs until the dummy dies, up to a time limit every target shares
+// (builds.py FIGHT_LIMIT, each target's `duration`): what a scenario's line
+// says of it. A scenario that names none says nothing.
+function fightLimitNote(sc) {
+  const limit = (sc.targets?.[0] ?? sc).duration;
+  return limit ? ` · fights run to the kill, ${fmtDur(limit)} at most` : "";
+}
 
-// One build's fight against one target: expected kill time (≈ extrapolated
-// past the fight if the dummy survived) and its distance from the best.
+// What a fight shows in place of a kill time when the limit ended it with
+// the dummy still standing; `v` is the fight, `t` its target.
+const CANT_KILL = "can't kill";
+function cantKillCell(v, t) {
+  const td = cell(CANT_KILL);
+  td.title = `The ${t.target} was still standing after ${fmtDur(t.duration)}, the longest a fight runs ` +
+    `(${fmtInt(v.total)} damage dealt)`;
+  return td;
+}
+
+// One build's fight against one target: its expected kill time and its
+// distance from the best, or that it can't kill.
 function vsCell(r, t) {
   const v = r.vs?.[t.target];
-  const td = document.createElement("td");
-  if (!v) { td.textContent = "—"; return td; }
-  if (v.ttkExp != null) td.append(v.ttkExp.toFixed(2) + "s");
-  else if (v.killTime != null) {
-    td.append("≈" + v.killTime.toFixed(1) + "s");
-    td.title = `survives the ${t.duration}s fight (${fmtInt(v.total)} damage dealt) — ` +
-      "time extrapolated at the fight's average DPS";
-  } else td.append("—");
+  if (!v) return cell("—");
+  if (v.ttkExp == null) return cantKillCell(v, t);
+  const td = cell(v.ttkExp.toFixed(2) + "s");
   if (v.loss != null) {
     const s = document.createElement("span");
     s.className = "ci";
@@ -379,7 +439,8 @@ function buyOrderItems(row) {
 }
 
 // Boots first (bought early), then the items numbered in buy order when
-// the row has one, else in the enumeration's order.
+// the row has one, else in the enumeration's order. A lone item has no order
+// to number.
 function buildCell(row) {
   const td = document.createElement("td");
   const list = document.createElement("span");
@@ -387,7 +448,7 @@ function buildCell(row) {
   const order = buyOrderItems(row);
   list.append(...(order ? [row.items[0], ...order] : row.items).map((name, i) => {
     const icon = itemIcon(name);
-    if (order && i > 0) {
+    if (order?.length > 1 && i > 0) {
       const step = document.createElement("span");
       step.className = "item-step";
       step.textContent = i;
@@ -416,7 +477,7 @@ function buildColumns(sc) {
                 td: r => cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—") });
   } else {
     cols.push(
-      { th: "Kill time", td: r => cell(r.ttk != null ? r.ttk.toFixed(2) + "s" : "survives") },
+      { th: "Kill time", td: r => r.ttk != null ? cell(r.ttk.toFixed(2) + "s") : cantKillCell(r, sc) },
       { th: "Expected", title: EXPECTED_TITLE,
         td: r => cell(r.ttkExp != null ? r.ttkExp.toFixed(2) + "s" : "—") });
     targets.filter(t => t.target !== sc.target).forEach(t =>
@@ -469,7 +530,7 @@ function renderBreakdown(r, sc = bstate.data.scenario, who = "") {
     head.className = "bd-group";
     const b = document.createElement("b");
     b.textContent = `vs ${t.target}`;
-    const fight = v.ttk != null ? `dies at ${v.ttk.toFixed(2)}s` : `survives the ${t.duration}s fight`;
+    const fight = v.ttk != null ? `dies at ${v.ttk.toFixed(2)}s` : `${CANT_KILL} within ${fmtDur(t.duration)}`;
     head.append(b, ` (${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR) — ` +
       `${fmtInt(v.total)} damage · ${fmtInt(v.dps)} DPS · ${v.attacks} attacks · ${fight}`);
     const entries = Object.entries(v.breakdown);
@@ -542,7 +603,7 @@ function openBoardChampion(slug) {
   setBuildsMode("champion");
 }
 
-const BOARD_TIME_TITLE = "Ranking metric: the expected kill time of the champion's best build against this target (the kill time, unless the build relies on an execute). A ≈ time is extrapolated past the fight at its average DPS: the target survived.";
+const BOARD_TIME_TITLE = "Ranking metric: the expected kill time of the champion's best build against this target (the kill time, unless the build relies on an execute). A champion that can't kill the target within the time limit ranks below every one that does, most damage first.";
 const BOARD_MEAN_TITLE = "Ranking metric: the geometric mean of the best build's expected kill times against every target, so each target counts equally in percentage terms. Champions that kill every target rank above those that leave one standing.";
 const INSTANT_TITLE = "Dead at 0.00s: this kit lands its whole opening combo in the fight's first instant, with no cast or travel time between the hits. The time — and an overall mean built on it — says more about the kit than about the champion.";
 
@@ -557,25 +618,20 @@ function boardInstantTag(td) {
   return td;
 }
 
-// A best build's fight against one target: its expected kill time, ≈ when
-// extrapolated past a fight the target survived.
+// A best build's fight against one target: its expected kill time, or that
+// it can't kill.
 function boardTimeCell(v, t) {
-  const td = document.createElement("td");
-  if (!v) { td.textContent = "—"; return td; }
-  if (v.ttkExp != null) {
-    td.append(v.ttkExp.toFixed(2) + "s");
-    if (v.ttkExp === 0) boardInstantTag(td);
-  } else if (v.killTime != null) {
-    td.append("≈" + v.killTime.toFixed(1) + "s");
-    td.title = `survives the ${t.duration}s fight (${fmtInt(v.total)} damage dealt) — ` +
-      "time extrapolated at the fight's average DPS";
-  } else td.append("—");
+  if (!v) return cell("—");
+  if (v.ttkExp == null) return cantKillCell(v, t);
+  const td = cell(v.ttkExp.toFixed(2) + "s");
+  if (v.ttkExp === 0) boardInstantTag(td);
   return td;
 }
 
-// What that cell sorts on, fastest first: the time it shows, a build that
-// kills the target before one it survives (as the target's own board ranks
-// them). null, a fight with no time to show, sorts last in either direction.
+// What that cell sorts on, fastest first: its kill time, a build that kills
+// the target before one that can't, and those by the time their damage would
+// have needed (as the target's own board ranks them). null, a fight with no
+// time at all, sorts last in either direction.
 function boardTimeSort(v) {
   const time = v?.ttkExp ?? v?.killTime;
   return time == null ? null : [v.ttkExp == null ? 1 : 0, time];
@@ -611,8 +667,7 @@ function boardColumns(sc) {
   const time = (t, col) => ({ key: `vs-${t.target}`, sort: r => boardTimeSort(r.vs?.[t.target]),
     first: ["fastest", "slowest"], td: r => boardTimeCell(r.vs?.[t.target], t), ...col });
   const vs = t => time(t, { th: `vs ${t.target}`,
-    title: `The same build's expected kill time against the ${t.target} (${fmtInt(t.targetHp)} HP, ` +
-           `${t.armor} armor, ${t.mr} MR, ${t.duration}s)` });
+    title: `The same build's expected kill time against the ${t.target} (${dummyStats(t)})` });
   const cols = [
     { key: "rank", th: "#", title: "Among every champion of this scenario; equal results share a rank. It stays this scenario's rank whichever column orders the table.",
       sort: r => r.rank, first: ["best", "worst"], td: r => cell(String(r.rank)) },
@@ -711,11 +766,10 @@ function renderLeaderboard() {
   const desc = document.getElementById("scenario-desc");
   if (!d) desc.textContent = bboard.error ? "" : "Loading…";
   else {
-    const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
     desc.textContent = `Level ${sc.level} · ` + (sc.overall
-      ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
+      ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
         "by the geometric mean of expected kill times, champions that kill all of them first"
-      : `target ${dummy(sc)} · ranked by expected kill time`) +
+      : `target ${dummyStats(sc)} · ranked by expected kill time`) + fightLimitNote(sc) +
       ` · each champion with the best build of its own ranking` +
       ` · items patch ${bstate.meta.itemsPatch} · ${bstate.meta.note}`;
   }
@@ -798,16 +852,6 @@ async function loadLeaderboard() {
 
 document.querySelectorAll("#builds-mode-seg button").forEach(b =>
   b.addEventListener("click", () => setBuildsMode(b.dataset.key)));
-// The same fight at the other build size: the scenario is what changes, so
-// the buttons, the cell or board and the URL all follow it.
-document.getElementById("builds-six").addEventListener("change", e => {
-  const sc = selectedScenario(), items = e.target.checked ? 6 : 5;
-  const twin = bstate.meta?.scenarios?.find(s => scenarioItems(s) === items &&
-    s.target === sc?.target && !!s.overall === !!sc?.overall);
-  if (!twin) { markScenario(); return; }  // nothing to switch to: the box goes back
-  bstate.scenario = twin.key;
-  loadBuildsView();
-});
 document.getElementById("bboard-search").addEventListener("input", e => {
   bboard.search = e.target.value; renderLeaderboard(); updateHash();
 });

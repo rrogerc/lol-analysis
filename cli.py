@@ -188,8 +188,9 @@ def main():
                         help="item/rune share of target HP (Giant Slayer)")
         sp.add_argument("--armor", type=float, default=80)
         sp.add_argument("--mr", type=float, default=60)
-        sp.add_argument("--duration", type=float, default=8,
-                        help="fight length in seconds (default 8)")
+        sp.add_argument("--duration", type=float, default=builds.FIGHT_LIMIT,
+                        help="time limit in seconds: the fight runs until the target "
+                             f"dies (default {builds.FIGHT_LIMIT})")
         sp.add_argument("--no-ult", action="store_true", help="do not cast R")
         sp.add_argument("--prestacked", action="store_true",
                         help="start with passive stacks already up")

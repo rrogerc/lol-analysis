@@ -116,3 +116,11 @@ changed only in `stop_after`, which the generator sets from the base
 fight's kill time, and still return `None`. Of the five enumeration runs,
 Vladimir's, Twitch's and Kassadin's are identical and Kayle's two reordered.
 
+The scenarios' fights got one two-minute time limit on 2026-11-27
+(`builds.FIGHT_LIMIT`; they ran 8, 12 and 15 seconds before). Neither file
+was regenerated for it: the engine did not change, each fixture carries its
+own targets, and both replay bit for bit. The generator takes its three
+scenario targets from `builds.SCENARIOS`, so the next regeneration will fight
+them under the two-minute limit, and every case whose fight the old lengths
+ended will move for that reason alone: replay the old fixtures against the
+new engine first, as above, to tell that apart from the change being made.

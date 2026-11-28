@@ -86,6 +86,20 @@ function checkBuildsItems() {
   assert.equal(buyOrderItems({ ...row, buyOrder: ["Yun Tal Wildarrows", "Umbral Glaive", "Kraken Slayer"] }), null);
   assert.equal(buyOrderItems({ ...row, buyOrder: row.buyOrder.slice(1) }), null);
   assert.equal(buyOrderItems({ ...row, buyOrder: [row.items[0], ...row.buyOrder.slice(1)] }), null);
+
+  // the icons: boots first, then the items numbered in buy order
+  const cellOf = r => {
+    const icons = context.buildCell(r).querySelectorAll(".item-icon");
+    return icons.map(icon => [icon.attributes["aria-label"], ...icon.querySelectorAll(".item-step").map(step => step.textContent)]);
+  };
+  assert.deepEqual(cellOf(row), [
+    ["Berserker's Greaves"], ["Yun Tal Wildarrows, buy 1 of 3", "1"],
+    ["Umbral Glaive, buy 2 of 3", "2"], ["Infinity Edge, buy 3 of 3", "3"],
+  ]);
+  assert.deepEqual(cellOf({ items: row.items }), row.items.map(name => [name]), "Without an order the items keep the row's");
+  const lone = { items: ["Berserker's Greaves", "Infinity Edge"], buyOrder: ["Infinity Edge"] };
+  assert.deepEqual(plain(buyOrderItems(lone)), lone.buyOrder);
+  assert.deepEqual(cellOf(lone), [["Berserker's Greaves"], ["Infinity Edge"]], "A one-item build has no order to number");
   ++passedSuites;
 }
 
@@ -132,20 +146,25 @@ async function checkBuildsPicker() {
   ++passedSuites;
 }
 
-async function checkBuildsSixItems() {
-  // "6 items + boots": the scenario buttons show one build size at a time, and
-  // the toggle swaps the selected scenario for the same fight at the other size.
-  assert(INDEX_HTML.includes('id="builds-six"'), "The page has the toggle");
-  assert(STYLES_CSS.includes("#builds-six-toggle[hidden] { display: none; }"), "The hidden toggle, a flex box, is hidden by its own rule");
+async function checkBuildsSizes() {
+  // "Items 1 to 6": the scenario buttons show one build size at a time, and a
+  // size button swaps the selected scenario for the same fight at that size.
+  assert(INDEX_HTML.includes('id="builds-size-seg"'), "The page has the size buttons");
+  assert(!INDEX_HTML.includes('id="builds-six"'), "The five-or-six toggle they replace is gone");
+  assert(STYLES_CSS.includes(".builds-size[hidden] { display: none; }"), "The hidden picker, a flex box, is hidden by its own rule");
   const full = [
-    { key: "full-squishy", label: "Full build vs squishy", tier: "full", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 8 },
-    { key: "full-tank", label: "Full build vs tank", tier: "full", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 15 },
+    { key: "full-squishy", label: "Full build vs squishy", tier: "full", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 120 },
+    { key: "full-tank", label: "Full build vs tank", tier: "full", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 120 },
     { key: "full-overall", label: "Full build: overall", tier: "full", overall: true },
   ];
-  const six = full.map(sc => ({
-    ...sc, key: sc.key.replace("full", "six"), tier: "six", slots: 7,
-    label: sc.label.replace("Full build", "Six-item build"),
+  // as builds.py SCENARIOS lists them: the full build, then the other sizes
+  const ITEMS = { one: 1, two: 2, three: 3, four: 4, six: 6 };
+  const sized = tier => full.map(sc => ({
+    ...sc, key: sc.key.replace("full", tier), tier, slots: ITEMS[tier] + 1,
+    label: sc.label.replace("Full build", `${tier[0].toUpperCase()}${tier.slice(1)}-item build`),
   }));
+  const [one, two, three, four, six] = Object.keys(ITEMS).map(sized);
+  const all = [...full, ...one, ...two, ...three, ...four, ...six];
   const keys = scenarios => scenarios.map(sc => sc.key);
   const flush = () => new Promise(setImmediate);
 
@@ -161,7 +180,9 @@ async function checkBuildsSixItems() {
             pool: [], boots: [], excluded: [], items: [], itemsPatch: "16.23", note: "Theoretical damage model.",
           };
         }
-        if (url === "api/builds/status.json") return { ready: {}, warmer: "idle" };
+        if (url === "api/builds/status.json") {
+          return { ready: Object.fromEntries(scenarios.map(sc => [`kayle/${sc.key}`, !cold.has(sc.key)])), warmer: "idle" };
+        }
         const [, board, key] = /^api\/builds\/(leaderboard|kayle)\/(.+)\.json$/.exec(url);
         if (board === "kayle" && cold.has(key)) return { pending: true };
         const scenario = { ...scenarios.find(sc => sc.key === key), level: 16, targets: [] };
@@ -177,85 +198,189 @@ async function checkBuildsSixItems() {
     await h.context.openBuilds();
     await flush();
     const buttons = () => h.queryAll("#scenario-seg button");
+    const sizes = () => h.queryAll("#builds-size-seg button");
+    const lit = bs => bs.filter(b => b.classList.contains("active"));
     return {
-      h, requests, cold, toggle: h.element("builds-six"),
+      h, requests, cold,
       shown: () => buttons().filter(b => !b.hidden).map(b => b.dataset.key),
-      active: () => buttons().filter(b => b.classList.contains("active")).map(b => b.dataset.key),
-      sizes: () => h.queryAll("#view-builds .build-size").map(el => el.textContent),
-      tick: async function (on) { this.toggle.checked = on; await this.toggle.fire("change"); await flush(); },
+      active: () => lit(buttons()).map(b => b.dataset.key),
+      offered: () => sizes().map(b => b.textContent),
+      size: () => lit(sizes()).map(b => b.textContent),
+      pressed: () => sizes().filter(b => b.attributes["aria-pressed"] === "true").map(b => b.textContent),
+      dimmed: () => sizes().filter(b => b.classList.contains("cold")).map(b => b.textContent),
+      words: () => h.queryAll("#view-builds .build-size").map(el => el.textContent),
+      title: () => h.element("builds-title").textContent,
+      pickSize: async n => { await sizes().find(b => b.textContent === String(n)).fire("click"); await flush(); },
+      pick: async key => { await buttons().find(b => b.dataset.key === key).fire("click"); await flush(); },
     };
   };
 
-  const d = await open([...full, ...six]);
-  const { h, requests, toggle } = d;
+  const d = await open(all);
+  const { h, requests } = d;
   const { bstate } = h.context;
-  assert.equal(d.sizes().length, 2, "The leaderboard's note and the item pool's both state the build size");
-  assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys([...full, ...six]));
+  assert.equal(d.words().length, 2, "The leaderboard's note and the item pool's both state the build size");
+  assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys(all));
+  assert.deepEqual(d.offered(), ["1", "2", "3", "4", "5", "6"], "A button per size, smallest first, whatever order the scenarios come in");
   assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-squishy", keys(full), ["full-squishy"]],
     "Five items is the default, and only its scenarios are offered");
-  assert.deepEqual([toggle.checked, h.element("builds-six-toggle").hidden, d.sizes()], [false, false, ["five", "five"]]);
+  assert.deepEqual([h.element("builds-size").hidden, d.size(), d.pressed(), d.dimmed(), d.words()],
+    [false, ["5"], ["5"], [], ["five items", "five"]]);
+  const titles = Object.fromEntries(h.queryAll("#builds-size-seg button").map(b => [b.textContent, b.title]));
+  assert.equal(titles[1], "Rank boots plus one item. Same level, same targets.");
+  assert.equal(titles[5], "Rank boots plus five items: a full inventory. Same level, same targets.");
+  assert.match(titles[6], /^Rank boots plus six items: the build of a bot-lane carry .* Same level, same targets\.$/);
 
   requests.length = 0;
-  await d.tick(true);
-  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["six-squishy", keys(six), ["six-squishy"]],
-    "Ticking it opens the same target's six-item scenario");
-  assert.deepEqual(requests, ["api/builds/kayle/six-squishy.json"]);
-  assert.deepEqual([toggle.checked, d.sizes()], [true, ["six", "six"]]);
-  assert.equal(h.element("builds-title").textContent, "Kayle — ranked builds, six-item build vs squishy");
-  assert.match(h.location.hash, /(^|&)sc=six-squishy(&|$)/, "The URL carries the scenario, and with it the toggle");
+  await d.pickSize(1);
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["one-squishy", keys(one), ["one-squishy"]],
+    "A size opens the same target's scenario at that size");
+  assert.deepEqual(requests, ["api/builds/kayle/one-squishy.json"]);
+  assert.deepEqual([d.size(), d.pressed(), d.words()], [["1"], ["1"], ["one item", "one"]]);
+  assert.equal(d.title(), "Kayle — ranked builds, one-item build vs squishy");
+  assert.match(h.location.hash, /(^|&)sc=one-squishy(&|$)/, "The URL carries the scenario, and with it the size");
 
-  // a six-item cell that is still warming: the heading names it all the same,
-  // and the note says why the table is empty
-  const pick = async key => {
-    await h.queryAll("#scenario-seg button").find(b => b.dataset.key === key).fire("click");
-    await flush();
-  };
+  // a cell that is still warming: the heading names it all the same, the
+  // note says why the table is empty, and the size is dimmed like the scenario
+  await d.pickSize(6);
+  assert.equal(bstate.scenario, "six-squishy");
   d.cold.add("six-tank");
-  await pick("six-tank");
-  assert.equal(h.element("builds-title").textContent, "Kayle — ranked builds, six-item build vs tank");
+  await d.pick("six-tank");
+  assert.equal(d.title(), "Kayle — ranked builds, six-item build vs tank");
   assert.match(h.element("scenario-desc").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
   assert.equal(h.query("#btbl tbody").children.length, 0);
+  assert.deepEqual(d.dimmed(), ["6"], "A size is dimmed while the cell its button opens is cold");
+  assert.equal(h.queryAll("#builds-size-seg button")[5].title, `${titles[6]} Not computed yet.`);
+  await d.pickSize(5);
+  assert.deepEqual([bstate.scenario, d.dimmed()], ["full-tank", ["6"]], "Six items against the tank is still cold from here");
+  await d.pick("full-overall");
+  assert.deepEqual(d.dimmed(), [], "Six items overall is computed");
   d.cold.clear();
 
-  // a scenario picked while it is ticked is a six-item one, and unticking
-  // goes back to the same fight with five
-  await pick("six-overall");
-  assert.deepEqual([bstate.scenario, d.active(), toggle.checked], ["six-overall", ["six-overall"], true]);
+  // a scenario picked at one size stays at that size, and another size is
+  // the same fight there
+  await d.pickSize(6);
+  assert.deepEqual([bstate.scenario, d.active(), d.size()], ["six-overall", ["six-overall"], ["6"]]);
+  await d.pick("six-tank");
+  assert.deepEqual([bstate.scenario, d.shown(), d.size()], ["six-tank", keys(six), ["6"]]);
   requests.length = 0;
-  await d.tick(false);
-  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-overall", keys(full), ["full-overall"]]);
-  assert.deepEqual(requests, ["api/builds/kayle/full-overall.json"]);
-  assert.deepEqual([toggle.checked, d.sizes()], [false, ["five", "five"]]);
+  await d.pickSize(3);
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["three-tank", keys(three), ["three-tank"]]);
+  assert.deepEqual(requests, ["api/builds/kayle/three-tank.json"]);
+  assert.deepEqual([d.size(), d.words()], [["3"], ["three items", "three"]]);
 
-  // the leaderboard follows the toggle the same way
+  // the leaderboard follows the size the same way; it dims nothing, and says
+  // how many champions it is waiting for instead
+  d.cold.add("two-tank");
+  await h.context.loadStatus();
+  assert.deepEqual(d.dimmed(), ["2"]);
   h.context.setBuildsMode("leaderboard");
   await flush();
+  assert.deepEqual(d.dimmed(), []);
   requests.length = 0;
-  await d.tick(true);
-  assert.deepEqual([bstate.scenario, d.shown()], ["six-overall", keys(six)]);
-  assert.deepEqual(requests, ["api/builds/leaderboard/six-overall.json"]);
-  assert.equal(h.element("builds-title").textContent, "Champion leaderboard, six-item build: overall");
-  assert.deepEqual(d.sizes(), ["six", "six"]);
+  await d.pickSize(2);
+  assert.deepEqual([bstate.scenario, d.shown(), d.size()], ["two-tank", keys(two), ["2"]]);
+  assert.deepEqual(requests, ["api/builds/leaderboard/two-tank.json"]);
+  assert.equal(d.title(), "Champion leaderboard, two-item build vs tank");
+  assert.deepEqual(d.words(), ["two items", "two"]);
+  d.cold.clear();
   h.context.setBuildsMode("champion");
   await flush();
 
   // a link, or Back, restores the build size with the scenario
-  for (const [key, on, shown] of [["full-tank", false, full], ["six-tank", true, six]]) {
+  for (const [key, size, shown] of [["full-tank", "5", full], ["four-overall", "4", four], ["six-tank", "6", six]]) {
     h.location.hash = `#tab=builds&tier=soloq_masters_plus&champ=kayle&sc=${key}`;
     h.context.restoredHash = null;
     h.context.restoreHash();
     await flush();
-    assert.deepEqual([bstate.scenario, toggle.checked, d.shown(), d.active()], [key, on, keys(shown), [key]], key);
+    assert.deepEqual([bstate.scenario, d.size(), d.shown(), d.active()], [key, [size], keys(shown), [key]], key);
   }
 
-  // a serve older than the six-item tier lists none: nothing to switch to
+  // a size that lacks the selected fight opens the first one it has
+  const uneven = await open([...full, one[0]]);
+  await uneven.pick("full-overall");
+  await uneven.pickSize(1);
+  assert.deepEqual([uneven.h.context.bstate.scenario, uneven.shown(), uneven.size()], ["one-squishy", ["one-squishy"], ["1"]]);
+
+  // a serve that ranks fewer sizes offers the ones it has, and one that ranks
+  // a single size has nothing to pick
+  const fewer = await open([...full, ...six]);
+  assert.deepEqual([fewer.offered(), fewer.size(), fewer.h.element("builds-size").hidden], [["5", "6"], ["5"], false]);
+  await fewer.pickSize(6);
+  assert.deepEqual([fewer.h.context.bstate.scenario, fewer.shown()], ["six-squishy", keys(six)]);
   const old = await open(full);
-  assert.equal(old.h.element("builds-six-toggle").hidden, true);
-  assert.deepEqual([old.shown(), old.toggle.checked, old.sizes()], [keys(full), false, ["five", "five"]]);
-  old.requests.length = 0;
-  await old.tick(true);
-  assert.deepEqual([old.h.context.bstate.scenario, old.toggle.checked, old.requests], ["full-squishy", false, []],
-    "Without a six-item twin the box goes back and nothing loads");
+  assert.deepEqual([old.h.element("builds-size").hidden, old.offered(), old.shown(), old.words()],
+    [true, ["5"], keys(full), ["five items", "five"]]);
+  ++passedSuites;
+}
+
+async function checkBuildsFights() {
+  // A fight runs until the dummy dies. One the time limit ends instead reads
+  // "can't kill" wherever its kill time would stand, in the champion's table
+  // and in the breakdown below it.
+  const targets = [
+    { key: "one-squishy", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 120 },
+    { key: "one-tank", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 120 },
+  ];
+  const kill = (ttk, total, loss) => ({ ttk, ttkExp: ttk, killTime: ttk, loss, dps: Math.round(total / ttk), total, attacks: 9, breakdown: { auto: total } });
+  // still standing at the limit: no kill time, and the time its damage would have needed
+  const short = { ttk: null, ttkExp: null, killTime: 131.17, loss: 1.36, dps: 37, total: 4391, attacks: 80, breakdown: { Q: 2391, E: 2000 } };
+  const build = (rank, item, vs) => ({ rank, items: ["Berserker's Greaves", item], buyOrder: [item], gold: 4100, ap: 0, ad: 120, attackSpeed: 1.1, vs });
+  const fights = [
+    { squishy: kill(8.34, 2800, 1), tank: kill(96.5, 4800, 1) },
+    { squishy: kill(60.02, 2800, 7.2), tank: short },
+  ];
+  const own = (v, row) => ({ ...row, ttk: v.ttk, ttkExp: v.ttkExp, dps: v.dps, total: v.total, attacks: v.attacks, breakdown: v.breakdown });
+  const cellFor = target => ({
+    champion: "kayle", championName: "Kayle", ranks: { Q: 5, W: 3, E: 5, R: 3 }, buildsEvaluated: 525, itemsPatch: "16.23", kitPatch: "16.16",
+    scenario: { ...targets.find(t => t.target === target), label: `One-item build vs ${target}`, tier: "one", slots: 2, level: 16, targets },
+    rows: [own(fights[0][target], build(1, "Yun Tal Wildarrows", fights[0])), own(fights[1][target], build(2, "Guardian Angel", fights[1]))],
+  });
+  const h = loadDashboard({ api: async url => cellFor(/one-(\w+)\.json$/.exec(url)[1]) });
+  const { context } = h;
+  context.META = { tiers: ["soloq_masters_plus"], defaultTier: "soloq_masters_plus", platforms: [] };
+  Object.assign(context.bstate, {
+    champion: "kayle", items: new Map(),
+    meta: { champions: [{ slug: "kayle", name: "Kayle" }], note: "Theoretical damage model.",
+            scenarios: targets.map(t => ({ ...t, label: `One-item build vs ${t.target}`, tier: "one", slots: 2 })) },
+  });
+  const open = async key => { context.bstate.scenario = key; await context.loadScenario(); };
+  const heads = () => h.queryAll("#btbl thead th").map(th => th.textContent);
+  const rows = () => h.queryAll("#btbl tbody tr").map(tr => tr.children);
+  const texts = () => rows().map(tds => tds.map(td => td.textContent).filter((_, i) => i !== 1));  // all but the icons
+  const stood = "was still standing after 2 min, the longest a fight runs (4,391 damage dealt)";
+
+  await open("one-tank");
+  assert.deepEqual(heads(), ["#", "Build", "Kill time", "Expected", "vs squishy", "DPS", "Damage", "Gold"]);
+  assert.deepEqual(texts(), [
+    ["1", "96.50s", "96.50s", "8.34s best", "50", "4,800", "4,100"],
+    ["2", "can't kill", "\u2014", "60.02s +620%", "37", "4,391", "4,100"],
+  ]);
+  assert.deepEqual(rows().map(tds => tds[2].title), ["", `The tank ${stood}`], "The cell says what was dealt, and how long the fight ran");
+  assert.equal(h.element("scenario-desc").textContent,
+    "Level 16 (Q5/W3/E5/R3) \u00b7 target 4,800 HP, 220 armor, 160 MR \u00b7 fights run to the kill, 2 min at most" +
+    " \u00b7 525 builds ranked \u00b7 items patch 16.23, kit 16.16 \u00b7 Theoretical damage model.");
+
+  await open("one-squishy");
+  assert.deepEqual(heads(), ["#", "Build", "Kill time", "Expected", "vs tank", "DPS", "Damage", "Gold"]);
+  assert.deepEqual(texts(), [
+    ["1", "8.34s", "8.34s", "96.50s best", "336", "2,800", "4,100"],
+    ["2", "60.02s", "60.02s", "can't kill", "47", "2,800", "4,100"],
+  ], "Against another target it reads the same, with no distance from the best to give");
+  assert.deepEqual(rows().map(tds => tds[4].title), ["", `The tank ${stood}`]);
+  assert.match(h.queryAll("#btbl thead th")[4].title, /against the tank \(4,800 HP, 220 armor, 160 MR\), and how far behind/);
+
+  // the selected build's fights, below the table
+  const groups = () => h.queryAll("#bd-bars .bd-group").map(el => el.textContent);
+  assert.deepEqual(groups(), [
+    "vs squishy (2,800 HP, 110 armor, 60 MR) \u2014 2,800 damage \u00b7 336 DPS \u00b7 9 attacks \u00b7 dies at 8.34s",
+    "vs tank (4,800 HP, 220 armor, 160 MR) \u2014 4,800 damage \u00b7 50 DPS \u00b7 9 attacks \u00b7 dies at 96.50s",
+  ]);
+  await h.queryAll("#btbl tbody tr")[1].fire("click");
+  assert.equal(groups()[1], "vs tank (4,800 HP, 220 armor, 160 MR) \u2014 4,391 damage \u00b7 37 DPS \u00b7 80 attacks \u00b7 can't kill within 2 min");
+
+  assert(!/survive|\u2248|undefined|NaN/.test(h.element("view-builds").textContent),
+    "Nothing on the tab says survives, or shows an estimated time");
+  assert(!/survive|\u2248/.test([context.MEAN_TITLE, context.BOARD_TIME_TITLE, context.BOARD_MEAN_TITLE, context.EXPECTED_TITLE].join(" ")));
   ++passedSuites;
 }
 
@@ -344,9 +469,9 @@ async function checkBuildsLeaderboard() {
   const took = name => calls.filter(c => c[0] === name);
 
   const targets = [
-    { key: "full-squishy", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 8 },
-    { key: "full-bruiser", target: "bruiser", targetHp: 3800, armor: 180, mr: 120, duration: 12 },
-    { key: "full-tank", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 15 },
+    { key: "full-squishy", target: "squishy", targetHp: 2800, armor: 110, mr: 60, duration: 120 },
+    { key: "full-bruiser", target: "bruiser", targetHp: 3800, armor: 180, mr: 120, duration: 120 },
+    { key: "full-tank", target: "tank", targetHp: 4800, armor: 220, mr: 160, duration: 120 },
   ];
   const fight = (ttk, extra = {}) => ({
     ttk, ttkExp: ttk, killTime: ttk, dps: ttk ? Math.round(3000 / ttk) : 0,
@@ -359,7 +484,8 @@ async function checkBuildsLeaderboard() {
     vs: {
       squishy: fight(times[0]),
       bruiser: fight(times[1]),
-      tank: times[2] == null ? fight(null, { ttkExp: null, killTime: 17.26, total: 4100 }) : fight(times[2]),
+      // null: the time limit ended the fight with the tank still standing
+      tank: times[2] == null ? fight(null, { ttkExp: null, killTime: 140.49, total: 4100 }) : fight(times[2]),
     },
     ...extra,
   });
@@ -405,7 +531,7 @@ async function checkBuildsLeaderboard() {
   assert.deepEqual(texts(), [
     ["1", "Ahri", "Boots + Ahri's item", "0.00s instant", "4.49s", "7.69s", "\u2014", "3,000", "16,001"],
     ["2", "Kassadin", "Boots + Kassadin's item", "0.75s", "2.20s", "5.10s", "4,000", "3,000", "16,002"],
-    ["2", "Lee Sin", "Boots + Lee Sin's item", "0.75s", "3.50s", "\u224817.3s", "4,000", "3,000", "16,002"],
+    ["2", "Lee Sin", "Boots + Lee Sin's item", "0.75s", "3.50s", "can't kill", "4,000", "3,000", "16,002"],
     ["4", "Kayle", "Boots + Kayle's item", "1.07s", "2.76s", "4.46s", "2,804", "3,000", "16,004"],
   ]);
 
@@ -413,11 +539,11 @@ async function checkBuildsLeaderboard() {
   assert.equal(ahri.children[3].title, INSTANT_TITLE);
   assert.equal(ahri.children[1].children.length, 2, "The champion cell is its icon and name, no tag");
   assert.equal(ahri.children[1].children[0].src, "https://cdn.communitydragon.org/latest/champion/ahri/square");
-  assert.match(leesin.children[5].title, /^survives the 15s fight \(4,100 damage dealt\)/);
+  assert.equal(leesin.children[5].title, "The tank was still standing after 2 min, the longest a fight runs (4,100 damage dealt)");
   assert.equal(kayle.children[3].title, "");
 
   const desc = element("scenario-desc").textContent;
-  assert.match(desc, /^Level 16 \u00b7 target 2,800 HP, 110 armor, 60 MR, 8s fight \u00b7 ranked by expected kill time/);
+  assert.match(desc, /^Level 16 \u00b7 target 2,800 HP, 110 armor, 60 MR \u00b7 ranked by expected kill time \u00b7 fights run to the kill, 2 min at most \u00b7 each champion/);
   assert.match(desc, /each champion with the best build of its own ranking \u00b7 items patch 16\.18/);
   assert.equal(element("bboard-status").textContent, "4 champions");
   assert.equal(element("bboard-failed").hidden, true);
@@ -449,7 +575,7 @@ async function checkBuildsLeaderboard() {
   assert.equal(body()[0].children[6].title, INSTANT_TITLE);
   assert.match(
     element("scenario-desc").textContent,
-    /ranked on every target at once \u2014 squishy \(2,800 HP, 110 armor, 60 MR, 8s fight\); bruiser .*champions that kill all of them first/
+    /ranked on every target at once \u2014 squishy \(2,800 HP, 110 armor, 60 MR\); bruiser .*champions that kill all of them first \u00b7 fights run to the kill, 2 min at most \u00b7/
   );
   bstate.scenario = "full-squishy";
 
@@ -991,10 +1117,11 @@ async function checkMatchups() {
   checkOnetricks();
   checkBuildsItems();
   await checkBuildsPicker();
-  await checkBuildsSixItems();
+  await checkBuildsSizes();
+  await checkBuildsFights();
   await checkBuildsLeaderboard();
   await checkMatchups();
-  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, picker, six-items, leaderboard, matchups).`);
+  console.log(`LoL UI tests passed (${passedSuites} suites: champion-retirement, onetricks, items, picker, build-sizes, fights, leaderboard, matchups).`);
 })().catch(err => {
   console.error(err);
   process.exit(1);
