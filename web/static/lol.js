@@ -110,19 +110,16 @@ async function loadStatus() {
   return bstate.status;
 }
 
-// A scenario's build size, boots aside: one item to six, the sizes the Items
+// A scenario's build size, boots aside: one item to five, the sizes the Items
 // buttons switch between (builds.py SCENARIOS: `slots` counts the boots, and a
 // scenario that doesn't say is the usual six, boots and five items).
 const scenarioItems = sc => (sc?.slots ?? 6) - 1;
-const ITEM_COUNT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six" };
+const ITEM_COUNT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five" };
 const selectedScenario = () => bstate.meta?.scenarios?.find(s => s.key === bstate.scenario);
 // "one item", "five items"
 const itemCount = n => `${ITEM_COUNT_WORDS[n] || n} item${n === 1 ? "" : "s"}`;
 // What a size is, where its number doesn't say.
-const BUILD_SIZE_NOTES = {
-  5: "a full inventory",
-  6: "the build of a bot-lane carry once the role quest has given boots a slot of their own",
-};
+const BUILD_SIZE_NOTES = { 5: "a full inventory" };
 const buildSizeTitle = n =>
   `Rank boots plus ${itemCount(n)}${BUILD_SIZE_NOTES[n] ? `: ${BUILD_SIZE_NOTES[n]}` : ""}. Same level, same targets.`;
 

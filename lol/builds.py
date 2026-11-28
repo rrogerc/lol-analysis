@@ -788,8 +788,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # together: one enumeration pass scores every build against each of them,
 # which fills the per-target cells and, at no extra cost, the tier's
 # "overall" cell, which ranks every build on all of the targets at once (see
-# overall_key). Six tiers ship, one per build size: the full build and the
-# five other sizes below; the mid-game and first-item presets were dropped.
+# overall_key). Five tiers ship, one per build size: the full build and the
+# four smaller sizes below; the mid-game and first-item presets were dropped.
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
 # duration: the fight's time limit, in seconds (FIGHT_LIMIT for every target)
 # slots: the build's size, boots included (DEFAULT_SLOTS where a scenario
@@ -802,22 +802,23 @@ FIGHT_LIMIT = 120
 SCENARIOS = {
     "full-squishy": dict(label="Full build vs squishy", tier="full",
                          target="squishy", level=16, targetHp=2800, armor=110,
-                         mr=60, duration=FIGHT_LIMIT, targetBonusHp=800),
+                         mr=60, duration=FIGHT_LIMIT, targetBonusHp=300),
     "full-bruiser": dict(label="Full build vs bruiser", tier="full",
                          target="bruiser", level=16, targetHp=3800, armor=180,
-                         mr=120, duration=FIGHT_LIMIT, targetBonusHp=1500),
+                         mr=120, duration=FIGHT_LIMIT, targetBonusHp=700),
     "full-tank": dict(label="Full build vs tank", tier="full", target="tank",
                       level=16, targetHp=4800, armor=220, mr=160,
-                      duration=FIGHT_LIMIT, targetBonusHp=1500),
+                      duration=FIGHT_LIMIT, targetBonusHp=1200),
     "full-overall": dict(label="Full build: overall", tier="full",
                          overall=True, level=16),
 }
-# The other build sizes, from boots and one item to boots and six: every
+# The smaller build sizes, from boots and one item to boots and four: every
 # full-build scenario again with that many slots, at the same level against
-# the same targets, so two sizes differ by their items and nothing else. Six
-# is one more than the inventory holds: the bot-lane role quest gives boots a
-# slot of their own, so a marksman ends the game on boots and six items.
-SIZED_TIERS = {"one": 1, "two": 2, "three": 3, "four": 4, "six": 6}  # items, boots aside
+# the same targets, so two sizes differ by their items and nothing else.
+# Nothing ranks a sixth item (the bot-lane role quest gives boots a slot of
+# their own): few games get that far, and the item that fills the slot is
+# bought for utility or survival, which a damage ranking can't weigh.
+SIZED_TIERS = {"one": 1, "two": 2, "three": 3, "four": 4}  # items, boots aside
 SCENARIOS.update({
     f"{tier}-" + key.removeprefix("full-"): dict(
         sc, tier=tier, slots=items + 1,
@@ -843,7 +844,7 @@ def tier_slots(tier):
 def tiers():
     """Tier keys cheapest first: budget presets before full builds (they
     reject nearly every combination before simulating it), smaller builds
-    before larger ones (a sixth item is twelve times the combinations),
+    before larger ones (each further item multiplies the combinations),
     shorter fight limits first."""
     def cost(tier):
         ts = tier_targets(tier)
@@ -1028,9 +1029,8 @@ def cells():
     cells of a tier sit side by side. The full-build tier ranks ~130M
     builds against each of its targets (three to five fights per item
     combination and target: boots that fight alike share one, and most
-    fights stop early once the build can't place); the six-item tier about
-    twelve times as many, in about twelve times as long; the tiers of one
-    to four items 8M at most, in seconds."""
+    fights stop early once the build can't place); the tiers of one to
+    four items 8M at most, in seconds."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -1205,8 +1205,8 @@ BUY_ORDER_ROWS = 10  # rows per cell that get one; the rest keep pool order
 # level where that is lower: the first item lands around level 9 and the
 # second around 11, where the dropped first-item (4.5k gold) and mid-game
 # (7.5k) presets put them, then two levels an item. One entry per item of
-# the largest tier: a six-item build's last stage owns five.
-BUY_STAGE_LEVELS = (7, 9, 11, 13, 15, 17)
+# the largest tier: a five-item build's last stage owns four.
+BUY_STAGE_LEVELS = (7, 9, 11, 13, 15)
 # The targets grow into the full-build dummies meanwhile. Up to
 # BUY_EARLY_LEVEL they keep these shares of their full stats (the dropped
 # first-item target's 1,900 HP / 50 armor / 40 MR against today's squishy
@@ -1268,8 +1268,8 @@ def buy_order(items, times, cost, first=(), not_first=()):
     partial builds kill fastest along the way, each stage's kill time
     weighted by the gold of the item bought next, which is how long that
     stage lasts. `times` maps each owned subset to its stage's kill time
-    (None: no damage). Five items have 120 orders and six have 720, and
-    every one is scored; ties keep pool order."""
+    (None: no damage). Five items have 120 orders, and every one is scored;
+    ties keep pool order."""
     lead = [i for i in items if i in first]
     rest = [i for i in items if i not in first]
     orders = [a + b for a in itertools.permutations(lead)

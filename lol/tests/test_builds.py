@@ -1735,7 +1735,7 @@ class TestScenarioCache(unittest.TestCase):
                                    targetBonusHp=400)}
     # the tiers that ship, as SCENARIOS lists them: the items of a build,
     # boots aside
-    SIZES = {"full": 5, "one": 1, "two": 2, "three": 3, "four": 4, "six": 6}
+    SIZES = {"full": 5, "one": 1, "two": 2, "three": 3, "four": 4}
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -1759,7 +1759,7 @@ class TestScenarioCache(unittest.TestCase):
         self.assertEqual(list(builds.SCENARIOS),
                          [f"{tier}-{fight}" for tier in self.SIZES
                           for fight in ("squishy", "bruiser", "tank", "overall")])
-        self.assertEqual(builds.tiers(), ["one", "two", "three", "four", "full", "six"])
+        self.assertEqual(builds.tiers(), ["one", "two", "three", "four", "full"])
         for tier in builds.tiers():
             keys = builds.tier_scenarios(tier)
             targets = builds.tier_targets(tier)
@@ -1805,9 +1805,9 @@ class TestScenarioCache(unittest.TestCase):
         labels = [sc["label"] for sc in builds.SCENARIOS.values()]
         self.assertEqual(len(set(labels)), len(labels))
         self.assertEqual([builds.SCENARIOS[k]["label"] for k in
-                          ("one-squishy", "three-overall", "full-tank", "six-bruiser")],
+                          ("one-squishy", "three-overall", "full-tank", "four-bruiser")],
                          ["One-item build vs squishy", "Three-item build: overall",
-                          "Full build vs tank", "Six-item build vs bruiser"])
+                          "Full build vs tank", "Four-item build vs bruiser"])
 
     def test_cells_cheapest_first(self):
         champs = builds.kit_champions()
@@ -1816,7 +1816,7 @@ class TestScenarioCache(unittest.TestCase):
         self.assertEqual(len(set(cs)), len(cs))
         self.assertEqual(cs[0], (champs[0], "one-squishy"))
         # every champion's builds of one size before anyone's of the next
-        # size up: each further item multiplies the builds, a sixth by twelve
+        # size up: each further item multiplies the builds
         sizes = sorted(self.SIZES, key=self.SIZES.get)
         self.assertEqual([k for _, k in cs],
                          [k for tier in sizes for _ in champs
@@ -2032,9 +2032,6 @@ class TestScenarioCache(unittest.TestCase):
     def test_top_rows_carry_buy_orders(self):
         self.check_buy_orders("full")
 
-    def test_six_item_rows_carry_buy_orders(self):
-        self.check_buy_orders("six")  # 720 orders over 63 partial builds
-
     def test_smaller_builds_carry_buy_orders(self):
         for tier in ("two", "three", "four"):
             with self.subTest(tier=tier):
@@ -2130,7 +2127,7 @@ class TestSimCommand(unittest.TestCase):
         args = SimpleNamespace(
             name="kayle", level=16, patch=None, max_order=None, no_ult=False,
             prestacked=False, items=["Berserker's Greaves", "Yun Tal Wildarrows"],
-            **{**dict(target_hp=2800, armor=110, mr=60, target_bonus_hp=800,
+            **{**dict(target_hp=2800, armor=110, mr=60, target_bonus_hp=300,
                       duration=builds.FIGHT_LIMIT), **kw})
         out = io.StringIO()
         with redirect_stdout(out):
@@ -2309,12 +2306,12 @@ class TestBuyOrder(unittest.TestCase):
         early = builds.stage_target(tank, 9)
         self.assertAlmostEqual(early["armor"], 220 * 50 / 110)  # first-item share
         self.assertEqual(builds.stage_target(tank, 7), early, "no lower before 9")
-        # the health it lacks is item health first: 1,543 lacking, 1,500 of it items
+        # the health it lacks is item health first: 1,543 lacking, 1,200 of it items
         self.assertEqual(early["targetBonusHp"], 0.0)
         squishy = builds.stage_target(builds.SCENARIOS["full-squishy"], 11)
         self.assertEqual([round(squishy[k]) for k in ("targetHp", "armor", "mr",
                                                       "targetBonusHp")],
-                         [2157, 67, 46, 157])
+                         [2157, 67, 46, 0])  # 643 lacking, 300 of it items
         # a tier at or below the early level has nothing to grow into
         self.assertAlmostEqual(builds.stage_target(dict(tank, level=9), 7)["armor"], 220)
 
@@ -2492,7 +2489,8 @@ class TestEnumeratorPruning(unittest.TestCase):
         self.assertSameRanking(lists, count)
 
     def test_a_seven_slot_pass_is_pruned_as_exactly(self):
-        # the six-item tier: boots and six items, sequential and forked
+        # one slot more than any tier ships (`builds optimize --slots 7`):
+        # boots and six items, sequential and forked
         ref, count = builds.enumerate_builds(
             self.champ, self.pool, self.effects, self.kit, 16, self.ranks,
             self.targets, slots=7, candidates=self.tiny, overall=self.overall,
@@ -2898,7 +2896,7 @@ class TestLeaderboard(unittest.TestCase):
     def test_scenarios(self):
         self.assertEqual(leaderboard.leaderboard_scenarios(),
                          [f"{tier}-{fight}"
-                          for tier in ("full", "one", "two", "three", "four", "six")
+                          for tier in ("full", "one", "two", "three", "four")
                           for fight in ("squishy", "bruiser", "tank", "overall")])
         for key in ("mid-squishy", "nope"):
             with self.assertRaises(ValueError):

@@ -147,7 +147,7 @@ async function checkBuildsPicker() {
 }
 
 async function checkBuildsSizes() {
-  // "Items 1 to 6": the scenario buttons show one build size at a time, and a
+  // "Items 1 to 5": the scenario buttons show one build size at a time, and a
   // size button swaps the selected scenario for the same fight at that size.
   assert(INDEX_HTML.includes('id="builds-size-seg"'), "The page has the size buttons");
   assert(!INDEX_HTML.includes('id="builds-six"'), "The five-or-six toggle they replace is gone");
@@ -158,13 +158,13 @@ async function checkBuildsSizes() {
     { key: "full-overall", label: "Full build: overall", tier: "full", overall: true },
   ];
   // as builds.py SCENARIOS lists them: the full build, then the other sizes
-  const ITEMS = { one: 1, two: 2, three: 3, four: 4, six: 6 };
+  const ITEMS = { one: 1, two: 2, three: 3, four: 4 };
   const sized = tier => full.map(sc => ({
     ...sc, key: sc.key.replace("full", tier), tier, slots: ITEMS[tier] + 1,
     label: sc.label.replace("Full build", `${tier[0].toUpperCase()}${tier.slice(1)}-item build`),
   }));
-  const [one, two, three, four, six] = Object.keys(ITEMS).map(sized);
-  const all = [...full, ...one, ...two, ...three, ...four, ...six];
+  const [one, two, three, four] = Object.keys(ITEMS).map(sized);
+  const all = [...full, ...one, ...two, ...three, ...four];
   const keys = scenarios => scenarios.map(sc => sc.key);
   const flush = () => new Promise(setImmediate);
 
@@ -220,7 +220,7 @@ async function checkBuildsSizes() {
   const { bstate } = h.context;
   assert.equal(d.words().length, 2, "The leaderboard's note and the item pool's both state the build size");
   assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys(all));
-  assert.deepEqual(d.offered(), ["1", "2", "3", "4", "5", "6"], "A button per size, smallest first, whatever order the scenarios come in");
+  assert.deepEqual(d.offered(), ["1", "2", "3", "4", "5"], "A button per size, smallest first, whatever order the scenarios come in");
   assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-squishy", keys(full), ["full-squishy"]],
     "Five items is the default, and only its scenarios are offered");
   assert.deepEqual([h.element("builds-size").hidden, d.size(), d.pressed(), d.dimmed(), d.words()],
@@ -228,7 +228,6 @@ async function checkBuildsSizes() {
   const titles = Object.fromEntries(h.queryAll("#builds-size-seg button").map(b => [b.textContent, b.title]));
   assert.equal(titles[1], "Rank boots plus one item. Same level, same targets.");
   assert.equal(titles[5], "Rank boots plus five items: a full inventory. Same level, same targets.");
-  assert.match(titles[6], /^Rank boots plus six items: the build of a bot-lane carry .* Same level, same targets\.$/);
 
   requests.length = 0;
   await d.pickSize(1);
@@ -241,27 +240,27 @@ async function checkBuildsSizes() {
 
   // a cell that is still warming: the heading names it all the same, the
   // note says why the table is empty, and the size is dimmed like the scenario
-  await d.pickSize(6);
-  assert.equal(bstate.scenario, "six-squishy");
-  d.cold.add("six-tank");
-  await d.pick("six-tank");
-  assert.equal(d.title(), "Kayle — ranked builds, six-item build vs tank");
+  await d.pickSize(4);
+  assert.equal(bstate.scenario, "four-squishy");
+  d.cold.add("four-tank");
+  await d.pick("four-tank");
+  assert.equal(d.title(), "Kayle — ranked builds, four-item build vs tank");
   assert.match(h.element("scenario-desc").textContent, /^Not computed yet for the current code and data \(no warmer is running/);
   assert.equal(h.query("#btbl tbody").children.length, 0);
-  assert.deepEqual(d.dimmed(), ["6"], "A size is dimmed while the cell its button opens is cold");
-  assert.equal(h.queryAll("#builds-size-seg button")[5].title, `${titles[6]} Not computed yet.`);
+  assert.deepEqual(d.dimmed(), ["4"], "A size is dimmed while the cell its button opens is cold");
+  assert.equal(h.queryAll("#builds-size-seg button")[3].title, `${titles[4]} Not computed yet.`);
   await d.pickSize(5);
-  assert.deepEqual([bstate.scenario, d.dimmed()], ["full-tank", ["6"]], "Six items against the tank is still cold from here");
+  assert.deepEqual([bstate.scenario, d.dimmed()], ["full-tank", ["4"]], "Four items against the tank is still cold from here");
   await d.pick("full-overall");
-  assert.deepEqual(d.dimmed(), [], "Six items overall is computed");
+  assert.deepEqual(d.dimmed(), [], "Four items overall is computed");
   d.cold.clear();
 
   // a scenario picked at one size stays at that size, and another size is
   // the same fight there
-  await d.pickSize(6);
-  assert.deepEqual([bstate.scenario, d.active(), d.size()], ["six-overall", ["six-overall"], ["6"]]);
-  await d.pick("six-tank");
-  assert.deepEqual([bstate.scenario, d.shown(), d.size()], ["six-tank", keys(six), ["6"]]);
+  await d.pickSize(4);
+  assert.deepEqual([bstate.scenario, d.active(), d.size()], ["four-overall", ["four-overall"], ["4"]]);
+  await d.pick("four-tank");
+  assert.deepEqual([bstate.scenario, d.shown(), d.size()], ["four-tank", keys(four), ["4"]]);
   requests.length = 0;
   await d.pickSize(3);
   assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["three-tank", keys(three), ["three-tank"]]);
@@ -287,7 +286,7 @@ async function checkBuildsSizes() {
   await flush();
 
   // a link, or Back, restores the build size with the scenario
-  for (const [key, size, shown] of [["full-tank", "5", full], ["four-overall", "4", four], ["six-tank", "6", six]]) {
+  for (const [key, size, shown] of [["full-tank", "5", full], ["four-overall", "4", four], ["one-squishy", "1", one]]) {
     h.location.hash = `#tab=builds&tier=soloq_masters_plus&champ=kayle&sc=${key}`;
     h.context.restoredHash = null;
     h.context.restoreHash();
@@ -303,10 +302,10 @@ async function checkBuildsSizes() {
 
   // a serve that ranks fewer sizes offers the ones it has, and one that ranks
   // a single size has nothing to pick
-  const fewer = await open([...full, ...six]);
-  assert.deepEqual([fewer.offered(), fewer.size(), fewer.h.element("builds-size").hidden], [["5", "6"], ["5"], false]);
-  await fewer.pickSize(6);
-  assert.deepEqual([fewer.h.context.bstate.scenario, fewer.shown()], ["six-squishy", keys(six)]);
+  const fewer = await open([...full, ...four]);
+  assert.deepEqual([fewer.offered(), fewer.size(), fewer.h.element("builds-size").hidden], [["4", "5"], ["5"], false]);
+  await fewer.pickSize(4);
+  assert.deepEqual([fewer.h.context.bstate.scenario, fewer.shown()], ["four-squishy", keys(four)]);
   const old = await open(full);
   assert.deepEqual([old.h.element("builds-size").hidden, old.offered(), old.shown(), old.words()],
     [true, ["5"], keys(full), ["five items", "five"]]);
