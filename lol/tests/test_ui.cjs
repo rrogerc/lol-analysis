@@ -176,7 +176,8 @@ async function checkBuildsSizes() {
   }));
   const [one, two, three, four] = Object.keys(ITEMS).map(sized);
   const all = [...full, ...one, ...two, ...three, ...four];
-  const keys = scenarios => scenarios.map(sc => sc.key);
+  // their keys as the buttons order them: the overall ranking leads its size
+  const keys = scenarios => [...scenarios.filter(sc => sc.overall), ...scenarios.filter(sc => !sc.overall)].map(sc => sc.key);
   const flush = () => new Promise(setImmediate);
 
   const open = async scenarios => {
@@ -231,18 +232,19 @@ async function checkBuildsSizes() {
   const { bstate } = h.context;
   assert.equal(d.words().length, 2, "The leaderboard's note and the item pool's both state the build size");
   assert.deepEqual(h.queryAll("#scenario-seg button").map(b => b.dataset.key), keys(all));
-  assert.deepEqual(h.queryAll("#scenario-seg button").slice(0, 6).map(b => b.textContent),
-    ["vs squishy", "vs tank", "overall", "vs squishy", "vs tank", "overall"],
-    "A scenario button names the fight; the Items buttons say the size");
+  assert.deepEqual(h.queryAll("#scenario-seg button").filter(b => !b.hidden).map(b => b.textContent),
+    ["overall", "vs squishy", "vs tank"],
+    "A scenario button names the fight, overall first; the Items buttons say the size");
   assert.deepEqual(d.offered(), ["1", "2", "3", "4", "5"], "A button per size, smallest first, whatever order the scenarios come in");
-  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-squishy", keys(full), ["full-squishy"]],
-    "Five items is the default, and only its scenarios are offered");
+  assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["full-overall", keys(full), ["full-overall"]],
+    "Five items overall is the default, and only that size's scenarios are offered");
   assert.deepEqual([h.element("builds-size").hidden, d.size(), d.pressed(), d.dimmed(), d.words()],
     [false, ["5"], ["5"], [], ["five items", "five"]]);
   const titles = Object.fromEntries(h.queryAll("#builds-size-seg button").map(b => [b.textContent, b.title]));
   assert.equal(titles[1], "Rank boots plus one item. Same level, same targets.");
   assert.equal(titles[5], "Rank boots plus five items: a full inventory. Same level, same targets.");
 
+  await d.pick("full-squishy");
   requests.length = 0;
   await d.pickSize(1);
   assert.deepEqual([bstate.scenario, d.shown(), d.active()], ["one-squishy", keys(one), ["one-squishy"]],
@@ -319,7 +321,7 @@ async function checkBuildsSizes() {
   const fewer = await open([...full, ...four]);
   assert.deepEqual([fewer.offered(), fewer.size(), fewer.h.element("builds-size").hidden], [["4", "5"], ["5"], false]);
   await fewer.pickSize(4);
-  assert.deepEqual([fewer.h.context.bstate.scenario, fewer.shown()], ["four-squishy", keys(four)]);
+  assert.deepEqual([fewer.h.context.bstate.scenario, fewer.shown()], ["four-overall", keys(four)]);
   const old = await open(full);
   assert.deepEqual([old.h.element("builds-size").hidden, old.offered(), old.shown(), old.words()],
     [true, ["5"], keys(full), ["five items", "five"]]);
@@ -369,9 +371,16 @@ async function checkBuildsFights() {
     ["2", "can't kill", "\u2014", "60.02s +620%", "37", "4,391", "4,100"],
   ]);
   assert.deepEqual(rows().map(tds => tds[2].title), ["", `The tank ${stood}`], "The cell says what was dealt, and how long the fight ran");
-  assert.equal(h.element("scenario-desc").textContent,
-    "Level 16 (Q5/W3/E5/R3) \u00b7 target 4,800 HP (1,200 bonus), 220 armor, 160 MR \u00b7 fights run to the kill, 2 min at most" +
-    " \u00b7 525 builds ranked \u00b7 items patch 16.23, kit 16.16 \u00b7 Theoretical damage model.");
+  // what the ranking is, a fact a bullet
+  assert.deepEqual(h.element("scenario-desc").children.map(li => [li.tagName, li.textContent]), [
+    ["li", "Level 16 (Q5/W3/E5/R3)"],
+    ["li", "Squishy: 2,800 HP (300 bonus), 110 armor, 60 MR"],
+    ["li", "Tank: 4,800 HP (1,200 bonus), 220 armor, 160 MR"],
+    ["li", "Fights run to the kill, 2 min at most"],
+    ["li", "525 builds ranked"],
+    ["li", "Items patch 16.23, kit 16.16"],
+    ["li", "Theoretical damage model."],
+  ]);
 
   await open("one-squishy");
   assert.deepEqual(heads(), ["#", "Build", "Kill time", "Expected", "vs tank", "DPS", "Damage", "Gold"]);
@@ -555,9 +564,17 @@ async function checkBuildsLeaderboard() {
   assert.equal(leesin.children[5].title, "The tank was still standing after 2 min, the longest a fight runs (4,100 damage dealt)");
   assert.equal(kayle.children[3].title, "");
 
-  const desc = element("scenario-desc").textContent;
-  assert.match(desc, /^Level 16 \u00b7 target 2,800 HP, 110 armor, 60 MR \u00b7 ranked by expected kill time \u00b7 fights run to the kill, 2 min at most \u00b7 each champion/);
-  assert.match(desc, /each champion with the best build of its own ranking \u00b7 items patch 16\.18/);
+  const facts = () => element("scenario-desc").children.map(li => li.textContent);
+  // every scenario of a size lists the same targets, a bullet each
+  const dummies = ["Squishy: 2,800 HP, 110 armor, 60 MR", "Bruiser: 3,800 HP, 180 armor, 120 MR", "Tank: 4,800 HP, 220 armor, 160 MR"];
+  assert.deepEqual(facts().slice(0, 8), [
+    "Level 16",
+    ...dummies,
+    "Ranked by expected kill time",
+    "Fights run to the kill, 2 min at most",
+    "Each champion with the best build of its own ranking",
+    "Items patch 16.18",
+  ]);
   assert.equal(element("bboard-status").textContent, "4 champions");
   assert.equal(element("bboard-failed").hidden, true);
 
@@ -586,10 +603,11 @@ async function checkBuildsLeaderboard() {
     ["2", "Kayle", "Boots + Kayle's item", "1.21s", "2.50s", "4.21s", "2.34s", "16,002"],
   ]);
   assert.equal(body()[0].children[6].title, INSTANT_TITLE);
-  assert.match(
-    element("scenario-desc").textContent,
-    /ranked on every target at once \u2014 squishy \(2,800 HP, 110 armor, 60 MR\); bruiser .*champions that kill all of them first \u00b7 fights run to the kill, 2 min at most \u00b7/
-  );
+  assert.deepEqual(facts().slice(1, 6), [
+    ...dummies,
+    "Ranked on every target at once, by the geometric mean of expected kill times, champions that kill all of them first",
+    "Fights run to the kill, 2 min at most",
+  ]);
   bstate.scenario = "full-squishy";
 
   show(squishy, { search: " LEE" });

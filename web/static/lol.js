@@ -15,6 +15,8 @@ async function loadBuildsMeta() {
     scenarioStatus("Builds API not reachable: restart `cli.py serve` to pick up the new endpoints.");
     return false;
   }
+  // the overall ranking leads each size's buttons, and a fresh page opens on it
+  bstate.meta.scenarios = [...bstate.meta.scenarios].sort((a, b) => !!b.overall - !!a.overall);
   bstate.items = buildItemLookup(bstate.meta);
   if (!bstate.meta.champions.some(c => c.slug === bstate.champion))
     bstate.champion = bstate.meta.champions[0]?.slug;
@@ -204,8 +206,22 @@ function scenarioStatus(text) {
   const el = document.getElementById("scenario-status");
   el.textContent = text;
   el.hidden = !text;
-  document.getElementById("scenario-desc").textContent = "";
+  scenarioFacts([]);
 }
+
+// What the ranking is, a fact a bullet; a fact that doesn't apply is falsy.
+function scenarioFacts(facts) {
+  document.getElementById("scenario-desc").replaceChildren(
+    ...facts.filter(Boolean).map(f => tftText("li", f)));
+}
+
+// The facts of what a scenario fights, a target a bullet. Its tier's targets
+// are simulated together, so every scenario of a size lists the same set.
+const targetFacts = sc => (sc.targets?.length ? sc.targets : sc.overall ? [] : [sc]).map(t =>
+  `${t.target ? t.target[0].toUpperCase() + t.target.slice(1) : "Target"}: ${dummyStats(t)}`);
+// How the overall scenario ranks `who` (builds, champions) across them.
+const overallFact = who =>
+  `Ranked on every target at once, by the geometric mean of expected kill times, ${who} that kill all of them first`;
 
 function buildsTitle(name, label) {
   return `${name} — ranked builds` + (label ? `, ${label.toLowerCase()}` : "");
@@ -257,17 +273,18 @@ async function loadScenario() {
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
-  const what = sc.overall
-    ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
-      "by the geometric mean of expected kill times, builds that kill all of them first"
-    : `target ${dummyStats(sc)}`;
   scenarioStatus("");
-  document.getElementById("scenario-desc").textContent =
-    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}${fightLimitNote(sc)}` +
-    (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
-    ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
-    (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
-    ` · items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.note}`;
+  scenarioFacts([
+    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R})`,
+    ...targetFacts(sc),
+    sc.overall && overallFact("builds"),
+    fightLimitNote(sc),
+    sc.budget && `${fmtInt(sc.budget)}g budget`,
+    `${fmtInt(d.buildsEvaluated)} builds ranked`,
+    when && `Computed ${when} in ${fmtDur(d.computeSeconds)}`,
+    `Items patch ${d.itemsPatch}, kit ${d.kitPatch}`,
+    bstate.meta.note,
+  ]);
   renderBuildsTable();
 }
 
@@ -307,10 +324,13 @@ const vsTitle = t =>
   "and how far behind that target's own best build it is";
 // A fight runs until the dummy dies, up to a time limit every target shares
 // (builds.py FIGHT_LIMIT, each target's `duration`): what a scenario's line
-// says of it. A scenario that names none says nothing.
+// says of it, here and in the method notes' "can't kill" bullets. A scenario
+// that names none says nothing, and leaves the notes as the page wrote them.
 function fightLimitNote(sc) {
   const limit = (sc.targets?.[0] ?? sc).duration;
-  return limit ? ` · fights run to the kill, ${fmtDur(limit)} at most` : "";
+  if (!limit) return "";
+  document.querySelectorAll("#view-builds .fight-limit").forEach(el => { el.textContent = fmtDur(limit); });
+  return `Fights run to the kill, ${fmtDur(limit)} at most`;
 }
 
 // What a fight shows in place of a kill time when the limit ended it with
@@ -777,12 +797,15 @@ function renderLeaderboard() {
   document.getElementById("builds-title").textContent = `Champion leaderboard, ${label.toLowerCase()}`;
   scenarioStatus(d || bboard.error ? "" : "Loading…");
   if (d) {
-    document.getElementById("scenario-desc").textContent = `Level ${sc.level} · ` + (sc.overall
-      ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummyStats(t)})`).join("; ")} — ` +
-        "by the geometric mean of expected kill times, champions that kill all of them first"
-      : `target ${dummyStats(sc)} · ranked by expected kill time`) + fightLimitNote(sc) +
-      ` · each champion with the best build of its own ranking` +
-      ` · items patch ${bstate.meta.itemsPatch} · ${bstate.meta.note}`;
+    scenarioFacts([
+      `Level ${sc.level}`,
+      ...targetFacts(sc),
+      sc.overall ? overallFact("champions") : "Ranked by expected kill time",
+      fightLimitNote(sc),
+      "Each champion with the best build of its own ranking",
+      `Items patch ${bstate.meta.itemsPatch}`,
+      bstate.meta.note,
+    ]);
   }
   const cols = sc ? boardColumns(sc) : [], sorted = boardSort(cols);
   const rows = sorted.col ? boardSorted(boardRows(d), sorted) : [];
